@@ -5,3 +5,5 @@ from models.character_loader import (
     load_family_npc,
     load_all_characters,
 )
+from models.place import Place
+from models.place_loader import load_place, load_all_places
