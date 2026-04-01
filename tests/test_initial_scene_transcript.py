@@ -7,6 +7,7 @@ from pathlib import Path
 
 from models.game_init import initialize_game_state
 from models.character import PlayerCharacter, NPC
+from engine.context_builder import build_player_context
 
 SCENARIO_DIR = Path(__file__).resolve().parent.parent / "scenario"
 
@@ -186,3 +187,50 @@ def _print_things_grouped(things: list):
             price_str = f" ({t.price})" if t.price else ""
             magic = " ✨" if t.category == "magical" else ""
             print(f"       • {t.name}{price_str}{magic}")
+
+
+def test_player_context_transcript(capsys):
+    gs = initialize_game_state(SCENARIO_DIR)
+
+    print()
+    print("=" * 70)
+    print("  DRIFTMOOR — PLAYER CONTEXT BRIEFINGS")
+    print("=" * 70)
+
+    for pc in sorted(gs.get_players(), key=lambda c: c.name):
+        ctx = build_player_context(gs, pc.id)
+        print()
+        print("-" * 70)
+        print(f"  📜 CONTEXT FOR: {ctx.character_name}")
+        print(f"     Location: {ctx.location_name}")
+        print(f"     NPCs present: {len(ctx.scene_characters)}")
+        print(f"     Items available: {len(ctx.available_items)}")
+        print(f"     Backstory: {ctx.backstory[:80]}..." if ctx.backstory else "     Backstory: (none)")
+        print(f"     Character brief: {len(ctx.character_brief)} chars")
+        print(f"     Character soul: {len(ctx.character_soul)} chars")
+        print(f"     Rendered output: {len(ctx.render())} chars")
+        if ctx.scene_characters:
+            for sc in ctx.scene_characters:
+                role = f" — {sc['role']}" if sc.get("role") else ""
+                print(f"       👤 {sc['name']}{role}")
+        if ctx.available_items:
+            shown = ctx.available_items[:5]
+            for item in shown:
+                price = f" ({item['price']})" if item.get("price") else ""
+                print(f"       🛒 {item['name']}{price}")
+            if len(ctx.available_items) > 5:
+                print(f"       ... and {len(ctx.available_items) - 5} more items")
+
+    print()
+    print("=" * 70)
+
+    # Assertions
+    players = gs.get_players()
+    assert len(players) == 7
+    for pc in players:
+        ctx = build_player_context(gs, pc.id)
+        assert ctx.character_name
+        assert ctx.game_overview
+        assert ctx.character_brief
+        assert ctx.location_name
+        assert len(ctx.render()) > 200

@@ -31,5 +31,8 @@
 ## The Holy Symbol
 A wooden symbol of Pelor worn openly. Not an affectation — a genuine anchor.
 
+## Backstory
+Lilar was raised in a humble farming village that fell on hard times when disease and famine ravaged his community. When no one else could help, he prayed to the gods of light and was answered with a gift of divine magic. Devoting his life to healing and hope, he joined a traveling clergy, bringing aid to those in need.
+
 ## Internal Contradiction
 He believes in the innate goodness of people. The world keeps testing this. He keeps believing it anyway, which is either his greatest strength or the thing that will eventually break him.

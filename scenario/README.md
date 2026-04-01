@@ -32,3 +32,6 @@ Sister Amara Solbright (Human Cleric)
 
 Amara was sent to Driftmoor by her church after news of the disturbances reached her order. Viewing the obelisk as a possible source of evil, she set out to investigate and assist the locals. She arrived at the tavern where Kaelin was performing and, upon seeing the group forming, offered her services. Amara’s sincerity and calm demeanor quickly won the trust of Thorgrim and Aeliana, and her healing magic made her an invaluable addition to the team.
 
+Father Lilar Hearthsong (Human Cleric)
+
+Lilar was raised in a humble farming village that fell on hard times when disease and famine ravaged his community. When no one else could help, he prayed to the gods of light and was answered with a gift of divine magic. Devoting his life to healing and hope, he joined a traveling clergy, bringing aid to those in need.
