@@ -23,13 +23,13 @@ class TestInitialization:
         assert state.turn == 0
 
     def test_all_characters_loaded(self, state: GameState):
-        assert len(state.characters) >= 35
+        assert len(state.characters) >= 37
 
     def test_all_places_loaded(self, state: GameState):
         assert len(state.places) == 54
 
-    def test_five_players(self, state: GameState):
-        assert len(state.get_players()) == 5
+    def test_seven_players(self, state: GameState):
+        assert len(state.get_players()) == 7
 
 
 class TestPlayerInitialLocations:
@@ -56,8 +56,18 @@ class TestPlayerInitialLocations:
         assert c.location == "broken_lantern"
 
     def test_lilar_at_tavern(self, state: GameState):
-        """Lilar (Amara in README) arrived at the tavern."""
+        """Lilar arrived at the tavern."""
         c = state.get_character("lilar")
+        assert c.location == "broken_lantern"
+
+    def test_varrak_at_tavern(self, state: GameState):
+        """Varrak arrived at the tavern via Kelem's directions."""
+        c = state.get_character("varrak")
+        assert c.location == "broken_lantern"
+
+    def test_amara_at_tavern(self, state: GameState):
+        """Amara arrived at the tavern per her church's orders."""
+        c = state.get_character("amara")
         assert c.location == "broken_lantern"
 
 

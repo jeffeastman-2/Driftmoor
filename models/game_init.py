@@ -24,6 +24,8 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "seraphina": "broken_lantern",
     "aeliana": "broken_lantern",
     "lilar": "broken_lantern",
+    "varrak": "broken_lantern",
+    "amara": "broken_lantern",
 
     # Named NPCs — at their home locations
     "aldren": "mayors_hall",

@@ -361,17 +361,19 @@ class TestLoadPlayerCharacter:
         assert len(pc.identity_raw) > 100
         assert len(pc.soul_raw) > 100
 
-    def test_all_five_players_load(self):
+    def test_all_seven_players_load(self):
         player_dir = SCENARIO_DIR / "players"
         players = [
             load_player_character(d)
             for d in sorted(player_dir.iterdir())
             if d.is_dir()
         ]
-        assert len(players) == 5
+        assert len(players) == 7
         names = {p.name for p in players}
         assert "Seraphina Duskwhisper" in names
         assert "Thorgrim Stoneheart" in names
+        assert "Varrak Ironflame" in names
+        assert "Sister Amara Solbright" in names
 
 
 class TestLoadNPC:
@@ -439,7 +441,7 @@ class TestLoadAllCharacters:
         characters = load_all_characters(SCENARIO_DIR)
         players = [c for c in characters if isinstance(c, PlayerCharacter)]
         npcs = [c for c in characters if isinstance(c, NPC)]
-        assert len(players) == 5
+        assert len(players) == 7
         assert len(npcs) >= 25  # 13 named + 5 family + 12 background
 
     def test_no_duplicate_ids(self):
