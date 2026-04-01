@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Varrak Ironflame
-- **Player:** DM (agent-controlled)
+- **Player:** TBD
 - **Race:** Dragonborn (Red)
 - **Class:** Sorcerer (Draconic Bloodline), Level 1
 - **Background:** Hermit

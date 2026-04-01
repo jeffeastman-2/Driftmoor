@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Kaelin Brightspark
-- **Player:** Neala
+- **Player:** TBD
 - **Race:** Lightfoot Halfling
 - **Class:** Bard, Level 1
 - **Background:** Entertainer

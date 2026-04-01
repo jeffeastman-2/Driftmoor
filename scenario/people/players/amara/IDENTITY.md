@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Sister Amara Solbright
-- **Player:** DM (agent-controlled)
+- **Player:** TBD
 - **Race:** Human
 - **Class:** Cleric (Life Domain), Level 1
 - **Background:** Acolyte

@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Seraphina Duskwhisper
-- **Player:** Kristin
+- **Player:** TBD
 - **Race:** Half-Elf
 - **Class:** Rogue, Level 1
 - **Background:** Charlatan

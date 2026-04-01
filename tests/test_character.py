@@ -37,7 +37,7 @@ class TestPlayerCharacter:
             name="Seraphina",
             race="Half-Elf",
             character_type="player",
-            player="Kristin",
+            player="TBD",
             character_class="Rogue",
             level=1,
             hp=9,
@@ -49,7 +49,7 @@ class TestPlayerCharacter:
             wisdom=10,
             charisma=15,
         )
-        assert pc.player == "Kristin"
+        assert pc.player == "TBD"
         assert pc.hp == 9
         assert pc.dexterity == 16
         assert pc.character_type == "player"

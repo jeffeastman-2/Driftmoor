@@ -30,7 +30,7 @@ class TestParsePlayerIdentity:
 
 ## Static Profile
 - **Full Name:** Seraphina Duskwhisper
-- **Player:** Kristin
+- **Player:** TBD
 - **Race:** Half-Elf
 - **Class:** Rogue, Level 1
 - **Background:** Charlatan
@@ -78,7 +78,7 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes.
 
     def test_parse_player(self):
         result = parse_player_identity(self.SAMPLE)
-        assert result["player"] == "Kristin"
+        assert result["player"] == "TBD"
 
     def test_parse_race(self):
         result = parse_player_identity(self.SAMPLE)
@@ -322,7 +322,7 @@ class TestLoadPlayerCharacter:
         assert pc.race == "Half-Elf"
         assert pc.character_class == "Rogue"
         assert pc.level == 1
-        assert pc.player == "Kristin"
+        assert pc.player == "TBD"
         assert pc.hp == 9
         assert pc.ac == 11
         assert pc.dexterity == 16

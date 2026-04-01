@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Aeliana Moonglade
-- **Player:** Rose
+- **Player:** TBD
 - **Race:** Wood Elf
 - **Class:** Ranger, Level 1
 - **Background:** Outlander
