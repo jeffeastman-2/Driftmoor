@@ -40,35 +40,35 @@ class TestPlayerInitialLocations:
         c = state.get_character("kaelin")
         assert c.location == "broken_lantern"
 
-    def test_thorgrim_at_tavern(self, state: GameState):
-        """Thorgrim was staying at the same tavern."""
+    def test_thorgrim_at_forge(self, state: GameState):
+        """Thorgrim at Ironhoof Forge — a dwarf drawn to the smithy."""
         c = state.get_character("thorgrim")
-        assert c.location == "broken_lantern"
+        assert c.location == "ironhoof_forge"
 
-    def test_seraphina_at_tavern(self, state: GameState):
-        """Seraphina heard rumors of adventurers at the tavern."""
+    def test_seraphina_at_pawnshop(self, state: GameState):
+        """Seraphina at the Gilded Trinket — rogue browsing the pawnshop."""
         c = state.get_character("seraphina")
-        assert c.location == "broken_lantern"
+        assert c.location == "gilded_trinket"
 
-    def test_aeliana_at_tavern(self, state: GameState):
-        """Aeliana's tracking brought her to the tavern."""
+    def test_aeliana_at_fey_glade(self, state: GameState):
+        """Aeliana at the Fey Glade — ranger drawn to the strange clearing."""
         c = state.get_character("aeliana")
-        assert c.location == "broken_lantern"
+        assert c.location == "fey_glade"
 
-    def test_lilar_at_tavern(self, state: GameState):
-        """Lilar arrived at the tavern."""
+    def test_lilar_at_old_mill(self, state: GameState):
+        """Lilar at the Old Mill — helping the Haversteads."""
         c = state.get_character("lilar")
-        assert c.location == "broken_lantern"
+        assert c.location == "old_mill"
 
-    def test_varrak_at_tavern(self, state: GameState):
-        """Varrak arrived at the tavern via Kelem's directions."""
+    def test_varrak_at_mercantile(self, state: GameState):
+        """Varrak at Salt & Iron — sorcerer browsing the mercantile."""
         c = state.get_character("varrak")
-        assert c.location == "broken_lantern"
+        assert c.location == "salt_and_iron"
 
-    def test_amara_at_tavern(self, state: GameState):
-        """Amara arrived at the tavern per her church's orders."""
+    def test_amara_at_church(self, state: GameState):
+        """Amara at the Beacon — life cleric at the church."""
         c = state.get_character("amara")
-        assert c.location == "broken_lantern"
+        assert c.location == "beacon_church"
 
 
 class TestNPCInitialLocations:

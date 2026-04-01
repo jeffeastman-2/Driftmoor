@@ -7,4 +7,7 @@ from models.character_loader import (
 )
 from models.place import Place
 from models.place_loader import load_place, load_all_places
+from models.scene import Scene
+from models.thing import Thing
+from models.thing_loader import load_all_things
 from models.game_state import GameState

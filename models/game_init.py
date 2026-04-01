@@ -6,6 +6,7 @@ from pathlib import Path
 
 from models.character_loader import load_all_characters
 from models.place_loader import load_all_places
+from models.thing_loader import load_all_things
 from models.game_state import GameState
 
 
@@ -18,14 +19,14 @@ from models.game_state import GameState
 # ---------------------------------------------------------------------------
 
 INITIAL_LOCATIONS: dict[str, str] = {
-    # Players — all converge at the tavern per README backstory
+    # Players — each starts in a separate scene
     "kaelin": "broken_lantern",
-    "thorgrim": "broken_lantern",
-    "seraphina": "broken_lantern",
-    "aeliana": "broken_lantern",
-    "lilar": "broken_lantern",
-    "varrak": "broken_lantern",
-    "amara": "broken_lantern",
+    "thorgrim": "ironhoof_forge",
+    "seraphina": "gilded_trinket",
+    "aeliana": "fey_glade",
+    "lilar": "old_mill",
+    "varrak": "salt_and_iron",
+    "amara": "beacon_church",
 
     # Named NPCs — at their home locations
     "aldren": "mayors_hall",
@@ -69,12 +70,15 @@ def initialize_game_state(scenario_dir: Path) -> GameState:
     """Load all scenario data and return a GameState with initial locations set."""
     characters = load_all_characters(scenario_dir / "people")
     places = load_all_places(scenario_dir / "places")
+    things = load_all_things(scenario_dir / "things")
 
-    gs = GameState(characters=characters, places=places)
+    gs = GameState(characters=characters, places=places, things=things)
 
     for character in gs.characters:
         location = INITIAL_LOCATIONS.get(character.id)
         if location is not None:
             gs.move_character(character.id, location)
+
+    gs.create_scenes_for_players()
 
     return gs

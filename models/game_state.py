@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from models.character import Character, PlayerCharacter, NPC
 from models.place import Place
+from models.scene import Scene
+from models.thing import Thing
 
 
 @dataclass
@@ -18,6 +20,8 @@ class GameState:
 
     characters: list[Character] = field(default_factory=list)
     places: list[Place] = field(default_factory=list)
+    things: list[Thing] = field(default_factory=list)
+    scenes: list[Scene] = field(default_factory=list)
     turn: int = 0
 
     # ---- internal indexes, built lazily ----
@@ -27,6 +31,9 @@ class GameState:
     _places_by_id: dict[str, Place] = field(
         default_factory=dict, init=False, repr=False,
     )
+    _things_by_id: dict[str, Thing] = field(
+        default_factory=dict, init=False, repr=False,
+    )
 
     def __post_init__(self) -> None:
         self._rebuild_indexes()
@@ -34,6 +41,7 @@ class GameState:
     def _rebuild_indexes(self) -> None:
         self._characters_by_id = {c.id: c for c in self.characters}
         self._places_by_id = {p.id: p for p in self.places}
+        self._things_by_id = {t.id: t for t in self.things}
 
     # ------------------------------------------------------------------
     # Character lookups
@@ -75,6 +83,22 @@ class GameState:
         ]
 
     # ------------------------------------------------------------------
+    # Thing lookups
+    # ------------------------------------------------------------------
+
+    def get_thing(self, thing_id: str) -> Thing | None:
+        return self._things_by_id.get(thing_id)
+
+    def get_things_at(self, place_id: str) -> list[Thing]:
+        return [t for t in self.things if t.location_id == place_id]
+
+    def get_things_by_vendor(self, vendor_id: str) -> list[Thing]:
+        return [t for t in self.things if t.vendor_id == vendor_id]
+
+    def get_things_by_category(self, category: str) -> list[Thing]:
+        return [t for t in self.things if t.category == category]
+
+    # ------------------------------------------------------------------
     # Mutations
     # ------------------------------------------------------------------
 
@@ -88,3 +112,48 @@ class GameState:
 
     def advance_turn(self) -> None:
         self.turn += 1
+
+    # ------------------------------------------------------------------
+    # Scene management
+    # ------------------------------------------------------------------
+
+    def create_scene(self, place_id: str) -> Scene:
+        """Create a new scene at *place_id* with all characters currently there."""
+        if place_id not in self._places_by_id:
+            raise KeyError(f"Unknown place: {place_id!r}")
+        character_ids = [c.id for c in self.characters if c.location == place_id]
+        scene = Scene(
+            id=f"scene_{place_id}",
+            place_id=place_id,
+            character_ids=character_ids,
+            turn_started=self.turn,
+        )
+        self.scenes.append(scene)
+        return scene
+
+    def get_scene(self, scene_id: str) -> Scene | None:
+        for s in self.scenes:
+            if s.id == scene_id:
+                return s
+        return None
+
+    def get_scene_at(self, place_id: str) -> Scene | None:
+        """Return the first scene at *place_id*, or None."""
+        for s in self.scenes:
+            if s.place_id == place_id:
+                return s
+        return None
+
+    def get_active_scenes(self) -> list[Scene]:
+        return [s for s in self.scenes if s.status == "active"]
+
+    def create_scenes_for_players(self) -> list[Scene]:
+        """Auto-create one scene per place that has at least one PC."""
+        pc_places: set[str] = set()
+        for c in self.characters:
+            if isinstance(c, PlayerCharacter) and c.location:
+                pc_places.add(c.location)
+        created = []
+        for place_id in sorted(pc_places):
+            created.append(self.create_scene(place_id))
+        return created
