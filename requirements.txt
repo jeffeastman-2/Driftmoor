@@ -1,0 +1,6 @@
+anthropic
+openai
+ollama
+pyyaml
+python-dotenv
+pytest

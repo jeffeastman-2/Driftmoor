@@ -1,0 +1,37 @@
+# PLACE.md — The Mayor's Hall
+
+## Description and Atmosphere
+The largest and most prominent building in Driftmoor — two stories of timber and stone built to withstand coastal weather and project quiet authority. Situated near the village square. Practical in design with small touches of civic pride: carved wooden trim along the eaves, a tended flower bed outside, the town crest on the double oak doors.
+
+Inside it smells of old paper, woodsmoke, and the faint whiskey the mayor keeps in his office.
+
+## Sub-Places
+- `mayors_office/` — Aldren Thorne's working space
+- `records_room/` — locked, town documents and historical ledgers
+- `living_quarters/` — Aldren's modest upstairs suite
+- Main Hall (covered in this file — no sub-directory needed)
+
+## Main Hall
+The heart of the building. Rows of simple wooden benches face a raised dais with a long table and high-backed chair. Walls adorned with maps of the surrounding region, fishing nets, and framed sketches of early Driftmoor. A weathered bronze bell near the back — used to call meetings or sound alarms.
+
+## Exterior
+- Wide double doors of dark oak, iron-banded, carved with Driftmoor's crest
+- Flagpole with faded town banner
+- Stone steps flanked by lanterns lit each evening
+
+## Who Is Normally Here
+- **Aldren Thorne** — mayor, usually in his office during the day
+- **Elise Harper** — sharp-eyed clerk, manages the records room
+
+## Connections
+- Village square (outside)
+- `mayors_office/` (left of main hall)
+- `records_room/` (behind the office, locked)
+- `living_quarters/` (upstairs)
+
+## Dynamic State
+*(Updated by monitor agent)*
+
+- **Current occupants:** Aldren Thorne (office), Elise Harper (records area)
+- **Recent events:** None yet — session not started
+- **Active conditions:** Records room ledger missing
