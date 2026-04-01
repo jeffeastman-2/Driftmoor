@@ -87,3 +87,102 @@ def test_initial_scene_transcript(capsys):
     assert len(occupied) > 0
     assert not unplaced, f"Unplaced characters: {[c.id for c in unplaced]}"
     assert len(gs.get_active_scenes()) == 7  # one scene per player
+
+
+def test_initial_things_deployment(capsys):
+    gs = initialize_game_state(SCENARIO_DIR)
+
+    print()
+    print("=" * 70)
+    print("  DRIFTMOOR — INITIAL THINGS DEPLOYMENT")
+    print(f"  {len(gs.things)} things across {len({t.location_id for t in gs.things if t.location_id})} locations")
+    print("=" * 70)
+
+    # ---- Things in active scenes ----
+    scene_place_ids = {s.place_id for s in gs.get_active_scenes()}
+    for scene in gs.get_active_scenes():
+        things = gs.get_things_at(scene.place_id)
+        if not things:
+            continue
+        place = gs.get_place(scene.place_id)
+        name = place.name if place else scene.place_id
+
+        print()
+        print(f"  🎬 {name}")
+        _print_things_grouped(things)
+
+    # ---- Things at non-scene locations ----
+    locations_with_things: dict[str, list] = {}
+    for t in gs.things:
+        if t.location_id and t.location_id not in scene_place_ids:
+            locations_with_things.setdefault(t.location_id, []).append(t)
+
+    if locations_with_things:
+        print()
+        print("  ── Items at other locations ──")
+        for place_id in sorted(locations_with_things):
+            place = gs.get_place(place_id)
+            name = place.name if place else place_id
+            things = locations_with_things[place_id]
+            print()
+            print(f"  📍 {name}")
+            _print_things_grouped(things)
+
+    # ---- Things with no location (templates) ----
+    unplaced = [t for t in gs.things if not t.location_id]
+    if unplaced:
+        print()
+        print("  ── Unlocated items (templates / harvestables) ──")
+        for t in sorted(unplaced, key=lambda x: x.name):
+            extra = f" — {t.description[:60]}" if t.description else ""
+            print(f"     [{t.category}] {t.name}{extra}")
+
+    # ---- Summary by category ----
+    cats: dict[str, int] = {}
+    for t in gs.things:
+        cats[t.category] = cats.get(t.category, 0) + 1
+    print()
+    print("  ── Summary ──")
+    for cat in sorted(cats):
+        print(f"     {cat}: {cats[cat]}")
+
+    # ---- Summary by vendor ----
+    vendors: dict[str, int] = {}
+    for t in gs.things:
+        if t.vendor_id:
+            vendors[t.vendor_id] = vendors.get(t.vendor_id, 0) + 1
+    print()
+    print("  ── Items by vendor ──")
+    for vid in sorted(vendors, key=lambda v: -vendors[v]):
+        vc = gs.get_character(vid)
+        vname = vc.name if vc else vid
+        print(f"     {vname}: {vendors[vid]} items")
+
+    print()
+    print("=" * 70)
+
+    # Assertions
+    assert len(gs.things) >= 75
+    assert len({t.category for t in gs.things}) == 4
+    # Every scene place that is a shop should have things
+    for scene in gs.get_active_scenes():
+        things = gs.get_things_at(scene.place_id)
+        place = gs.get_place(scene.place_id)
+        # Fey Glade and Old Mill have no shop items — that's expected
+        if scene.place_id not in ("fey_glade", "old_mill"):
+            assert len(things) > 0, f"No things at active scene {place.name}"
+
+
+def _print_things_grouped(things: list):
+    """Print things grouped by category."""
+    by_cat: dict[str, list] = {}
+    for t in things:
+        by_cat.setdefault(t.category, []).append(t)
+    for cat in sorted(by_cat):
+        items = sorted(by_cat[cat], key=lambda x: x.name)
+        label = cat.replace("_", " ").title()
+        print(f"     [{label}] ({len(items)} items)")
+        for t in items:
+            price_str = f" ({t.price})" if t.price else ""
+            magic = " ✨" if t.category == "magical" else ""
+            print(f"       • {t.name}{price_str}{magic}")
