@@ -387,14 +387,19 @@ def parse_obelisk_shards(path: Path) -> list[Thing]:
             # Simplify place_id to match our place model IDs
             # e.g. "laboratory" → parent is "elyssa_cottage"
             # Map known nested locations to their parent place
+            sub_location = ""
             place_id_map = {
                 "laboratory": "elyssa_cottage",
                 "shopfront": "dustcloaks_curios",
                 "backroom": "dustcloaks_curios",
             }
-            place_id = place_id_map.get(place_id, place_id)
+            if place_id in place_id_map:
+                sub_location = place_id
+                place_id = place_id_map[place_id]
 
             base_id = f"shard_{_slugify(place_id)}"
+            if sub_location:
+                base_id = f"shard_{_slugify(place_id)}_{_slugify(sub_location)}"
             thing_id = base_id
             if thing_id in seen_ids:
                 n = 2
@@ -493,9 +498,16 @@ def load_all_things(things_dir: Path) -> list[Thing]:
     magical_slugs = {_slugify(t.name) for t in magical}
     mundane_deduped = [t for t in mundane if _slugify(t.name) not in magical_slugs]
 
+    # Obelisk shards take priority — remove magical cross-references
+    shard_locations = {t.location_id for t in shards if t.location_id}
+    magical_deduped = [
+        t for t in magical
+        if not (t.location_id in shard_locations and "shard" in t.name.lower())
+    ]
+
     all_things: list[Thing] = []
     all_things.extend(mundane_deduped)
-    all_things.extend(magical)
+    all_things.extend(magical_deduped)
     all_things.extend(shards)
     all_things.extend(parts)
     return all_things

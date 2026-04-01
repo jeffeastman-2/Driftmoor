@@ -297,7 +297,8 @@ class TestLoadAllThings:
 
     def test_magical_items_present(self, all_things):
         magical = [t for t in all_things if t.category == "magical"]
-        assert len(magical) >= 11
+        # 12 parsed from magical_items.md minus 2 obelisk shard cross-refs
+        assert len(magical) == 10
 
     def test_shards_present(self, all_things):
         shards = [t for t in all_things if t.category == "obelisk_shard"]
