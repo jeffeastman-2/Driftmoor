@@ -60,6 +60,7 @@ class NPC(Character):
     """A non-player character."""
 
     role: str = ""
+    home_location: str = ""
     relationships: dict[str, str] = field(default_factory=dict)
     knowledge: list[str] = field(default_factory=list)
     hooks: list[str] = field(default_factory=list)
