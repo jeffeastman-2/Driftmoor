@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
 
-from models.character_loader import load_all_characters
+from models.character_loader import load_all_characters, load_all_creatures
 from models.place_loader import load_all_places
 from models.thing_loader import load_all_things
 from models.game_state import GameState
@@ -35,6 +36,7 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "jorgen": "salt_and_iron",
     "tess": "broken_lantern",
     "lytha": "bitter_remedy",
+    "fennel": "fey_glade",
     "elden": "beacon_church",
     "darrin": "ironhoof_forge",
     "kara": "ironhoof_forge",
@@ -63,6 +65,9 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "marta": "cobblers_shop",
     "tomas": "coopers_shed",
     "vindra": "tailors_shop",
+
+    # Creature instances
+    "shadowbeast_fey_glade": "fey_glade",
 }
 
 
@@ -71,6 +76,13 @@ def initialize_game_state(scenario_dir: Path) -> GameState:
     characters = load_all_characters(scenario_dir / "people")
     places = load_all_places(scenario_dir / "places")
     things = load_all_things(scenario_dir / "things")
+
+    # Load creature templates and create scene-specific instances
+    creature_templates = load_all_creatures(scenario_dir / "creatures")
+    sb_template = next((c for c in creature_templates if c.id == "shadowbeast"), None)
+    if sb_template is not None:
+        fey_glade_sb = dataclasses.replace(sb_template, id="shadowbeast_fey_glade")
+        characters.append(fey_glade_sb)
 
     gs = GameState(characters=characters, places=places, things=things)
 

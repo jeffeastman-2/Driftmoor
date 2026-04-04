@@ -65,3 +65,46 @@ class NPC(Character):
     knowledge: list[str] = field(default_factory=list)
     hooks: list[str] = field(default_factory=list)
     active_concerns: list[str] = field(default_factory=list)
+    # Optional combat stats — default 10 gives +0 modifier
+    hp: int = 0
+    ac: int = 0
+    strength: int = 10
+    dexterity: int = 10
+    constitution: int = 10
+    intelligence: int = 10
+    wisdom: int = 10
+    charisma: int = 10
+
+    def modifier(self, ability: str) -> int:
+        """Compute the D&D 5e ability modifier: floor((score - 10) / 2)."""
+        return (getattr(self, ability) - 10) // 2
+
+
+@dataclass
+class Creature(Character):
+    """A creature / monster with a D&D 5e stat block."""
+
+    alignment: str = ""
+    hp: int = 0
+    ac: int = 0
+    speed: str = ""
+    challenge: str = ""
+    strength: int = 0
+    dexterity: int = 0
+    constitution: int = 0
+    intelligence: int = 0
+    wisdom: int = 0
+    charisma: int = 0
+
+    def modifier(self, ability: str) -> int:
+        """Compute the D&D 5e ability modifier: floor((score - 10) / 2)."""
+        return (getattr(self, ability) - 10) // 2
+
+    skills: list[str] = field(default_factory=list)
+    damage_resistances: list[str] = field(default_factory=list)
+    damage_vulnerabilities: list[str] = field(default_factory=list)
+    condition_immunities: list[str] = field(default_factory=list)
+    senses: list[str] = field(default_factory=list)
+    features: list[str] = field(default_factory=list)
+    actions: list[str] = field(default_factory=list)
+    tactics: str = ""

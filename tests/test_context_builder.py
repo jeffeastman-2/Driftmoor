@@ -108,8 +108,8 @@ class TestEachPlayerContext:
     def test_aeliana_at_fey_glade(self, all_contexts):
         ctx = all_contexts["aeliana"]
         assert "Fey Glade" in ctx.location_name
-        # Aeliana is alone — no other characters
-        assert len(ctx.scene_characters) == 0
+        # Aeliana is with Fennel and the Shadowbeast
+        assert len(ctx.scene_characters) == 2
 
     def test_aeliana_no_items(self, all_contexts):
         ctx = all_contexts["aeliana"]

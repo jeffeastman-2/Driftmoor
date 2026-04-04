@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from models.character import Character, PlayerCharacter, NPC
+from models.character import Character, Creature, PlayerCharacter, NPC
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +212,13 @@ def parse_npc_identity(text: str) -> dict:
     else:
         result["active_concerns"] = []
 
+    # Optional combat stats (present on some NPCs like Fennel)
+    result["hp"] = _parse_int(_extract_field(text, "HP"))
+    result["ac"] = _parse_int(_extract_field(text, "AC"))
+    scores = _parse_ability_scores(text)
+    for attr in ("strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"):
+        result[attr] = scores.get(attr[:3], 10)
+
     return result
 
 
@@ -318,6 +325,14 @@ def load_npc(directory: Path, character_type: str = "npc") -> NPC:
         knowledge=p["knowledge"],
         hooks=p["hooks"],
         active_concerns=p["active_concerns"],
+        hp=p["hp"],
+        ac=p["ac"],
+        strength=p["strength"],
+        dexterity=p["dexterity"],
+        constitution=p["constitution"],
+        intelligence=p["intelligence"],
+        wisdom=p["wisdom"],
+        charisma=p["charisma"],
     )
 
 
@@ -371,3 +386,180 @@ def load_all_characters(people_dir: Path) -> list[Character]:
                 characters.append(load_npc(entry, character_type="npc"))
 
     return characters
+
+
+# ---------------------------------------------------------------------------
+# Creature loading (scenario/creatures/*.md)
+# ---------------------------------------------------------------------------
+
+def _parse_creature_stat(text: str, label: str) -> int:
+    """Extract an ability score like ``Strength: 6 (-2)``."""
+    m = re.search(rf"{re.escape(label)}:\s*(\d+)", text)
+    return int(m.group(1)) if m else 0
+
+
+def _parse_bullet_items(text: str, header: str) -> list[str]:
+    """Extract bullet items under a line starting with *header*.
+
+    Handles both ``•`` and ``-`` bullets.  Collects until the next blank
+    line, non-bullet line, or end-of-string.
+    """
+    pattern = rf"^{re.escape(header)}.*\n((?:[\t •\-].*\n?)*)"
+    m = re.search(pattern, text, re.MULTILINE)
+    if not m:
+        return []
+    items: list[str] = []
+    for line in m.group(1).splitlines():
+        line = re.sub(r"^[\t •\-]+", "", line).strip()
+        if line:
+            items.append(line)
+    return items
+
+
+def _extract_plain_section(text: str, header: str) -> str:
+    """Extract text from a line starting with *header* to the next header-like line."""
+    pattern = rf"^{re.escape(header)}[^\n]*\n(.*?)(?=^[A-Z][a-z]+.*:\s*$|^[A-Z][a-z]+ |^$\n^[A-Z]|\Z)"
+    m = re.search(pattern, text, re.MULTILINE | re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def parse_creature_md(text: str) -> dict:
+    """Parse a creature stat block from a single markdown file."""
+    result: dict = {}
+
+    # Name — first non-empty line
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            result["name"] = line
+            break
+
+    # Description — paragraph(s) between name and first stat line
+    m = re.search(
+        r"^.+\n(.*?)(?=^Race:|^Alignment:|^Armor Class:)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    result["physical_description"] = m.group(1).strip() if m else ""
+
+    # Top-level key-value fields
+    result["race"] = ""
+    m = re.search(r"^Race:\s*(.+)", text, re.MULTILINE)
+    if m:
+        result["race"] = m.group(1).strip()
+
+    result["alignment"] = ""
+    m = re.search(r"^Alignment:\s*(.+)", text, re.MULTILINE)
+    if m:
+        result["alignment"] = m.group(1).strip()
+
+    result["ac"] = 0
+    m = re.search(r"^Armor Class:\s*(\d+)", text, re.MULTILINE)
+    if m:
+        result["ac"] = int(m.group(1))
+
+    result["hp"] = 0
+    m = re.search(r"^Hit Points:\s*(\d+)", text, re.MULTILINE)
+    if m:
+        result["hp"] = int(m.group(1))
+
+    result["speed"] = ""
+    m = re.search(r"^Speed:\s*(.+)", text, re.MULTILINE)
+    if m:
+        result["speed"] = m.group(1).strip()
+
+    result["challenge"] = ""
+    m = re.search(r"^Challenge:\s*(.+)", text, re.MULTILINE)
+    if m:
+        result["challenge"] = m.group(1).strip()
+
+    # Ability scores
+    for ability in ("Strength", "Dexterity", "Constitution",
+                    "Intelligence", "Wisdom", "Charisma"):
+        result[ability.lower()] = _parse_creature_stat(text, ability)
+
+    # Bullet-list sections
+    result["skills"] = _parse_bullet_items(text, "Skills:")
+    result["damage_resistances"] = _parse_bullet_items(text, "Damage Resistances:")
+    result["damage_vulnerabilities"] = _parse_bullet_items(text, "Damage Vulnerabilities:")
+    result["condition_immunities"] = _parse_bullet_items(text, "Condition Immunities:")
+    result["senses"] = _parse_bullet_items(text, "Senses:")
+
+    # Features — collect lines between "Features" header and "Actions" header
+    features_m = re.search(
+        r"^Features?\s*\n(.*?)(?=^Actions?\s*$|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if features_m:
+        result["features"] = [
+            line.strip()
+            for line in re.sub(r"^[•\-\t ]+", "", features_m.group(1), flags=re.MULTILINE).splitlines()
+            if line.strip()
+        ]
+    else:
+        result["features"] = []
+
+    # Actions — collect lines between "Actions" header and "Tactics:" header
+    actions_m = re.search(
+        r"^Actions?\s*\n(.*?)(?=^Tactics:|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if actions_m:
+        result["actions"] = [
+            line.strip()
+            for line in re.sub(r"^[•\-\t ]+", "", actions_m.group(1), flags=re.MULTILINE).splitlines()
+            if line.strip()
+        ]
+    else:
+        result["actions"] = []
+
+    # Tactics
+    tactics_m = re.search(r"^Tactics:\s*\n(.*)", text, re.MULTILINE | re.DOTALL)
+    result["tactics"] = tactics_m.group(1).strip() if tactics_m else ""
+
+    return result
+
+
+def load_creature(filepath: Path) -> Creature:
+    """Load a creature template from a single markdown stat-block file."""
+    text = filepath.read_text(encoding="utf-8")
+    p = parse_creature_md(text)
+
+    return Creature(
+        id=filepath.stem,
+        name=p.get("name", filepath.stem),
+        race=p.get("race", ""),
+        character_type="creature",
+        physical_description=p.get("physical_description", ""),
+        identity_raw=text,
+        alignment=p.get("alignment", ""),
+        hp=p.get("hp", 0),
+        ac=p.get("ac", 0),
+        speed=p.get("speed", ""),
+        challenge=p.get("challenge", ""),
+        strength=p.get("strength", 0),
+        dexterity=p.get("dexterity", 0),
+        constitution=p.get("constitution", 0),
+        intelligence=p.get("intelligence", 0),
+        wisdom=p.get("wisdom", 0),
+        charisma=p.get("charisma", 0),
+        skills=p.get("skills", []),
+        damage_resistances=p.get("damage_resistances", []),
+        damage_vulnerabilities=p.get("damage_vulnerabilities", []),
+        condition_immunities=p.get("condition_immunities", []),
+        senses=p.get("senses", []),
+        features=p.get("features", []),
+        actions=p.get("actions", []),
+        tactics=p.get("tactics", ""),
+    )
+
+
+def load_all_creatures(creatures_dir: Path) -> list[Creature]:
+    """Load all creature templates from scenario/creatures/*.md."""
+    creatures: list[Creature] = []
+    if creatures_dir.exists():
+        for md_file in sorted(creatures_dir.glob("*.md")):
+            creatures.append(load_creature(md_file))
+    return creatures
