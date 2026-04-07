@@ -99,17 +99,26 @@ class PlayerLeft:
     def parse_response(self, raw: str, context: RoleContext) -> ActionIntent:
         text = re.sub(r'```(?:json)?\s*', '', raw.strip())
         text = text.strip().rstrip('`')
+
+        def _try_parse(s: str) -> dict:
+            # Fix common LLM JSON issues: trailing commas before } or ]
+            s = re.sub(r',\s*([}\]])', r'\1', s)
+            return json.loads(s)
+
         try:
-            data = json.loads(text)
+            data = _try_parse(text)
         except json.JSONDecodeError:
             start, end = text.find('{'), text.rfind('}')
             if start != -1 and end > start:
-                data = json.loads(text[start:end + 1])
+                data = _try_parse(text[start:end + 1])
             else:
                 raise
         mt = data.get("movement_target")
         if mt is not None:
-            mt = tuple(float(v) for v in mt)
+            if any(v is None for v in mt):
+                mt = None
+            else:
+                mt = tuple(float(v) for v in mt)
         return ActionIntent(
             character_id=context.character_id,
             turn=context.turn,
