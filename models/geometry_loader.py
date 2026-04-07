@@ -55,10 +55,17 @@ def _parse_position(x_str: str, y_str: str, z_str: str = "0.0") -> Position:
     return Position(float(x_str), float(y_str), float(z_str))
 
 
-def _parse_vertices(text: str) -> list[tuple[float, float]]:
-    """Parse vertex pairs like '(0,0) (24,0) (24,9) (0,9)' into a list."""
-    pairs = re.findall(r"\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)", text)
-    return [(float(x), float(y)) for x, y in pairs]
+def _parse_vertices(text: str) -> list[tuple[float, ...]]:
+    """Parse vertex tuples like '(x,y)' or '(x,y,z)' into a list."""
+    pairs = re.findall(r"\(\s*([-\d.]+)\s*,\s*([-\d.]+)(?:\s*,\s*([-\d.]+))?\s*\)", text)
+    result: list[tuple[float, ...]] = []
+    for match in pairs:
+        x, y, z = match
+        if z:
+            result.append((float(x), float(y), float(z)))
+        else:
+            result.append((float(x), float(y)))
+    return result
 
 
 def _parse_metadata(section_text: str) -> dict[str, str]:
@@ -109,26 +116,15 @@ def parse_geometry_md(text: str) -> dict:
     zones_section = _extract_section(text, "Zones")
     zone_rows = _parse_table_rows(zones_section)
     zones: dict[str, Polygon] = {}
-    render_z: dict[str, int] = {}
     for row in zone_rows:
-        if len(row) >= 3:
-            # Format: name | render_z | vertices
+        if len(row) >= 2:
             name = row[0].strip()
             if name == "name":
                 continue
-            rz = int(row[1])
-            verts = _parse_vertices(row[2])
-            zones[name] = Polygon(verts)
-            render_z[name] = rz
-        elif len(row) >= 2:
-            # Legacy format without render_z: name | vertices
-            name = row[0].strip()
-            if name == "name":
-                continue
-            verts = _parse_vertices(row[1])
+            # Vertices are in the last column (supports 2-col or 3-col tables)
+            verts = _parse_vertices(row[-1])
             zones[name] = Polygon(verts)
     result["zones"] = zones
-    result["render_z"] = render_z
 
     # --- Impassable ---
     impassable_section = _extract_section(text, "Impassable")
@@ -224,9 +220,9 @@ def load_geometry(path: Path) -> SceneGeometry:
 
 
 def load_geometry_full(path: Path) -> tuple[
-    SceneGeometry, list[MagicalBoundary], dict[str, Position], dict[str, int]
+    SceneGeometry, list[MagicalBoundary], dict[str, Position]
 ]:
-    """Load GEOMETRY.md returning geometry, boundaries, starting positions, and render_z."""
+    """Load GEOMETRY.md returning geometry, boundaries, and starting positions."""
     text = path.read_text(encoding="utf-8")
     data = parse_geometry_md(text)
     geometry = SceneGeometry(
@@ -241,4 +237,4 @@ def load_geometry_full(path: Path) -> tuple[
         impassable=data["impassable"],
         connections=data["connections"],
     )
-    return geometry, data["boundaries"], data["starting_positions"], data["render_z"]
+    return geometry, data["boundaries"], data["starting_positions"]

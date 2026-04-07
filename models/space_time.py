@@ -30,9 +30,15 @@ class Position:
 
 @dataclass
 class Polygon:
-    """2D polygon defined by (x, y) vertices. Used for zones and boundaries."""
+    """Polygon defined by vertices with optional z elevation. Used for zones and boundaries."""
 
-    vertices: list[tuple[float, float]]
+    vertices: list[tuple[float, ...]]
+
+    @property
+    def z(self) -> float:
+        """Average z of all vertices (0.0 if vertices are 2D)."""
+        zs = [v[2] if len(v) > 2 else 0.0 for v in self.vertices]
+        return sum(zs) / len(zs) if zs else 0.0
 
     def contains(self, point: Position) -> bool:
         """Point-in-polygon test using ray casting algorithm."""
@@ -41,8 +47,8 @@ class Polygon:
         inside = False
         j = n - 1
         for i in range(n):
-            xi, yi = self.vertices[i]
-            xj, yj = self.vertices[j]
+            xi, yi = self.vertices[i][0], self.vertices[i][1]
+            xj, yj = self.vertices[j][0], self.vertices[j][1]
             if ((yi > y) != (yj > y)) and (
                 x < (xj - xi) * (y - yi) / (yj - yi) + xi
             ):

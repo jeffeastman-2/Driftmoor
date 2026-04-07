@@ -62,17 +62,13 @@ class TestParseGeometryMd:
 
     def test_zone_trail_vertices(self, fey_glade_data):
         trail = fey_glade_data["zones"]["TRAIL"]
-        assert trail.vertices == [(59, 45), (60, 45), (100, 4), (99, 3)]
+        assert trail.vertices == [(59, 45, 0.1), (60, 45, 0.1), (100, 4, 0.0), (99, 3, 0.0)]
 
-    def test_render_z_values(self, fey_glade_data):
-        rz = fey_glade_data["render_z"]
-        assert rz["FOREST"] == 0
-        assert rz["GLADE"] == 1
-        assert rz["TRAIL"] == 1
-        assert rz["POOL"] == 2
-
-    def test_render_z_count(self, fey_glade_data):
-        assert len(fey_glade_data["render_z"]) == 4
+    def test_zone_z_elevation(self, fey_glade_data):
+        zones = fey_glade_data["zones"]
+        assert zones["FOREST"].z == pytest.approx(0.0)
+        assert zones["GLADE"].z == pytest.approx(0.2)
+        assert zones["POOL"].z == pytest.approx(0.3)
 
     def test_impassable_count(self, fey_glade_data):
         assert len(fey_glade_data["impassable"]) == 1
@@ -139,25 +135,24 @@ class TestLoadGeometry:
         assert geo.zone_at(Position(10, 10)) == "FOREST"
 
     def test_load_full_returns_tuple(self):
-        geo, boundaries, starting, render_z = load_geometry_full(FEY_GLADE_PATH)
+        geo, boundaries, starting = load_geometry_full(FEY_GLADE_PATH)
         assert isinstance(geo, SceneGeometry)
         assert len(boundaries) == 1
         assert len(starting) == 3
-        assert isinstance(render_z, dict)
 
     def test_loaded_boundary_blocks_shadowbeast(self):
-        _, boundaries, _, _ = load_geometry_full(FEY_GLADE_PATH)
+        _, boundaries, _ = load_geometry_full(FEY_GLADE_PATH)
         boundary = boundaries[0]
         assert boundary.is_blocked("shadowbeast") is True
         assert boundary.is_blocked("human") is False
 
     def test_loaded_starting_positions_in_correct_zones(self):
-        geo, _, starting, _ = load_geometry_full(FEY_GLADE_PATH)
+        geo, _, starting = load_geometry_full(FEY_GLADE_PATH)
         assert geo.zone_at(starting["aeliana"]) == "TRAIL"
         assert geo.zone_at(starting["fennel"]) == "GLADE"
         assert geo.zone_at(starting["shadowbeast"]) == "FOREST"
 
-    def test_loaded_render_z(self):
-        _, _, _, render_z = load_geometry_full(FEY_GLADE_PATH)
-        assert render_z["POOL"] == 2
-        assert render_z["FOREST"] == 0
+    def test_loaded_zone_z_elevations(self):
+        geo, _, _ = load_geometry_full(FEY_GLADE_PATH)
+        assert geo.zones["POOL"].z == pytest.approx(0.3)
+        assert geo.zones["FOREST"].z == pytest.approx(0.0)

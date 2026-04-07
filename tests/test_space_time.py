@@ -459,7 +459,7 @@ class TestFeyGladeGeometry:
 
     def test_fey_glade_boundary(self):
         """Repulsion boundary is 1m outside glade perimeter."""
-        _, boundaries, _, _ = load_geometry_full(self.FEY_GLADE_PATH)
+        _, boundaries, _ = load_geometry_full(self.FEY_GLADE_PATH)
         boundary = boundaries[0]
         assert boundary.is_blocked("shadowbeast") is True
         assert boundary.is_blocked("human") is False

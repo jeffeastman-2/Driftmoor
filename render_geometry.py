@@ -219,7 +219,7 @@ def render_geometry(
     top_down: bool = False,
 ):
     """Load and render a GEOMETRY.md file in VPython."""
-    geo, boundaries, starting_positions, render_z = load_geometry_full(geometry_path)
+    geo, boundaries, starting_positions = load_geometry_full(geometry_path)
 
     # --- Canvas setup ---
     cx, cy = geo.width / 2, geo.height / 2
@@ -243,25 +243,21 @@ def render_geometry(
         scene.camera.pos = vector(cx, 20, -10)
         scene.camera.axis = vector(0, -15, cy + 10)
 
-    z_base = 0.0
-
-    # --- Draw zones (render_z determines visual stacking) ---
+    # --- Draw zones (z elevation from vertex data) ---
     for name, poly in geo.zones.items():
-        rz = render_z.get(name, 0)
-        z = z_base + rz * ZONE_Z_STEP
+        z = poly.z
         _draw_zone_slab(name, poly, z)
         _draw_zone_outline(poly, z)
         if show_labels:
             _draw_zone_label(name, poly, z)
 
     # --- Draw impassable areas ---
-    z_imp = z_base + 3 * ZONE_Z_STEP
     for poly in geo.impassable:
-        _draw_impassable(poly, z_imp)
+        _draw_impassable(poly, poly.z)
 
     # --- Draw boundaries (outline only — no filled slab) ---
-    z_bnd = z_base + 5 * ZONE_Z_STEP
     for boundary in boundaries:
+        z_bnd = boundary.perimeter.z
         _draw_boundary_outline(boundary, z_bnd)
         if show_labels:
             bx, by = _polygon_center(boundary.perimeter)
@@ -275,7 +271,7 @@ def render_geometry(
             )
 
     # --- Draw landmarks ---
-    z_lm = z_bnd + ZONE_Z_STEP
+    z_lm = 0.4  # landmarks float above zones
     for name, pos in geo.landmarks.items():
         _draw_landmark(name, pos, z_lm, show_labels)
 
