@@ -109,14 +109,26 @@ def parse_geometry_md(text: str) -> dict:
     zones_section = _extract_section(text, "Zones")
     zone_rows = _parse_table_rows(zones_section)
     zones: dict[str, Polygon] = {}
+    render_z: dict[str, int] = {}
     for row in zone_rows:
-        if len(row) >= 2:
+        if len(row) >= 3:
+            # Format: name | render_z | vertices
+            name = row[0].strip()
+            if name == "name":
+                continue
+            rz = int(row[1])
+            verts = _parse_vertices(row[2])
+            zones[name] = Polygon(verts)
+            render_z[name] = rz
+        elif len(row) >= 2:
+            # Legacy format without render_z: name | vertices
             name = row[0].strip()
             if name == "name":
                 continue
             verts = _parse_vertices(row[1])
             zones[name] = Polygon(verts)
     result["zones"] = zones
+    result["render_z"] = render_z
 
     # --- Impassable ---
     impassable_section = _extract_section(text, "Impassable")
@@ -212,9 +224,9 @@ def load_geometry(path: Path) -> SceneGeometry:
 
 
 def load_geometry_full(path: Path) -> tuple[
-    SceneGeometry, list[MagicalBoundary], dict[str, Position]
+    SceneGeometry, list[MagicalBoundary], dict[str, Position], dict[str, int]
 ]:
-    """Load GEOMETRY.md returning geometry, boundaries, and starting positions."""
+    """Load GEOMETRY.md returning geometry, boundaries, starting positions, and render_z."""
     text = path.read_text(encoding="utf-8")
     data = parse_geometry_md(text)
     geometry = SceneGeometry(
@@ -229,4 +241,4 @@ def load_geometry_full(path: Path) -> tuple[
         impassable=data["impassable"],
         connections=data["connections"],
     )
-    return geometry, data["boundaries"], data["starting_positions"]
+    return geometry, data["boundaries"], data["starting_positions"], data["render_z"]

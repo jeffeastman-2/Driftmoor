@@ -219,7 +219,7 @@ def render_geometry(
     top_down: bool = False,
 ):
     """Load and render a GEOMETRY.md file in VPython."""
-    geo, boundaries, starting_positions = load_geometry_full(geometry_path)
+    geo, boundaries, starting_positions, render_z = load_geometry_full(geometry_path)
 
     # --- Canvas setup ---
     cx, cy = geo.width / 2, geo.height / 2
@@ -245,21 +245,22 @@ def render_geometry(
 
     z_base = 0.0
 
-    # --- Draw zones (each layer slightly higher to avoid z-fighting) ---
-    for i, (name, poly) in enumerate(geo.zones.items()):
-        z = z_base + i * ZONE_Z_STEP
+    # --- Draw zones (render_z determines visual stacking) ---
+    for name, poly in geo.zones.items():
+        rz = render_z.get(name, 0)
+        z = z_base + rz * ZONE_Z_STEP
         _draw_zone_slab(name, poly, z)
         _draw_zone_outline(poly, z)
         if show_labels:
             _draw_zone_label(name, poly, z)
 
     # --- Draw impassable areas ---
-    z_imp = z_base + len(geo.zones) * ZONE_Z_STEP
+    z_imp = z_base + 3 * ZONE_Z_STEP
     for poly in geo.impassable:
         _draw_impassable(poly, z_imp)
 
     # --- Draw boundaries (outline only — no filled slab) ---
-    z_bnd = z_imp + ZONE_Z_STEP
+    z_bnd = z_base + 5 * ZONE_Z_STEP
     for boundary in boundaries:
         _draw_boundary_outline(boundary, z_bnd)
         if show_labels:
