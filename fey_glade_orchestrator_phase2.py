@@ -9,11 +9,14 @@ Replaces mock responses with actual sub-agent spawning.
 import json
 import sys
 import os
+import asyncio
 from pathlib import Path
 from dataclasses import dataclass, asdict, field
 from typing import Optional
 import re
 import time
+
+import aiohttp
 
 # Import the Phase 1 orchestrator classes
 from fey_glade_orchestrator import (
@@ -22,6 +25,9 @@ from fey_glade_orchestrator import (
     CharacterAction,
     SceneState,
     FeyGladeOrchestrator,
+)
+from engine.agents import (
+    ClaudeAgent, ChatGPTAgent, GrokAgent, OllamaAgent, GeminiAgent, DeepSeekAgent,
 )
 
 # =========================================================================
@@ -128,9 +134,6 @@ class FeyGladeOrchestratorPhase2(FeyGladeOrchestrator):
         print(f"  Spawning {config}...")
         
         try:
-            # Import here to avoid circular dependency
-            from sessions_spawn import sessions_spawn
-            
             # Build attachments for SOUL.md and IDENTITY.md
             soul = self._load_soul(character)
             identity = self._load_identity(character)
@@ -189,69 +192,77 @@ class FeyGladeOrchestratorPhase2(FeyGladeOrchestrator):
                 })
                 return None
 
+    # Provider → agent class mapping
+    AGENT_CLASSES = {
+        "anthropic": ClaudeAgent,
+        "openai":    ChatGPTAgent,
+        "grok":      GrokAgent,
+        "ollama":    OllamaAgent,
+        "gemini":    GeminiAgent,
+        "deepseek":  DeepSeekAgent,
+    }
+
+    # Provider → environment variable for API key
+    API_KEY_VARS = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai":    "OPENAI_API_KEY",
+        "grok":      "XAI_API_KEY",
+        "gemini":    "GOOGLE_API_KEY",
+        "deepseek":  "DEEPSEEK_API_KEY",
+    }
+
     def _call_agent(self,
                     task: str,
                     attachments: list,
                     config: AgentConfig,
                     timeout_seconds: int = 30) -> Optional[str]:
         """
-        Call the actual OpenClaw agent.
-        
-        This is where we would call sessions_spawn() with the real OpenClaw API.
-        For now, this is a stub that shows the calling pattern.
-        
-        Real implementation:
-        
-            from sessions_spawn import sessions_spawn
-            
-            result = sessions_spawn(
-                task=task,
-                runtime="subagent",
-                attachments=attachments,
-                model=config.llm.model,
-                mode="run",
-                runTimeoutSeconds=timeout_seconds,
-            )
-            
-            return result.get("output", "")
+        Call an LLM agent using engine/agents/ wrappers.
+
+        Uses the provider from config.llm to select the right agent class,
+        reads the API key from the corresponding environment variable,
+        and runs the async send_message() synchronously.
         """
-        # STUB: For Phase 2 testing, we'll use a local Claude call via anthropic SDK
-        # This allows us to test the orchestrator structure without full OpenClaw integration
-        
-        print(f"    [STUB] Would spawn: {config.llm.model}")
-        print(f"    [STUB] Timeout: {timeout_seconds}s")
-        print(f"    [STUB] Attachments: {len(attachments)} files")
-        
-        # Simulate agent call
-        try:
-            # Try to use anthropic SDK if available
-            import anthropic
-            
-            client = anthropic.Anthropic()
-            
-            # Build messages
-            messages = [
-                {
-                    "role": "user",
-                    "content": task,
-                }
-            ]
-            
-            # Call API
-            message = client.messages.create(
-                model=config.llm.model,
-                max_tokens=1024,
-                messages=messages,
+        provider = config.llm.provider
+        model = config.llm.model
+        agent_cls = self.AGENT_CLASSES.get(provider)
+
+        if not agent_cls:
+            raise ValueError(f"Unknown provider: {provider}")
+
+        # Build system prompt from attachments (SOUL + IDENTITY)
+        system_prompt = "\n\n".join(
+            f"# {att['name']}\n{att['content']}" for att in attachments
+        )
+
+        # Create agent instance
+        if provider == "ollama":
+            agent = agent_cls(
+                name=config.character_id,
+                model=model,
+                system_prompt=system_prompt,
             )
-            
-            return message.content[0].text if message.content else None
-        
-        except ImportError:
-            print("    [INFO] anthropic SDK not available, using mock")
-            return None
-        except Exception as e:
-            print(f"    [ERROR] API call failed: {e}")
-            return None
+        else:
+            api_key = os.environ.get(self.API_KEY_VARS[provider], "")
+            if not api_key:
+                raise EnvironmentError(
+                    f"{self.API_KEY_VARS[provider]} not set"
+                )
+            agent = agent_cls(
+                name=config.character_id,
+                api_key=api_key,
+                model=model,
+                system_prompt=system_prompt,
+            )
+
+        print(f"    [{provider}] Calling {model}...")
+
+        # Run the async call synchronously
+        async def _run():
+            async with aiohttp.ClientSession() as session:
+                return await agent.send_message(task, session)
+
+        return asyncio.run(_run())
 
     def run_turn(self, turn: int) -> None:
         """Execute one full turn — overrides Phase 1 to use agent spawning."""
@@ -365,6 +376,15 @@ class FeyGladeOrchestratorPhase2(FeyGladeOrchestrator):
 # CLI ENTRY POINT
 # =========================================================================
 
+def _parse_model_spec(spec: str) -> LLMConfig:
+    """Parse 'provider/model' string into LLMConfig. Default provider is anthropic."""
+    if "/" in spec:
+        provider, model = spec.split("/", 1)
+    else:
+        provider, model = "anthropic", spec
+    return LLMConfig(provider, model)
+
+
 def main():
     """Run Phase 2 orchestrator with configurable LLMs."""
     import argparse
@@ -373,9 +393,12 @@ def main():
     parser.add_argument("--turns", type=int, default=1, help="Number of turns to simulate")
     parser.add_argument("--mock", action="store_true", help="Use mock responses (Phase 1 mode)")
     parser.add_argument("--no-fallback", action="store_true", help="Don't fallback to mock on agent error")
-    parser.add_argument("--aeliana-model", default="claude-sonnet-4-6", help="Model for Aeliana")
-    parser.add_argument("--fennel-model", default="claude-sonnet-4-6", help="Model for Fennel")
-    parser.add_argument("--shadowbeast-model", default="claude-sonnet-4-6", help="Model for Shadowbeast")
+    parser.add_argument("--aeliana-model", default="anthropic/claude-sonnet-4-6",
+                        help="provider/model for Aeliana (e.g. openai/gpt-4o, ollama/qwen3:14b)")
+    parser.add_argument("--fennel-model", default="anthropic/claude-sonnet-4-6",
+                        help="provider/model for Fennel")
+    parser.add_argument("--shadowbeast-model", default="anthropic/claude-sonnet-4-6",
+                        help="provider/model for Shadowbeast")
     
     args = parser.parse_args()
     
@@ -384,17 +407,17 @@ def main():
         "aeliana": AgentConfig(
             "aeliana",
             "Aeliana Moonglade",
-            llm=LLMConfig("anthropic", args.aeliana_model),
+            llm=_parse_model_spec(args.aeliana_model),
         ),
         "fennel": AgentConfig(
             "fennel",
             "Fennel",
-            llm=LLMConfig("anthropic", args.fennel_model),
+            llm=_parse_model_spec(args.fennel_model),
         ),
         "shadowbeast": AgentConfig(
             "shadowbeast",
             "Shadowbeast",
-            llm=LLMConfig("anthropic", args.shadowbeast_model),
+            llm=_parse_model_spec(args.shadowbeast_model),
         ),
     }
     
