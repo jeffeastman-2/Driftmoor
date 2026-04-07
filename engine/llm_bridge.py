@@ -34,7 +34,7 @@ PROVIDER_CONFIGS = {
         "agent_class": ChatGPTAgent,
         "env_var": "OPENAI_API_KEY",
     },
-    "grok": {
+    "xai": {
         "agent_class": GrokAgent,
         "env_var": "XAI_API_KEY",
     },
@@ -64,7 +64,7 @@ def make_call_llm(
     """Create a CallLLM callable for the given provider and model.
 
     Args:
-        provider: One of "anthropic", "openai", "grok", "gemini",
+        provider: One of "anthropic", "openai", "xai", "gemini",
                   "deepseek", "ollama".
         model:    Model name (e.g. "grok-3", "gpt-4o", "qwen3:14b").
         api_key:  API key. If None, read from the provider's env var.

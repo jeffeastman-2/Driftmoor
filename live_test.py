@@ -77,7 +77,7 @@ CHARACTERS = {
 }
 
 DEFAULT_PROVIDERS = {
-    "aeliana": ("grok", "grok-3"),
+    "aeliana": ("xai", "grok-3"),
     "fennel": ("openai", "gpt-4o"),
     "shadowbeast": ("gemini", "gemini-2.5-flash"),
 }

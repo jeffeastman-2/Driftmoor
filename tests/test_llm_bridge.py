@@ -11,7 +11,7 @@ from engine.llm_bridge import make_call_llm, PROVIDER_CONFIGS
 
 class TestProviderConfigs:
     def test_has_all_providers(self):
-        expected = {"anthropic", "openai", "grok", "gemini", "deepseek", "ollama"}
+        expected = {"anthropic", "openai", "xai", "gemini", "deepseek", "ollama"}
         assert expected == set(PROVIDER_CONFIGS.keys())
 
     def test_each_has_agent_class(self):
@@ -27,11 +27,11 @@ class TestProviderConfigs:
 
 class TestMakeCallLLM:
     def test_returns_callable(self):
-        fn = make_call_llm("grok", "grok-3", api_key="test-key")
+        fn = make_call_llm("xai", "grok-3", api_key="test-key")
         assert callable(fn)
 
     def test_returns_async_callable(self):
-        fn = make_call_llm("grok", "grok-3", api_key="test-key")
+        fn = make_call_llm("xai", "grok-3", api_key="test-key")
         assert asyncio.iscoroutinefunction(fn)
 
     def test_unknown_provider_raises(self):
@@ -42,7 +42,7 @@ class TestMakeCallLLM:
         """Non-ollama providers require an API key."""
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(EnvironmentError, match="API key"):
-                make_call_llm("grok", "grok-3")  # no key, no env var
+                make_call_llm("xai", "grok-3")  # no key, no env var
 
     def test_ollama_no_key_required(self):
         fn = make_call_llm("ollama", "qwen3:14b")
