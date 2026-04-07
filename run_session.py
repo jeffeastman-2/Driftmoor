@@ -218,10 +218,28 @@ async def main():
     characters = build_characters()
     roles = build_roles()
 
+    # Load scene context for DMLeft adjudication
+    geometry_summary = load_file(
+        ROOT / "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md"
+    )
+    creature_stats = load_file(ROOT / "scenario/creatures/shadowbeast.md")
+    game_state_summary = (
+        "# Creatures in Scene\n\n"
+        f"{creature_stats}\n\n"
+        "# Character Starting Positions\n\n"
+        "| character | x | y | zone |\n"
+        "|-----------|-----|-----|------|\n"
+        "| aeliana | 79.0 | 25.0 | TRAIL |\n"
+        "| fennel | 44.0 | 52.0 | GLADE |\n"
+        "| shadowbeast_1 | 37.0 | 50.0 | FOREST |\n"
+    )
+
     start = time.monotonic()
     result = await run_session(
         characters, roles,
         num_turns=num_turns,
+        game_state_summary=game_state_summary,
+        geometry_summary=geometry_summary,
         checkpoint_dir=checkpoint_dir,
     )
     elapsed = time.monotonic() - start

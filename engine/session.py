@@ -110,18 +110,24 @@ async def run_session(
     character_roles: dict[str, RoleSet],
     num_turns: int,
     *,
+    game_state_summary: str = "",
+    geometry_summary: str = "",
     checkpoint_dir: Optional[Path] = None,
     rng: Optional[random.Random] = None,
 ) -> SessionResult:
     """Run a game session — direct Python loop calling TurnCycle.
 
     Args:
-        characters:       char_id → CharacterSession with character,
-                          condition, soul, identity, initial_scene.
-        character_roles:  char_id → RoleSet with LLM assignments.
-        num_turns:        Number of turns to run.
-        checkpoint_dir:   If set, save a JSON checkpoint per turn.
-        rng:              Random instance for deterministic initiative.
+        characters:         char_id → CharacterSession with character,
+                            condition, soul, identity, initial_scene.
+        character_roles:    char_id → RoleSet with LLM assignments.
+        num_turns:          Number of turns to run.
+        game_state_summary: Creature stat blocks, world rules, etc.
+                            Passed to DMLeft for adjudication.
+        geometry_summary:   Scene geometry (zones, boundaries, positions).
+                            Passed to DMLeft for spatial adjudication.
+        checkpoint_dir:     If set, save a JSON checkpoint per turn.
+        rng:                Random instance for deterministic initiative.
 
     Returns:
         SessionResult with all turn results, final conditions, and
@@ -148,6 +154,8 @@ async def run_session(
             turn=turn_num,
             initiative_order=order,
             contexts=contexts,
+            game_state_summary=game_state_summary,
+            geometry_summary=geometry_summary,
         )
 
         # Apply condition deltas from DMLeft adjudication

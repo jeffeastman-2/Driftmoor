@@ -376,3 +376,68 @@ class TestSessionResult:
 
         # scene_history should be a string (may be empty for stubs)
         assert isinstance(result.scene_history, str)
+
+
+# ---------------------------------------------------------------------------
+# DMLeft receives game_state and geometry context
+# ---------------------------------------------------------------------------
+
+class TestDMLeftContext:
+    def test_geometry_passed_to_dmleft(self, aeliana_session):
+        """DMLeft should receive the geometry_summary in its prompt."""
+        captured_prompts = []
+
+        async def capturing_dm_llm(sys, usr):
+            captured_prompts.append(usr)
+            return json.dumps({
+                "approved": True,
+                "condition_deltas": {},
+                "position_delta": [0, 0, 0],
+                "spatial_events": [],
+                "notes": "test",
+            })
+
+        characters = {"aeliana": aeliana_session}
+        roles = {
+            "aeliana": RoleSet(dm_left=DMLeft(call_llm=capturing_dm_llm)),
+        }
+        asyncio.run(run_session(
+            characters, roles, num_turns=1,
+            geometry_summary="## Boundaries\nRepulsion boundary blocks shadowbeast",
+        ))
+
+        assert len(captured_prompts) >= 1
+        assert "Repulsion boundary blocks shadowbeast" in captured_prompts[0]
+
+    def test_game_state_passed_to_dmleft(self, aeliana_session):
+        """DMLeft should receive creature stats in its prompt."""
+        captured_prompts = []
+
+        async def capturing_dm_llm(sys, usr):
+            captured_prompts.append(usr)
+            return json.dumps({
+                "approved": True,
+                "condition_deltas": {},
+                "position_delta": [0, 0, 0],
+                "spatial_events": [],
+                "notes": "test",
+            })
+
+        characters = {"aeliana": aeliana_session}
+        roles = {
+            "aeliana": RoleSet(dm_left=DMLeft(call_llm=capturing_dm_llm)),
+        }
+        asyncio.run(run_session(
+            characters, roles, num_turns=1,
+            game_state_summary="Shadowbeast: resistant to nonmagical B/P/S",
+        ))
+
+        assert len(captured_prompts) >= 1
+        assert "resistant to nonmagical B/P/S" in captured_prompts[0]
+
+    def test_both_contexts_empty_by_default(self, aeliana_session):
+        """Without context, DMLeft still works (stub mode)."""
+        characters = {"aeliana": aeliana_session}
+        roles = {"aeliana": RoleSet()}
+        result = asyncio.run(run_session(characters, roles, num_turns=1))
+        assert len(result.turns) == 1
