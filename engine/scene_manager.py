@@ -9,6 +9,10 @@ Data flow per character (sequential within initiative order):
 
 Each character sees all preceding narration from the same turn.
 This is the fundamental design: sequential, not parallel.
+
+Provider routing is per-character.  Pass a dict[str, RoleSet] to
+TurnCycle to give Aeliana Grok, Fennel ChatGPT, etc.  Characters
+not in the dict fall back to the shared defaults.
 """
 
 from __future__ import annotations
@@ -43,6 +47,15 @@ class TurnResult:
     character_results: list[CharacterTurnResult] = field(default_factory=list)
 
 
+@dataclass
+class RoleSet:
+    """Full set of four LLM roles for one character."""
+    player_left: PlayerLeft = field(default_factory=PlayerLeft)
+    player_right: PlayerRight = field(default_factory=PlayerRight)
+    dm_left: DMLeft = field(default_factory=DMLeft)
+    dm_right: DMRight = field(default_factory=DMRight)
+
+
 # ---------------------------------------------------------------------------
 # Turn cycle
 # ---------------------------------------------------------------------------
@@ -52,6 +65,12 @@ class TurnCycle:
 
     Characters act sequentially in initiative order.
     Each character sees all preceding narration from the same turn.
+
+    Provider routing:
+      - Shared defaults via player_left/player_right/dm_left/dm_right kwargs.
+      - Per-character overrides via character_roles dict[str, RoleSet].
+      - When a character has an entry in character_roles, those roles are
+        used; otherwise the shared defaults apply.
     """
 
     def __init__(
@@ -60,12 +79,25 @@ class TurnCycle:
         player_right: Optional[PlayerRight] = None,
         dm_left: Optional[DMLeft] = None,
         dm_right: Optional[DMRight] = None,
+        character_roles: Optional[dict[str, RoleSet]] = None,
     ):
         self.player_left = player_left or PlayerLeft()
         self.player_right = player_right or PlayerRight()
         self.dm_left = dm_left or DMLeft()
         self.dm_right = dm_right or DMRight()
+        self.character_roles: dict[str, RoleSet] = character_roles or {}
         self.history: list[CharacterTurnResult] = []
+
+    def _roles_for(self, character_id: str) -> RoleSet:
+        """Return the RoleSet for a character (per-character or defaults)."""
+        if character_id in self.character_roles:
+            return self.character_roles[character_id]
+        return RoleSet(
+            player_left=self.player_left,
+            player_right=self.player_right,
+            dm_left=self.dm_left,
+            dm_right=self.dm_right,
+        )
 
     async def execute_character_turn(
         self,
@@ -75,19 +107,21 @@ class TurnCycle:
         scene_history: str = "",
     ) -> CharacterTurnResult:
         """Execute one character's full turn through the 4-role pipeline."""
+        roles = self._roles_for(context.character_id)
+
         # 1. Player-Left: generate intent
-        intent = await self.player_left.generate_intent(context)
+        intent = await roles.player_left.generate_intent(context)
 
         # 2. Player-Right: generate in-character prose
-        output = await self.player_right.generate_action(intent, context)
+        output = await roles.player_right.generate_action(intent, context)
 
         # 3. DM-Left: adjudicate
-        adjudication = await self.dm_left.adjudicate(
+        adjudication = await roles.dm_left.adjudicate(
             output, game_state_summary, geometry_summary,
         )
 
         # 4. DM-Right: narrate
-        narration = await self.dm_right.narrate(
+        narration = await roles.dm_right.narrate(
             adjudication, output, scene_history,
         )
 

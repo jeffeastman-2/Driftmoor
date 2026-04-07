@@ -17,7 +17,7 @@ from engine.player_router import (
     PlayerLeft, PlayerRight, ActionIntent, CharacterOutput, RoleContext,
 )
 from engine.dm_agent import DMLeft, DMRight, Adjudication, Narration
-from engine.scene_manager import TurnCycle, CharacterTurnResult, TurnResult
+from engine.scene_manager import TurnCycle, CharacterTurnResult, TurnResult, RoleSet
 
 
 # ---- Fixtures ----
@@ -440,3 +440,253 @@ class TestExecuteTurn:
         # Each should be adjudicated
         for cr in result.character_results:
             assert cr.adjudication.approved is True
+
+
+# ---- Ground truth parser edge cases ----
+
+AELIANA_GROUND_TRUTH = """
+**INTERNAL**
+The trail ends here. Warmth in the air\u2014wrong warmth, not sun-fed. The shimmer ahead calls. No predator scent, no decay. Only power, unguarded or waiting. The shadowbeasts would not linger here. This is older, or broken. The obelisk. Its echo may have spilled here. Step soft. Do not startle the memory.
+
+**BODY LANGUAGE**
+Crouched low, one hand on bowstring, other hovering near quiver. Weight balanced on the balls of her feet. Her eyes scan the clearing with slow, deliberate sweeps. Breathing shallow and silent.
+
+**SPOKEN**
+(silent)
+
+**ACTION**
+Move in a slow, wide arc along the edge of the clearing toward the rising light, keeping low and observing for disturbances before approaching directly.
+"""
+
+FENNEL_GROUND_TRUTH = """
+**INTERNAL**
+Pull\u2014toward her. Anchor. Not alone. Cold edge at back. Watching. Waiting. Stillness holds. Sound breaks. Teeth in silence. Do not break. Do not call. Stay. Stay. Stay.
+
+**BODY LANGUAGE**
+Fennel freezes, breath shallow and controlled. His raised hand stops mid-motion. His eyes lock on Aeliana's back, then flick once toward the shifting shadow before fixing forward again. Stance tightens, knees slightly bent, ready but unmoving.
+
+**SPOKEN**
+(silent)
+
+**ACTION**
+Slowly wave arms from glade edge toward her, hold up open-hand stop gesture, then point directly toward the shadowbeast's position.
+"""
+
+SHADOWBEAST_GROUND_TRUTH = """
+**INTERNAL**
+warmth-pulse close... alert-shape breathing-slow at boundary... shimmer-wrong pushes-back... pull stronger... shadow-body coils... hunger-thrum... still... wait... dusk-pull builds...
+
+**BODY LANGUAGE**
+Shadows along the treeline thicken unnaturally. Tendrils of black mist curl slowly outward, then retract. The air grows colder near the boundary. A faint vibration hums through the ground.
+
+**SPOKEN**
+(silence)
+
+**ACTION**
+Slides sideways along the boundary, keeping equal distance from the watching prey. Settles into stillness opposite the one near the pool. Holds.
+"""
+
+
+class TestGroundTruthParsing:
+    """Verify the PlayerRight parser handles real LLM ground truth output."""
+
+    @pytest.fixture
+    def parser(self):
+        return PlayerRight()
+
+    @pytest.fixture
+    def ctx(self):
+        return RoleContext(
+            character_id="test", turn=1,
+            condition_text="", scene_context="", soul="", identity="",
+        )
+
+    def test_aeliana_em_dash_in_internal(self, parser, ctx):
+        result = parser.parse_response(AELIANA_GROUND_TRUTH, ctx)
+        assert "wrong warmth" in result.internal
+        assert result.internal.startswith("The trail ends here")
+
+    def test_aeliana_body_language(self, parser, ctx):
+        result = parser.parse_response(AELIANA_GROUND_TRUTH, ctx)
+        assert "bowstring" in result.body_language
+        assert "Crouched" in result.body_language
+
+    def test_aeliana_spoken_is_silent(self, parser, ctx):
+        result = parser.parse_response(AELIANA_GROUND_TRUTH, ctx)
+        assert "silent" in result.spoken.lower()
+
+    def test_aeliana_action(self, parser, ctx):
+        result = parser.parse_response(AELIANA_GROUND_TRUTH, ctx)
+        assert "slow, wide arc" in result.action
+
+    def test_fennel_em_dash_starts_internal(self, parser, ctx):
+        """Fennel's internal starts with 'Pull\u2014toward her' \u2014 em-dash right after a word."""
+        result = parser.parse_response(FENNEL_GROUND_TRUTH, ctx)
+        assert "Pull" in result.internal
+        assert "toward her" in result.internal
+
+    def test_fennel_fragmented_prose(self, parser, ctx):
+        """Fennel's internal is fragmented: short sentences, no verbs sometimes."""
+        result = parser.parse_response(FENNEL_GROUND_TRUTH, ctx)
+        assert "Teeth in silence" in result.internal
+        assert "Stay. Stay. Stay." in result.internal
+
+    def test_fennel_body_language(self, parser, ctx):
+        result = parser.parse_response(FENNEL_GROUND_TRUTH, ctx)
+        assert "freezes" in result.body_language
+
+    def test_fennel_action(self, parser, ctx):
+        result = parser.parse_response(FENNEL_GROUND_TRUTH, ctx)
+        assert "wave arms" in result.action
+        assert "shadowbeast" in result.action
+
+    def test_shadowbeast_sensation_language(self, parser, ctx):
+        """Shadowbeast uses non-human sensation language with ellipsis."""
+        result = parser.parse_response(SHADOWBEAST_GROUND_TRUTH, ctx)
+        assert "warmth-pulse" in result.internal
+        assert "hunger-thrum" in result.internal
+
+    def test_shadowbeast_silence_variant(self, parser, ctx):
+        """Shadowbeast uses '(silence)' not '(silent)'."""
+        result = parser.parse_response(SHADOWBEAST_GROUND_TRUTH, ctx)
+        assert "silence" in result.spoken.lower()
+
+    def test_shadowbeast_body_language(self, parser, ctx):
+        result = parser.parse_response(SHADOWBEAST_GROUND_TRUTH, ctx)
+        assert "Tendrils" in result.body_language
+
+    def test_shadowbeast_action(self, parser, ctx):
+        result = parser.parse_response(SHADOWBEAST_GROUND_TRUTH, ctx)
+        assert "boundary" in result.action
+        assert "Holds" in result.action
+
+    def test_no_spoken_section_at_all(self, parser, ctx):
+        """Edge case: SPOKEN section completely absent."""
+        raw = (
+            "**INTERNAL**\nHunger.\n\n"
+            "**BODY LANGUAGE**\nCoiled.\n\n"
+            "**ACTION**\nStrike."
+        )
+        result = parser.parse_response(raw, ctx)
+        assert result.internal == "Hunger."
+        assert result.body_language == "Coiled."
+        assert result.spoken == ""
+        assert result.action == "Strike."
+
+
+# ---- Per-character provider routing ----
+
+class TestPerCharacterRouting:
+    """Verify that character_roles routes each character to its own LLM."""
+
+    def test_different_llm_per_character(self, aeliana_context, fennel_context):
+        """Aeliana uses one mock LLM, Fennel uses a different one."""
+        import json
+
+        async def grok_llm(system, user):
+            return json.dumps({"intent": "grok intent"})
+
+        async def chatgpt_llm(system, user):
+            return json.dumps({"intent": "chatgpt intent"})
+
+        tc = TurnCycle(
+            character_roles={
+                "aeliana": RoleSet(
+                    player_left=PlayerLeft(call_llm=grok_llm),
+                ),
+                "fennel": RoleSet(
+                    player_left=PlayerLeft(call_llm=chatgpt_llm),
+                ),
+            },
+        )
+
+        r1 = asyncio.run(tc.execute_character_turn(aeliana_context))
+        assert r1.intent.intent == "grok intent"
+
+        r2 = asyncio.run(tc.execute_character_turn(fennel_context))
+        assert r2.intent.intent == "chatgpt intent"
+
+    def test_unrouted_character_uses_defaults(self, shadowbeast_context):
+        """Characters not in character_roles get stub defaults."""
+        tc = TurnCycle(
+            character_roles={"aeliana": RoleSet()},  # only aeliana routed
+        )
+        result = asyncio.run(tc.execute_character_turn(shadowbeast_context))
+        # Shadowbeast falls back to the default stub
+        assert result.intent.intent == "observe surroundings and hold position"
+
+    def test_roleset_partial_override(self, aeliana_context):
+        """RoleSet can override just one role; others get defaults."""
+        import json
+
+        async def custom_llm(system, user):
+            return json.dumps({"intent": "custom only for player-left"})
+
+        tc = TurnCycle(
+            character_roles={
+                "aeliana": RoleSet(
+                    player_left=PlayerLeft(call_llm=custom_llm),
+                    # player_right, dm_left, dm_right are default stubs
+                ),
+            },
+        )
+        result = asyncio.run(tc.execute_character_turn(aeliana_context))
+        assert result.intent.intent == "custom only for player-left"
+        # The rest should be stub defaults
+        assert result.adjudication.approved is True
+
+    def test_three_providers_in_one_turn(
+        self, aeliana_context, fennel_context, shadowbeast_context,
+    ):
+        """Full turn with three different mock providers."""
+        import json
+
+        async def grok(s, u):
+            return json.dumps({"intent": "grok"})
+
+        async def chatgpt(s, u):
+            return json.dumps({"intent": "chatgpt"})
+
+        async def gemini(s, u):
+            return json.dumps({"intent": "gemini"})
+
+        tc = TurnCycle(
+            character_roles={
+                "aeliana": RoleSet(player_left=PlayerLeft(call_llm=grok)),
+                "fennel": RoleSet(player_left=PlayerLeft(call_llm=chatgpt)),
+                "shadowbeast": RoleSet(player_left=PlayerLeft(call_llm=gemini)),
+            },
+        )
+
+        contexts = {
+            "aeliana": aeliana_context,
+            "fennel": fennel_context,
+            "shadowbeast": shadowbeast_context,
+        }
+        result = asyncio.run(tc.execute_turn(
+            turn=1,
+            initiative_order=["aeliana", "shadowbeast", "fennel"],
+            contexts=contexts,
+        ))
+
+        intents = {r.character_id: r.intent.intent for r in result.character_results}
+        assert intents["aeliana"] == "grok"
+        assert intents["shadowbeast"] == "gemini"
+        assert intents["fennel"] == "chatgpt"
+
+
+# ---- RoleSet datatype ----
+
+class TestRoleSet:
+    def test_default_construction(self):
+        rs = RoleSet()
+        assert isinstance(rs.player_left, PlayerLeft)
+        assert isinstance(rs.player_right, PlayerRight)
+        assert isinstance(rs.dm_left, DMLeft)
+        assert isinstance(rs.dm_right, DMRight)
+
+    def test_partial_construction(self):
+        pl = PlayerLeft()
+        rs = RoleSet(player_left=pl)
+        assert rs.player_left is pl
+        assert isinstance(rs.dm_right, DMRight)
