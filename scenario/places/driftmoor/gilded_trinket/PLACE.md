@@ -15,5 +15,5 @@ Smells of dust and polish.
 *(Updated by monitor agent)*
 
 - **Current occupants:** Tavian Drakescale
-- **Recent events:** None yet — session not started
-- **Active conditions:** Cursed artifact in inventory; mysterious medallion on Tav's person
+- **Recent events:** A villager pawned a tarnished silver ring set with a strange dark stone — Tavian recognized it as an obelisk shard fragment and locked it in the display case
+- **Active conditions:** Obelisk shard ring in locked display case (faint hum audible in silence); mysterious medallion on Tav's person

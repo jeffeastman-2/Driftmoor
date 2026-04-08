@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a 2-turn session with real LLMs — Aeliana, Fennel, Shadowbeast."""
+"""Run the Fey Glade scene — Aeliana, Fennel, Shadowbeast."""
 
 import asyncio
 import os
@@ -13,6 +13,8 @@ from engine.player_router import PlayerLeft, PlayerRight
 from engine.dm_agent import DMLeft, DMRight
 from engine.scene_manager import RoleSet
 from models.character import PlayerCharacter, Creature
+from engine.transcript import elaborate_session_from_dir
+from engine.narrator import generate_narrative_from_dir
 from models.condition import (
     CharacterCondition,
     NeurochemicalState,
@@ -209,10 +211,10 @@ def print_turn_result(turn_result):
 
 async def main():
     num_turns = int(sys.argv[1]) if len(sys.argv) > 1 else 2
-    checkpoint_dir = ROOT / "runtime" / "state" / "session_run"
+    checkpoint_dir = ROOT / "runtime" / "state" / "fey_glade"
 
-    print(f"\nDRIFTMOOR SESSION — {num_turns} turns")
-    print(f"Characters: Aeliana (Grok), Fennel (GPT-4o), Shadowbeast_1 (Gemini)")
+    print(f"\nFEY GLADE — {num_turns} turns")
+    print(f"Characters: Aeliana (Grok), Fennel (GPT-4o), Shadowbeast_1 (DeepSeek)")
     print(f"Checkpoints: {checkpoint_dir}\n")
 
     characters = build_characters()
@@ -258,6 +260,24 @@ async def main():
         c = condition.state.cortisol
         n = condition.state.norepinephrine
         print(f"  {char_id:15s}  dop={d:.2f}  cor={c:.2f}  nor={n:.2f}")
+
+    # Generate transcript and narrative
+    print(f"\nGenerating transcript...")
+    elaborate_session_from_dir(
+        checkpoint_dir,
+        output_path=checkpoint_dir / "transcript.txt",
+        title="FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
+    )
+    print(f"  Written to {checkpoint_dir / 'transcript.txt'}")
+
+    print(f"Generating narrative...")
+    story = await generate_narrative_from_dir(
+        checkpoint_dir,
+        provider="anthropic", model="claude-sonnet-4-20250514",
+        title="The Fey Glade",
+        output_path=checkpoint_dir / "story.txt",
+    )
+    print(f"  Written to {checkpoint_dir / 'story.txt'}")
 
 
 if __name__ == "__main__":

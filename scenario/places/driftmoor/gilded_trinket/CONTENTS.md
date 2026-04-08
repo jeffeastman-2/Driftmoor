@@ -28,7 +28,7 @@
 
 ## Hidden / Locked
 - Large safe (DC 18 Thieves' Tools): Tav's ledger, coin reserve, items not for sale
-- **Cursed artifact** (received from villager, currently in the case): nature TBD by DM
+- **Obelisk Shard Ring** (received from villager, currently in the locked glass display case): A small obelisk shard fragment set into a tarnished silver ring. The villager who pawned it reported recurring nightmares and a growing compulsion to walk north toward the Shattered Obelisk after wearing it for weeks. The ring hums faintly — the glass case muffles but does not fully contain the sound. Tavian recognized the stone from his smuggling days and locked it away. He knows it is dangerous but also potentially very valuable. Not priced — he has not decided what to do with it.
 - **Tav's medallion**: on his person, not in the shop
 
 ## Services
@@ -38,5 +38,6 @@
 
 ## Notes for DM
 - The cracked compass and strange stone amulet are genuinely magical — Tav knows and is not telling
-- The cursed artifact is the active plot item — decide its nature before session
+- The obelisk shard ring is tied to the central campaign MacGuffin — see `scenario/things/obelisk_shards.md` for full lore
+- Characters with latent arcane ability may sense the shard's resonance even through the glass
 - The mysterious map fragment shows part of the Drowned Isle coastline
