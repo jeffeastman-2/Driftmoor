@@ -131,7 +131,7 @@ class TestOrchestrator:
         scene_id, result = asyncio.run(orch.run_one())
         assert scene_id == "fey_glade"
         assert result.turn == 1
-        assert orch.clock.scenes["fey_glade"].time_cursor == 60.0
+        assert orch.clock.scenes["fey_glade"].time_cursor == 600.0
 
     def test_two_scenes_alternation(self, glade_session, market_session):
         """Two exploration scenes at same heartbeat should alternate."""
@@ -149,29 +149,29 @@ class TestOrchestrator:
     def test_combat_scene_runs_many_before_exploration(
         self, glade_session, market_session,
     ):
-        """After one exploration tick, combat scene needs 10 ticks to catch up."""
+        """After one exploration tick, combat scene needs 100 ticks to catch up."""
         orch = Orchestrator()
         orch.add_scene(glade_session)
         orch.add_scene(market_session)
 
         # Market does one exploration turn
-        asyncio.run(orch.run_one())  # one scene at 60, other at 0
-        asyncio.run(orch.run_one())  # both at 60
+        asyncio.run(orch.run_one())  # one scene at 600, other at 0
+        asyncio.run(orch.run_one())  # both at 600
 
         # Now glade enters combat
         orch.enter_combat("fey_glade")
 
-        # Market does one more exploration turn → 120
-        # Glade is at 60. For next 10 ticks, glade should go.
+        # Market does one more exploration turn → 1200
+        # Glade is at 600. For next ~100 ticks, glade should go.
         scene_ids = []
-        for _ in range(11):
+        for _ in range(101):
             sid, _ = asyncio.run(orch.run_one())
             scene_ids.append(sid)
 
-        # First should be market (both at 60, but market goes to 120)
-        # Then glade should run ~10 times to catch up from 60 to 120
+        # First should be market (both at 600, but market goes to 1200)
+        # Then glade should run ~100 times to catch up from 600 to 1200
         glade_count = scene_ids.count("fey_glade")
-        assert glade_count >= 9  # at least 9 of 11 should be glade
+        assert glade_count >= 99  # at least 99 of 101 should be glade
 
     def test_enter_exit_combat(self, glade_session):
         orch = Orchestrator()
@@ -191,7 +191,7 @@ class TestOrchestrator:
         assert orch.global_time == 0.0
         asyncio.run(orch.run_one())
         # Both advanced once
-        assert orch.global_time == 60.0
+        assert orch.global_time == 600.0
 
     def test_run_n_ticks(self, glade_session):
         orch = Orchestrator()
@@ -199,4 +199,4 @@ class TestOrchestrator:
         results = asyncio.run(orch.run(3))
         assert len(results) == 3
         assert glade_session.turn == 3
-        assert orch.clock.scenes["fey_glade"].time_cursor == 180.0
+        assert orch.clock.scenes["fey_glade"].time_cursor == 1800.0

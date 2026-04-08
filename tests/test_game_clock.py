@@ -2,7 +2,7 @@
 
 The clock system ensures multi-scene games stay time-consistent:
 - Each scene has a time_cursor (seconds elapsed) and a heartbeat
-- Exploration heartbeat: configurable (default 60s)
+- Exploration heartbeat: configurable (default 600s / 10 minutes)
 - Combat heartbeat: 6s (one D&D round)
 - The orchestrator always advances the scene furthest behind in time
 - Combat scenes naturally "pause" exploration scenes by advancing slowly
@@ -19,7 +19,7 @@ from engine.game_clock import GameClock, SceneClock, TimeScale
 
 class TestTimeScale:
     def test_exploration_heartbeat(self):
-        assert TimeScale.EXPLORATION == 60.0
+        assert TimeScale.EXPLORATION == 600.0
 
     def test_combat_heartbeat(self):
         assert TimeScale.COMBAT == 6.0
@@ -43,13 +43,13 @@ class TestSceneClock:
     def test_tick_advances_cursor(self):
         sc = SceneClock(scene_id="fey_glade")
         sc.tick()
-        assert sc.time_cursor == 60.0
+        assert sc.time_cursor == 600.0
 
     def test_tick_twice(self):
         sc = SceneClock(scene_id="fey_glade")
         sc.tick()
         sc.tick()
-        assert sc.time_cursor == 120.0
+        assert sc.time_cursor == 1200.0
 
     def test_enter_combat(self):
         sc = SceneClock(scene_id="fey_glade")
@@ -123,7 +123,7 @@ class TestGameClock:
         gc = GameClock()
         gc.add_scene("fey_glade")
         gc.add_scene("market")
-        gc.scenes["market"].time_cursor = 60.0
+        gc.scenes["market"].time_cursor = 600.0
         assert gc.next_scene() == "fey_glade"
 
     def test_next_scene_tie_is_deterministic(self):
@@ -138,28 +138,28 @@ class TestGameClock:
         gc = GameClock()
         gc.add_scene("fey_glade")
         gc.tick("fey_glade")
-        assert gc.scenes["fey_glade"].time_cursor == 60.0
+        assert gc.scenes["fey_glade"].time_cursor == 600.0
 
     def test_combat_scene_many_ticks_before_exploration(self):
-        """Combat scene needs 10 ticks to catch up to one exploration tick."""
+        """Combat scene needs 100 ticks to catch up to one exploration tick."""
         gc = GameClock()
         gc.add_scene("fey_glade")
         gc.add_scene("market")
 
         # Market does one exploration turn
         gc.tick("market")
-        assert gc.scenes["market"].time_cursor == 60.0
+        assert gc.scenes["market"].time_cursor == 600.0
 
         # Fey glade enters combat
         gc.scenes["fey_glade"].enter_combat()
 
-        # Fey glade should be next for 10 rounds
-        for i in range(10):
+        # Fey glade should be next for 100 rounds
+        for i in range(100):
             assert gc.next_scene() == "fey_glade"
             gc.tick("fey_glade")
 
-        # After 10 combat ticks, fey_glade is at 60.0
-        assert gc.scenes["fey_glade"].time_cursor == 60.0
+        # After 100 combat ticks, fey_glade is at 600.0
+        assert gc.scenes["fey_glade"].time_cursor == 600.0
 
         # Now they're tied — either could be next
         next_id = gc.next_scene()
@@ -174,7 +174,7 @@ class TestGameClock:
         # Global time is the minimum — fey_glade is still at 0
         assert gc.global_time == 0.0
         gc.tick("fey_glade")
-        assert gc.global_time == 60.0
+        assert gc.global_time == 600.0
 
     def test_remove_scene(self):
         gc = GameClock()

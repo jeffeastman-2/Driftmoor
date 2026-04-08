@@ -5,7 +5,7 @@ The GameClock orchestrates which scene advances next (always the one
 furthest behind in time).
 
 Combat scenes tick at 6s (one D&D round). Exploration scenes tick at
-a configurable rate (default 60s). This naturally "pauses" exploration
+a configurable rate (default 600s / 10 minutes). This naturally "pauses" exploration
 scenes during combat — the combat scene takes many small ticks to
 catch up to where the exploration scene already is.
 """
@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 class TimeScale:
     """Standard heartbeat durations in seconds."""
     COMBAT: float = 6.0
-    EXPLORATION: float = 60.0
+    EXPLORATION: float = 600.0
 
 
 @dataclass
