@@ -8,7 +8,6 @@ Each role has:
 """
 
 import asyncio
-import json
 import pytest
 
 from engine.player_router import (
@@ -36,13 +35,16 @@ def ctx():
 # =========================================================================
 
 class TestPlayerLeftSystemPrompt:
-    def test_mentions_json(self, ctx):
+    def test_requests_sections_not_json(self, ctx):
         prompt = PlayerLeft().build_system_prompt(ctx)
-        assert "JSON" in prompt or "json" in prompt
+        assert "INTENT" in prompt
+        assert "MOVEMENT" in prompt
+        assert "TARGET" in prompt
+        assert "JSON" not in prompt
 
     def test_mentions_intent(self, ctx):
         prompt = PlayerLeft().build_system_prompt(ctx)
-        assert "intent" in prompt
+        assert "INTENT" in prompt
 
     def test_includes_character_soul(self, ctx):
         prompt = PlayerLeft().build_system_prompt(ctx)
@@ -68,36 +70,51 @@ class TestPlayerLeftUserPrompt:
 
 
 class TestPlayerLeftParsing:
-    def test_parse_full_json(self, ctx):
-        raw = json.dumps({
-            "intent": "advance cautiously toward the glade",
-            "movement_target": [50.0, 50.0, 0.2],
-            "interaction_target": None,
-        })
+    def test_parse_full_sections(self, ctx):
+        raw = (
+            "**INTENT** — Advance cautiously toward the glade.\n"
+            "**MOVEMENT** — 50.0, 50.0, 0.2\n"
+            "**TARGET** — none"
+        )
         result = PlayerLeft().parse_response(raw, ctx)
         assert isinstance(result, ActionIntent)
-        assert result.intent == "advance cautiously toward the glade"
+        assert "Advance cautiously" in result.intent
         assert result.movement_target == (50.0, 50.0, 0.2)
 
-    def test_parse_minimal_json(self, ctx):
-        raw = json.dumps({"intent": "hold position"})
+    def test_parse_minimal_intent_only(self, ctx):
+        raw = "**INTENT** — Hold position.\n**MOVEMENT** — none\n**TARGET** — none"
         result = PlayerLeft().parse_response(raw, ctx)
-        assert result.intent == "hold position"
+        assert "Hold position" in result.intent
         assert result.movement_target is None
         assert result.interaction_target is None
 
-    def test_parse_json_in_markdown_block(self, ctx):
-        raw = '```json\n{"intent": "observe"}\n```'
+    def test_parse_with_preamble(self, ctx):
+        raw = (
+            "Here is my analysis:\n\n"
+            "**INTENT** — Wait and watch.\n"
+            "**MOVEMENT** — none\n"
+            "**TARGET** — none"
+        )
         result = PlayerLeft().parse_response(raw, ctx)
-        assert result.intent == "observe"
+        assert "Wait and watch" in result.intent
 
-    def test_parse_json_with_preamble(self, ctx):
-        raw = 'Here is my analysis:\n{"intent": "wait and watch"}'
+    def test_parse_movement_2d(self, ctx):
+        raw = "**INTENT** — Move.\n**MOVEMENT** — 45, 48\n**TARGET** — none"
         result = PlayerLeft().parse_response(raw, ctx)
-        assert result.intent == "wait and watch"
+        assert result.movement_target == (45.0, 48.0, 0.0)
+
+    def test_parse_interaction_target(self, ctx):
+        raw = "**INTENT** — Talk.\n**MOVEMENT** — none\n**TARGET** — fennel"
+        result = PlayerLeft().parse_response(raw, ctx)
+        assert result.interaction_target == "fennel"
+
+    def test_fallback_no_sections(self, ctx):
+        raw = "I will observe my surroundings carefully."
+        result = PlayerLeft().parse_response(raw, ctx)
+        assert "observe" in result.intent.lower()
 
     def test_sets_character_and_turn(self, ctx):
-        raw = json.dumps({"intent": "wait"})
+        raw = "**INTENT** — Wait.\n**MOVEMENT** — none\n**TARGET** — none"
         result = PlayerLeft().parse_response(raw, ctx)
         assert result.character_id == "aeliana"
         assert result.turn == 1
@@ -109,18 +126,18 @@ class TestPlayerLeftLLM:
 
         async def mock_llm(system, user):
             calls.append((system, user))
-            return json.dumps({"intent": "mock action"})
+            return "**INTENT** — Mock action.\n**MOVEMENT** — none\n**TARGET** — none"
 
         result = asyncio.run(PlayerLeft(call_llm=mock_llm).generate_intent(ctx))
         assert len(calls) == 1
-        assert result.intent == "mock action"
+        assert "Mock action" in result.intent
 
     def test_system_prompt_passed_to_llm(self, ctx):
         calls = []
 
         async def mock_llm(system, user):
             calls.append((system, user))
-            return json.dumps({"intent": "x"})
+            return "**INTENT** — X.\n**MOVEMENT** — none\n**TARGET** — none"
 
         asyncio.run(PlayerLeft(call_llm=mock_llm).generate_intent(ctx))
         assert "strategic mind" in calls[0][0]
@@ -243,13 +260,16 @@ class TestDMLeftSystemPrompt:
         prompt = DMLeft().build_system_prompt()
         assert "adjudicat" in prompt.lower()
 
-    def test_mentions_json(self):
+    def test_requests_sections_not_json(self):
         prompt = DMLeft().build_system_prompt()
-        assert "JSON" in prompt or "json" in prompt
+        assert "APPROVED" in prompt
+        assert "POSITION DELTA" in prompt
+        assert "CONDITION" in prompt
+        assert "JSON" not in prompt
 
     def test_mentions_approved(self):
         prompt = DMLeft().build_system_prompt()
-        assert "approved" in prompt
+        assert "APPROVED" in prompt
 
 
 class TestDMLeftUserPrompt:
@@ -273,13 +293,15 @@ class TestDMLeftUserPrompt:
 
 
 class TestDMLeftParsing:
-    def test_parse_approved(self):
-        raw = json.dumps({
-            "approved": True,
-            "condition_deltas": {"dopamine": 0.10},
-            "spatial_events": ["enters_fey_glade"],
-            "notes": "Valid movement.",
-        })
+    def test_parse_approved_with_deltas(self):
+        raw = (
+            "**APPROVED** — Yes\n"
+            "**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — 3, 2, 0\n"
+            "**CONDITION** — dopamine +0.10\n"
+            "**EVENTS** — enters_fey_glade\n"
+            "**NOTES** — Valid movement."
+        )
         result = DMLeft().parse_response(raw, "aeliana", 1)
         assert isinstance(result, Adjudication)
         assert result.approved is True
@@ -287,40 +309,145 @@ class TestDMLeftParsing:
         assert "enters_fey_glade" in result.spatial_events
 
     def test_parse_rejected(self):
-        raw = json.dumps({
-            "approved": False,
-            "modified_action": "Cannot cross the barrier.",
-        })
+        raw = (
+            "**APPROVED** — No\n"
+            "**MODIFIED ACTION** — Cannot cross the barrier.\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — none\n"
+            "**EVENTS** — none\n"
+            "**NOTES** — Magical barrier blocks passage."
+        )
         result = DMLeft().parse_response(raw, "fennel", 1)
         assert result.approved is False
         assert "barrier" in result.modified_action
 
     def test_parse_position_delta(self):
-        raw = json.dumps({
-            "approved": True,
-            "position_delta": [5.0, 3.0, 0.0],
-        })
+        raw = (
+            "**APPROVED** — Yes\n"
+            "**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — 5.0, 3.0, 0.0\n"
+            "**CONDITION** — none\n"
+            "**EVENTS** — none\n"
+            "**NOTES** — OK"
+        )
         result = DMLeft().parse_response(raw, "aeliana", 1)
         assert result.position_delta == (5.0, 3.0, 0.0)
 
-    def test_parse_json_in_markdown_block(self):
-        raw = '```json\n{"approved": true, "notes": "OK"}\n```'
+    def test_parse_multiple_condition_deltas(self):
+        raw = (
+            "**APPROVED** — Yes\n"
+            "**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — dopamine +0.1, cortisol -0.05\n"
+            "**EVENTS** — none\n"
+            "**NOTES** — Calm but alert."
+        )
         result = DMLeft().parse_response(raw, "aeliana", 1)
-        assert result.approved is True
-        assert result.notes == "OK"
+        assert result.condition_deltas["dopamine"] == 0.1
+        assert result.condition_deltas["cortisol"] == -0.05
 
     def test_parse_minimal(self):
-        raw = json.dumps({"approved": True})
+        raw = "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n**POSITION DELTA** — none\n**CONDITION** — none\n**EVENTS** — none\n**NOTES** — OK"
         result = DMLeft().parse_response(raw, "aeliana", 1)
         assert result.approved is True
         assert result.condition_deltas == {}
         assert result.spatial_events == []
 
+    def test_parse_multiple_events(self):
+        raw = (
+            "**APPROVED** — Yes\n"
+            "**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — none\n"
+            "**EVENTS** — enters_fey_glade, crosses_boundary\n"
+            "**NOTES** — Two events."
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert "enters_fey_glade" in result.spatial_events
+        assert "crosses_boundary" in result.spatial_events
+
     def test_sets_character_and_turn(self):
-        raw = json.dumps({"approved": True})
+        raw = "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n**POSITION DELTA** — none\n**CONDITION** — none\n**EVENTS** — none\n**NOTES** — OK"
         result = DMLeft().parse_response(raw, "fennel", 3)
         assert result.character_id == "fennel"
         assert result.turn == 3
+
+    # ---- Condition delta edge cases (per Sonnet) ----
+
+    def test_condition_unsigned_value(self):
+        """LLM writes 'dopamine 0.08' without sign."""
+        raw = (
+            "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — dopamine 0.08\n"
+            "**EVENTS** — none\n**NOTES** — OK"
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert result.condition_deltas["dopamine"] == 0.08
+
+    def test_condition_increase_by(self):
+        """LLM writes 'increase dopamine by 0.1'."""
+        raw = (
+            "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — increase dopamine by 0.1\n"
+            "**EVENTS** — none\n**NOTES** — OK"
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert result.condition_deltas["dopamine"] == 0.1
+
+    def test_condition_decrease_by(self):
+        """LLM writes 'decrease cortisol by 0.05'."""
+        raw = (
+            "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — decrease cortisol by 0.05\n"
+            "**EVENTS** — none\n**NOTES** — OK"
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert result.condition_deltas["cortisol"] == -0.05
+
+    def test_condition_colon_format(self):
+        """LLM writes 'dopamine: +0.1'."""
+        raw = (
+            "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n"
+            "**CONDITION** — dopamine: +0.1, cortisol: -0.05\n"
+            "**EVENTS** — none\n**NOTES** — OK"
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert result.condition_deltas["dopamine"] == 0.1
+        assert result.condition_deltas["cortisol"] == -0.05
+
+    # ---- Spatial events edge cases (per Sonnet) ----
+
+    def test_events_bullet_list(self):
+        """LLM writes events as bullet points."""
+        raw = (
+            "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n**CONDITION** — none\n"
+            "**EVENTS** —\n"
+            "- shadowbeast_proximity_detected\n"
+            "- pool_cycle_approaching\n"
+            "**NOTES** — OK"
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert "shadowbeast_proximity_detected" in result.spatial_events
+        assert "pool_cycle_approaching" in result.spatial_events
+
+    def test_events_newline_separated(self):
+        """LLM writes events on separate lines without bullets."""
+        raw = (
+            "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n"
+            "**POSITION DELTA** — none\n**CONDITION** — none\n"
+            "**EVENTS** —\n"
+            "shadowbeast_proximity_detected\n"
+            "pool_cycle_approaching\n"
+            "**NOTES** — OK"
+        )
+        result = DMLeft().parse_response(raw, "aeliana", 1)
+        assert "shadowbeast_proximity_detected" in result.spatial_events
+        assert "pool_cycle_approaching" in result.spatial_events
 
 
 class TestDMLeftLLM:
@@ -329,7 +456,14 @@ class TestDMLeftLLM:
 
         async def mock_llm(system, user):
             calls.append((system, user))
-            return json.dumps({"approved": True, "notes": "OK"})
+            return (
+                "**APPROVED** — Yes\n"
+                "**MODIFIED ACTION** — none\n"
+                "**POSITION DELTA** — none\n"
+                "**CONDITION** — none\n"
+                "**EVENTS** — none\n"
+                "**NOTES** — OK"
+            )
 
         output = CharacterOutput(character_id="aeliana", turn=1, action="advance")
         result = asyncio.run(DMLeft(call_llm=mock_llm).adjudicate(output, "", ""))

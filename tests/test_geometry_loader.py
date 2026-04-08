@@ -95,7 +95,7 @@ class TestParseGeometryMd:
 
     def test_boundary_effect(self, fey_glade_data):
         boundary = fey_glade_data["boundaries"][0]
-        assert "wrongness" in boundary.effect
+        assert boundary.effect == ""
 
     def test_boundary_vertices(self, fey_glade_data):
         boundary = fey_glade_data["boundaries"][0]

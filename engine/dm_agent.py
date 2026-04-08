@@ -14,7 +14,6 @@ minimal valid data.  When call_llm is provided it is awaited as:
 
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass, field
 from typing import Optional
@@ -67,16 +66,21 @@ class DMLeft:
             "You are the rules-adjudication DM for a D&D 5e session. "
             "Evaluate the character's proposed action against game rules, "
             "spatial constraints, and the current game state.\n\n"
-            "Respond ONLY with valid JSON "
-            "(no markdown fencing, no commentary):\n"
-            "{\n"
-            '  "approved": true or false,\n'
-            '  "modified_action": "rewritten action if rejected, else null",\n'
-            '  "position_delta": [dx, dy, dz] or null,\n'
-            '  "condition_deltas": {"dopamine": 0.1, "cortisol": -0.05},\n'
-            '  "spatial_events": ["enters_fey_glade"],\n'
-            '  "notes": "brief adjudication notes"\n'
-            "}"
+            "Respond with exactly these labeled sections "
+            "(no markdown fencing):\n\n"
+            "**APPROVED** — Yes or No.\n"
+            "**MODIFIED ACTION** — Rewritten action if rejected, "
+            "otherwise \"none\".\n"
+            "**POSITION DELTA** — Movement as dx, dy, dz "
+            "(or \"none\" if no movement).\n"
+            "**CONDITION** — Neurochemical deltas as "
+            "dimension +/-value, comma separated "
+            "(e.g. \"dopamine +0.1, cortisol -0.05\") "
+            "or \"none\".\n"
+            "**EVENTS** — Spatial events, comma separated "
+            "(e.g. \"enters_fey_glade, crosses_boundary\") "
+            "or \"none\".\n"
+            "**NOTES** — Brief adjudication reasoning."
         )
 
     def build_user_prompt(
@@ -100,36 +104,90 @@ class DMLeft:
     def parse_response(
         self, raw: str, character_id: str, turn: int,
     ) -> Adjudication:
-        text = re.sub(r'```(?:json)?\s*', '', raw.strip())
-        text = text.strip().rstrip('`')
+        text = raw.strip()
 
-        def _try_parse(s: str) -> dict:
-            s = re.sub(r',\s*([}\]])', r'\1', s)
-            return json.loads(s)
+        def _extract(section: str) -> str:
+            pattern = rf"\*\*{section}\*\*\s*(?:—|:|--)?\s*(.*?)(?=\*\*|\Z)"
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            return match.group(1).strip() if match else ""
 
-        try:
-            data = _try_parse(text)
-        except json.JSONDecodeError:
-            start, end = text.find('{'), text.rfind('}')
-            if start != -1 and end > start:
-                data = _try_parse(text[start:end + 1])
-            else:
-                raise
-        pd = data.get("position_delta")
-        if pd is not None:
-            if any(v is None for v in pd):
-                pd = None
-            else:
-                pd = tuple(float(v) for v in pd)
+        approved_raw = _extract("APPROVED")
+        modified_raw = _extract("MODIFIED ACTION")
+        delta_raw = _extract("POSITION DELTA")
+        condition_raw = _extract("CONDITION")
+        events_raw = _extract("EVENTS")
+        notes_raw = _extract("NOTES")
+
+        # Parse approved
+        approved = approved_raw.lower().startswith("yes") if approved_raw else True
+
+        # Parse modified action
+        modified_action = None
+        if modified_raw and modified_raw.lower() not in ("none", "null", "n/a", ""):
+            modified_action = modified_raw
+
+        # Parse position delta
+        pd = None
+        if delta_raw and delta_raw.lower() not in ("none", "null", "n/a", "no movement", ""):
+            nums = re.findall(r'-?\d+(?:\.\d+)?', delta_raw)
+            if len(nums) >= 2:
+                try:
+                    coords = [float(n) for n in nums[:3]]
+                    if len(coords) == 2:
+                        coords.append(0.0)
+                    pd = tuple(coords)
+                except (TypeError, ValueError):
+                    pass
+
+        # Parse condition deltas: handles multiple formats:
+        #   "dopamine +0.1, cortisol -0.05"
+        #   "dopamine 0.1"
+        #   "increase dopamine by 0.08"
+        condition_deltas: dict[str, float] = {}
+        if condition_raw and condition_raw.lower() not in ("none", "null", "n/a", ""):
+            known_dims = {
+                "dopamine", "cortisol", "norepinephrine",
+                "endorphins", "serotonin", "acetylcholine", "oxytocin",
+            }
+            for dim in known_dims:
+                # Check "decrease" first — must negate
+                neg_pattern = rf'decrease\s+{dim}[:\s]+(?:by\s+)?([+-]?\d+(?:\.\d+)?)'
+                m_neg = re.search(neg_pattern, condition_raw, re.IGNORECASE)
+                if m_neg:
+                    try:
+                        condition_deltas[dim] = -abs(float(m_neg.group(1)))
+                    except ValueError:
+                        pass
+                    continue
+                # General: "dopamine +0.1" or "dopamine: +0.1" or
+                #          "increase dopamine by 0.1" or "dopamine 0.08"
+                pattern = rf'(?:increase\s+)?{dim}[:\s]+(?:by\s+)?([+-]?\d+(?:\.\d+)?)'
+                m = re.search(pattern, condition_raw, re.IGNORECASE)
+                if m:
+                    try:
+                        condition_deltas[dim] = float(m.group(1))
+                    except ValueError:
+                        pass
+
+        # Parse spatial events: comma-separated, newline-separated, or bullet lists
+        spatial_events: list[str] = []
+        if events_raw and events_raw.lower() not in ("none", "null", "n/a", ""):
+            # Split on commas, newlines, or bullet markers
+            parts = re.split(r'[,\n]|\s*[-•]\s+', events_raw)
+            spatial_events = [
+                e.strip().strip('-•').strip()
+                for e in parts if e.strip() and e.strip() not in ('-', '•')
+            ]
+
         return Adjudication(
             character_id=character_id,
             turn=turn,
-            approved=data.get("approved", True),
-            modified_action=data.get("modified_action"),
+            approved=approved,
+            modified_action=modified_action,
             position_delta=pd,
-            condition_deltas=data.get("condition_deltas", {}),
-            spatial_events=data.get("spatial_events", []),
-            notes=data.get("notes", ""),
+            condition_deltas=condition_deltas,
+            spatial_events=spatial_events,
+            notes=notes_raw,
         )
 
     async def adjudicate(

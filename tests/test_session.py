@@ -219,13 +219,14 @@ class TestConditionDeltas:
 
         # Mock DMLeft that returns specific deltas
         async def dm_left_llm(sys, usr):
-            return json.dumps({
-                "approved": True,
-                "condition_deltas": {"dopamine": 0.1, "cortisol": -0.05},
-                "position_delta": [0, 0, 0],
-                "spatial_events": [],
-                "notes": "test",
-            })
+            return (
+                "**APPROVED** — Yes\n"
+                "**MODIFIED ACTION** — none\n"
+                "**POSITION DELTA** — 0, 0, 0\n"
+                "**CONDITION** — dopamine +0.1, cortisol -0.05\n"
+                "**EVENTS** — none\n"
+                "**NOTES** — test"
+            )
 
         characters = {"aeliana": aeliana_session}
         roles = {
@@ -242,13 +243,14 @@ class TestConditionDeltas:
         original_cortisol = aeliana_session.condition.state.cortisol
 
         async def dm_left_llm(sys, usr):
-            return json.dumps({
-                "approved": True,
-                "condition_deltas": {"cortisol": 0.1},
-                "position_delta": [0, 0, 0],
-                "spatial_events": [],
-                "notes": "stress",
-            })
+            return (
+                "**APPROVED** — Yes\n"
+                "**MODIFIED ACTION** — none\n"
+                "**POSITION DELTA** — 0, 0, 0\n"
+                "**CONDITION** — cortisol +0.1\n"
+                "**EVENTS** — none\n"
+                "**NOTES** — stress"
+            )
 
         characters = {"aeliana": aeliana_session}
         roles = {
@@ -276,7 +278,7 @@ class TestSceneHistory:
             call_count += 1
             # Just capture what scene context each call gets
             captured_contexts[call_count] = usr
-            return json.dumps({"intent": f"action_{call_count}"})
+            return "**INTENT** — " + f"action_{call_count}" + "\n**MOVEMENT** — none\n**TARGET** — none"
 
         characters = {
             "aeliana": aeliana_session,
@@ -389,13 +391,14 @@ class TestDMLeftContext:
 
         async def capturing_dm_llm(sys, usr):
             captured_prompts.append(usr)
-            return json.dumps({
-                "approved": True,
-                "condition_deltas": {},
-                "position_delta": [0, 0, 0],
-                "spatial_events": [],
-                "notes": "test",
-            })
+            return (
+                "**APPROVED** — Yes\n"
+                "**MODIFIED ACTION** — none\n"
+                "**POSITION DELTA** — 0, 0, 0\n"
+                "**CONDITION** — none\n"
+                "**EVENTS** — none\n"
+                "**NOTES** — test"
+            )
 
         characters = {"aeliana": aeliana_session}
         roles = {
@@ -415,13 +418,14 @@ class TestDMLeftContext:
 
         async def capturing_dm_llm(sys, usr):
             captured_prompts.append(usr)
-            return json.dumps({
-                "approved": True,
-                "condition_deltas": {},
-                "position_delta": [0, 0, 0],
-                "spatial_events": [],
-                "notes": "test",
-            })
+            return (
+                "**APPROVED** — Yes\n"
+                "**MODIFIED ACTION** — none\n"
+                "**POSITION DELTA** — 0, 0, 0\n"
+                "**CONDITION** — none\n"
+                "**EVENTS** — none\n"
+                "**NOTES** — test"
+            )
 
         characters = {"aeliana": aeliana_session}
         roles = {

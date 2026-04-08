@@ -12,6 +12,7 @@ creates a fresh agent per call (no conversation history leaking).
 
 from __future__ import annotations
 
+import asyncio
 import os
 from typing import Optional
 
@@ -103,9 +104,22 @@ def make_call_llm(
         }
         if provider != "ollama":
             kwargs["api_key"] = resolved_key
-        agent = agent_class(**kwargs)
 
-        async with aiohttp.ClientSession() as session:
-            return await agent.send_message(user_message, session)
+        # Retry with exponential backoff for transient errors (503, 429)
+        max_retries = 5
+        for attempt in range(max_retries + 1):
+            agent = agent_class(**kwargs)
+            try:
+                async with aiohttp.ClientSession() as session:
+                    return await agent.send_message(user_message, session)
+            except Exception as e:
+                error_str = str(e)
+                retryable = "503" in error_str or "429" in error_str
+                if retryable and attempt < max_retries:
+                    wait = 2 ** (attempt + 1)  # 2s, 4s, 8s, 16s, 32s
+                    print(f"  [{provider}] {error_str[:60]}... retry {attempt+1}/{max_retries} in {wait}s")
+                    await asyncio.sleep(wait)
+                    continue
+                raise
 
     return _call

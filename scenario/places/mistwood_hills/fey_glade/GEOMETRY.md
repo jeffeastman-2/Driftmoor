@@ -49,8 +49,17 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 
 - **type:** magical
 - **blocks:** shadowbeast, shadow_creature, undead
-- **effect:** wrongness — body stops, cannot cross
 - **vertices:** (39,44) (61,44) (61,56) (39,56)
+
+**Strength varies by conditions:**
+
+| condition                        | effect                                                                                         |
+|----------------------------------|------------------------------------------------------------------------------------------------|
+| Daylight (default)               | Strong repulsion. Blocked creatures feel deep wrongness and cannot cross.                      |
+| Daylight + prey within 10 units  | Creature may attempt DC 15 WIS save to force through. On success: crosses but takes 2d6 radiant damage and is frightened 1 round. On failure: repelled, stunned 1 round. |
+| Dusk / dawn                      | Boundary weakens. DC 12 WIS save to cross. On success: 1d6 radiant damage. On failure: repelled. |
+| Full darkness                    | Boundary is a faint deterrent only. DC 8 WIS save to cross, no damage on success. On failure: repelled but may retry next turn. |
+| Full darkness + prey within 10   | Boundary barely holds. Creature crosses freely but takes 1d4 radiant damage.                   |
 
 ## Starting Positions
 

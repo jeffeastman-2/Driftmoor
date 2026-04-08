@@ -14,7 +14,6 @@ minimal valid data.  When call_llm is provided it is awaited as:
 
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Optional
@@ -80,13 +79,13 @@ class PlayerLeft:
             "Analyze the situation and your condition to determine "
             "the best action.\n\n"
             f"Your character:\n{context.soul}\n\n"
-            "Respond ONLY with valid JSON "
-            "(no markdown fencing, no commentary):\n"
-            "{\n"
-            '  "intent": "one sentence — what you will do this turn",\n'
-            '  "movement_target": [x, y, z] or null,\n'
-            '  "interaction_target": "character_id or item name" or null\n'
-            "}"
+            "Respond with exactly these labeled sections "
+            "(no markdown fencing):\n\n"
+            "**INTENT** — One sentence: what you will do this turn.\n"
+            "**MOVEMENT** — Target coordinates as x, y, z "
+            "(or \"none\" if staying put).\n"
+            "**TARGET** — Character or item you interact with "
+            "(or \"none\")."
         )
 
     def build_user_prompt(self, context: RoleContext) -> str:
@@ -97,34 +96,44 @@ class PlayerLeft:
         )
 
     def parse_response(self, raw: str, context: RoleContext) -> ActionIntent:
-        text = re.sub(r'```(?:json)?\s*', '', raw.strip())
-        text = text.strip().rstrip('`')
+        def _extract(text: str, section: str) -> str:
+            pattern = rf"\*\*{section}\*\*\s*(?:—|:|--)?\s*(.*?)(?=\*\*|\Z)"
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            return match.group(1).strip() if match else ""
 
-        def _try_parse(s: str) -> dict:
-            # Fix common LLM JSON issues: trailing commas before } or ]
-            s = re.sub(r',\s*([}\]])', r'\1', s)
-            return json.loads(s)
+        text = raw.strip()
+        intent = _extract(text, "INTENT")
+        movement_raw = _extract(text, "MOVEMENT")
+        target_raw = _extract(text, "TARGET")
 
-        try:
-            data = _try_parse(text)
-        except json.JSONDecodeError:
-            start, end = text.find('{'), text.rfind('}')
-            if start != -1 and end > start:
-                data = _try_parse(text[start:end + 1])
-            else:
-                raise
-        mt = data.get("movement_target")
-        if mt is not None:
-            if any(v is None for v in mt):
-                mt = None
-            else:
-                mt = tuple(float(v) for v in mt)
+        # Parse movement coordinates
+        mt = None
+        if movement_raw and movement_raw.lower() not in ("none", "null", "n/a", "stay", ""):
+            nums = re.findall(r'-?\d+(?:\.\d+)?', movement_raw)
+            if len(nums) >= 2:
+                try:
+                    coords = [float(n) for n in nums[:3]]
+                    if len(coords) == 2:
+                        coords.append(0.0)
+                    mt = tuple(coords)
+                except (TypeError, ValueError):
+                    pass
+
+        # Parse interaction target
+        interaction = None
+        if target_raw and target_raw.lower() not in ("none", "null", "n/a", ""):
+            interaction = target_raw
+
+        # Fallback: if no sections found, treat whole response as intent
+        if not intent:
+            intent = text.split('\n')[0].strip() or "observe surroundings"
+
         return ActionIntent(
             character_id=context.character_id,
             turn=context.turn,
-            intent=data["intent"],
+            intent=intent,
             movement_target=mt,
-            interaction_target=data.get("interaction_target"),
+            interaction_target=interaction,
         )
 
     async def generate_intent(self, context: RoleContext) -> ActionIntent:

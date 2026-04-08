@@ -581,13 +581,12 @@ class TestPerCharacterRouting:
 
     def test_different_llm_per_character(self, aeliana_context, fennel_context):
         """Aeliana uses one mock LLM, Fennel uses a different one."""
-        import json
 
         async def grok_llm(system, user):
-            return json.dumps({"intent": "grok intent"})
+            return "**INTENT** — grok intent\n**MOVEMENT** — none\n**TARGET** — none"
 
         async def chatgpt_llm(system, user):
-            return json.dumps({"intent": "chatgpt intent"})
+            return "**INTENT** — chatgpt intent\n**MOVEMENT** — none\n**TARGET** — none"
 
         tc = TurnCycle(
             character_roles={
@@ -617,10 +616,9 @@ class TestPerCharacterRouting:
 
     def test_roleset_partial_override(self, aeliana_context):
         """RoleSet can override just one role; others get defaults."""
-        import json
 
         async def custom_llm(system, user):
-            return json.dumps({"intent": "custom only for player-left"})
+            return "**INTENT** — custom only for player-left\n**MOVEMENT** — none\n**TARGET** — none"
 
         tc = TurnCycle(
             character_roles={
@@ -639,16 +637,15 @@ class TestPerCharacterRouting:
         self, aeliana_context, fennel_context, shadowbeast_context,
     ):
         """Full turn with three different mock providers."""
-        import json
 
         async def grok(s, u):
-            return json.dumps({"intent": "grok"})
+            return "**INTENT** — grok\n**MOVEMENT** — none\n**TARGET** — none"
 
         async def chatgpt(s, u):
-            return json.dumps({"intent": "chatgpt"})
+            return "**INTENT** — chatgpt\n**MOVEMENT** — none\n**TARGET** — none"
 
         async def gemini(s, u):
-            return json.dumps({"intent": "gemini"})
+            return "**INTENT** — gemini\n**MOVEMENT** — none\n**TARGET** — none"
 
         tc = TurnCycle(
             character_roles={

@@ -155,7 +155,7 @@ def build_roles() -> dict[str, RoleSet]:
     """Build RoleSets with real LLMs — one provider per character."""
     aeliana_llm = make_call_llm("xai", "grok-3")
     fennel_llm = make_call_llm("openai", "gpt-4o")
-    shadowbeast_llm = make_call_llm("gemini", "gemini-2.5-flash")
+    shadowbeast_llm = make_call_llm("deepseek", "deepseek-chat")
 
     return {
         "aeliana": RoleSet(
