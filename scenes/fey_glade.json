@@ -1,0 +1,146 @@
+{
+  "scene_name": "fey_glade",
+  "title": "FEY GLADE",
+  "narrative_title": "The Fey Glade",
+  "transcript_title": "FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
+  "character_summary": "Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)",
+  "default_turns": 2,
+  "geometry_file": "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md",
+
+  "characters": {
+    "aeliana": {
+      "type": "player",
+      "name": "Aeliana Moonglade",
+      "race": "Wood Elf",
+      "class": "Ranger",
+      "level": 1,
+      "hp": 12,
+      "ac": 14,
+      "strength": 10,
+      "dexterity": 16,
+      "constitution": 10,
+      "intelligence": 10,
+      "wisdom": 15,
+      "charisma": 10,
+      "location": "fey_glade",
+      "provider": "xai",
+      "model": "grok-3",
+      "soul_file": "scenario/people/players/aeliana/SOUL.md",
+      "identity_file": "scenario/people/players/aeliana/IDENTITY.md",
+      "initial_scene": "You are on the trail approaching the Fey Glade. The air shimmers with unnatural warmth ahead. No sounds from the forest — unnaturally still. You sense something watching from the treeline.",
+      "condition_name": "Aeliana",
+      "condition": {
+        "state": {
+          "dopamine": 0.85,
+          "cortisol": 0.25,
+          "norepinephrine": 0.55,
+          "endorphins": 0.75,
+          "serotonin": 0.60,
+          "acetylcholine": 0.50,
+          "oxytocin": 0.50
+        },
+        "profiles": {
+          "dopamine": {"baseline": 0.55, "volatility": 0.8},
+          "cortisol": {"baseline": 0.35, "volatility": 0.6}
+        }
+      }
+    },
+    "fennel": {
+      "type": "player",
+      "name": "Fennel",
+      "race": "Human",
+      "class": "Gatherer",
+      "level": 1,
+      "hp": 8,
+      "ac": 11,
+      "strength": 10,
+      "dexterity": 12,
+      "constitution": 10,
+      "intelligence": 10,
+      "wisdom": 14,
+      "charisma": 10,
+      "location": "fey_glade",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "soul_file": "scenario/people/npcs/fennel/SOUL.md",
+      "identity_file": "scenario/people/npcs/fennel/IDENTITY.md",
+      "initial_scene": "You are in the glade near the pool. The pool glimmers with an eerie light. A figure approaches from the trail — an elf, armed. Something dark shifts in the treeline behind you.",
+      "condition_name": "Fennel",
+      "condition": {
+        "state": {
+          "dopamine": 0.50,
+          "cortisol": 0.60,
+          "norepinephrine": 0.75,
+          "endorphins": 0.45,
+          "serotonin": 0.50,
+          "acetylcholine": 0.65,
+          "oxytocin": 0.30
+        },
+        "profiles": {
+          "dopamine": {"baseline": 0.50, "volatility": 1.0},
+          "cortisol": {"baseline": 0.40, "volatility": 1.2}
+        }
+      }
+    },
+    "shadowbeast_1": {
+      "type": "creature",
+      "name": "Shadowbeast",
+      "race": "Medium Monstrosity",
+      "alignment": "Neutral Evil",
+      "hp": 16,
+      "ac": 12,
+      "speed": "40 ft",
+      "challenge": "½",
+      "strength": 6,
+      "dexterity": 14,
+      "constitution": 13,
+      "intelligence": 6,
+      "wisdom": 10,
+      "charisma": 8,
+      "skills": ["Stealth +4 (+6 in dim light/darkness)"],
+      "damage_resistances": ["Bludgeoning, Piercing, Slashing from nonmagical weapons"],
+      "damage_vulnerabilities": ["Radiant"],
+      "condition_immunities": ["Charmed", "Frightened"],
+      "senses": ["Darkvision 60 ft.", "Passive Perception 13"],
+      "features": [
+        "Shadow Stealth: In dim light/darkness, Hide as bonus action",
+        "Sunlight Sensitivity: Disadvantage on attacks and Perception in sunlight"
+      ],
+      "actions": [
+        "Multiattack: two claw attacks",
+        "Claw: +4 to hit, 8 (2d4+2) slashing",
+        "Shadow Swipe (Recharge 5-6): 10ft radius, DC 12 DEX, 7 (2d6) necrotic + slow"
+      ],
+      "tactics": "Ambush from shadows, target weaker members, retreat if outnumbered",
+      "location": "fey_glade",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "soul": "You are the SHADOWBEAST — a predator of shadow and instinct. You do not think in words. You sense heat, motion, pressure, the shimmer of the boundary that contains you. Communicate through sensation-language: vibration, scent-trails, thermal impressions. Never use human speech or abstract reasoning.",
+      "identity": "Shadowbeast. CR ½. HP 16. AC 12 (semi-corporeal). Speed 40ft. STR 6 DEX 14 CON 13 INT 6 WIS 10 CHA 8. Shadow Stealth: Hide as bonus action in dim light/darkness. Sunlight Sensitivity: disadvantage on attacks in sunlight. Multiattack: two claw attacks. Claw: +4, 2d4+2 slashing. Shadow Swipe (Recharge 5-6): 10ft radius, DC 12 DEX, 2d6 necrotic + slow. Resistant to nonmagical B/P/S. Vulnerable to radiant. Immune to charmed, frightened.",
+      "initial_scene": "You are in the forest at the boundary. Prey near the boundary — one alert, one near the pool. The shimmer pushes back. Hunger builds.",
+      "condition_name": "Shadowbeast",
+      "condition": {
+        "state": {
+          "dopamine": 0.80,
+          "cortisol": 0.10,
+          "norepinephrine": 0.85,
+          "endorphins": 0.90,
+          "serotonin": 0.20,
+          "acetylcholine": 0.90,
+          "oxytocin": 0.00
+        },
+        "profiles": {
+          "dopamine": {"baseline": 0.70, "volatility": 0.5},
+          "cortisol": {"baseline": 0.10, "volatility": 0.3},
+          "oxytocin": {"baseline": 0.00, "volatility": 0.0}
+        }
+      }
+    }
+  },
+
+  "game_state_sections": [
+    {"header": "Creatures in Scene", "file": "scenario/creatures/shadowbeast.md"},
+    {"header": "Character Starting Positions", "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 79.0 | 25.0 | TRAIL |\n| fennel | 44.0 | 52.0 | GLADE |\n| shadowbeast_1 | 37.0 | 50.0 | FOREST |"},
+    {"header": "Exit Motivations (DM only)", "text": "Characters may leave this scene. Recognise and permit these:\n- Fennel is a gatherer, not a fighter. If the shadowbeast is driven off or killed, she will want to return to town with her haul.\n- Aeliana may pursue a fleeing shadowbeast into the Mistwood, or head to town to warn people about the creature.\n- If wounded, characters may retreat toward Driftmoor for aid at the Bitter Remedy (apothecary) or Elyssa's cottage."}
+  ]
+}

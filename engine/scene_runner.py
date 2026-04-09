@@ -1,14 +1,24 @@
 """Common scene runner — shared logic for all scene configurations."""
 
+import json
 import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from engine.llm_bridge import make_call_llm
 from engine.session import CharacterSession, run_session
+from engine.dm_agent import DMLeft, DMRight
+from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
+from models.character import PlayerCharacter, NPC, Creature
+from models.condition import (
+    CharacterCondition,
+    NeurochemicalState,
+    DimensionProfile,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -31,6 +41,168 @@ class SceneConfig:
     default_turns: int = 4
     narrative_provider: str = "anthropic"
     narrative_model: str = "claude-sonnet-4-20250514"
+
+
+# ---------------------------------------------------------------------------
+# JSON → SceneConfig loader
+# ---------------------------------------------------------------------------
+
+def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, str]:
+    """Build a CharacterSession from a JSON character dict.
+
+    Returns (session, provider, model).
+    """
+    ctype = cdata["type"]
+    stats = {
+        k: cdata.get(k, 0)
+        for k in ("strength", "dexterity", "constitution",
+                   "intelligence", "wisdom", "charisma")
+    }
+
+    if ctype == "player":
+        character = PlayerCharacter(
+            id=char_id,
+            name=cdata["name"],
+            race=cdata["race"],
+            character_type="player",
+            character_class=cdata.get("class", ""),
+            level=cdata.get("level", 1),
+            hp=cdata.get("hp", 0),
+            ac=cdata.get("ac", 0),
+            location=cdata.get("location", ""),
+            **stats,
+        )
+    elif ctype == "npc":
+        character = NPC(
+            id=char_id,
+            name=cdata["name"],
+            race=cdata["race"],
+            character_type="npc",
+            role=cdata.get("role", ""),
+            home_location=cdata.get("home_location", ""),
+            hp=cdata.get("hp", 0),
+            ac=cdata.get("ac", 0),
+            knowledge=cdata.get("knowledge", []),
+            active_concerns=cdata.get("active_concerns", []),
+            location=cdata.get("location", ""),
+            **stats,
+        )
+    elif ctype == "creature":
+        character = Creature(
+            id=char_id,
+            name=cdata["name"],
+            race=cdata["race"],
+            character_type="creature",
+            alignment=cdata.get("alignment", ""),
+            hp=cdata.get("hp", 0),
+            ac=cdata.get("ac", 0),
+            speed=cdata.get("speed", ""),
+            challenge=cdata.get("challenge", ""),
+            skills=cdata.get("skills", []),
+            damage_resistances=cdata.get("damage_resistances", []),
+            damage_vulnerabilities=cdata.get("damage_vulnerabilities", []),
+            condition_immunities=cdata.get("condition_immunities", []),
+            senses=cdata.get("senses", []),
+            features=cdata.get("features", []),
+            actions=cdata.get("actions", []),
+            tactics=cdata.get("tactics", ""),
+            location=cdata.get("location", ""),
+            **stats,
+        )
+    else:
+        raise ValueError(f"Unknown character type: {ctype}")
+
+    # Condition
+    cond_data = cdata["condition"]
+    state = NeurochemicalState(**cond_data["state"])
+    profiles = {
+        k: DimensionProfile(**v) for k, v in cond_data.get("profiles", {}).items()
+    }
+    condition = CharacterCondition(
+        character_id=char_id,
+        character_name=cdata.get("condition_name", cdata["name"].split()[0]),
+        state=state,
+        profiles=profiles,
+    )
+
+    # Soul and identity — file path or inline string
+    soul = cdata.get("soul", "")
+    if cdata.get("soul_file"):
+        soul = load_file(ROOT / cdata["soul_file"])
+    identity = cdata.get("identity", "")
+    if cdata.get("identity_file"):
+        identity = load_file(ROOT / cdata["identity_file"])
+
+    session = CharacterSession(
+        character=character,
+        condition=condition,
+        soul=soul,
+        identity=identity,
+        initial_scene=cdata["initial_scene"],
+    )
+    return session, cdata["provider"], cdata["model"]
+
+
+def _build_game_state(sections: list[dict]) -> str:
+    """Assemble game_state_summary from a list of sections.
+
+    Each section dict has:
+      - "header" (optional): prefixed as "# header"
+      - "file" or "text": content source
+    """
+    parts: list[str] = []
+    for section in sections:
+        block = ""
+        if "file" in section:
+            block = load_file(ROOT / section["file"])
+        elif "text" in section:
+            block = section["text"]
+        if section.get("header"):
+            block = f"# {section['header']}\n\n{block}"
+        if block:
+            parts.append(block)
+    return "\n\n".join(parts)
+
+
+def configure_from_json(json_path: Path) -> SceneConfig:
+    """Load a scene configuration from a JSON file."""
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+
+    characters: dict[str, CharacterSession] = {}
+    roles: dict[str, RoleSet] = {}
+
+    for char_id, cdata in data["characters"].items():
+        session, provider, model = _build_character(char_id, cdata)
+        characters[char_id] = session
+
+        llm = make_call_llm(provider, model)
+        roles[char_id] = RoleSet(
+            player_left=PlayerLeft(call_llm=llm),
+            player_right=PlayerRight(call_llm=llm),
+            dm_left=DMLeft(call_llm=llm),
+            dm_right=DMRight(call_llm=llm),
+        )
+
+    game_state_summary = _build_game_state(data.get("game_state_sections", []))
+
+    geometry_summary = ""
+    if data.get("geometry_file"):
+        geometry_summary = load_file(ROOT / data["geometry_file"])
+
+    return SceneConfig(
+        scene_name=data["scene_name"],
+        title=data["title"],
+        narrative_title=data["narrative_title"],
+        transcript_title=data["transcript_title"],
+        character_summary=data["character_summary"],
+        characters=characters,
+        roles=roles,
+        game_state_summary=game_state_summary,
+        geometry_summary=geometry_summary,
+        default_turns=data.get("default_turns", 4),
+        narrative_provider=data.get("narrative_provider", "anthropic"),
+        narrative_model=data.get("narrative_model", "claude-sonnet-4-20250514"),
+    )
 
 
 def print_turn_result(turn_result):

@@ -10,7 +10,6 @@ Examples:
 """
 
 import asyncio
-import importlib
 import sys
 from pathlib import Path
 
@@ -18,7 +17,7 @@ from pathlib import Path
 def main():
     scenes_dir = Path(__file__).parent / "scenes"
     available = sorted(
-        p.stem for p in scenes_dir.glob("*.py") if p.stem != "__init__"
+        p.stem for p in scenes_dir.glob("*.json")
     )
 
     if len(sys.argv) < 2:
@@ -29,16 +28,14 @@ def main():
     scene_name = sys.argv[1]
     num_turns = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
-    try:
-        module = importlib.import_module(f"scenes.{scene_name}")
-    except ModuleNotFoundError:
+    json_path = scenes_dir / f"{scene_name}.json"
+    if not json_path.exists():
         print(f"Unknown scene: {scene_name}")
         print(f"Available scenes: {', '.join(available)}")
         sys.exit(1)
 
-    config = module.configure()
-
-    from engine.scene_runner import run_scene
+    from engine.scene_runner import configure_from_json, run_scene
+    config = configure_from_json(json_path)
     asyncio.run(run_scene(config, num_turns))
 
 
