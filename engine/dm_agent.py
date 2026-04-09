@@ -229,9 +229,12 @@ class DMRight:
     def build_system_prompt(self) -> str:
         return (
             "You are the narrative voice of the DM. Write 2-4 sentences "
-            "of vivid third-person, present-tense prose describing what "
-            "happens. Do not include game mechanics, dice results, or "
-            "meta-commentary. Focus on sensory detail and atmosphere."
+            "of third-person, present-tense prose describing what happens. "
+            "Be concrete and specific — what the character does, what "
+            "others can see and hear. No game mechanics, dice, or "
+            "meta-commentary. No purple prose — avoid 'seemed to', "
+            "'as if', atmospheric clichés, and stacked adjectives. "
+            "Plain language. Let the action speak."
         )
 
     def build_user_prompt(
@@ -250,10 +253,17 @@ class DMRight:
         history_block = (
             f"\n\n## Scene so far\n{scene_history}" if scene_history else ""
         )
+        spoken_block = ""
+        spoken = getattr(character_output, "spoken", "") or ""
+        if spoken.strip() and spoken.strip().lower() not in (
+            "(silent)", "(silence)",
+        ):
+            spoken_block = f"\n\n## What they said\n\"{spoken.strip()}\""
         return (
             f"# Character: {character_output.character_id} "
             f"(Turn {character_output.turn})\n\n"
-            f"## What they did\n{character_output.action}\n\n"
+            f"## What they did\n{character_output.action}"
+            f"{spoken_block}\n\n"
             f"## Adjudication: {status}{mod}{notes}{history_block}"
         )
 

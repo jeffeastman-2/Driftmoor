@@ -1,34 +1,21 @@
-#!/usr/bin/env python3
-"""Run a session in the Gilded Trinket — Seraphina browses, Tavian minds the shop."""
-
-import asyncio
-import sys
-import time
-from pathlib import Path
+"""Scene configuration: Gilded Trinket — Seraphina browses, Tavian minds the shop."""
 
 from engine.llm_bridge import make_call_llm
-from engine.session import CharacterSession, run_session
+from engine.session import CharacterSession
 from engine.player_router import PlayerLeft, PlayerRight
 from engine.dm_agent import DMLeft, DMRight
 from engine.scene_manager import RoleSet
+from engine.scene_runner import SceneConfig, ROOT, load_file
 from models.character import PlayerCharacter, NPC
-from engine.transcript import elaborate_session_from_dir
-from engine.narrator import generate_narrative_from_dir
 from models.condition import (
     CharacterCondition,
     NeurochemicalState,
     DimensionProfile,
 )
 
-ROOT = Path(__file__).parent
 
-
-def load_file(path: Path) -> str:
-    return path.read_text(encoding="utf-8").strip() if path.exists() else ""
-
-
-def build_characters() -> dict[str, CharacterSession]:
-    return {
+def configure() -> SceneConfig:
+    characters = {
         "seraphina": CharacterSession(
             character=PlayerCharacter(
                 id="seraphina", name="Seraphina Duskwhisper", race="Half-Elf",
@@ -114,13 +101,10 @@ def build_characters() -> dict[str, CharacterSession]:
         ),
     }
 
-
-def build_roles() -> dict[str, RoleSet]:
-    """Seraphina on Claude, Tavian on GPT-4o."""
     seraphina_llm = make_call_llm("anthropic", "claude-sonnet-4-20250514")
     tavian_llm = make_call_llm("openai", "gpt-4o")
 
-    return {
+    roles = {
         "seraphina": RoleSet(
             player_left=PlayerLeft(call_llm=seraphina_llm),
             player_right=PlayerRight(call_llm=seraphina_llm),
@@ -135,47 +119,6 @@ def build_roles() -> dict[str, RoleSet]:
         ),
     }
 
-
-def print_turn_result(turn_result):
-    print(f"\n{'=' * 70}")
-    print(f"  TURN {turn_result.turn}  —  Initiative: {', '.join(turn_result.initiative_order)}")
-    print(f"{'=' * 70}")
-
-    for cr in turn_result.character_results:
-        print(f"\n  --- {cr.character_id.upper()} ---")
-        print(f"  Intent:     {cr.intent.intent}")
-        if cr.intent.movement_target:
-            print(f"  Move to:    {cr.intent.movement_target}")
-        if cr.intent.interaction_target:
-            print(f"  Interact:   {cr.intent.interaction_target}")
-        if cr.output.spoken and cr.output.spoken.lower() not in ("(silent)", "(silence)", ""):
-            print(f"  Spoken:     \"{cr.output.spoken}\"")
-        else:
-            print(f"  Spoken:     (silent)")
-        print(f"  Approved:   {cr.adjudication.approved}")
-        if cr.adjudication.condition_deltas:
-            deltas = ", ".join(
-                f"{k}: {v:+.2f}" for k, v in cr.adjudication.condition_deltas.items()
-            )
-            print(f"  Deltas:     {deltas}")
-        if cr.adjudication.spatial_events:
-            print(f"  Events:     {cr.adjudication.spatial_events}")
-        print(f"\n  Narration:")
-        print(f"  {cr.narration.prose}")
-
-
-async def main():
-    num_turns = int(sys.argv[1]) if len(sys.argv) > 1 else 4
-    checkpoint_dir = ROOT / "runtime" / "state" / "gilded_trinket"
-
-    print(f"\nGILDED TRINKET — {num_turns} turns")
-    print(f"Characters: Seraphina (Claude), Tavian (GPT-4o)")
-    print(f"Checkpoints: {checkpoint_dir}\n")
-
-    characters = build_characters()
-    roles = build_roles()
-
-    # Load scene context
     place_md = load_file(
         ROOT / "scenario/places/driftmoor/gilded_trinket/PLACE.md"
     )
@@ -195,50 +138,26 @@ async def main():
         "obelisk shard's resonance where others would not.\n"
         "Tavian knows the ring is dangerous but has not decided what to do with it.\n"
         "The cracked compass and stone amulet are genuinely magical — Tavian knows.\n"
+        "\n"
+        "# Exit Motivations (DM only)\n\n"
+        "Characters may leave this scene. Recognise and permit these:\n"
+        "- Seraphina has not eaten since arriving in Driftmoor. "
+        "The Weary Traveler tavern is nearby and she can smell bread from the bakery.\n"
+        "- If the ring's resonance unsettles her, she may seek out "
+        "Elyssa Moonglow at her cottage — the local herbalist who studies shards.\n"
+        "- Tavian may mention the strange symbols at the forge if the "
+        "conversation turns to the obelisk or dark magic.\n"
+        "- Seraphina is a rogue — she may want to case other shops or find lodging.\n"
     )
 
-    start = time.monotonic()
-    result = await run_session(
-        characters, roles,
-        num_turns=num_turns,
+    return SceneConfig(
+        scene_name="gilded_trinket",
+        title="GILDED TRINKET",
+        narrative_title="The Gilded Trinket",
+        transcript_title="GILDED TRINKET — Seraphina, Tavian",
+        character_summary="Seraphina (Claude), Tavian (GPT-4o)",
+        characters=characters,
+        roles=roles,
         game_state_summary=game_state_summary,
-        checkpoint_dir=checkpoint_dir,
+        default_turns=4,
     )
-    elapsed = time.monotonic() - start
-
-    for turn_result in result.turns:
-        print_turn_result(turn_result)
-
-    print(f"\n{'=' * 70}")
-    print(f"  SESSION COMPLETE — {num_turns} turns in {elapsed:.1f}s")
-    print(f"{'=' * 70}")
-
-    # Print final conditions
-    print(f"\nFinal conditions:")
-    for char_id, condition in result.final_conditions.items():
-        d = condition.state.dopamine
-        c = condition.state.cortisol
-        n = condition.state.norepinephrine
-        print(f"  {char_id:15s}  dop={d:.2f}  cor={c:.2f}  nor={n:.2f}")
-
-    # Generate transcript and narrative
-    print(f"\nGenerating transcript...")
-    elaborate_session_from_dir(
-        checkpoint_dir,
-        output_path=checkpoint_dir / "transcript.txt",
-        title="GILDED TRINKET — Seraphina, Tavian",
-    )
-    print(f"  Written to {checkpoint_dir / 'transcript.txt'}")
-
-    print(f"Generating narrative...")
-    story = await generate_narrative_from_dir(
-        checkpoint_dir,
-        provider="anthropic", model="claude-sonnet-4-20250514",
-        title="The Gilded Trinket",
-        output_path=checkpoint_dir / "story.txt",
-    )
-    print(f"  Written to {checkpoint_dir / 'story.txt'}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

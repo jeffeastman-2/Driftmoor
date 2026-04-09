@@ -143,36 +143,69 @@ async def run_session(
         entries = roll_initiative(char_list, rng=rng)
         order = [e.character_id for e in entries]
 
-        # Build per-character contexts
-        contexts = {
-            char_id: _build_context(cs, turn_num, scene_history)
-            for char_id, cs in characters.items()
-        }
+        # Execute each character in initiative order, rebuilding context
+        # just-in-time so each character sees within-turn narration from
+        # characters who acted earlier in the same turn.
+        turn_result = TurnResult(turn=turn_num, initiative_order=order)
+        within_turn_history = ""
 
-        # Execute turn through 4-role pipeline
-        result = await turn_cycle.execute_turn(
-            turn=turn_num,
-            initiative_order=order,
-            contexts=contexts,
-            game_state_summary=game_state_summary,
-            geometry_summary=geometry_summary,
-        )
+        for character_id in order:
+            cs = characters[character_id]
+            combined_history = scene_history
+            if within_turn_history:
+                combined_history = (
+                    f"{scene_history}\n{within_turn_history}"
+                    if scene_history else within_turn_history
+                )
+
+            context = _build_context(cs, turn_num, combined_history)
+            cr = await turn_cycle.execute_character_turn(
+                context=context,
+                game_state_summary=game_state_summary,
+                geometry_summary=geometry_summary,
+                scene_history=within_turn_history,
+            )
+            turn_result.character_results.append(cr)
+
+            # Build history entry: dialogue + narration
+            history_entry = ""
+            spoken = cr.output.spoken or ""
+            if spoken.strip() and spoken.strip().lower() not in (
+                "(silent)", "(silence)",
+            ):
+                history_entry += (
+                    f'\n{cr.character_id} says: "{spoken.strip()}"'
+                )
+            if cr.narration.prose:
+                history_entry += f"\n{cr.narration.prose}"
+            if history_entry:
+                within_turn_history += history_entry
 
         # Apply condition deltas from DMLeft adjudication
-        for cr in result.character_results:
+        for cr in turn_result.character_results:
             if cr.adjudication.condition_deltas:
                 characters[cr.character_id].condition.apply_delta(
                     cr.adjudication.condition_deltas
                 )
-            # Accumulate narration for next turn's context
+            # Accumulate dialogue + narration for next turn's context
+            spoken = cr.output.spoken or ""
+            history_entry = ""
+            if spoken.strip() and spoken.strip().lower() not in (
+                "(silent)", "(silence)",
+            ):
+                history_entry += (
+                    f'\n{cr.character_id} says: "{spoken.strip()}"'
+                )
             if cr.narration.prose:
-                scene_history += f"\n{cr.narration.prose}"
+                history_entry += f"\n{cr.narration.prose}"
+            if history_entry:
+                scene_history += history_entry
 
-        turns.append(result)
+        turns.append(turn_result)
 
         # Persist checkpoint
         if checkpoint_dir:
-            _save_turn(checkpoint_dir, turn_num, result, characters)
+            _save_turn(checkpoint_dir, turn_num, turn_result, characters)
 
     return SessionResult(
         turns=turns,

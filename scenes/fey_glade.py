@@ -1,35 +1,21 @@
-#!/usr/bin/env python3
-"""Run the Fey Glade scene — Aeliana, Fennel, Shadowbeast."""
-
-import asyncio
-import os
-import sys
-import time
-from pathlib import Path
+"""Scene configuration: Fey Glade — Aeliana, Fennel, Shadowbeast."""
 
 from engine.llm_bridge import make_call_llm
-from engine.session import CharacterSession, run_session
+from engine.session import CharacterSession
 from engine.player_router import PlayerLeft, PlayerRight
 from engine.dm_agent import DMLeft, DMRight
 from engine.scene_manager import RoleSet
+from engine.scene_runner import SceneConfig, ROOT, load_file
 from models.character import PlayerCharacter, Creature
-from engine.transcript import elaborate_session_from_dir
-from engine.narrator import generate_narrative_from_dir
 from models.condition import (
     CharacterCondition,
     NeurochemicalState,
     DimensionProfile,
 )
 
-ROOT = Path(__file__).parent
 
-
-def load_file(path: Path) -> str:
-    return path.read_text(encoding="utf-8").strip() if path.exists() else ""
-
-
-def build_characters() -> dict[str, CharacterSession]:
-    return {
+def configure() -> SceneConfig:
+    characters = {
         "aeliana": CharacterSession(
             character=PlayerCharacter(
                 id="aeliana", name="Aeliana Moonglade", race="Wood Elf",
@@ -152,14 +138,11 @@ def build_characters() -> dict[str, CharacterSession]:
         ),
     }
 
-
-def build_roles() -> dict[str, RoleSet]:
-    """Build RoleSets with real LLMs — one provider per character."""
     aeliana_llm = make_call_llm("xai", "grok-3")
     fennel_llm = make_call_llm("openai", "gpt-4o")
     shadowbeast_llm = make_call_llm("deepseek", "deepseek-chat")
 
-    return {
+    roles = {
         "aeliana": RoleSet(
             player_left=PlayerLeft(call_llm=aeliana_llm),
             player_right=PlayerRight(call_llm=aeliana_llm),
@@ -180,47 +163,6 @@ def build_roles() -> dict[str, RoleSet]:
         ),
     }
 
-
-def print_turn_result(turn_result):
-    print(f"\n{'=' * 70}")
-    print(f"  TURN {turn_result.turn}  —  Initiative: {', '.join(turn_result.initiative_order)}")
-    print(f"{'=' * 70}")
-
-    for cr in turn_result.character_results:
-        print(f"\n  --- {cr.character_id.upper()} ---")
-        print(f"  Intent:     {cr.intent.intent}")
-        if cr.intent.movement_target:
-            print(f"  Move to:    {cr.intent.movement_target}")
-        if cr.intent.interaction_target:
-            print(f"  Interact:   {cr.intent.interaction_target}")
-        if cr.output.spoken and cr.output.spoken.lower() not in ("(silent)", "(silence)", ""):
-            print(f"  Spoken:     \"{cr.output.spoken}\"")
-        else:
-            print(f"  Spoken:     (silent)")
-        print(f"  Approved:   {cr.adjudication.approved}")
-        if cr.adjudication.condition_deltas:
-            deltas = ", ".join(
-                f"{k}: {v:+.2f}" for k, v in cr.adjudication.condition_deltas.items()
-            )
-            print(f"  Deltas:     {deltas}")
-        if cr.adjudication.spatial_events:
-            print(f"  Events:     {cr.adjudication.spatial_events}")
-        print(f"\n  Narration:")
-        print(f"  {cr.narration.prose}")
-
-
-async def main():
-    num_turns = int(sys.argv[1]) if len(sys.argv) > 1 else 2
-    checkpoint_dir = ROOT / "runtime" / "state" / "fey_glade"
-
-    print(f"\nFEY GLADE — {num_turns} turns")
-    print(f"Characters: Aeliana (Grok), Fennel (GPT-4o), Shadowbeast_1 (DeepSeek)")
-    print(f"Checkpoints: {checkpoint_dir}\n")
-
-    characters = build_characters()
-    roles = build_roles()
-
-    # Load scene context for DMLeft adjudication
     geometry_summary = load_file(
         ROOT / "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md"
     )
@@ -234,51 +176,26 @@ async def main():
         "| aeliana | 79.0 | 25.0 | TRAIL |\n"
         "| fennel | 44.0 | 52.0 | GLADE |\n"
         "| shadowbeast_1 | 37.0 | 50.0 | FOREST |\n"
+        "\n"
+        "# Exit Motivations (DM only)\n\n"
+        "Characters may leave this scene. Recognise and permit these:\n"
+        "- Fennel is a gatherer, not a fighter. If the shadowbeast is "
+        "driven off or killed, she will want to return to town with her haul.\n"
+        "- Aeliana may pursue a fleeing shadowbeast into the Mistwood, "
+        "or head to town to warn people about the creature.\n"
+        "- If wounded, characters may retreat toward Driftmoor for aid "
+        "at the Bitter Remedy (apothecary) or Elyssa's cottage.\n"
     )
 
-    start = time.monotonic()
-    result = await run_session(
-        characters, roles,
-        num_turns=num_turns,
+    return SceneConfig(
+        scene_name="fey_glade",
+        title="FEY GLADE",
+        narrative_title="The Fey Glade",
+        transcript_title="FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
+        character_summary="Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)",
+        characters=characters,
+        roles=roles,
         game_state_summary=game_state_summary,
         geometry_summary=geometry_summary,
-        checkpoint_dir=checkpoint_dir,
+        default_turns=2,
     )
-    elapsed = time.monotonic() - start
-
-    for turn_result in result.turns:
-        print_turn_result(turn_result)
-
-    print(f"\n{'=' * 70}")
-    print(f"  SESSION COMPLETE — {num_turns} turns in {elapsed:.1f}s")
-    print(f"{'=' * 70}")
-
-    # Print final conditions
-    print(f"\nFinal conditions:")
-    for char_id, condition in result.final_conditions.items():
-        d = condition.state.dopamine
-        c = condition.state.cortisol
-        n = condition.state.norepinephrine
-        print(f"  {char_id:15s}  dop={d:.2f}  cor={c:.2f}  nor={n:.2f}")
-
-    # Generate transcript and narrative
-    print(f"\nGenerating transcript...")
-    elaborate_session_from_dir(
-        checkpoint_dir,
-        output_path=checkpoint_dir / "transcript.txt",
-        title="FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
-    )
-    print(f"  Written to {checkpoint_dir / 'transcript.txt'}")
-
-    print(f"Generating narrative...")
-    story = await generate_narrative_from_dir(
-        checkpoint_dir,
-        provider="anthropic", model="claude-sonnet-4-20250514",
-        title="The Fey Glade",
-        output_path=checkpoint_dir / "story.txt",
-    )
-    print(f"  Written to {checkpoint_dir / 'story.txt'}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
