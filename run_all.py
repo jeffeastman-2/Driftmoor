@@ -186,6 +186,9 @@ async def run_all(num_turns_override: int | None = None) -> None:
                 print_turn_result(turn_result)
 
         frontier = target
+
+    elapsed = time.monotonic() - total_start
+    print(f"\n{'=' * 70}")
     print(f"  ALL SCENES COMPLETE — {elapsed:.1f}s")
     print(f"{'=' * 70}")
 
