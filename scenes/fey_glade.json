@@ -4,7 +4,7 @@
   "narrative_title": "The Fey Glade",
   "transcript_title": "FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
   "character_summary": "Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)",
-  "default_turns": 2,
+  "default_turns": 4,
   "game_time": {"hour": 15, "minute": 0, "day": 1, "season": "spring", "turn_duration": 1},
   "dm_provider": "anthropic",
   "dm_model": "claude-sonnet-4-20250514",

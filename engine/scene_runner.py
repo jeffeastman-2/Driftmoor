@@ -182,7 +182,8 @@ def configure_from_json(json_path: Path) -> SceneConfig:
     # Scene-level DM provider (all characters share the same DM)
     dm_provider = data.get("dm_provider", "anthropic")
     dm_model = data.get("dm_model", "claude-sonnet-4-20250514")
-    dm_llm = make_call_llm(dm_provider, dm_model)
+    dm_delay = data.get("dm_call_delay", 2.0)
+    dm_llm = make_call_llm(dm_provider, dm_model, call_delay=dm_delay)
 
     characters: dict[str, CharacterSession] = {}
     roles: dict[str, RoleSet] = {}
