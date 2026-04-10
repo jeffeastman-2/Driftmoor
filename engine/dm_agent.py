@@ -80,6 +80,11 @@ class DMLeft:
             "**EVENTS** — Spatial events, comma separated "
             "(e.g. \"enters_fey_glade, crosses_boundary\") "
             "or \"none\".\n"
+            "  Important events to emit:\n"
+            "  - combat_initiated: when a character uses a weapon "
+            "or offensive spell against an opponent.\n"
+            "  - exits_scene: when a character leaves the scene "
+            "area entirely (fleeing, retreating, departing).\n"
             "**NOTES** — Brief adjudication reasoning."
         )
 

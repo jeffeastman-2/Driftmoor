@@ -5,6 +5,7 @@
   "transcript_title": "FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
   "character_summary": "Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)",
   "default_turns": 2,
+  "game_time": {"hour": 15, "minute": 0, "day": 1, "season": "spring", "turn_duration": 1},
   "geometry_file": "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md",
 
   "characters": {
@@ -86,6 +87,7 @@
       "type": "creature",
       "name": "Shadowbeast",
       "race": "Medium Monstrosity",
+      "faction": "hostile",
       "alignment": "Neutral Evil",
       "hp": 16,
       "ac": 12,
@@ -117,7 +119,7 @@
       "model": "deepseek-chat",
       "soul": "You are the SHADOWBEAST — a predator of shadow and instinct. You do not think in words. You sense heat, motion, pressure, the shimmer of the boundary that contains you. Communicate through sensation-language: vibration, scent-trails, thermal impressions. Never use human speech or abstract reasoning.",
       "identity": "Shadowbeast. CR ½. HP 16. AC 12 (semi-corporeal). Speed 40ft. STR 6 DEX 14 CON 13 INT 6 WIS 10 CHA 8. Shadow Stealth: Hide as bonus action in dim light/darkness. Sunlight Sensitivity: disadvantage on attacks in sunlight. Multiattack: two claw attacks. Claw: +4, 2d4+2 slashing. Shadow Swipe (Recharge 5-6): 10ft radius, DC 12 DEX, 2d6 necrotic + slow. Resistant to nonmagical B/P/S. Vulnerable to radiant. Immune to charmed, frightened.",
-      "initial_scene": "You are in the forest at the boundary. Prey near the boundary — one alert, one near the pool. The shimmer pushes back. Hunger builds.",
+      "initial_scene": "You are in the forest at the boundary. Prey near the boundary — one alert, one near the pool. The shimmer is a wall of wrongness. You cannot exist there. Not now, not while the light burns. Hunger builds. Wait for dark.",
       "condition_name": "Shadowbeast",
       "condition": {
         "state": {
@@ -140,6 +142,7 @@
 
   "game_state_sections": [
     {"header": "Creatures in Scene", "file": "scenario/creatures/shadowbeast.md"},
+    {"header": "The Fey Glade Pool (DM Only)", "file": "scenario/places/mistwood_hills/fey_glade/LORE.md"},
     {"header": "Character Starting Positions", "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 79.0 | 25.0 | TRAIL |\n| fennel | 44.0 | 52.0 | GLADE |\n| shadowbeast_1 | 37.0 | 50.0 | FOREST |"},
     {"header": "Exit Motivations (DM only)", "text": "Characters may leave this scene. Recognise and permit these:\n- Fennel is a gatherer, not a fighter. If the shadowbeast is driven off or killed, she will want to return to town with her haul.\n- Aeliana may pursue a fleeing shadowbeast into the Mistwood, or head to town to warn people about the creature.\n- If wounded, characters may retreat toward Driftmoor for aid at the Bitter Remedy (apothecary) or Elyssa's cottage."}
   ]

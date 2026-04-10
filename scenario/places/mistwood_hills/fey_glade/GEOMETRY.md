@@ -51,15 +51,28 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 - **blocks:** shadowbeast, shadow_creature, undead
 - **vertices:** (39,44) (61,44) (61,56) (39,56)
 
+**Nature:** This barrier pre-dates the obelisk civilization. It is fey
+in origin — a living ward woven into the glade itself, sustained by
+whatever presence inhabits the pool and the carved stone. It was not
+built to repel shadowbeasts. It was built to protect something: the
+pool, the carved stone, and whatever the pool reveals to those who
+watch it at night. Shadow creatures and undead are repelled as a side
+effect — the barrier's energy is antithetical to their nature.
+
+The pool's carved stone matches obelisk civilization symbols, and the
+pool's luminous cycle tracks with the obelisk's energy pulses. The
+glade may have been a node in the same ancient network. The barrier
+is a remnant of that network's protective function. What it actually
+guards is what Fennel saw on night two and cannot remember.
+
 **Strength varies by conditions:**
 
 | condition                        | effect                                                                                         |
 |----------------------------------|------------------------------------------------------------------------------------------------|
-| Daylight (default)               | Strong repulsion. Blocked creatures feel deep wrongness and cannot cross.                      |
-| Daylight + prey within 10 units  | Creature may attempt DC 15 WIS save to force through. On success: crosses but takes 2d6 radiant damage and is frightened 1 round. On failure: repelled, stunned 1 round. |
-| Dusk / dawn                      | Boundary weakens. DC 12 WIS save to cross. On success: 1d6 radiant damage. On failure: repelled. |
-| Full darkness                    | Boundary is a faint deterrent only. DC 8 WIS save to cross, no damage on success. On failure: repelled but may retry next turn. |
-| Full darkness + prey within 10   | Boundary barely holds. Creature crosses freely but takes 1d4 radiant damage.                   |
+| Daylight (default)               | Absolute. No creature of shadow or undeath can cross. There is no save, no override, no exception. The barrier simply does not permit passage. Blocked creatures feel a deep, sourceless wrongness — not pain, but the certainty that they cannot exist here. |
+| Dusk / dawn                      | Weakened but substantial. DC 15 WIS save to force through. On success: crosses but takes 2d6 radiant damage and is frightened 1 round. On failure: repelled, stunned 1 round. |
+| Full darkness                    | Flickering. DC 10 WIS save to cross. On success: 1d6 radiant damage. On failure: repelled but may retry next turn. |
+| Full darkness + prey within 10   | Barely holding. DC 8 WIS save to cross, 1d4 radiant damage on success or failure. |
 
 ## Starting Positions
 

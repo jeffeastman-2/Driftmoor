@@ -5,6 +5,7 @@
   "transcript_title": "SALT & IRON — Varrak, Jorgen",
   "character_summary": "Varrak (Claude), Jorgen (DeepSeek)",
   "default_turns": 4,
+  "game_time": {"hour": 14, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
 
   "characters": {
     "varrak": {

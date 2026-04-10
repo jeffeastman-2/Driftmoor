@@ -192,8 +192,9 @@ async def generate_narrative_from_dir(
     Returns:
         The generated story as a string.
     """
-    files = sorted(checkpoint_dir.glob("turn_*.json"))
-    turns = [json.loads(f.read_text(encoding="utf-8")) for f in files]
+    files = set(checkpoint_dir.glob("turn_*.json")) | set(checkpoint_dir.glob("day*.json"))
+    turns = [json.loads(f.read_text(encoding="utf-8")) for f in sorted(files)]
+    turns.sort(key=lambda d: d["turn"])
 
     story = await generate_narrative(
         turns, provider=provider, model=model,

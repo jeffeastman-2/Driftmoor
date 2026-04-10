@@ -102,21 +102,27 @@ def elaborate_session_from_dir(
     output_path: Optional[Path] = None,
     title: str = "SESSION TRANSCRIPT",
 ) -> str:
-    """Read all turn_*.json files from a directory and produce a transcript.
+    """Read all checkpoint JSON files from a directory and produce a transcript.
+
+    Supports both legacy ``turn_0001.json`` naming and game-time
+    ``day1_14h30m.json`` naming.  Files are sorted by their embedded
+    turn number so order is always correct.
 
     Args:
-        checkpoint_dir: Directory containing turn_0001.json, etc.
+        checkpoint_dir: Directory containing checkpoint JSON files.
         output_path:    If provided, write the transcript to this file.
         title:          Title for the transcript header.
 
     Returns:
         The full transcript as a string.
     """
-    files = sorted(checkpoint_dir.glob("turn_*.json"))
+    # Collect both naming conventions
+    files = set(checkpoint_dir.glob("turn_*.json")) | set(checkpoint_dir.glob("day*.json"))
     turns = []
-    for f in files:
+    for f in sorted(files):
         data = json.loads(f.read_text(encoding="utf-8"))
         turns.append(data)
+    turns.sort(key=lambda d: d["turn"])
 
     text = elaborate_session(turns, title=title)
 

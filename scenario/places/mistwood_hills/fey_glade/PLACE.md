@@ -13,13 +13,13 @@ Four zones arranged linearly. Movement between adjacent zones costs one ACTION.
 Dense pine approaching the glade from the south. Fog-filtered light. Sound carries far in both directions. High cover. Low visibility beyond 10 feet. The shadowbeast tracks go cold here.
 
 ### TREELINE
-Where forest meets clearing. The shadowbeast boundary runs along this zone's inner edge. Partial cover. Visibility into GLADE: full. Visibility into TRAIL: 20 feet. The shadowbeast occupies the outer (TRAIL-facing) side of this zone. It cannot cross to the inner (GLADE-facing) side.
+Where forest meets clearing. The fey barrier runs along this zone's inner edge — an ancient ward that pre-dates the obelisk, woven into the glade itself. The barrier was not built to stop shadowbeasts; it protects the pool and the carved stone. Shadow creatures are repelled as a side effect — the barrier's energy is simply antithetical to their nature. During daylight the barrier is absolute: no creature of shadow or undeath can cross it. At dusk and dawn it weakens. In full darkness it barely holds. Partial cover. Visibility into GLADE: full. Visibility into TRAIL: 20 feet.
 
 ### GLADE
 Circular clearing approximately 40 feet across. Unnaturally warm. Out-of-season flowers. Air shimmers. No cover. Full visibility to TREELINE and POOL. Safe from the shadowbeast.
 
 ### POOL
-Far (north) side of glade. Light rises from the ground in a slow shimmer. A flat carved stone lies at the water's edge, half-buried. No cover. Full visibility. Do not look directly into the water.
+Far (north) side of glade. Light rises from the ground in a slow shimmer. A flat carved stone lies at the water's edge, half-buried — its symbols match those of the obelisk civilization. The pool's luminous cycle tracks with the obelisk's energy pulses, suggesting the glade was a node in whatever network the obelisk was part of. No cover. Full visibility. Do not look directly into the water. What the barrier actually protects is what Fennel saw on night two and cannot remember.
 
 ## Adjacency
 TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in sequence)
@@ -33,8 +33,12 @@ TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in
 - Mistwood Hills deep paths (DC 15 Survival to find deliberately; otherwise stumbled upon)
 
 ## Shared Facts
-- The glade boundary stops the shadowbeast
+- The glade boundary is fey in origin, older than the obelisk — it protects the pool and carved stone
+- Shadow creatures and undead are repelled as a side effect, not by design
+- During daylight the barrier is absolute — no shadowbeast can cross, no save allowed
+- The barrier weakens at dusk/dawn and barely holds in full darkness
 - The pool brightens at dusk, peaks at midnight
+- The carved stone's symbols match the obelisk civilization
 - Something in the trees follows sound
 - The shadowbeast tracks on the TRAIL go cold at the TREELINE
 
@@ -45,7 +49,8 @@ TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in
 - **Clock:** Dusk in ~3 hours (mid-afternoon)
 - **Tension:** Rising — Aeliana approaching shadowbeast position
 - **Active conditions:**
-  - The glade is shielded from the obelisk's influence — shadowbeasts cannot enter
+  - The glade's fey barrier is absolute during daylight — shadowbeasts cannot enter, period
+  - At dusk (~3 hours) the barrier will begin to weaken
   - Shadowbeast has not yet detected Aeliana
   - Fennel has detected Aeliana and is deciding
   - Aeliana is unaware of both Fennel and the shadowbeast

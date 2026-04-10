@@ -19,6 +19,7 @@ class Character:
     soul_raw: str = ""
     mood: str = ""
     disposition: str = ""
+    faction: str = "neutral"  # "party", "hostile", "neutral"
 
 
 @dataclass

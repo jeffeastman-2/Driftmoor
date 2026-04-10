@@ -5,6 +5,7 @@
   "transcript_title": "BEACON CHURCH — Amara, Elden, Mira",
   "character_summary": "Amara (GPT-4o), Elden (DeepSeek), Mira (Grok)",
   "default_turns": 4,
+  "game_time": {"hour": 19, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
 
   "characters": {
     "amara": {

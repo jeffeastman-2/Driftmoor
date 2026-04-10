@@ -19,6 +19,7 @@ from models.condition import (
     NeurochemicalState,
     DimensionProfile,
 )
+from models.space_time import GameTime
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -39,6 +40,7 @@ class SceneConfig:
     game_state_summary: str
     geometry_summary: str = ""
     default_turns: int = 4
+    game_time: GameTime | None = None
     narrative_provider: str = "anthropic"
     narrative_model: str = "claude-sonnet-4-20250514"
 
@@ -59,6 +61,10 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
                    "intelligence", "wisdom", "charisma")
     }
 
+    # Faction defaults: players/npcs → "party", creatures → "hostile"
+    default_faction = "hostile" if ctype == "creature" else "party"
+    faction = cdata.get("faction", default_faction)
+
     if ctype == "player":
         character = PlayerCharacter(
             id=char_id,
@@ -70,6 +76,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
             hp=cdata.get("hp", 0),
             ac=cdata.get("ac", 0),
             location=cdata.get("location", ""),
+            faction=faction,
             **stats,
         )
     elif ctype == "npc":
@@ -85,6 +92,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
             knowledge=cdata.get("knowledge", []),
             active_concerns=cdata.get("active_concerns", []),
             location=cdata.get("location", ""),
+            faction=faction,
             **stats,
         )
     elif ctype == "creature":
@@ -94,6 +102,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
             race=cdata["race"],
             character_type="creature",
             alignment=cdata.get("alignment", ""),
+            faction=faction,
             hp=cdata.get("hp", 0),
             ac=cdata.get("ac", 0),
             speed=cdata.get("speed", ""),
@@ -189,6 +198,19 @@ def configure_from_json(json_path: Path) -> SceneConfig:
     if data.get("geometry_file"):
         geometry_summary = load_file(ROOT / data["geometry_file"])
 
+    # Game time
+    game_time = None
+    if "game_time" in data:
+        gt = data["game_time"]
+        game_time = GameTime(
+            hour=gt["hour"],
+            minute=gt.get("minute", 0),
+            day=gt.get("day", 1),
+            season=gt.get("season", "spring"),
+            turn_duration=gt.get("turn_duration", 10),
+            absolute_turn=0,
+        )
+
     return SceneConfig(
         scene_name=data["scene_name"],
         title=data["title"],
@@ -200,6 +222,7 @@ def configure_from_json(json_path: Path) -> SceneConfig:
         game_state_summary=game_state_summary,
         geometry_summary=geometry_summary,
         default_turns=data.get("default_turns", 4),
+        game_time=game_time,
         narrative_provider=data.get("narrative_provider", "anthropic"),
         narrative_model=data.get("narrative_model", "claude-sonnet-4-20250514"),
     )
@@ -256,6 +279,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
         game_state_summary=config.game_state_summary,
         geometry_summary=config.geometry_summary,
         checkpoint_dir=checkpoint_dir,
+        game_time=config.game_time,
     )
     elapsed = time.monotonic() - start
 

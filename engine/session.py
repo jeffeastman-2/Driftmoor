@@ -21,6 +21,16 @@ from engine.player_router import RoleContext
 from engine.scene_manager import TurnCycle, TurnResult, RoleSet
 from models.character import Character
 from models.condition import CharacterCondition, render_condition
+from models.space_time import GameTime
+
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+COMBAT_EVENT = "combat_initiated"
+EXIT_EVENT = "exits_scene"
+MELEE_DURATION = 1  # minutes per combat turn
 
 
 # ---------------------------------------------------------------------------
@@ -68,18 +78,33 @@ def _build_context(
     )
 
 
+def _checkpoint_filename(turn: int, game_time: Optional[GameTime] = None) -> str:
+    """Build checkpoint filename from game time or turn number."""
+    if game_time is not None:
+        return f"day{game_time.day}_{game_time.hour:02d}h{game_time.minute:02d}m.json"
+    return f"turn_{turn:04d}.json"
+
+
 def _save_turn(
     checkpoint_dir: Path,
     turn: int,
     turn_result: TurnResult,
     characters: dict[str, CharacterSession],
+    game_time: Optional[GameTime] = None,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    path = checkpoint_dir / f"turn_{turn:04d}.json"
+    path = checkpoint_dir / _checkpoint_filename(turn, game_time)
 
     data = {
         "turn": turn,
+        "game_time": {
+            "hour": game_time.hour,
+            "minute": game_time.minute,
+            "day": game_time.day,
+            "season": game_time.season,
+            "period": game_time.period,
+        } if game_time else None,
         "initiative_order": turn_result.initiative_order,
         "character_results": [
             {
@@ -113,6 +138,7 @@ async def run_session(
     game_state_summary: str = "",
     geometry_summary: str = "",
     checkpoint_dir: Optional[Path] = None,
+    game_time: Optional[GameTime] = None,
     rng: Optional[random.Random] = None,
 ) -> SessionResult:
     """Run a game session — direct Python loop calling TurnCycle.
@@ -127,6 +153,8 @@ async def run_session(
         geometry_summary:   Scene geometry (zones, boundaries, positions).
                             Passed to DMLeft for spatial adjudication.
         checkpoint_dir:     If set, save a JSON checkpoint per turn.
+        game_time:          Optional GameTime for time-based checkpoints
+                            and automatic combat time-switching.
         rng:                Random instance for deterministic initiative.
 
     Returns:
@@ -137,9 +165,20 @@ async def run_session(
     scene_history = ""
     turns: list[TurnResult] = []
 
+    # Combat state
+    in_combat = False
+    pre_combat_duration: int | None = None
+    active_characters: set[str] = set(characters.keys())
+
     for turn_num in range(1, num_turns + 1):
-        # Roll initiative
-        char_list = [cs.character for cs in characters.values()]
+        # Roll initiative — only for characters still in the scene
+        char_list = [
+            cs.character for cid, cs in characters.items()
+            if cid in active_characters
+        ]
+        if not char_list:
+            break
+
         entries = roll_initiative(char_list, rng=rng)
         order = [e.character_id for e in entries]
 
@@ -150,6 +189,9 @@ async def run_session(
         within_turn_history = ""
 
         for character_id in order:
+            if character_id not in active_characters:
+                continue
+
             cs = characters[character_id]
             combined_history = scene_history
             if within_turn_history:
@@ -166,6 +208,17 @@ async def run_session(
                 scene_history=within_turn_history,
             )
             turn_result.character_results.append(cr)
+
+            # Check for exits_scene — remove from active set mid-turn
+            if EXIT_EVENT in cr.adjudication.spatial_events:
+                active_characters.discard(character_id)
+
+            # Check for combat_initiated — switch to melee time
+            if (COMBAT_EVENT in cr.adjudication.spatial_events
+                    and not in_combat and game_time is not None):
+                in_combat = True
+                pre_combat_duration = game_time.turn_duration
+                game_time.turn_duration = MELEE_DURATION
 
             # Build history entry: dialogue + narration
             history_entry = ""
@@ -205,7 +258,28 @@ async def run_session(
 
         # Persist checkpoint
         if checkpoint_dir:
-            _save_turn(checkpoint_dir, turn_num, turn_result, characters)
+            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time)
+
+        # Advance game clock
+        if game_time:
+            game_time.advance(1)
+
+        # Check for combat end: no hostile still facing a non-hostile
+        if in_combat and game_time is not None:
+            hostiles_active = any(
+                cs.character.faction == "hostile"
+                for cid, cs in characters.items()
+                if cid in active_characters
+            )
+            non_hostiles_active = any(
+                cs.character.faction != "hostile"
+                for cid, cs in characters.items()
+                if cid in active_characters
+            )
+            if not (hostiles_active and non_hostiles_active):
+                in_combat = False
+                game_time.turn_duration = pre_combat_duration or 10
+                pre_combat_duration = None
 
     return SessionResult(
         turns=turns,

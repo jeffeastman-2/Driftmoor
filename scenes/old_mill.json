@@ -5,6 +5,7 @@
   "transcript_title": "OLD MILL — Lilar, Gregan, Tessa",
   "character_summary": "Lilar (Claude), Gregan (GPT-4o), Tessa (Grok)",
   "default_turns": 4,
+  "game_time": {"hour": 11, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
 
   "characters": {
     "lilar": {

@@ -5,6 +5,7 @@
   "transcript_title": "GILDED TRINKET — Seraphina, Tavian",
   "character_summary": "Seraphina (Claude), Tavian (GPT-4o)",
   "default_turns": 4,
+  "game_time": {"hour": 10, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
 
   "characters": {
     "seraphina": {
