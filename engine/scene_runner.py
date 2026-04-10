@@ -175,8 +175,16 @@ def _build_game_state(sections: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def configure_from_json(json_path: Path) -> SceneConfig:
-    """Load a scene configuration from a JSON file."""
+def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> SceneConfig:
+    """Load a scene configuration from a JSON file.
+
+    Args:
+        json_path: Path to the scene JSON file.
+        game_time: Optional override for the scene's game_time. When provided
+            (e.g. from run_all.py to synchronise all scenes to a single session
+            start time) it takes precedence over the ``game_time`` block in the
+            JSON file.
+    """
     data = json.loads(json_path.read_text(encoding="utf-8"))
 
     # Scene-level DM provider (all characters share the same DM)
@@ -206,9 +214,8 @@ def configure_from_json(json_path: Path) -> SceneConfig:
     if data.get("geometry_file"):
         geometry_summary = load_file(ROOT / data["geometry_file"])
 
-    # Game time
-    game_time = None
-    if "game_time" in data:
+    # Game time — caller override takes precedence over JSON
+    if game_time is None and "game_time" in data:
         gt = data["game_time"]
         game_time = GameTime(
             hour=gt["hour"],

@@ -108,9 +108,13 @@ def make_call_llm(
         if provider != "ollama":
             kwargs["api_key"] = resolved_key
 
-        # Retry with exponential backoff for transient errors (503, 429, 529)
-        max_retries = 5
-        for attempt in range(max_retries + 1):
+        # Retry with capped exponential backoff for transient errors (503, 429, 529).
+        # Backoff: 2s, 4s, 8s, 16s, 32s, then one final attempt after 60s.
+        # If the call still fails after that 60s wait, we give up and raise.
+        MAX_WAIT = 60
+        attempt = 0
+        hit_max_wait = False
+        while True:
             agent = agent_class(**kwargs)
             try:
                 async with aiohttp.ClientSession() as session:
@@ -121,9 +125,12 @@ def make_call_llm(
             except Exception as e:
                 error_str = str(e)
                 retryable = any(code in error_str for code in ("503", "429", "529"))
-                if retryable and attempt < max_retries:
-                    wait = 2 ** (attempt + 1)  # 2s, 4s, 8s, 16s, 32s
-                    print(f"  [{provider}] {error_str[:60]}... retry {attempt+1}/{max_retries} in {wait}s")
+                if retryable and not hit_max_wait:
+                    wait = min(2 ** (attempt + 1), MAX_WAIT)  # 2, 4, 8, 16, 32, 60
+                    attempt += 1
+                    if wait >= MAX_WAIT:
+                        hit_max_wait = True  # this is the last attempt
+                    print(f"  [{provider}] {error_str[:60]}... retry {attempt} in {wait}s")
                     await asyncio.sleep(wait)
                     continue
                 raise

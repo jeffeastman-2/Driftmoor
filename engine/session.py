@@ -14,7 +14,7 @@ import json
 import random
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from engine.initiative import roll_initiative
 from engine.player_router import RoleContext
@@ -130,7 +130,7 @@ def _save_turn(
 # Session runner
 # ---------------------------------------------------------------------------
 
-async def run_session(
+async def iter_session(
     characters: dict[str, CharacterSession],
     character_roles: dict[str, RoleSet],
     num_turns: int,
@@ -140,30 +140,18 @@ async def run_session(
     checkpoint_dir: Optional[Path] = None,
     game_time: Optional[GameTime] = None,
     rng: Optional[random.Random] = None,
-) -> SessionResult:
-    """Run a game session — direct Python loop calling TurnCycle.
+) -> AsyncIterator[TurnResult]:
+    """Async generator — yields one TurnResult per turn.
 
-    Args:
-        characters:         char_id → CharacterSession with character,
-                            condition, soul, identity, initial_scene.
-        character_roles:    char_id → RoleSet with LLM assignments.
-        num_turns:          Number of turns to run.
-        game_state_summary: Creature stat blocks, world rules, etc.
-                            Passed to DMLeft for adjudication.
-        geometry_summary:   Scene geometry (zones, boundaries, positions).
-                            Passed to DMLeft for spatial adjudication.
-        checkpoint_dir:     If set, save a JSON checkpoint per turn.
-        game_time:          Optional GameTime for time-based checkpoints
-                            and automatic combat time-switching.
-        rng:                Random instance for deterministic initiative.
+    Handles all per-turn state internally (scene history, combat tracking,
+    condition mutations, checkpointing, clock advancement).  After each turn
+    is fully processed the result is yielded so callers can interleave
+    multiple independent sessions turn-by-turn.
 
-    Returns:
-        SessionResult with all turn results, final conditions, and
-        accumulated scene history.
+    Use ``run_session`` for the common single-scene case.
     """
     turn_cycle = TurnCycle(character_roles=character_roles)
     scene_history = ""
-    turns: list[TurnResult] = []
 
     # Combat state
     in_combat = False
@@ -254,8 +242,6 @@ async def run_session(
             if history_entry:
                 scene_history += history_entry
 
-        turns.append(turn_result)
-
         # Persist checkpoint
         if checkpoint_dir:
             _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time)
@@ -281,10 +267,42 @@ async def run_session(
                 game_time.turn_duration = pre_combat_duration or 10
                 pre_combat_duration = None
 
+        yield turn_result
+
+
+async def run_session(
+    characters: dict[str, CharacterSession],
+    character_roles: dict[str, RoleSet],
+    num_turns: int,
+    *,
+    game_state_summary: str = "",
+    geometry_summary: str = "",
+    checkpoint_dir: Optional[Path] = None,
+    game_time: Optional[GameTime] = None,
+    rng: Optional[random.Random] = None,
+) -> SessionResult:
+    """Run a complete game session and return all results.
+
+    Wraps ``iter_session`` for the common single-scene case.  Use
+    ``iter_session`` directly when you need to interleave multiple scenes
+    turn-by-turn (e.g. ``run_all.py``).
+    """
+    turns: list[TurnResult] = []
+    async for turn_result in iter_session(
+        characters, character_roles, num_turns,
+        game_state_summary=game_state_summary,
+        geometry_summary=geometry_summary,
+        checkpoint_dir=checkpoint_dir,
+        game_time=game_time,
+        rng=rng,
+    ):
+        turns.append(turn_result)
+
     return SessionResult(
         turns=turns,
         final_conditions={
             char_id: cs.condition for char_id, cs in characters.items()
         },
-        scene_history=scene_history.strip(),
+        scene_history="",
     )
+

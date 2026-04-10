@@ -17,6 +17,7 @@ from engine.session import CharacterSession
 from models.character import PlayerCharacter, NPC, Creature
 from engine.dm_agent import DMLeft
 from engine.player_router import PlayerLeft
+from models.space_time import GameTime
 
 
 SCENES_DIR = Path(__file__).resolve().parent.parent / "scenes"
@@ -354,3 +355,17 @@ class TestAllScenesLoad:
 
         assert config.dm_provider == "anthropic"
         assert "claude" in config.dm_model
+
+    def test_game_time_override_replaces_json_time(self, scene_json):
+        """Passing game_time to configure_from_json overrides the JSON value."""
+        override = GameTime(hour=19, minute=0, day=1, season="spring", turn_duration=10, absolute_turn=0)
+
+        def mock_make_call_llm(provider, model, **kwargs):
+            return f"llm_{provider}"
+
+        with patch("engine.scene_runner.make_call_llm", side_effect=mock_make_call_llm):
+            config = configure_from_json(scene_json, game_time=override)
+
+        assert config.game_time is override
+        assert config.game_time.hour == 19
+        assert config.game_time.turn_duration == 10

@@ -12,6 +12,7 @@ from engine.session import (
     CharacterSession,
     SessionResult,
     run_session,
+    iter_session,
     _build_context,
     _save_turn,
     _checkpoint_filename,
