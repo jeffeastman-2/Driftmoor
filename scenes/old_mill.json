@@ -3,9 +3,11 @@
   "title": "OLD MILL",
   "narrative_title": "The Old Mill",
   "transcript_title": "OLD MILL — Lilar, Gregan, Tessa",
-  "character_summary": "Lilar (Claude), Gregan (GPT-4o), Tessa (Grok)",
+  "character_summary": "Lilar (DeepSeek), Gregan (GPT-4o), Tessa (Grok)",
   "default_turns": 4,
   "game_time": {"hour": 11, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "dm_provider": "anthropic",
+  "dm_model": "claude-sonnet-4-20250514",
 
   "characters": {
     "lilar": {
@@ -23,8 +25,8 @@
       "wisdom": 16,
       "charisma": 14,
       "location": "old_mill",
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-20250514",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
       "soul_file": "scenario/people/players/lilar/SOUL.md",
       "identity_file": "scenario/people/players/lilar/IDENTITY.md",
       "initial_scene": "You followed the river road to the Old Mill after hearing reports of strange symbols and a shadowbeast attack on a farmer. The mill is large, stone, two stories. The waterwheel groans. Inside, flour dust hangs in the air. Gregan Haverstead is at the grinding stones — broad, graying, flour-dusted. He looked up when you entered and has not smiled. His daughter Tessa, about fourteen, is near the far wall doing something with the support beams she stopped as soon as she saw you. You can see marks carved into the wood — dark, deliberate, unlike any mason's or carpenter's work you know. A baby cries from upstairs.",

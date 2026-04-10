@@ -3,9 +3,11 @@
   "title": "SALT & IRON",
   "narrative_title": "Salt and Iron",
   "transcript_title": "SALT & IRON — Varrak, Jorgen",
-  "character_summary": "Varrak (Claude), Jorgen (DeepSeek)",
+  "character_summary": "Varrak (Grok), Jorgen (DeepSeek)",
   "default_turns": 4,
   "game_time": {"hour": 14, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "dm_provider": "anthropic",
+  "dm_model": "claude-sonnet-4-20250514",
 
   "characters": {
     "varrak": {
@@ -23,8 +25,8 @@
       "wisdom": 10,
       "charisma": 16,
       "location": "salt_and_iron",
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-20250514",
+      "provider": "xai",
+      "model": "grok-3",
       "soul_file": "scenario/people/players/varrak/SOUL.md",
       "identity_file": "scenario/people/players/varrak/IDENTITY.md",
       "initial_scene": "You came to Salt & Iron because Kelem Dustcloak told you to start here. The mercantile is large, organized, iron-banded timber. Shelves of rope, tools, salt barrels, weapons. A long counter runs the center. Behind it stands a broad man with a salt-and-pepper beard and a scowl. He looked at you — a red dragonborn in robes with no armor — and has not spoken yet. Your satchel holds your obelisk notes. Something in this town is connected to the fragments. You can feel it in the base of your skull, the way you always feel it near shard-touched places.",

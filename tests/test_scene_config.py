@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -14,6 +15,8 @@ from engine.scene_runner import (
 )
 from engine.session import CharacterSession
 from models.character import PlayerCharacter, NPC, Creature
+from engine.dm_agent import DMLeft
+from engine.player_router import PlayerLeft
 
 
 SCENES_DIR = Path(__file__).resolve().parent.parent / "scenes"
@@ -288,3 +291,66 @@ class TestAllScenesLoad:
             if "file" in section:
                 path = ROOT / section["file"]
                 assert path.exists(), f"game_state file not found: {path}"
+
+    def test_has_dm_provider(self, scene_json):
+        data = json.loads(scene_json.read_text())
+        assert "dm_provider" in data, f"Missing dm_provider in {scene_json.name}"
+        assert "dm_model" in data, f"Missing dm_model in {scene_json.name}"
+
+    def test_no_player_uses_dm_provider(self, scene_json):
+        """Player characters should not use the same provider as the DM."""
+        data = json.loads(scene_json.read_text())
+        dm_provider = data.get("dm_provider", "anthropic")
+        for cid, cdata in data["characters"].items():
+            assert cdata["provider"] != dm_provider, (
+                f"{cid} in {scene_json.name} uses DM provider {dm_provider}"
+            )
+
+    def test_dm_roles_share_single_llm(self, scene_json):
+        """All characters in a scene should share the same DM LLM."""
+        call_count = {"n": 0}
+        created_llms = []
+
+        def mock_make_call_llm(provider, model, **kwargs):
+            call_count["n"] += 1
+            sentinel = f"llm_{call_count['n']}_{provider}"
+            created_llms.append(sentinel)
+            return sentinel
+
+        with patch("engine.scene_runner.make_call_llm", side_effect=mock_make_call_llm):
+            config = configure_from_json(scene_json)
+
+        # The DM LLM should be created once (first call) and shared
+        dm_lefts = [config.roles[cid].dm_left._call_llm for cid in config.roles]
+        first = dm_lefts[0]
+        for dl in dm_lefts[1:]:
+            assert dl is first
+
+    def test_dm_and_player_use_different_llms(self, scene_json):
+        """DM roles and player roles should use different LLM callables."""
+        call_count = {"n": 0}
+
+        def mock_make_call_llm(provider, model, **kwargs):
+            call_count["n"] += 1
+            return f"llm_{call_count['n']}_{provider}"
+
+        with patch("engine.scene_runner.make_call_llm", side_effect=mock_make_call_llm):
+            config = configure_from_json(scene_json)
+
+        for cid in config.roles:
+            dm_llm = config.roles[cid].dm_left._call_llm
+            player_llm = config.roles[cid].player_left._call_llm
+            assert dm_llm != player_llm, (
+                f"{cid}: DM and player should use different LLMs"
+            )
+
+    def test_config_exposes_dm_provider(self, scene_json):
+        """SceneConfig should expose dm_provider and dm_model."""
+        def mock_make_call_llm(provider, model, **kwargs):
+            return f"llm_{provider}"
+
+        with patch("engine.scene_runner.make_call_llm", side_effect=mock_make_call_llm):
+            config = configure_from_json(scene_json)
+
+        assert config.dm_provider == "anthropic"
+        assert "claude" in config.dm_model

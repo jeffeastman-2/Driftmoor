@@ -41,6 +41,8 @@ class SceneConfig:
     geometry_summary: str = ""
     default_turns: int = 4
     game_time: GameTime | None = None
+    dm_provider: str = "anthropic"
+    dm_model: str = "claude-sonnet-4-20250514"
     narrative_provider: str = "anthropic"
     narrative_model: str = "claude-sonnet-4-20250514"
 
@@ -177,6 +179,11 @@ def configure_from_json(json_path: Path) -> SceneConfig:
     """Load a scene configuration from a JSON file."""
     data = json.loads(json_path.read_text(encoding="utf-8"))
 
+    # Scene-level DM provider (all characters share the same DM)
+    dm_provider = data.get("dm_provider", "anthropic")
+    dm_model = data.get("dm_model", "claude-sonnet-4-20250514")
+    dm_llm = make_call_llm(dm_provider, dm_model)
+
     characters: dict[str, CharacterSession] = {}
     roles: dict[str, RoleSet] = {}
 
@@ -184,12 +191,12 @@ def configure_from_json(json_path: Path) -> SceneConfig:
         session, provider, model = _build_character(char_id, cdata)
         characters[char_id] = session
 
-        llm = make_call_llm(provider, model)
+        player_llm = make_call_llm(provider, model)
         roles[char_id] = RoleSet(
-            player_left=PlayerLeft(call_llm=llm),
-            player_right=PlayerRight(call_llm=llm),
-            dm_left=DMLeft(call_llm=llm),
-            dm_right=DMRight(call_llm=llm),
+            player_left=PlayerLeft(call_llm=player_llm),
+            player_right=PlayerRight(call_llm=player_llm),
+            dm_left=DMLeft(call_llm=dm_llm),
+            dm_right=DMRight(call_llm=dm_llm),
         )
 
     game_state_summary = _build_game_state(data.get("game_state_sections", []))
@@ -223,6 +230,8 @@ def configure_from_json(json_path: Path) -> SceneConfig:
         geometry_summary=geometry_summary,
         default_turns=data.get("default_turns", 4),
         game_time=game_time,
+        dm_provider=dm_provider,
+        dm_model=dm_model,
         narrative_provider=data.get("narrative_provider", "anthropic"),
         narrative_model=data.get("narrative_model", "claude-sonnet-4-20250514"),
     )

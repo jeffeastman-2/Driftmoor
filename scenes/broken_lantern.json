@@ -6,6 +6,8 @@
   "character_summary": "Kaelin (DeepSeek), Tess (Grok)",
   "default_turns": 4,
   "game_time": {"hour": 20, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "dm_provider": "anthropic",
+  "dm_model": "claude-sonnet-4-20250514",
 
   "characters": {
     "kaelin": {

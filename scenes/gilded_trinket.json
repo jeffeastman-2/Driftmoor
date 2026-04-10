@@ -3,9 +3,11 @@
   "title": "GILDED TRINKET",
   "narrative_title": "The Gilded Trinket",
   "transcript_title": "GILDED TRINKET — Seraphina, Tavian",
-  "character_summary": "Seraphina (Claude), Tavian (GPT-4o)",
+  "character_summary": "Seraphina (Grok), Tavian (GPT-4o)",
   "default_turns": 4,
   "game_time": {"hour": 10, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "dm_provider": "anthropic",
+  "dm_model": "claude-sonnet-4-20250514",
 
   "characters": {
     "seraphina": {
@@ -23,8 +25,8 @@
       "wisdom": 10,
       "charisma": 15,
       "location": "gilded_trinket",
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-20250514",
+      "provider": "xai",
+      "model": "grok-3",
       "soul_file": "scenario/people/players/seraphina/SOUL.md",
       "identity_file": "scenario/people/players/seraphina/IDENTITY.md",
       "initial_scene": "You push open the door of The Gilded Trinket. A bell chimes. Narrow, cluttered, dim oil lamp light. Shelves of rusty tools, old weapons, curios. A locked glass display case at the counter holds the more interesting items — you notice a tarnished silver ring with a dark stone that seems to catch the lamplight oddly. Behind the counter stands a tall, lean figure with faintly shimmering bronze scales and piercing green eyes that are already weighing you. Smells of dust and polish.",

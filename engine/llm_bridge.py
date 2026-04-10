@@ -61,6 +61,7 @@ def make_call_llm(
     provider: str,
     model: str,
     api_key: Optional[str] = None,
+    call_delay: float = 0.0,
 ) -> "CallLLM":
     """Create a CallLLM callable for the given provider and model.
 
@@ -70,6 +71,8 @@ def make_call_llm(
         model:    Model name (e.g. "grok-3", "gpt-4o", "qwen3:14b").
         api_key:  API key. If None, read from the provider's env var.
                   Not needed for ollama.
+        call_delay: Seconds to wait after each successful call.
+                  Helps avoid rate-limiting on busy providers.
 
     Returns:
         An async callable: (system_prompt, user_message) -> str
@@ -111,7 +114,10 @@ def make_call_llm(
             agent = agent_class(**kwargs)
             try:
                 async with aiohttp.ClientSession() as session:
-                    return await agent.send_message(user_message, session)
+                    result = await agent.send_message(user_message, session)
+                    if call_delay > 0:
+                        await asyncio.sleep(call_delay)
+                    return result
             except Exception as e:
                 error_str = str(e)
                 retryable = "503" in error_str or "429" in error_str

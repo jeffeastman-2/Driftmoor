@@ -6,6 +6,8 @@
   "character_summary": "Amara (GPT-4o), Elden (DeepSeek), Mira (Grok)",
   "default_turns": 4,
   "game_time": {"hour": 19, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "dm_provider": "anthropic",
+  "dm_model": "claude-sonnet-4-20250514",
 
   "characters": {
     "amara": {

@@ -6,6 +6,8 @@
   "character_summary": "Thorgrim (Grok), Darrin (GPT-4o), Kara (DeepSeek)",
   "default_turns": 4,
   "game_time": {"hour": 7, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "dm_provider": "anthropic",
+  "dm_model": "claude-sonnet-4-20250514",
 
   "characters": {
     "thorgrim": {

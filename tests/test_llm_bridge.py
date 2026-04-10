@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import time
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
@@ -139,3 +140,41 @@ class TestCallLLMExecution:
             asyncio.run(fn("sys", "usr"))
 
         assert "api_key" not in captured
+
+
+class TestCallDelay:
+    def test_call_delay_adds_pause(self):
+        """call_delay should add a pause after each successful call."""
+        class MockAgent:
+            def __init__(self, **kwargs):
+                pass
+
+            async def send_message(self, message, session):
+                return "ok"
+
+        with patch.dict("engine.llm_bridge.PROVIDER_CONFIGS", {
+            "ollama": {"agent_class": MockAgent},
+        }):
+            fn = make_call_llm("ollama", "test", call_delay=0.3)
+            start = time.monotonic()
+            asyncio.run(fn("sys", "usr"))
+            elapsed = time.monotonic() - start
+            assert elapsed >= 0.25  # should have waited ~0.3s
+
+    def test_no_delay_by_default(self):
+        """Without call_delay, calls return immediately."""
+        class MockAgent:
+            def __init__(self, **kwargs):
+                pass
+
+            async def send_message(self, message, session):
+                return "ok"
+
+        with patch.dict("engine.llm_bridge.PROVIDER_CONFIGS", {
+            "ollama": {"agent_class": MockAgent},
+        }):
+            fn = make_call_llm("ollama", "test")
+            start = time.monotonic()
+            asyncio.run(fn("sys", "usr"))
+            elapsed = time.monotonic() - start
+            assert elapsed < 0.2
