@@ -21,7 +21,7 @@ from pathlib import Path
 
 from models.space_time import GameTime
 from engine.scene_runner import configure_from_json, print_turn_result, ROOT
-from engine.session import iter_session
+from engine.session import iter_session, load_resume_state
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
 
@@ -63,6 +63,8 @@ class SceneRunner:
         self.checkpoint_dir = ROOT / "runtime" / "state" / config.scene_name
         self.done = False
         self._gen = None
+        self._start_turn = 1
+        self._initial_history = ""
 
     def init(self):
         """Wipe any previous run files so progress is unambiguous."""
@@ -70,6 +72,27 @@ class SceneRunner:
             shutil.rmtree(self.checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         print(f"  Cleared: {self.checkpoint_dir}")
+
+    def resume_init(self) -> int | None:
+        """Load the last checkpoint to resume where the previous run ended.
+
+        Patches character conditions in-place and seeds scene history so
+        characters remember prior turns.  Does NOT delete any existing files.
+
+        Returns the last game_minutes recorded (None if no game_time), so the
+        caller can derive the correct frontier to resume from.
+        """
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        last_turn, last_game_minutes, history = load_resume_state(
+            self.checkpoint_dir, self.config.characters
+        )
+        if last_turn == 0:
+            print(f"  {self.config.scene_name}: no checkpoints found — starting fresh")
+        else:
+            print(f"  {self.config.scene_name}: resuming after turn {last_turn}")
+        self._start_turn = last_turn + 1
+        self._initial_history = history
+        return last_game_minutes
 
     @property
     def next_game_minutes(self) -> int | None:
@@ -90,6 +113,8 @@ class SceneRunner:
             geometry_summary=self.config.geometry_summary,
             checkpoint_dir=self.checkpoint_dir,
             game_time=self.config.game_time,
+            start_turn=self._start_turn,
+            initial_history=self._initial_history,
         )
 
     async def advance_from_to(self, start_minutes: int, end_minutes: int) -> list:
@@ -132,17 +157,26 @@ class SceneRunner:
 # Main
 # ---------------------------------------------------------------------------
 
-async def run_all(num_turns_override: int | None = None) -> None:
+MAX_CONCURRENT = 3  # max scenes running simultaneously
+
+async def run_all(
+    num_turns_override: int | None = None,
+    resume: bool = False,
+    scene_filter: str | None = None,
+) -> None:
     available = {p.stem for p in SCENES_DIR.glob("*.json")}
+    scene_order = [scene_filter] if scene_filter else SCENE_ORDER
+    single_scene = scene_filter is not None
 
     runners: list[SceneRunner] = []
-    for scene_name in SCENE_ORDER:
+    for scene_name in scene_order:
         if scene_name not in available:
             print(f"WARNING: {scene_name}.json not found — skipping")
             continue
         json_path = SCENES_DIR / f"{scene_name}.json"
-        # Each scene gets its own GameTime copy so clock advances don't interfere
-        game_time = dataclasses.replace(SESSION_START)
+        # Single-scene mode: use the JSON's own game_time (not SESSION_START)
+        # so the scene plays at the time defined in its own config.
+        game_time = None if single_scene else dataclasses.replace(SESSION_START)
         config = configure_from_json(json_path, game_time=game_time)
         num_turns = num_turns_override if num_turns_override is not None else config.default_turns
         runners.append(SceneRunner(config, num_turns))
@@ -151,19 +185,33 @@ async def run_all(num_turns_override: int | None = None) -> None:
         print("No scenes found.")
         return
 
-    print("Clearing previous run files...")
-    for runner in runners:
-        runner.init()
+    if resume:
+        print("Resuming previous run...")
+        last_minutes_per_scene = [r.resume_init() for r in runners]
+        # Derive shared frontier: latest game_time across all scenes + one step.
+        # Scenes without game_time return None; ignore them for the frontier.
+        timed = [m for m in last_minutes_per_scene if m is not None]
+        if timed:
+            exploration_step = SESSION_START.turn_duration
+            frontier = max(timed) + exploration_step
+        else:
+            gt0 = SESSION_START
+            frontier = gt0.day * 24 * 60 + gt0.hour * 60 + gt0.minute
+            exploration_step = gt0.turn_duration
+    else:
+        print("Clearing previous run files...")
+        for runner in runners:
+            runner.init()
+        # For a single scene, derive frontier from its own game_time.
+        if single_scene and runners and runners[0].config.game_time is not None:
+            gt0 = runners[0].config.game_time
+        else:
+            gt0 = SESSION_START
+        frontier = gt0.day * 24 * 60 + gt0.hour * 60 + gt0.minute
+        exploration_step = gt0.turn_duration
 
     total_start = time.monotonic()
-
-    # Frontier scheduler: advance all scenes to the same target each round.
-    # Target always moves by the exploration step (SESSION_START.turn_duration)
-    # regardless of melee.  Scenes run as many turns as needed to reach the
-    # target — melee turns burn through internally, then the scene returns.
-    gt0 = SESSION_START
-    frontier = gt0.day * 24 * 60 + gt0.hour * 60 + gt0.minute
-    exploration_step = gt0.turn_duration  # minutes per exploration turn (10)
+    sem = asyncio.Semaphore(MAX_CONCURRENT)
 
     while True:
         active = [r for r in runners if not r.done]
@@ -177,12 +225,14 @@ async def run_all(num_turns_override: int | None = None) -> None:
         print(f"  → Day {tday}  {th:02d}:{tm:02d}")
         print(f"{'=' * 70}")
 
-        all_results = await asyncio.gather(*[r.advance_from_to(frontier, target) for r in active])
+        async def _run_one(runner: SceneRunner) -> tuple:
+            async with sem:
+                return runner, await runner.advance_from_to(frontier, target)
 
-        for runner, turn_results in zip(active, all_results):
+        all_results = await asyncio.gather(*[_run_one(r) for r in active])
+        for runner, turn_results in all_results:
+            print(f"\n  ── {runner.config.title} ──")
             for turn_result in turn_results:
-                if len(active) > 1 or len(turn_results) > 1:
-                    print(f"\n  ── {runner.config.title} ──")
                 print_turn_result(turn_result)
 
         frontier = target
@@ -195,28 +245,37 @@ async def run_all(num_turns_override: int | None = None) -> None:
     # Per-scene final output
     for runner in runners:
         config = runner.config
-        print(f"\nGenerating transcript for {config.scene_name}...")
+        scene_name = config.scene_name
+        print(f"\nGenerating transcript for {scene_name}...")
         elaborate_session_from_dir(
             runner.checkpoint_dir,
-            output_path=runner.checkpoint_dir / "transcript.txt",
+            output_path=runner.checkpoint_dir / f"{scene_name}_transcript.txt",
             title=config.transcript_title,
         )
-        print(f"  Written to {runner.checkpoint_dir / 'transcript.txt'}")
+        print(f"  Written to {runner.checkpoint_dir / f'{scene_name}_transcript.txt'}")
 
-        print(f"Generating narrative for {config.scene_name}...")
+        print(f"Generating narrative for {scene_name}...")
         await generate_narrative_from_dir(
             runner.checkpoint_dir,
             provider=config.narrative_provider,
             model=config.narrative_model,
             title=config.narrative_title,
-            output_path=runner.checkpoint_dir / "story.txt",
+            output_path=runner.checkpoint_dir / f"{scene_name}_story.txt",
         )
-        print(f"  Written to {runner.checkpoint_dir / 'story.txt'}")
+        print(f"  Written to {runner.checkpoint_dir / f'{scene_name}_story.txt'}")
 
 
 def main() -> None:
-    num_turns = int(sys.argv[1]) if len(sys.argv) > 1 else None
-    asyncio.run(run_all(num_turns))
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    resume = "--resume" in sys.argv
+    scene_filter = None
+    if "--scene" in sys.argv:
+        idx = sys.argv.index("--scene")
+        if idx + 1 < len(sys.argv):
+            scene_filter = sys.argv[idx + 1]
+            args = [a for a in args if a != scene_filter]
+    num_turns = int(args[0]) if args else None
+    asyncio.run(run_all(num_turns, resume=resume, scene_filter=scene_filter))
 
 
 if __name__ == "__main__":

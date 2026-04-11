@@ -5,7 +5,7 @@
   "transcript_title": "FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
   "character_summary": "Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)",
   "default_turns": 4,
-  "game_time": {"hour": 15, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "game_time": {"hour": 19, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
   "dm_provider": "anthropic",
   "dm_model": "claude-sonnet-4-20250514",
   "geometry_file": "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md",
@@ -30,7 +30,7 @@
       "model": "grok-3",
       "soul_file": "scenario/people/players/aeliana/SOUL.md",
       "identity_file": "scenario/people/players/aeliana/IDENTITY.md",
-      "initial_scene": "You are on the trail approaching the Fey Glade. The air shimmers with unnatural warmth ahead. No sounds from the forest — unnaturally still. You sense something watching from the treeline.",
+      "initial_scene": "It is dusk. You are on the trail approaching the Fey Glade. The forest ahead has gone unnaturally quiet — no birdsong, no rustling. The air carries a faint luminous warmth from somewhere deeper in the trees. You have heard there is a gatherer sheltering in the glade. You sense something large in the forest shadows to your left, watching. Whatever it is, it is not moving toward you — not yet.",
       "condition_name": "Aeliana",
       "condition": {
         "state": {
@@ -67,7 +67,7 @@
       "model": "gpt-4o",
       "soul_file": "scenario/people/npcs/fennel/SOUL.md",
       "identity_file": "scenario/people/npcs/fennel/IDENTITY.md",
-      "initial_scene": "You are in the glade near the pool. The pool glimmers with an eerie light. A figure approaches from the trail — an elf, armed. Something dark shifts in the treeline behind you.",
+      "initial_scene": "It is dusk. You have spent the day safe in the glade — the light kept the shadow creature at bay. But the light is changing now, the pool beginning to brighten with its own strange glow, and you can feel the wrongness at the forest edge returning. The shadow that has circled this place for three days is back. You can hear it — or rather, you hear the absence of everything else. Someone is coming down the trail from the east. You don't know if that is good news.",
       "condition_name": "Fennel",
       "condition": {
         "state": {
@@ -121,7 +121,7 @@
       "model": "deepseek-chat",
       "soul": "You are the SHADOWBEAST — a predator of shadow and instinct. You do not think in words. You sense heat, motion, pressure, the shimmer of the boundary that contains you. Communicate through sensation-language: vibration, scent-trails, thermal impressions. Never use human speech or abstract reasoning.",
       "identity": "Shadowbeast. CR ½. HP 16. AC 12 (semi-corporeal). Speed 40ft. STR 6 DEX 14 CON 13 INT 6 WIS 10 CHA 8. Shadow Stealth: Hide as bonus action in dim light/darkness. Sunlight Sensitivity: disadvantage on attacks in sunlight. Multiattack: two claw attacks. Claw: +4, 2d4+2 slashing. Shadow Swipe (Recharge 5-6): 10ft radius, DC 12 DEX, 2d6 necrotic + slow. Resistant to nonmagical B/P/S. Vulnerable to radiant. Immune to charmed, frightened.",
-      "initial_scene": "You are in the forest at the boundary. Prey near the boundary — one alert, one near the pool. The shimmer is a wall of wrongness. You cannot exist there. Not now, not while the light burns. Hunger builds. Wait for dark.",
+      "initial_scene": "Dusk. The light in the glade is changing — the burning wrongness of full day is fading. The shimmer at the boundary weakens. You have returned. Three nights. Three dawns. You know the rhythm. The prey near the pool has not moved far. A new heat signature approaches from the east trail — taller, moving carefully, carrying metal. The barrier still repels. But it is softening. Wait. Learn the new presence. When darkness comes, the wall will be weak enough to test.",
       "condition_name": "Shadowbeast",
       "condition": {
         "state": {
@@ -145,7 +145,7 @@
   "game_state_sections": [
     {"header": "Creatures in Scene", "file": "scenario/creatures/shadowbeast.md"},
     {"header": "The Fey Glade Pool (DM Only)", "file": "scenario/places/mistwood_hills/fey_glade/LORE.md"},
-    {"header": "Character Starting Positions", "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 79.0 | 25.0 | TRAIL |\n| fennel | 44.0 | 52.0 | GLADE |\n| shadowbeast_1 | 37.0 | 50.0 | FOREST |"},
+    {"header": "Character Starting Positions", "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 79.0 | 25.0 | TRAIL |\n| fennel | 44.0 | 52.0 | GLADE |\n| shadowbeast_1 | 39.0 | 50.0 | FOREST |"},
     {"header": "Exit Motivations (DM only)", "text": "Characters may leave this scene. Recognise and permit these:\n- Fennel is a gatherer, not a fighter. If the shadowbeast is driven off or killed, she will want to return to town with her haul.\n- Aeliana may pursue a fleeing shadowbeast into the Mistwood, or head to town to warn people about the creature.\n- If wounded, characters may retreat toward Driftmoor for aid at the Bitter Remedy (apothecary) or Elyssa's cottage."}
   ]
 }

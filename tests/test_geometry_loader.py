@@ -95,7 +95,7 @@ class TestParseGeometryMd:
 
     def test_boundary_effect(self, fey_glade_data):
         boundary = fey_glade_data["boundaries"][0]
-        assert boundary.effect == ""
+        assert "fey resonance" in boundary.effect
 
     def test_boundary_vertices(self, fey_glade_data):
         boundary = fey_glade_data["boundaries"][0]
@@ -116,7 +116,7 @@ class TestParseGeometryMd:
 
     def test_starting_shadowbeast(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["shadowbeast"]
-        assert pos.x == 37.0
+        assert pos.x == 39.0
         assert pos.y == 50.0
 
 

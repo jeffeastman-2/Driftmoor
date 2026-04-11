@@ -127,6 +127,69 @@ def _save_turn(
 
 
 # ---------------------------------------------------------------------------
+# Resume helpers
+# ---------------------------------------------------------------------------
+
+def load_resume_state(
+    checkpoint_dir: Path,
+    characters: dict[str, CharacterSession],
+) -> tuple[int, int | None, str]:
+    """Read a checkpoint directory and prepare state for resuming a session.
+
+    Patches ``characters`` conditions in-place from the last checkpoint so
+    characters start the next session with their ending emotional state.
+
+    Returns:
+        (last_turn, last_game_minutes, scene_history)
+        - last_turn: the highest turn number found (0 if none)
+        - last_game_minutes: absolute game minutes from the last checkpoint's
+          game_time (None if no game_time was recorded)
+        - scene_history: full reconstructed narrative/dialogue history so
+          characters remember what happened in prior turns
+    """
+    from models.condition import NeurochemicalState
+
+    files = sorted(
+        (p for p in checkpoint_dir.glob("*.json") if not p.stem.endswith("transcript")),
+        key=lambda p: p.name,
+    )
+    if not files:
+        return 0, None, ""
+
+    scene_history = ""
+    last_turn = 0
+    last_game_minutes: int | None = None
+
+    for path in files:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        last_turn = data["turn"]
+
+        gt = data.get("game_time")
+        if gt:
+            last_game_minutes = gt["day"] * 24 * 60 + gt["hour"] * 60 + gt["minute"]
+
+        # Reconstruct history using the same logic as iter_session
+        for cr_data in data.get("character_results", []):
+            char_id = cr_data["character_id"]
+            spoken = (cr_data["output"].get("spoken") or "").strip()
+            prose = (cr_data["narration"].get("prose") or "").strip()
+            entry = ""
+            if spoken and spoken.lower() not in ("(silent)", "(silence)"):
+                entry += f'\n{char_id} says: "{spoken}"'
+            if prose:
+                entry += f"\n{prose}"
+            scene_history += entry
+
+    # Restore conditions from the last checkpoint
+    last_data = json.loads(files[-1].read_text(encoding="utf-8"))
+    for char_id, state_dict in last_data.get("conditions", {}).items():
+        if char_id in characters:
+            characters[char_id].condition.state = NeurochemicalState.from_dict(state_dict)
+
+    return last_turn, last_game_minutes, scene_history
+
+
+# ---------------------------------------------------------------------------
 # Session runner
 # ---------------------------------------------------------------------------
 
@@ -140,6 +203,8 @@ async def iter_session(
     checkpoint_dir: Optional[Path] = None,
     game_time: Optional[GameTime] = None,
     rng: Optional[random.Random] = None,
+    start_turn: int = 1,
+    initial_history: str = "",
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -149,16 +214,20 @@ async def iter_session(
     multiple independent sessions turn-by-turn.
 
     Use ``run_session`` for the common single-scene case.
+
+    ``start_turn`` and ``initial_history`` support resuming a previous session:
+    turn numbering begins at ``start_turn`` and characters are seeded with the
+    reconstructed history from prior turns so they remember what happened.
     """
     turn_cycle = TurnCycle(character_roles=character_roles)
-    scene_history = ""
+    scene_history = initial_history
 
     # Combat state
     in_combat = False
     pre_combat_duration: int | None = None
     active_characters: set[str] = set(characters.keys())
 
-    for turn_num in range(1, num_turns + 1):
+    for turn_num in range(start_turn, start_turn + num_turns):
         # Roll initiative — only for characters still in the scene
         char_list = [
             cs.character for cid, cs in characters.items()

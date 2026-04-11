@@ -108,11 +108,15 @@ def make_call_llm(
         if provider != "ollama":
             kwargs["api_key"] = resolved_key
 
-        # Retry with capped exponential backoff for transient errors (503, 429, 529).
-        # Backoff: 2s, 4s, 8s, 16s, 32s, then one final attempt after 60s.
-        # If the call still fails after that 60s wait, we give up and raise.
+        # Retry with capped exponential backoff for transient errors.
+        # - Timeout errors (connection/read timeout): retry up to MAX_TIMEOUT_RETRIES
+        #   with a short fixed wait — these are usually transient infrastructure blips.
+        # - Rate-limit / overload errors (429, 503, 529): exponential backoff up to
+        #   60s; give up after the first 60s wait fires and still fails.
         MAX_WAIT = 60
+        MAX_TIMEOUT_RETRIES = 5
         attempt = 0
+        timeout_attempts = 0
         hit_max_wait = False
         while True:
             agent = agent_class(**kwargs)
@@ -124,8 +128,14 @@ def make_call_llm(
                     return result
             except Exception as e:
                 error_str = str(e)
-                retryable = any(code in error_str for code in ("503", "429", "529"))
-                if retryable and not hit_max_wait:
+                is_timeout = isinstance(e, (TimeoutError, asyncio.TimeoutError))
+                is_rate = any(code in error_str for code in ("503", "429", "529"))
+                if is_timeout and timeout_attempts < MAX_TIMEOUT_RETRIES:
+                    timeout_attempts += 1
+                    print(f"  [{provider}] timeout, retry {timeout_attempts}/{MAX_TIMEOUT_RETRIES} in 5s")
+                    await asyncio.sleep(5)
+                    continue
+                if is_rate and not hit_max_wait:
                     wait = min(2 ** (attempt + 1), MAX_WAIT)  # 2, 4, 8, 16, 32, 60
                     attempt += 1
                     if wait >= MAX_WAIT:

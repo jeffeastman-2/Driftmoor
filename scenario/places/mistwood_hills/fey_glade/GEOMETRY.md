@@ -49,30 +49,9 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 
 - **type:** magical
 - **blocks:** shadowbeast, shadow_creature, undead
+- **effect:** fey resonance antithetical to shadow essence — blocked creatures feel deep sourceless wrongness
 - **vertices:** (39,44) (61,44) (61,56) (39,56)
-
-**Nature:** This barrier pre-dates the obelisk civilization. It is fey
-in origin — a living ward woven into the glade itself, sustained by
-whatever presence inhabits the pool and the carved stone. It was not
-built to repel shadowbeasts. It was built to protect something: the
-pool, the carved stone, and whatever the pool reveals to those who
-watch it at night. Shadow creatures and undead are repelled as a side
-effect — the barrier's energy is antithetical to their nature.
-
-The pool's carved stone matches obelisk civilization symbols, and the
-pool's luminous cycle tracks with the obelisk's energy pulses. The
-glade may have been a node in the same ancient network. The barrier
-is a remnant of that network's protective function. What it actually
-guards is what Fennel saw on night two and cannot remember.
-
-**Strength varies by conditions:**
-
-| condition                        | effect                                                                                         |
-|----------------------------------|------------------------------------------------------------------------------------------------|
-| Daylight (default)               | Absolute. No creature of shadow or undeath can cross. There is no save, no override, no exception. The barrier simply does not permit passage. Blocked creatures feel a deep, sourceless wrongness — not pain, but the certainty that they cannot exist here. |
-| Dusk / dawn                      | Weakened but substantial. DC 15 WIS save to force through. On success: crosses but takes 2d6 radiant damage and is frightened 1 round. On failure: repelled, stunned 1 round. |
-| Full darkness                    | Flickering. DC 10 WIS save to cross. On success: 1d6 radiant damage. On failure: repelled but may retry next turn. |
-| Full darkness + prey within 10   | Barely holding. DC 8 WIS save to cross, 1d4 radiant damage on success or failure. |
+- **behavior:** see LORE.md — barrier strength varies by time of day and conditions; do not adjudicate from this file
 
 ## Starting Positions
 
@@ -80,4 +59,4 @@ guards is what Fennel saw on night two and cannot remember.
 |--------------|-------|-------|----------|
 | aeliana      | 79.0  | 25.0  | TRAIL    |
 | fennel       | 44.0  | 52.0  | GLADE    |
-| shadowbeast  | 37.0  | 50.0  | FOREST   |
+| shadowbeast  | 39.0  | 50.0  | FOREST   |

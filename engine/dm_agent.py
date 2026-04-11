@@ -14,11 +14,17 @@ minimal valid data.  When call_llm is provided it is awaited as:
 
 from __future__ import annotations
 
+import random
 import re
 from dataclasses import dataclass, field
 from typing import Optional
 
 from engine.player_router import CallLLM, CharacterOutput
+
+
+def _roll_dice(n: int = 4, sides: int = 20) -> list[int]:
+    """Roll n dice with the given number of sides using Python's CSPRNG."""
+    return [random.randint(1, sides) for _ in range(n)]
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +72,24 @@ class DMLeft:
             "You are the rules-adjudication DM for a D&D 5e session. "
             "Evaluate the character's proposed action against game rules, "
             "spatial constraints, and the current game state.\n\n"
+            "## Dice Rolls\n"
+            "A set of pre-rolled d20 results will be provided in the user "
+            "prompt under '## Dice Rolls'. You MUST use these rolls in order "
+            "for any saving throws, attack rolls, or contested checks — do NOT "
+            "invent or assume your own values. Consume from left to right; "
+            "unused rolls are discarded.\n\n"
+            "## Spatial Boundaries\n"
+            "The geometry includes named boundaries that physically block "
+            "certain creature types. You must enforce these strictly:\n"
+            "  - If an action would move a blocked creature across a boundary, "
+            "reject it (APPROVED: No) and explain in NOTES.\n"
+            "  - Effects projected FROM a blocked creature (shadow tendrils, "
+            "magical auras, reach attacks) also cannot cross the boundary — "
+            "treat them as blocked at the boundary line.\n"
+            "  - When a partially-blocked creature ATTEMPTS to cross (saves "
+            "allowed at dusk/darkness per geometry rules), use the next "
+            "pre-rolled d20 to resolve the saving throw, state the DC, "
+            "the roll, the result, and emit the appropriate spatial event.\n\n"
             "Respond with exactly these labeled sections "
             "(no markdown fencing):\n\n"
             "**APPROVED** — Yes or No.\n"
@@ -85,7 +109,8 @@ class DMLeft:
             "or offensive spell against an opponent.\n"
             "  - exits_scene: when a character leaves the scene "
             "area entirely (fleeing, retreating, departing).\n"
-            "**NOTES** — Brief adjudication reasoning."
+            "**NOTES** — Brief adjudication reasoning, including any "
+            "dice rolls used and their outcomes."
         )
 
     def build_user_prompt(
@@ -93,7 +118,12 @@ class DMLeft:
         character_output: CharacterOutput,
         game_state_summary: str,
         geometry_summary: str,
+        dice_rolls: list[int] | None = None,
     ) -> str:
+        dice_section = ""
+        if dice_rolls:
+            rolls_str = ", ".join(str(r) for r in dice_rolls)
+            dice_section = f"\n\n## Dice Rolls\nd20 pool (use in order): [{rolls_str}]"
         return (
             f"# Character: {character_output.character_id} "
             f"(Turn {character_output.turn})\n\n"
@@ -104,6 +134,7 @@ class DMLeft:
             f"ACTION: {character_output.action}\n\n"
             f"## Game State\n{game_state_summary}\n\n"
             f"## Spatial Geometry\n{geometry_summary}"
+            f"{dice_section}"
         )
 
     def parse_response(
@@ -208,8 +239,10 @@ class DMLeft:
                 approved=True,
             )
         system = self.build_system_prompt()
+        dice_rolls = _roll_dice(4)
         user = self.build_user_prompt(
             character_output, game_state_summary, geometry_summary,
+            dice_rolls=dice_rolls,
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(

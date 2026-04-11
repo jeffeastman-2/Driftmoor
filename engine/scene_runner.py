@@ -28,6 +28,28 @@ def load_file(path: Path) -> str:
     return path.read_text(encoding="utf-8").strip() if path.exists() else ""
 
 
+def _parse_starting_positions(geometry_text: str) -> dict[str, tuple[float, float, str]]:
+    """Parse the '## Starting Positions' table from a GEOMETRY.md string.
+
+    Returns {character_id: (x, y, zone)}.
+    """
+    import re
+    positions: dict[str, tuple[float, float, str]] = {}
+    m = re.search(r"##\s+Starting Positions.*?(\|.+?)(?=\n##|\Z)", geometry_text, re.DOTALL)
+    if not m:
+        return positions
+    for line in m.group(1).splitlines():
+        cells = [c.strip() for c in line.split("|") if c.strip()]
+        if len(cells) >= 3 and cells[0] not in ("character", "---", "-"):
+            try:
+                char_id, x, y = cells[0], float(cells[1]), float(cells[2])
+                zone = cells[3] if len(cells) >= 4 else ""
+                positions[char_id] = (x, y, zone)
+            except ValueError:
+                pass
+    return positions
+
+
 @dataclass
 class SceneConfig:
     scene_name: str
@@ -214,6 +236,23 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
     if data.get("geometry_file"):
         geometry_summary = load_file(ROOT / data["geometry_file"])
 
+    # Inject starting positions into each character's initial_scene so the
+    # character agent knows exactly where it is (not just the DM).
+    if geometry_summary:
+        starting_positions = _parse_starting_positions(geometry_summary)
+        for char_id, cs in characters.items():
+            # Try exact match first, then strip trailing _<digits> (e.g. shadowbeast_1 → shadowbeast)
+            import re as _re
+            pos = starting_positions.get(char_id) or starting_positions.get(
+                _re.sub(r"_\d+$", "", char_id)
+            )
+            if pos:
+                x, y, zone = pos
+                cs.initial_scene = (
+                    cs.initial_scene
+                    + f"\n\nYour starting position: x={x}, y={y}, zone={zone}."
+                )
+
     # Game time — caller override takes precedence over JSON
     if game_time is None and "game_time" in data:
         gt = data["game_time"]
@@ -314,19 +353,20 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
         n = condition.state.norepinephrine
         print(f"  {char_id:15s}  dop={d:.2f}  cor={c:.2f}  nor={n:.2f}")
 
+    scene_name = config.scene_name
     print(f"\nGenerating transcript...")
     elaborate_session_from_dir(
         checkpoint_dir,
-        output_path=checkpoint_dir / "transcript.txt",
+        output_path=checkpoint_dir / f"{scene_name}_transcript.txt",
         title=config.transcript_title,
     )
-    print(f"  Written to {checkpoint_dir / 'transcript.txt'}")
+    print(f"  Written to {checkpoint_dir / f'{scene_name}_transcript.txt'}")
 
     print(f"Generating narrative...")
     await generate_narrative_from_dir(
         checkpoint_dir,
         provider=config.narrative_provider, model=config.narrative_model,
         title=config.narrative_title,
-        output_path=checkpoint_dir / "story.txt",
+        output_path=checkpoint_dir / f"{scene_name}_story.txt",
     )
-    print(f"  Written to {checkpoint_dir / 'story.txt'}")
+    print(f"  Written to {checkpoint_dir / f'{scene_name}_story.txt'}")
