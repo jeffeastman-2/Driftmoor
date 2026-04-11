@@ -54,7 +54,7 @@ def _char_result(
             "turn": turn,
             "approved": approved,
             "modified_action": modified_action,
-            "position_delta": None,
+            "new_position": None,
             "condition_deltas": condition_deltas or {},
             "spatial_events": spatial_events or [],
             "notes": "All good.",

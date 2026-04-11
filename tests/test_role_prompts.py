@@ -263,7 +263,7 @@ class TestDMLeftSystemPrompt:
     def test_requests_sections_not_json(self):
         prompt = DMLeft().build_system_prompt()
         assert "APPROVED" in prompt
-        assert "POSITION DELTA" in prompt
+        assert "NEW POSITION" in prompt
         assert "CONDITION" in prompt
         assert "JSON" not in prompt
 
@@ -297,7 +297,7 @@ class TestDMLeftParsing:
         raw = (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
-            "**POSITION DELTA** — 3, 2, 0\n"
+            "**NEW POSITION** — x=3.0, y=2.0, zone=GLADE\n"
             "**CONDITION** — dopamine +0.10\n"
             "**EVENTS** — enters_fey_glade\n"
             "**NOTES** — Valid movement."
@@ -312,7 +312,7 @@ class TestDMLeftParsing:
         raw = (
             "**APPROVED** — No\n"
             "**MODIFIED ACTION** — Cannot cross the barrier.\n"
-            "**POSITION DELTA** — none\n"
+            "**NEW POSITION** — none\n"
             "**CONDITION** — none\n"
             "**EVENTS** — none\n"
             "**NOTES** — Magical barrier blocks passage."
@@ -321,23 +321,23 @@ class TestDMLeftParsing:
         assert result.approved is False
         assert "barrier" in result.modified_action
 
-    def test_parse_position_delta(self):
+    def test_parse_new_position(self):
         raw = (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
-            "**POSITION DELTA** — 5.0, 3.0, 0.0\n"
+            "**NEW POSITION** — x=5.0, y=3.0, zone=GLADE\n"
             "**CONDITION** — none\n"
             "**EVENTS** — none\n"
             "**NOTES** — OK"
         )
         result = DMLeft().parse_response(raw, "aeliana", 1)
-        assert result.position_delta == (5.0, 3.0, 0.0)
+        assert result.new_position == (5.0, 3.0, "GLADE")
 
     def test_parse_multiple_condition_deltas(self):
         raw = (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
-            "**POSITION DELTA** — none\n"
+            "**NEW POSITION** — none\n"
             "**CONDITION** — dopamine +0.1, cortisol -0.05\n"
             "**EVENTS** — none\n"
             "**NOTES** — Calm but alert."
@@ -347,7 +347,7 @@ class TestDMLeftParsing:
         assert result.condition_deltas["cortisol"] == -0.05
 
     def test_parse_minimal(self):
-        raw = "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n**POSITION DELTA** — none\n**CONDITION** — none\n**EVENTS** — none\n**NOTES** — OK"
+        raw = "**APPROVED** — Yes\n**MODIFIED ACTION** — none\n**NEW POSITION** — none\n**CONDITION** — none\n**EVENTS** — none\n**NOTES** — OK"
         result = DMLeft().parse_response(raw, "aeliana", 1)
         assert result.approved is True
         assert result.condition_deltas == {}

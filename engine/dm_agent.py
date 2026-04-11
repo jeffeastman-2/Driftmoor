@@ -38,7 +38,7 @@ class Adjudication:
     turn: int
     approved: bool = True
     modified_action: Optional[str] = None
-    position_delta: Optional[tuple[float, float, float]] = None
+    new_position: Optional[tuple[float, float, str]] = None
     condition_deltas: dict[str, float] = field(default_factory=dict)
     spatial_events: list[str] = field(default_factory=list)
     notes: str = ""
@@ -89,14 +89,23 @@ class DMLeft:
             "  - When a partially-blocked creature ATTEMPTS to cross (saves "
             "allowed at dusk/darkness per geometry rules), use the next "
             "pre-rolled d20 to resolve the saving throw, state the DC, "
-            "the roll, the result, and emit the appropriate spatial event.\n\n"
+            "the roll, and the result in NOTES.\n"
+            "    CRITICAL: APPROVED controls whether the position change "
+            "actually takes effect in the engine. If the save SUCCEEDS, "
+            "set APPROVED: Yes so the creature's position updates. "
+            "If the save FAILS, set APPROVED: No. "
+            "Emitting boundary_crossed in EVENTS without APPROVED: Yes "
+            "does nothing — the creature stays where it was.\n\n"
             "Respond with exactly these labeled sections "
             "(no markdown fencing):\n\n"
             "**APPROVED** — Yes or No.\n"
             "**MODIFIED ACTION** — Rewritten action if rejected, "
             "otherwise \"none\".\n"
-            "**POSITION DELTA** — Movement as dx, dy, dz "
-            "(or \"none\" if no movement).\n"
+            "**NEW POSITION** — Character's absolute position after this "
+            "action as x=<val>, y=<val>, zone=<ZONE> "
+            "(or \"none\" if the character did not move). "
+            "When a boundary crossing is approved you MUST emit "
+            "the new coordinates inside the boundary here.\n"
             "**CONDITION** — Neurochemical deltas as "
             "dimension +/-value, comma separated "
             "(e.g. \"dopamine +0.1, cortisol -0.05\") "
@@ -149,7 +158,7 @@ class DMLeft:
 
         approved_raw = _extract("APPROVED")
         modified_raw = _extract("MODIFIED ACTION")
-        delta_raw = _extract("POSITION DELTA")
+        pos_raw = _extract("NEW POSITION")
         condition_raw = _extract("CONDITION")
         events_raw = _extract("EVENTS")
         notes_raw = _extract("NOTES")
@@ -162,18 +171,15 @@ class DMLeft:
         if modified_raw and modified_raw.lower() not in ("none", "null", "n/a", ""):
             modified_action = modified_raw
 
-        # Parse position delta
-        pd = None
-        if delta_raw and delta_raw.lower() not in ("none", "null", "n/a", "no movement", ""):
-            nums = re.findall(r'-?\d+(?:\.\d+)?', delta_raw)
-            if len(nums) >= 2:
-                try:
-                    coords = [float(n) for n in nums[:3]]
-                    if len(coords) == 2:
-                        coords.append(0.0)
-                    pd = tuple(coords)
-                except (TypeError, ValueError):
-                    pass
+        # Parse new absolute position: x=<val>, y=<val>, zone=<ZONE>
+        pos = None
+        if pos_raw and pos_raw.lower() not in ("none", "null", "n/a", "no movement", ""):
+            x_m = re.search(r'x\s*=\s*(-?\d+(?:\.\d+)?)', pos_raw, re.IGNORECASE)
+            y_m = re.search(r'y\s*=\s*(-?\d+(?:\.\d+)?)', pos_raw, re.IGNORECASE)
+            zone_m = re.search(r'zone\s*=\s*(\w+)', pos_raw, re.IGNORECASE)
+            if x_m and y_m:
+                pos = (float(x_m.group(1)), float(y_m.group(1)),
+                       zone_m.group(1).upper() if zone_m else "")
 
         # Parse condition deltas: handles multiple formats:
         #   "dopamine +0.1, cortisol -0.05"
@@ -220,7 +226,7 @@ class DMLeft:
             turn=turn,
             approved=approved,
             modified_action=modified_action,
-            position_delta=pd,
+            new_position=pos,
             condition_deltas=condition_deltas,
             spatial_events=spatial_events,
             notes=notes_raw,

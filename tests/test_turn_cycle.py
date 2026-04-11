@@ -162,9 +162,9 @@ class TestAdjudication:
     def test_position_delta(self):
         adj = Adjudication(
             character_id="aeliana", turn=1, approved=True,
-            position_delta=(5.0, 3.0, 0.0),
+            new_position=(5.0, 3.0, "GLADE"),
         )
-        assert adj.position_delta == (5.0, 3.0, 0.0)
+        assert adj.new_position == (5.0, 3.0, "GLADE")
 
 
 # ---- Narration tests ----

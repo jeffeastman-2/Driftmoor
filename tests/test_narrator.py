@@ -42,7 +42,7 @@ def _char_result(
             "turn": turn,
             "approved": True,
             "modified_action": "none.",
-            "position_delta": None,
+            "new_position": None,
             "condition_deltas": {},
             "spatial_events": [],
             "notes": "",

@@ -128,13 +128,18 @@ full combat effectiveness at the same moment the barrier is
 at its most permeable. This is not coincidence — it is the
 window the beast has been waiting for.
 
+**The barrier STRENGTHENS through the night and peaks at midnight.
+Dusk is the easiest crossing window. Night is the hardest.
+The DC table runs LOW → HIGH → LOW from dusk through night to dawn.**
+The beast knows this. Each failed attempt brings a harder crossing next turn.
+
 | period | barrier strength | shadowbeast light penalty | crossing mechanic |
 |--------|-----------------|--------------------------|-------------------|
 | Daylight | Absolute — no save permitted | Disadvantage on attacks | Cannot attempt |
-| Dusk (18:00–20:00) | Weakened | No penalty | DC 15 WIS save to cross; success: crosses + 2d6 radiant damage + frightened 1 round; failure: repelled + stunned 1 round |
-| Evening / Night (20:00–04:00) | Flickering | No penalty | DC 10 WIS save; success: 1d6 radiant; failure: repelled, may retry next turn |
-| Full darkness + prey within 10 units | Barely holding | No penalty | DC 8 WIS save; 1d4 radiant on success or failure |
-| Dawn (04:00–06:00) | Minimum — most dangerous window | No penalty | DC 6 WIS save; 1d4 radiant on success or failure |
+| Dusk (18:00–20:00) | Forming — most permeable | No penalty | DC 8 WIS save; success: crosses + 2d6 radiant damage + frightened 1 round; failure: repelled |
+| Evening (20:00–22:00) | Strengthening | No penalty | DC 14 WIS save; success: crosses + 1d6 radiant; failure: repelled + stunned 1 round |
+| Night (22:00–04:00) | Near peak — nearly impassable | No penalty | DC 18 WIS save; success: crosses + 1d6 radiant; failure: repelled + stunned 2 rounds |
+| Dawn (04:00–06:00) | Fading — secondary window | No penalty | DC 10 WIS save; 1d4 radiant on success or failure |
 
 **DM instruction:** When the shadowbeast acts and the conditions
 allow a crossing attempt, use the next pre-rolled d20 from the

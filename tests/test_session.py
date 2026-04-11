@@ -228,7 +228,7 @@ class TestConditionDeltas:
             return (
                 "**APPROVED** — Yes\n"
                 "**MODIFIED ACTION** — none\n"
-                "**POSITION DELTA** — 0, 0, 0\n"
+                "**NEW POSITION** — none\n"
                 "**CONDITION** — dopamine +0.1, cortisol -0.05\n"
                 "**EVENTS** — none\n"
                 "**NOTES** — test"
@@ -252,7 +252,7 @@ class TestConditionDeltas:
             return (
                 "**APPROVED** — Yes\n"
                 "**MODIFIED ACTION** — none\n"
-                "**POSITION DELTA** — 0, 0, 0\n"
+                "**NEW POSITION** — none\n"
                 "**CONDITION** — cortisol +0.1\n"
                 "**EVENTS** — none\n"
                 "**NOTES** — stress"
@@ -475,7 +475,7 @@ class TestDMLeftContext:
             return (
                 "**APPROVED** — Yes\n"
                 "**MODIFIED ACTION** — none\n"
-                "**POSITION DELTA** — 0, 0, 0\n"
+                "**NEW POSITION** — none\n"
                 "**CONDITION** — none\n"
                 "**EVENTS** — none\n"
                 "**NOTES** — test"
@@ -502,7 +502,7 @@ class TestDMLeftContext:
             return (
                 "**APPROVED** — Yes\n"
                 "**MODIFIED ACTION** — none\n"
-                "**POSITION DELTA** — 0, 0, 0\n"
+                "**NEW POSITION** — none\n"
                 "**CONDITION** — none\n"
                 "**EVENTS** — none\n"
                 "**NOTES** — test"
@@ -559,7 +559,7 @@ def _combat_dm_llm(event=COMBAT_EVENT):
         return (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
-            "**POSITION DELTA** — 0, 0, 0\n"
+            "**NEW POSITION** — none\n"
             "**CONDITION** — none\n"
             f"**EVENTS** — {event}\n"
             "**NOTES** — combat test"
@@ -573,7 +573,7 @@ def _no_event_dm_llm():
         return (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
-            "**POSITION DELTA** — 0, 0, 0\n"
+            "**NEW POSITION** — none\n"
             "**CONDITION** — none\n"
             "**EVENTS** — none\n"
             "**NOTES** — peaceful"
@@ -629,7 +629,7 @@ class TestCombatTimeSwitching:
                     return (
                         "**APPROVED** — Yes\n"
                         "**MODIFIED ACTION** — none\n"
-                        "**POSITION DELTA** — 0, 0, 0\n"
+                        "**NEW POSITION** — none\n"
                         "**CONDITION** — none\n"
                         f"**EVENTS** — {COMBAT_EVENT}\n"
                         "**NOTES** — beast attacks"
@@ -640,7 +640,7 @@ class TestCombatTimeSwitching:
                     return (
                         "**APPROVED** — Yes\n"
                         "**MODIFIED ACTION** — none\n"
-                        "**POSITION DELTA** — 0, 0, 0\n"
+                        "**NEW POSITION** — none\n"
                         "**CONDITION** — none\n"
                         f"**EVENTS** — {EXIT_EVENT}\n"
                         "**NOTES** — beast flees"
@@ -648,7 +648,7 @@ class TestCombatTimeSwitching:
             return (
                 "**APPROVED** — Yes\n"
                 "**MODIFIED ACTION** — none\n"
-                "**POSITION DELTA** — 0, 0, 0\n"
+                "**NEW POSITION** — none\n"
                 "**CONDITION** — none\n"
                 "**EVENTS** — none\n"
                 "**NOTES** — peaceful"

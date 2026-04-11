@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import random
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -31,6 +32,7 @@ from models.space_time import GameTime
 COMBAT_EVENT = "combat_initiated"
 EXIT_EVENT = "exits_scene"
 MELEE_DURATION = 1  # minutes per combat turn
+MAX_MELEE_ROUNDS = 20  # safety cap — melee rounds never count against num_turns
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +55,51 @@ class SessionResult:
     turns: list[TurnResult]
     final_conditions: dict[str, CharacterCondition]
     scene_history: str
+
+
+# ---------------------------------------------------------------------------
+# Position tracking helpers
+# ---------------------------------------------------------------------------
+
+def _parse_positions_table(game_state_summary: str) -> dict[str, tuple[float, float, str]]:
+    """Extract the character position table from game_state_summary.
+
+    Expects a markdown table with columns: character | x | y | zone.
+    Returns a dict of char_id → (x, y, zone).  Skips the header row.
+    """
+    positions: dict[str, tuple[float, float, str]] = {}
+    pattern = r'\|\s*(\w+)\s*\|\s*(-?\d+\.?\d*)\s*\|\s*(-?\d+\.?\d*)\s*\|\s*(\w+)\s*\|'
+    for m in re.finditer(pattern, game_state_summary):
+        char_id, x, y, zone = m.group(1), m.group(2), m.group(3), m.group(4)
+        if char_id.lower() == "character":
+            continue  # header row
+        positions[char_id] = (float(x), float(y), zone.upper())
+    return positions
+
+
+def _update_positions_in_summary(
+    game_state_summary: str,
+    positions: dict[str, tuple[float, float, str]],
+) -> str:
+    """Replace the position table in game_state_summary with current values.
+
+    Rebuilds the ``| character | x | y | zone |`` table with live positions so
+    the DM always sees where characters actually are rather than turn-0 values.
+    """
+    if not positions:
+        return game_state_summary
+    rows = ["| character | x | y | zone |", "|-----------|-----|-----|------|"]
+    for char_id, (x, y, zone) in positions.items():
+        rows.append(f"| {char_id} | {x} | {y} | {zone} |")
+    new_table = "\n".join(rows)
+    # Replace the existing table (header + any number of data rows)
+    updated = re.sub(
+        r'\| character \| x \| y \| zone \|.*?(?=\n#|\n\n|\Z)',
+        new_table,
+        game_state_summary,
+        flags=re.DOTALL,
+    )
+    return updated
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +274,24 @@ async def iter_session(
     pre_combat_duration: int | None = None
     active_characters: set[str] = set(characters.keys())
 
-    for turn_num in range(start_turn, start_turn + num_turns):
+    story_turns_remaining = num_turns
+    melee_rounds_remaining = MAX_MELEE_ROUNDS
+    turn_num = start_turn
+
+    # Live position tracking — updated from DM-approved NEW POSITION each turn
+    current_positions: dict[str, tuple[float, float, str]] = _parse_positions_table(
+        game_state_summary
+    )
+
+    while True:
+        combat_at_start = in_combat
+        if combat_at_start:
+            if melee_rounds_remaining <= 0:
+                break
+        else:
+            if story_turns_remaining <= 0:
+                break
+
         # Roll initiative — only for characters still in the scene
         char_list = [
             cs.character for cid, cs in characters.items()
@@ -238,6 +302,9 @@ async def iter_session(
 
         entries = roll_initiative(char_list, rng=rng)
         order = [e.character_id for e in entries]
+
+        # Rebuild the position table with live positions for this turn
+        turn_game_state = _update_positions_in_summary(game_state_summary, current_positions)
 
         # Execute each character in initiative order, rebuilding context
         # just-in-time so each character sees within-turn narration from
@@ -260,11 +327,15 @@ async def iter_session(
             context = _build_context(cs, turn_num, combined_history)
             cr = await turn_cycle.execute_character_turn(
                 context=context,
-                game_state_summary=game_state_summary,
+                game_state_summary=turn_game_state,
                 geometry_summary=geometry_summary,
                 scene_history=within_turn_history,
             )
             turn_result.character_results.append(cr)
+
+            # Update live position from approved DM adjudication
+            if cr.adjudication.approved and cr.adjudication.new_position is not None:
+                current_positions[character_id] = cr.adjudication.new_position
 
             # Check for exits_scene — remove from active set mid-turn
             if EXIT_EVENT in cr.adjudication.spatial_events:
@@ -318,6 +389,13 @@ async def iter_session(
         # Advance game clock
         if game_time:
             game_time.advance(1)
+
+        # Count this turn against the appropriate budget
+        if combat_at_start:
+            melee_rounds_remaining -= 1
+        else:
+            story_turns_remaining -= 1
+        turn_num += 1
 
         # Check for combat end: no hostile still facing a non-hostile
         if in_combat and game_time is not None:
