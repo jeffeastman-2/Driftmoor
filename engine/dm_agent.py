@@ -22,7 +22,7 @@ from typing import Optional
 from engine.player_router import CallLLM, CharacterOutput
 
 
-def _roll_dice(n: int = 4, sides: int = 20) -> list[int]:
+def _roll_dice(n: int = 8, sides: int = 20) -> list[int]:
     """Roll n dice with the given number of sides using Python's CSPRNG."""
     return [random.randint(1, sides) for _ in range(n)]
 
@@ -239,7 +239,7 @@ class DMLeft:
                 approved=True,
             )
         system = self.build_system_prompt()
-        dice_rolls = _roll_dice(4)
+        dice_rolls = _roll_dice(8)
         user = self.build_user_prompt(
             character_output, game_state_summary, geometry_summary,
             dice_rolls=dice_rolls,

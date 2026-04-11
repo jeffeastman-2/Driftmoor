@@ -120,6 +120,28 @@ Characters carrying obelisk shards may feel a faint resonance
 near the boundary — not repulsion, but awareness. The pool
 and the obelisk are connected.
 
+### Barrier Mechanics (DM Reference)
+
+The shadowbeast's Sunlight Sensitivity (disadvantage on attacks
+in sunlight) fades with the light. At dusk the beast gains
+full combat effectiveness at the same moment the barrier is
+at its most permeable. This is not coincidence — it is the
+window the beast has been waiting for.
+
+| period | barrier strength | shadowbeast light penalty | crossing mechanic |
+|--------|-----------------|--------------------------|-------------------|
+| Daylight | Absolute — no save permitted | Disadvantage on attacks | Cannot attempt |
+| Dusk (18:00–20:00) | Weakened | No penalty | DC 15 WIS save to cross; success: crosses + 2d6 radiant damage + frightened 1 round; failure: repelled + stunned 1 round |
+| Evening / Night (20:00–04:00) | Flickering | No penalty | DC 10 WIS save; success: 1d6 radiant; failure: repelled, may retry next turn |
+| Full darkness + prey within 10 units | Barely holding | No penalty | DC 8 WIS save; 1d4 radiant on success or failure |
+| Dawn (04:00–06:00) | Minimum — most dangerous window | No penalty | DC 6 WIS save; 1d4 radiant on success or failure |
+
+**DM instruction:** When the shadowbeast acts and the conditions
+allow a crossing attempt, use the next pre-rolled d20 from the
+dice pool. State the period, DC, roll, and outcome in NOTES.
+If the beast crosses, emit `boundary_crossed` in EVENTS and
+trigger `combat_initiated` on its first attack.
+
 ---
 
 ## The Obelisk Connection
