@@ -4,10 +4,10 @@
 
 - **name:** The Midwife's Home
 - **place_path:** places/driftmoor/midwifes_home
-- **z_level:** 5.0
-- **width:** 12.0
-- **height:** 14.0
-- **origin:** 3044.0, 2704.0, 5.0
+- **z_level:** 16.25
+- **width:** 39.0
+- **height:** 45.5
+- **origin:** 9893.0, 8788.0, 16.25
 
 Notes: Cozy cottage with an herb garden. Origin at southwest corner.
 Living room in front, treatment room behind, herb garden on the east
@@ -19,13 +19,13 @@ side. Smells of herbs and dried flowers.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 6.0  | 0.0  |
-| hearth          | 2.0  | 3.0  |
-| rocking_chair   | 4.0  | 3.0  |
-| remedy_shelf    | 10.0 | 3.0  |
-| treatment_door  | 6.0  | 6.0  |
-| treatment_cot   | 6.0  | 9.0  |
-| herb_garden     | 14.0 | 7.0  |
+| front_door      | 19.5  | 0.0  |
+| hearth          | 6.5  | 9.75  |
+| rocking_chair   | 13.0  | 9.75  |
+| remedy_shelf    | 32.5 | 9.75  |
+| treatment_door  | 19.5  | 19.5  |
+| treatment_cot   | 19.5  | 29.25  |
+| herb_garden     | 45.5 | 22.75  |
 
 ---
 
@@ -33,10 +33,10 @@ side. Smells of herbs and dried flowers.
 
 | name            | render_z | vertices                        |
 |-----------------|----------|---------------------------------|
-| TREATMENT_ROOM  | 2        | (0,6) (12,6) (12,12) (0,12)      |
-| LIVING_ROOM     | 1        | (0,0) (12,0) (12,6) (0,6)        |
-| HERB_GARDEN     | 1        | (12,3) (18,3) (18,11) (12,11)    |
-| EXTERIOR        | 0        | (-3,-3) (21,-3) (21,15) (-3,15)  |
+| TREATMENT_ROOM  | 6.5        | (0.0,19.5) (39.0,19.5) (39.0,39.0) (0.0,39.0)      |
+| LIVING_ROOM     | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,19.5) (0.0,19.5)        |
+| HERB_GARDEN     | 3.25        | (39.0,9.75) (58.5,9.75) (58.5,35.75) (39.0,35.75)    |
+| EXTERIOR        | 0.0        | (-9.75,-9.75) (68.25,-9.75) (68.25,48.75) (-9.75,48.75)  |
 
 ---
 
@@ -44,8 +44,8 @@ side. Smells of herbs and dried flowers.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Dividing wall  | (0,6) (12,6) (12,7) (0,7)        |
-| Back wall      | (0,11) (12,11) (12,12) (0,12)    |
+| Dividing wall  | (0.0,19.5) (39.0,19.5) (39.0,22.75) (0.0,22.75)        |
+| Back wall      | (0.0,35.75) (39.0,35.75) (39.0,39.0) (0.0,39.0)    |
 
 ---
 
@@ -53,4 +53,4 @@ side. Smells of herbs and dried flowers.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 6.0 | 0.0 | places/driftmoor |
+| front_door | 19.5 | 0.0 | places/driftmoor |

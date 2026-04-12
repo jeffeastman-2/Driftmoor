@@ -4,10 +4,10 @@
 
 - **name:** The Tailor's Shop
 - **place_path:** places/driftmoor/tailors_shop
-- **z_level:** 5.0
-- **width:** 12.0
-- **height:** 10.0
-- **origin:** 2849.0, 2684.0, 5.0
+- **z_level:** 16.25
+- **width:** 39.0
+- **height:** 32.5
+- **origin:** 9259.25, 8723.0, 16.25
 
 Notes: Tidy shop with mannequins and fabric. Origin at southwest
 corner. Display area with mannequins in front, sewing workspace
@@ -19,12 +19,12 @@ in the back with bolts of cloth and a cutting table.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 6.0  | 0.0  |
-| mannequin_1     | 3.0  | 2.0  |
-| mannequin_2     | 9.0  | 2.0  |
-| cutting_table   | 6.0  | 7.0  |
-| fabric_bolts    | 11.0 | 8.0  |
-| sewing_station  | 2.0  | 7.0  |
+| front_door      | 19.5  | 0.0  |
+| mannequin_3.25     | 9.75  | 6.5  |
+| mannequin_6.5     | 29.25  | 6.5  |
+| cutting_table   | 19.5  | 22.75  |
+| fabric_bolts    | 35.75 | 26.0  |
+| sewing_station  | 6.5  | 22.75  |
 
 ---
 
@@ -32,9 +32,9 @@ in the back with bolts of cloth and a cutting table.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| WORKSPACE  | 2        | (0,5) (12,5) (12,10) (0,10)   |
-| DISPLAY    | 1        | (0,0) (12,0) (12,5) (0,5)     |
-| EXTERIOR   | 0        | (-3,-3) (15,-3) (15,13) (-3,13) |
+| WORKSPACE  | 6.5        | (0.0,16.25) (39.0,16.25) (39.0,32.5) (0.0,32.5)   |
+| DISPLAY    | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,16.25) (0.0,16.25)     |
+| EXTERIOR   | 0.0        | (-9.75,-9.75) (48.75,-9.75) (48.75,42.25) (-9.75,42.25) |
 
 ---
 
@@ -42,7 +42,7 @@ in the back with bolts of cloth and a cutting table.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0,9) (12,9) (12,10) (0,10)   |
+| Back wall   | (0.0,29.25) (39.0,29.25) (39.0,32.5) (0.0,32.5)   |
 
 ---
 
@@ -50,4 +50,4 @@ in the back with bolts of cloth and a cutting table.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 6.0 | 0.0 | places/driftmoor |
+| front_door | 19.5 | 0.0 | places/driftmoor |

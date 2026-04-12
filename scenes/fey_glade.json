@@ -5,11 +5,16 @@
   "transcript_title": "FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast",
   "character_summary": "Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)",
   "default_turns": 4,
-  "game_time": {"hour": 19, "minute": 0, "day": 1, "season": "spring", "turn_duration": 10},
+  "game_time": {
+    "hour": 19,
+    "minute": 0,
+    "day": 1,
+    "season": "spring",
+    "turn_duration": 10
+  },
   "dm_provider": "anthropic",
   "dm_model": "claude-sonnet-4-20250514",
   "geometry_file": "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md",
-
   "characters": {
     "aeliana": {
       "type": "player",
@@ -19,6 +24,7 @@
       "level": 1,
       "hp": 12,
       "ac": 14,
+      "speed": "35 ft",
       "strength": 10,
       "dexterity": 16,
       "constitution": 10,
@@ -39,13 +45,19 @@
           "cortisol": 0.25,
           "norepinephrine": 0.55,
           "endorphins": 0.75,
-          "serotonin": 0.60,
-          "acetylcholine": 0.50,
-          "oxytocin": 0.50
+          "serotonin": 0.6,
+          "acetylcholine": 0.5,
+          "oxytocin": 0.5
         },
         "profiles": {
-          "dopamine": {"baseline": 0.55, "volatility": 0.8},
-          "cortisol": {"baseline": 0.35, "volatility": 0.6}
+          "dopamine": {
+            "baseline": 0.55,
+            "volatility": 0.8
+          },
+          "cortisol": {
+            "baseline": 0.35,
+            "volatility": 0.6
+          }
         }
       }
     },
@@ -57,6 +69,7 @@
       "level": 1,
       "hp": 8,
       "ac": 11,
+      "speed": "30 ft",
       "strength": 10,
       "dexterity": 12,
       "constitution": 10,
@@ -73,17 +86,23 @@
       "condition_name": "Fennel",
       "condition": {
         "state": {
-          "dopamine": 0.50,
-          "cortisol": 0.60,
+          "dopamine": 0.5,
+          "cortisol": 0.6,
           "norepinephrine": 0.75,
           "endorphins": 0.45,
-          "serotonin": 0.50,
+          "serotonin": 0.5,
           "acetylcholine": 0.65,
-          "oxytocin": 0.30
+          "oxytocin": 0.3
         },
         "profiles": {
-          "dopamine": {"baseline": 0.50, "volatility": 1.0},
-          "cortisol": {"baseline": 0.40, "volatility": 1.2}
+          "dopamine": {
+            "baseline": 0.5,
+            "volatility": 1.0
+          },
+          "cortisol": {
+            "baseline": 0.4,
+            "volatility": 1.2
+          }
         }
       }
     },
@@ -103,11 +122,23 @@
       "intelligence": 6,
       "wisdom": 10,
       "charisma": 8,
-      "skills": ["Stealth +4 (+6 in dim light/darkness)"],
-      "damage_resistances": ["Bludgeoning, Piercing, Slashing from nonmagical weapons"],
-      "damage_vulnerabilities": ["Radiant"],
-      "condition_immunities": ["Charmed", "Frightened"],
-      "senses": ["Darkvision 60 ft.", "Passive Perception 13"],
+      "skills": [
+        "Stealth +4 (+6 in dim light/darkness)"
+      ],
+      "damage_resistances": [
+        "Bludgeoning, Piercing, Slashing from nonmagical weapons"
+      ],
+      "damage_vulnerabilities": [
+        "Radiant"
+      ],
+      "condition_immunities": [
+        "Charmed",
+        "Frightened"
+      ],
+      "senses": [
+        "Darkvision 60 ft.",
+        "Passive Perception 13"
+      ],
       "features": [
         "Shadow Stealth: In dim light/darkness, Hide as bonus action",
         "Sunlight Sensitivity: Disadvantage on attacks and Perception in sunlight"
@@ -127,27 +158,47 @@
       "condition_name": "Shadowbeast",
       "condition": {
         "state": {
-          "dopamine": 0.80,
-          "cortisol": 0.10,
+          "dopamine": 0.8,
+          "cortisol": 0.1,
           "norepinephrine": 0.85,
-          "endorphins": 0.90,
-          "serotonin": 0.20,
-          "acetylcholine": 0.90,
-          "oxytocin": 0.00
+          "endorphins": 0.9,
+          "serotonin": 0.2,
+          "acetylcholine": 0.9,
+          "oxytocin": 0.0
         },
         "profiles": {
-          "dopamine": {"baseline": 0.70, "volatility": 0.5},
-          "cortisol": {"baseline": 0.10, "volatility": 0.3},
-          "oxytocin": {"baseline": 0.00, "volatility": 0.0}
+          "dopamine": {
+            "baseline": 0.7,
+            "volatility": 0.5
+          },
+          "cortisol": {
+            "baseline": 0.1,
+            "volatility": 0.3
+          },
+          "oxytocin": {
+            "baseline": 0.0,
+            "volatility": 0.0
+          }
         }
       }
     }
   },
-
   "game_state_sections": [
-    {"header": "Creatures in Scene", "file": "scenario/creatures/shadowbeast.md"},
-    {"header": "The Fey Glade Pool (DM Only)", "file": "scenario/places/mistwood_hills/fey_glade/LORE.md"},
-    {"header": "Character Starting Positions", "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 79.0 | 25.0 | TRAIL |\n| fennel | 44.0 | 52.0 | GLADE |\n| shadowbeast_1 | 39.0 | 50.0 | FOREST |"},
-    {"header": "Exit Motivations (DM only)", "text": "Characters may leave this scene. Recognise and permit these:\n- Fennel is a gatherer, not a fighter. If the shadowbeast is driven off or killed, she will want to return to town with her haul.\n- Aeliana may pursue a fleeing shadowbeast into the Mistwood, or head to town to warn people about the creature.\n- If wounded, characters may retreat toward Driftmoor for aid at the Bitter Remedy (apothecary) or Elyssa's cottage."}
+    {
+      "header": "Creatures in Scene",
+      "file": "scenario/creatures/shadowbeast.md"
+    },
+    {
+      "header": "The Fey Glade Pool (DM Only)",
+      "file": "scenario/places/mistwood_hills/fey_glade/LORE.md"
+    },
+    {
+      "header": "Character Starting Positions",
+      "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 256.75 | 81.25 | TRAIL |\n| fennel | 143.0 | 169.0 | GLADE |\n| shadowbeast_3.25 | 126.75 | 162.5 | FOREST |"
+    },
+    {
+      "header": "Exit Motivations (DM only)",
+      "text": "Characters may leave this scene. Recognise and permit these:\n- Fennel is a gatherer, not a fighter. If the shadowbeast is driven off or killed, she will want to return to town with her haul.\n- Aeliana may pursue a fleeing shadowbeast into the Mistwood, or head to town to warn people about the creature.\n- If wounded, characters may retreat toward Driftmoor for aid at the Bitter Remedy (apothecary) or Elyssa's cottage."
+    }
   ]
 }

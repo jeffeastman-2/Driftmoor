@@ -34,6 +34,7 @@ class PlayerCharacter(Character):
     # Combat stats
     hp: int = 0
     ac: int = 0
+    speed: str = "30 ft"
     strength: int = 0
     dexterity: int = 0
     constitution: int = 0
@@ -70,6 +71,7 @@ class NPC(Character):
     hp: int = 0
     current_hp: int = 0
     ac: int = 0
+    speed: str = "30 ft"
     strength: int = 10
     dexterity: int = 10
     constitution: int = 10

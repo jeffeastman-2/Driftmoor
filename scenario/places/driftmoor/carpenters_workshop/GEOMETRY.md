@@ -4,10 +4,10 @@
 
 - **name:** Carpenter's Workshop
 - **place_path:** places/driftmoor/carpenters_workshop
-- **z_level:** 5.0
-- **width:** 16.0
-- **height:** 12.0
-- **origin:** 2778.0, 2684.0, 5.0
+- **z_level:** 16.25
+- **width:** 52.0
+- **height:** 39.0
+- **origin:** 9028.5, 8723.0, 16.25
 
 Notes: Timber-framed with an open front facing south. Origin at
 southwest corner. Workshop area with workbenches and lumber storage.
@@ -20,12 +20,12 @@ near the entrance.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| open_front      | 8.0  | 0.0  |
-| main_workbench  | 8.0  | 6.0  |
-| lumber_pile     | 14.0 | 9.0  |
-| tool_wall       | 0.0  | 6.0  |
-| display_area    | 4.0  | 2.0  |
-| sawdust_pile    | 12.0 | 4.0  |
+| open_front      | 26.0  | 0.0  |
+| main_workbench  | 26.0  | 19.5  |
+| lumber_pile     | 45.5 | 29.25  |
+| tool_wall       | 0.0  | 19.5  |
+| display_area    | 13.0  | 6.5  |
+| sawdust_pile    | 39.0 | 13.0  |
 
 ---
 
@@ -33,9 +33,9 @@ near the entrance.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| STORAGE    | 2        | (10,6) (16,6) (16,12) (10,12)  |
-| WORKSHOP   | 1        | (0,0) (16,0) (16,12) (0,12)    |
-| EXTERIOR   | 0        | (-3,-3) (19,-3) (19,15) (-3,15) |
+| STORAGE    | 6.5        | (32.5,19.5) (52.0,19.5) (52.0,39.0) (32.5,39.0)  |
+| WORKSHOP   | 3.25        | (0.0,0.0) (52.0,0.0) (52.0,39.0) (0.0,39.0)    |
+| EXTERIOR   | 0.0        | (-9.75,-9.75) (61.75,-9.75) (61.75,48.75) (-9.75,48.75) |
 
 ---
 
@@ -43,7 +43,7 @@ near the entrance.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0,11) (16,11) (16,12) (0,12) |
+| Back wall   | (0.0,35.75) (52.0,35.75) (52.0,39.0) (0.0,39.0) |
 
 ---
 
@@ -51,4 +51,4 @@ near the entrance.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| open_front | 8.0 | 0.0 | places/driftmoor |
+| open_front | 26.0 | 0.0 | places/driftmoor |

@@ -4,10 +4,10 @@
 
 - **name:** Elyssa's Cottage
 - **place_path:** places/driftmoor/elyssa_cottage
-- **z_level:** 6.0
-- **width:** 18.0
-- **height:** 14.0
-- **origin:** 3036.0, 2559.0, 6.0
+- **z_level:** 19.5
+- **width:** 58.5
+- **height:** 45.5
+- **origin:** 9867.0, 8316.75, 19.5
 
 Notes: Stone building with slate roof on a low hill overlooking the
 Greywater River. Origin at southwest corner. Study (main room) in
@@ -20,15 +20,15 @@ Herb garden on the west side. Ivy on walls.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_path      | 6.0  | 0.0  |
-| study_desk      | 5.0  | 5.0  |
-| bookshelves     | 2.0  | 6.0  |
-| fireplace       | 1.0  | 3.0  |
-| lab_door        | 10.0 | 6.0  |
-| lab_table       | 14.0 | 5.0  |
-| obelisk_notes   | 14.0 | 8.0  |
-| bedroom_door    | 5.0  | 9.0  |
-| herb_garden     | -2.0 | 7.0  |
+| front_path      | 19.5  | 0.0  |
+| study_desk      | 16.25  | 16.25  |
+| bookshelves     | 6.5  | 19.5  |
+| fireplace       | 3.25  | 9.75  |
+| lab_door        | 32.5 | 19.5  |
+| lab_table       | 45.5 | 16.25  |
+| obelisk_notes   | 45.5 | 26.0  |
+| bedroom_door    | 16.25  | 29.25  |
+| herb_garden     | -6.5 | 22.75  |
 
 ---
 
@@ -36,11 +36,11 @@ Herb garden on the west side. Ivy on walls.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| LABORATORY | 2        | (10,3) (18,3) (18,10) (10,10)    |
-| BEDROOM    | 2        | (0,9) (10,9) (10,14) (0,14)      |
-| STUDY      | 1        | (0,0) (10,0) (10,9) (0,9)        |
-| HERB_GARDEN| 1        | (-4,4) (0,4) (0,10) (-4,10)      |
-| EXTERIOR   | 0        | (-6,-3) (21,-3) (21,17) (-6,17)  |
+| LABORATORY | 6.5        | (32.5,9.75) (58.5,9.75) (58.5,32.5) (32.5,32.5)    |
+| BEDROOM    | 6.5        | (0.0,29.25) (32.5,29.25) (32.5,45.5) (0.0,45.5)      |
+| STUDY      | 3.25        | (0.0,0.0) (32.5,0.0) (32.5,29.25) (0.0,29.25)        |
+| HERB_GARDEN| 3.25        | (-13.0,13.0) (0.0,13.0) (0.0,32.5) (-13.0,32.5)      |
+| EXTERIOR   | 0.0        | (-19.5,-9.75) (68.25,-9.75) (68.25,55.25) (-19.5,55.25)  |
 
 ---
 
@@ -48,8 +48,8 @@ Herb garden on the west side. Ivy on walls.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Lab wall       | (10,3) (10,10) (11,10) (11,3)    |
-| Bedroom wall   | (0,9) (10,9) (10,10) (0,10)      |
+| Lab wall       | (32.5,9.75) (32.5,32.5) (35.75,32.5) (35.75,9.75)    |
+| Bedroom wall   | (0.0,29.25) (32.5,29.25) (32.5,32.5) (0.0,32.5)      |
 
 ---
 
@@ -57,7 +57,7 @@ Herb garden on the west side. Ivy on walls.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_path | 6.0 | 0.0 | places/driftmoor |
+| front_path | 19.5 | 0.0 | places/driftmoor |
 
 ---
 
@@ -68,4 +68,4 @@ Herb garden on the west side. Ivy on walls.
 - **type:** conditional
 - **blocks:** all
 - **effect:** Elyssa's private obelisk research; door usually locked; contains sensitive materials
-- **vertices:** (10,3) (18,3) (18,10) (10,10)
+- **vertices:** (32.5,9.75) (58.5,9.75) (58.5,32.5) (32.5,32.5)

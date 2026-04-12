@@ -4,10 +4,10 @@
 
 - **name:** The Bakery
 - **place_path:** places/driftmoor/bakery
-- **z_level:** 5.0
-- **width:** 12.0
-- **height:** 10.0
-- **origin:** 2804.0, 2570.0, 5.0
+- **z_level:** 16.25
+- **width:** 39.0
+- **height:** 32.5
+- **origin:** 9113.0, 8352.5, 16.25
 
 Notes: A warm single-storey building on the south row. Origin at
 southwest corner. Front counter faces south toward the street.
@@ -19,12 +19,12 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 6.0  | 0.0  |
-| front_counter   | 6.0  | 3.0  |
-| ovens           | 3.0  | 8.0  |
-| workspace       | 9.0  | 7.0  |
-| chimney         | 6.0  | 10.0 |
-| display_shelves | 3.0  | 3.0  |
+| front_door      | 19.5  | 0.0  |
+| front_counter   | 19.5  | 9.75  |
+| ovens           | 9.75  | 26.0  |
+| workspace       | 29.25  | 22.75  |
+| chimney         | 19.5  | 32.5 |
+| display_shelves | 9.75  | 9.75  |
 
 ---
 
@@ -32,9 +32,9 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| KITCHEN    | 2        | (0,5) (12,5) (12,10) (0,10) |
-| SHOPFRONT  | 1        | (0,0) (12,0) (12,5) (0,5)   |
-| EXTERIOR   | 0        | (-3,-3) (15,-3) (15,13) (-3,13) |
+| KITCHEN    | 6.5        | (0.0,16.25) (39.0,16.25) (39.0,32.5) (0.0,32.5) |
+| SHOPFRONT  | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,16.25) (0.0,16.25)   |
+| EXTERIOR   | 0.0        | (-9.75,-9.75) (48.75,-9.75) (48.75,42.25) (-9.75,42.25) |
 
 ---
 
@@ -42,8 +42,8 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | description   | vertices                    |
 |---------------|-----------------------------|
-| Oven wall     | (0,7) (6,7) (6,10) (0,10)   |
-| Back wall     | (0,9) (12,9) (12,10) (0,10) |
+| Oven wall     | (0.0,22.75) (19.5,22.75) (19.5,32.5) (0.0,32.5)   |
+| Back wall     | (0.0,29.25) (39.0,29.25) (39.0,32.5) (0.0,32.5) |
 
 ---
 
@@ -51,4 +51,4 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 6.0 | 0.0 | places/driftmoor |
+| front_door | 19.5 | 0.0 | places/driftmoor |

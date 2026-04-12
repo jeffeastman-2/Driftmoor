@@ -5,8 +5,8 @@
 - **name:** The Azure Sea
 - **place_path:** places/azure_sea
 - **z_level:** 0.0
-- **width:** 2500.0
-- **height:** 8500.0
+- **width:** 8125.0
+- **height:** 27625.0
 - **origin:** 0.0, 0.0, 0.0
 
 Notes: Coastal waters west of Driftmoor. Origin at southwest corner
@@ -21,12 +21,12 @@ Isle are the only navigable features beyond the harbor.
 
 | name               | x      | y      |
 |--------------------|--------|--------|
-| drowned_isle       | 900.0  | 4400.0 |
-| sea_stacks_cluster | 1200.0 | 5800.0 |
-| harbor_mouth       | 2400.0 | 2600.0 |
-| deep_water_center  | 800.0  | 3000.0 |
-| coastal_shallows   | 1800.0 | 2000.0 |
-| tidal_flats        | 1500.0 | 4800.0 |
+| drowned_isle       | 2925.0  | 14300.0 |
+| sea_stacks_cluster | 3900.0 | 18850.0 |
+| harbor_mouth       | 7800.0 | 8450.0 |
+| deep_water_center  | 2600.0  | 9750.0 |
+| coastal_shallows   | 5850.0 | 6500.0 |
+| tidal_flats        | 4875.0 | 15600.0 |
 
 ---
 
@@ -34,12 +34,12 @@ Isle are the only navigable features beyond the harbor.
 
 | name           | render_z | vertices                                                    |
 |----------------|----------|-------------------------------------------------------------|
-| DROWNED_ISLE   | 3        | (700,4200) (1100,4200) (1100,4600) (700,4600)               |
-| SEA_STACKS     | 3        | (1000,5600) (1400,5600) (1400,6000) (1000,6000)             |
-| HARBOR_APPROACH| 2        | (2000,2300) (2500,2300) (2500,2900) (2000,2900)              |
-| TIDAL_ZONE     | 2        | (1200,4000) (2000,4000) (2000,6200) (1200,6200)             |
-| OPEN_WATER     | 1        | (0,0) (2200,0) (2400,3200) (2000,8500) (0,8500)             |
-| EXTERIOR       | 0        | (0,0) (2500,0) (2500,8500) (0,8500)                         |
+| DROWNED_ISLE   | 9.75        | (2275.0,13650.0) (3575.0,13650.0) (3575.0,14950.0) (2275.0,14950.0)               |
+| SEA_STACKS     | 9.75        | (3250.0,18200.0) (4550.0,18200.0) (4550.0,19500.0) (3250.0,19500.0)             |
+| HARBOR_APPROACH| 6.5        | (6500.0,7475.0) (8125.0,7475.0) (8125.0,9425.0) (6500.0,9425.0)              |
+| TIDAL_ZONE     | 6.5        | (3900.0,13000.0) (6500.0,13000.0) (6500.0,20150.0) (3900.0,20150.0)             |
+| OPEN_WATER     | 3.25        | (0.0,0.0) (7150.0,0.0) (7800.0,10400.0) (6500.0,27625.0) (0.0,27625.0)             |
+| EXTERIOR       | 0.0        | (0.0,0.0) (8125.0,0.0) (8125.0,27625.0) (0.0,27625.0)                         |
 
 ---
 
@@ -47,7 +47,7 @@ Isle are the only navigable features beyond the harbor.
 
 | description        | vertices                                                    |
 |--------------------|-------------------------------------------------------------|
-| Open deep water    | (0,0) (1500,0) (1500,3200) (1000,8000) (0,8000)             |
+| Open deep water    | (0.0,0.0) (4875.0,0.0) (4875.0,10400.0) (3250.0,26000.0) (0.0,26000.0)             |
 
 ---
 
@@ -55,10 +55,10 @@ Isle are the only navigable features beyond the harbor.
 
 | name              | x      | y      | destination                          |
 |-------------------|--------|--------|--------------------------------------|
-| to_harbor         | 2400.0 | 2600.0 | places/driftmoor                     |
-| to_drowned_isle   | 900.0  | 4400.0 | places/azure_sea/drowned_isle        |
-| to_sea_stacks     | 1200.0 | 5800.0 | places/azure_sea/sea_stacks          |
-| to_coastal_path   | 2200.0 | 1000.0 | places/plains_of_stonehearth         |
+| to_harbor         | 7800.0 | 8450.0 | places/driftmoor                     |
+| to_drowned_isle   | 2925.0  | 14300.0 | places/azure_sea/drowned_isle        |
+| to_sea_stacks     | 3900.0 | 18850.0 | places/azure_sea/sea_stacks          |
+| to_coastal_path   | 7150.0 | 3250.0 | places/plains_of_stonehearth         |
 
 ---
 
@@ -69,11 +69,11 @@ Isle are the only navigable features beyond the harbor.
 - **type:** physical
 - **blocks:** land_creature
 - **effect:** impassable without vessel or swimming ability; cold water, strong tides
-- **vertices:** (0,0) (2200,0) (2400,3200) (2000,8500) (0,8500)
+- **vertices:** (0.0,0.0) (7150.0,0.0) (7800.0,10400.0) (6500.0,27625.0) (0.0,27625.0)
 
 ### Tidal Access Zone
 
 - **type:** conditional
 - **blocks:** all
 - **effect:** accessible only at low tide on foot; at high tide requires a boat
-- **vertices:** (700,4000) (2000,4000) (2000,6200) (700,6200)
+- **vertices:** (2275.0,13000.0) (6500.0,13000.0) (6500.0,20150.0) (2275.0,20150.0)

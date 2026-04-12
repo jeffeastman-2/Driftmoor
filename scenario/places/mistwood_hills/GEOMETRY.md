@@ -4,10 +4,10 @@
 
 - **name:** The Mistwood Hills
 - **place_path:** places/mistwood_hills
-- **z_level:** 50.0
-- **width:** 6800.0
-- **height:** 7500.0
-- **origin:** 4200.0, 7000.0, 50.0
+- **z_level:** 162.5
+- **width:** 22100.0
+- **height:** 24375.0
+- **origin:** 13650.0, 22750.0, 162.5
 
 Notes: Rolling hills covered in dense fog-laden forest northeast of
 Driftmoor. Origin at southwest corner. The interior is a disorientation
@@ -21,14 +21,14 @@ Hunters and loggers only venture near the edges.
 
 | name              | x      | y      |
 |-------------------|--------|--------|
-| mistwood_center   | 2800.0 | 3500.0 |
-| watchtower_hill   | 1900.0 | 2600.0 |
-| fey_glade         | 3022.0 | 4408.0 |
-| southern_edge     | 1500.0 | 500.0  |
-| eastern_ridge     | 5500.0 | 3000.0 |
-| hunters_camp      | 1000.0 | 800.0  |
-| whispering_hollow | 3500.0 | 5000.0 |
-| fog_valley        | 2500.0 | 4500.0 |
+| mistwood_center   | 9100.0 | 11375.0 |
+| watchtower_hill   | 6175.0 | 8450.0 |
+| fey_glade         | 9821.5 | 14326.0 |
+| southern_edge     | 4875.0 | 1625.0  |
+| eastern_ridge     | 17875.0 | 9750.0 |
+| hunters_camp      | 3250.0 | 2600.0  |
+| whispering_hollow | 11375.0 | 16250.0 |
+| fog_valley        | 8125.0 | 14625.0 |
 
 ---
 
@@ -36,11 +36,11 @@ Hunters and loggers only venture near the edges.
 
 | name              | render_z | vertices                                              |
 |-------------------|----------|-------------------------------------------------------|
-| FEY_GLADE         | 3        | (2972,4358) (3072,4358) (3072,4458) (2972,4458)        |
-| WATCHTOWER_HILL   | 2        | (1700,2400) (2100,2400) (2100,2800) (1700,2800)        |
-| DEEP_INTERIOR     | 1        | (1300,1500) (5300,1500) (5300,6000) (1300,6000)        |
-| FOREST_EDGE       | 1        | (0,0) (6800,0) (6800,7500) (0,7500)                    |
-| EXTERIOR          | 0        | (0,0) (6800,0) (6800,7500) (0,7500)                    |
+| FEY_GLADE         | 9.75        | (9659.0,14163.5) (9984.0,14163.5) (9984.0,14488.5) (9659.0,14488.5)        |
+| WATCHTOWER_HILL   | 6.5        | (5525.0,7800.0) (6825.0,7800.0) (6825.0,9100.0) (5525.0,9100.0)        |
+| DEEP_INTERIOR     | 3.25        | (4225.0,4875.0) (17225.0,4875.0) (17225.0,19500.0) (4225.0,19500.0)        |
+| FOREST_EDGE       | 3.25        | (0.0,0.0) (22100.0,0.0) (22100.0,24375.0) (0.0,24375.0)                    |
+| EXTERIOR          | 0.0        | (0.0,0.0) (22100.0,0.0) (22100.0,24375.0) (0.0,24375.0)                    |
 
 ---
 
@@ -48,7 +48,7 @@ Hunters and loggers only venture near the edges.
 
 | description              | vertices                                              |
 |--------------------------|-------------------------------------------------------|
-| Dense interior thicket   | (2000,3500) (4000,3500) (4000,5500) (2000,5500)        |
+| Dense interior thicket   | (6500.0,11375.0) (13000.0,11375.0) (13000.0,17875.0) (6500.0,17875.0)        |
 
 ---
 
@@ -56,11 +56,11 @@ Hunters and loggers only venture near the edges.
 
 | name                | x      | y      | destination                          |
 |---------------------|--------|--------|--------------------------------------|
-| to_driftmoor_road   | 500.0  | 200.0  | places/greywater_river               |
-| to_fey_glade        | 3022.0 | 4408.0 | places/mistwood_hills/fey_glade      |
-| to_watchtower       | 1900.0 | 2600.0 | places/mistwood_hills/old_watchtower |
-| to_obelisk_reach    | 200.0  | 6000.0 | places/obelisk_reach                 |
-| to_river_trail      | 6500.0 | 1000.0 | places/greywater_river               |
+| to_driftmoor_road   | 1625.0  | 650.0  | places/greywater_river               |
+| to_fey_glade        | 9821.5 | 14326.0 | places/mistwood_hills/fey_glade      |
+| to_watchtower       | 6175.0 | 8450.0 | places/mistwood_hills/old_watchtower |
+| to_obelisk_reach    | 650.0  | 19500.0 | places/obelisk_reach                 |
+| to_river_trail      | 21125.0 | 3250.0 | places/greywater_river               |
 
 ---
 
@@ -70,5 +70,5 @@ Hunters and loggers only venture near the edges.
 
 - **type:** magical
 - **blocks:** none
-- **effect:** paths shift — navigation DC 15 or party becomes lost; whispers audible
-- **vertices:** (1300,1500) (5300,1500) (5300,6000) (1300,6000)
+- **effect:** paths shift — navigation DC 48.75 or party becomes lost; whispers audible
+- **vertices:** (4225.0,4875.0) (17225.0,4875.0) (17225.0,19500.0) (4225.0,19500.0)

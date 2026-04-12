@@ -4,10 +4,10 @@
 
 - **name:** The General Store
 - **place_path:** places/driftmoor/general_store
-- **z_level:** 5.0
-- **width:** 14.0
-- **height:** 18.0
-- **origin:** 2763.0, 2474.0, 5.0
+- **z_level:** 16.25
+- **width:** 45.5
+- **height:** 58.5
+- **origin:** 8979.75, 8040.5, 16.25
 
 Notes: Stone-and-wood building in the south quarter. Origin at
 southwest corner. Shop in front, garden behind (north). Counter
@@ -19,14 +19,14 @@ at the back of the shop area.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 7.0  | 0.0  |
-| counter         | 7.0  | 7.0  |
-| tool_shelves    | 2.0  | 4.0  |
-| rope_rack       | 12.0 | 4.0  |
-| candle_shelf    | 2.0  | 6.0  |
-| back_door       | 7.0  | 9.0  |
-| garden_center   | 7.0  | 14.0 |
-| garden_gate     | 7.0  | 9.0  |
+| front_door      | 22.75  | 0.0  |
+| counter         | 22.75  | 22.75  |
+| tool_shelves    | 6.5  | 13.0  |
+| rope_rack       | 39.0 | 13.0  |
+| candle_shelf    | 6.5  | 19.5  |
+| back_door       | 22.75  | 29.25  |
+| garden_center   | 22.75  | 45.5 |
+| garden_gate     | 22.75  | 29.25  |
 
 ---
 
@@ -34,9 +34,9 @@ at the back of the shop area.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| SHOP       | 1        | (0,0) (14,0) (14,9) (0,9)       |
-| GARDEN     | 1        | (2,9) (12,9) (12,18) (2,18)     |
-| EXTERIOR   | 0        | (-3,-3) (17,-3) (17,21) (-3,21)  |
+| SHOP       | 3.25        | (0.0,0.0) (45.5,0.0) (45.5,29.25) (0.0,29.25)       |
+| GARDEN     | 3.25        | (6.5,29.25) (39.0,29.25) (39.0,58.5) (6.5,58.5)     |
+| EXTERIOR   | 0.0        | (-9.75,-9.75) (55.25,-9.75) (55.25,68.25) (-9.75,68.25)  |
 
 ---
 
@@ -44,8 +44,8 @@ at the back of the shop area.
 
 | description  | vertices                        |
 |--------------|---------------------------------|
-| Back wall    | (0,8) (14,8) (14,9) (0,9)       |
-| Garden fence | (2,17) (12,17) (12,18) (2,18)   |
+| Back wall    | (0.0,26.0) (45.5,26.0) (45.5,29.25) (0.0,29.25)       |
+| Garden fence | (6.5,55.25) (39.0,55.25) (39.0,58.5) (6.5,58.5)   |
 
 ---
 
@@ -53,4 +53,4 @@ at the back of the shop area.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 7.0 | 0.0 | places/driftmoor |
+| front_door | 22.75 | 0.0 | places/driftmoor |

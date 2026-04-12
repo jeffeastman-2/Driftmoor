@@ -4,10 +4,10 @@
 
 - **name:** Ironhoof Forge
 - **place_path:** places/driftmoor/ironhoof_forge
-- **z_level:** 5.0
-- **width:** 45.0
-- **height:** 35.0
-- **origin:** 2968.0, 2455.0, 5.0
+- **z_level:** 16.25
+- **width:** 146.25
+- **height:** 113.75
+- **origin:** 9646.0, 7978.75, 16.25
 
 Notes: The forge occupies the northwest portion of the building; the
 stables run along the east and south. The corral is an open fenced
@@ -22,17 +22,17 @@ the combined forge+stable footprint, excluding corral.
 
 | name             | x    | y    |
 |------------------|------|------|
-| anvil            | 8.0  | 22.0 |
-| forge_hearth     | 4.0  | 26.0 |
-| forge_entrance   | 0.0  | 20.0 |
-| stable_entrance  | 20.0 | 0.0  |
-| stall_row_center | 32.0 | 17.0 |
-| feed_bins        | 38.0 | 8.0  |
-| saddle_racks     | 22.0 | 8.0  |
-| corral_gate      | 45.0 | 17.0 |
-| thorgrim_leanto  | 24.0 | 2.0  |
-| forge_wall_marks | 10.0 | 28.0 |
-| road_frontage    | 0.0  | 17.0 |
+| anvil            | 26.0  | 71.5 |
+| forge_hearth     | 13.0  | 84.5 |
+| forge_entrance   | 0.0  | 65.0 |
+| stable_entrance  | 65.0 | 0.0  |
+| stall_row_center | 104.0 | 55.25 |
+| feed_bins        | 123.5 | 26.0  |
+| saddle_racks     | 71.5 | 26.0  |
+| corral_gate      | 146.25 | 55.25 |
+| thorgrim_leanto  | 78.0 | 6.5  |
+| forge_wall_marks | 32.5 | 91.0 |
+| road_frontage    | 0.0  | 55.25 |
 
 ---
 
@@ -40,11 +40,11 @@ the combined forge+stable footprint, excluding corral.
 
 | name         | render_z | vertices                              |
 |--------------|----------|---------------------------------------|
-| FORGE        | 2        | (0,18) (18,18) (18,35) (0,35)         |
-| LEANTO       | 2        | (18,0) (30,0) (30,8) (18,8)           |
-| STABLES      | 1        | (18,0) (45,0) (45,35) (18,35)         |
-| CORRAL       | 1        | (45,5) (65,5) (65,30) (45,30)         |
-| EXTERIOR     | 0        | (-5,-5) (70,-5) (70,40) (-5,40)       |
+| FORGE        | 6.5        | (0.0,58.5) (58.5,58.5) (58.5,113.75) (0.0,113.75)         |
+| LEANTO       | 6.5        | (58.5,0.0) (97.5,0.0) (97.5,26.0) (58.5,26.0)           |
+| STABLES      | 3.25        | (58.5,0.0) (146.25,0.0) (146.25,113.75) (58.5,113.75)         |
+| CORRAL       | 3.25        | (146.25,16.25) (211.25,16.25) (211.25,97.5) (146.25,97.5)         |
+| EXTERIOR     | 0.0        | (-16.25,-16.25) (227.5,-16.25) (227.5,130.0) (-16.25,130.0)       |
 
 ---
 
@@ -52,9 +52,9 @@ the combined forge+stable footprint, excluding corral.
 
 | description     | vertices                              |
 |-----------------|---------------------------------------|
-| Forge back wall | (0,33) (18,33) (18,35) (0,35)         |
-| Stall partitions | (18,10) (45,10) (45,12) (18,12)      |
-| Corral fence    | (45,5) (65,5) (65,7) (45,7)           |
+| Forge back wall | (0.0,107.25) (58.5,107.25) (58.5,113.75) (0.0,113.75)         |
+| Stall partitions | (58.5,32.5) (146.25,32.5) (146.25,39.0) (58.5,39.0)      |
+| Corral fence    | (146.25,16.25) (211.25,16.25) (211.25,22.75) (146.25,22.75)           |
 
 ---
 
@@ -62,10 +62,10 @@ the combined forge+stable footprint, excluding corral.
 
 | name              | x    | y    | destination          |
 |-------------------|------|------|----------------------|
-| forge_to_street   | 0.0  | 20.0 | places/driftmoor     |
-| stable_to_street  | 20.0 | 0.0  | places/driftmoor     |
-| corral_gate       | 65.0 | 17.0 | places/driftmoor     |
-| road_stonehearth  | 30.0 | -5.0 | places/plains_of_stonehearth |
+| forge_to_street   | 0.0  | 65.0 | places/driftmoor     |
+| stable_to_street  | 65.0 | 0.0  | places/driftmoor     |
+| corral_gate       | 211.25 | 55.25 | places/driftmoor     |
+| road_stonehearth  | 97.5 | -16.25 | places/plains_of_stonehearth |
 
 ---
 
@@ -75,8 +75,8 @@ the combined forge+stable footprint, excluding corral.
 
 - **type:** conditional
 - **blocks:** none
-- **effect:** within 3m of hearth — extreme heat; unprotected characters risk exhaustion after prolonged exposure
-- **vertices:** (0,22) (10,22) (10,35) (0,35)
+- **effect:** within 9.75m of hearth — extreme heat; unprotected characters risk exhaustion after prolonged exposure
+- **vertices:** (0.0,71.5) (32.5,71.5) (32.5,113.75) (0.0,113.75)
 
 ---
 
@@ -84,6 +84,6 @@ the combined forge+stable footprint, excluding corral.
 
 | character | x    | y    | zone    |
 |-----------|------|------|---------|
-| thorgrim  | 8.0  | 24.0 | FORGE   |
-| darrin    | 6.0  | 20.0 | FORGE   |
-| kara      | 22.0 | 18.0 | STABLES |
+| thorgrim  | 26.0  | 78.0 | FORGE   |
+| darrin    | 19.5  | 65.0 | FORGE   |
+| kara      | 71.5 | 58.5 | STABLES |

@@ -4,10 +4,10 @@
 
 - **name:** The Obelisk Reach
 - **place_path:** places/obelisk_reach
-- **z_level:** 80.0
-- **width:** 2800.0
-- **height:** 3500.0
-- **origin:** 2400.0, 11500.0, 80.0
+- **z_level:** 260.0
+- **width:** 9100.0
+- **height:** 11375.0
+- **origin:** 7800.0, 37375.0, 260.0
 
 Notes: Jagged cliffs and rocky plateaus north of Driftmoor. Origin
 at southwest corner. The Shattered Obelisk dominates the northern
@@ -21,14 +21,14 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | name                  | x      | y      |
 |-----------------------|--------|--------|
-| obelisk_reach_edge    | 1100.0 | 1300.0 |
-| shattered_obelisk     | 1000.0 | 2300.0 |
-| echoing_caverns_mouth | 1300.0 | 2000.0 |
-| cliff_approach        | 800.0  | 800.0  |
-| symbol_cliff          | 500.0  | 1500.0 |
-| narrow_path           | 1200.0 | 1600.0 |
-| scorched_ground       | 1000.0 | 2500.0 |
-| outlook_ledge         | 1800.0 | 1800.0 |
+| obelisk_reach_edge    | 3575.0 | 4225.0 |
+| shattered_obelisk     | 3250.0 | 7475.0 |
+| echoing_caverns_mouth | 4225.0 | 6500.0 |
+| cliff_approach        | 2600.0  | 2600.0  |
+| symbol_cliff          | 1625.0  | 4875.0 |
+| narrow_path           | 3900.0 | 5200.0 |
+| scorched_ground       | 3250.0 | 8125.0 |
+| outlook_ledge         | 5850.0 | 5850.0 |
 
 ---
 
@@ -36,12 +36,12 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | name               | render_z | vertices                                              |
 |--------------------|----------|-------------------------------------------------------|
-| SHATTERED_OBELISK  | 3        | (700,2000) (1300,2000) (1300,2700) (700,2700)          |
-| ECHOING_CAVERNS    | 3        | (1100,1700) (1600,1700) (1600,2300) (1100,2300)        |
-| CLIFF_PLATEAU      | 2        | (200,1000) (2200,1000) (2400,3200) (0,3200)            |
-| APPROACH_PATH      | 1        | (400,200) (1400,200) (1400,1000) (400,1000)            |
-| CLIFFS             | 1        | (0,0) (2800,0) (2800,3500) (0,3500)                    |
-| EXTERIOR           | 0        | (0,0) (2800,0) (2800,3500) (0,3500)                    |
+| SHATTERED_OBELISK  | 9.75        | (2275.0,6500.0) (4225.0,6500.0) (4225.0,8775.0) (2275.0,8775.0)          |
+| ECHOING_CAVERNS    | 9.75        | (3575.0,5525.0) (5200.0,5525.0) (5200.0,7475.0) (3575.0,7475.0)        |
+| CLIFF_PLATEAU      | 6.5        | (650.0,3250.0) (7150.0,3250.0) (7800.0,10400.0) (0.0,10400.0)            |
+| APPROACH_PATH      | 3.25        | (1300.0,650.0) (4550.0,650.0) (4550.0,3250.0) (1300.0,3250.0)            |
+| CLIFFS             | 3.25        | (0.0,0.0) (9100.0,0.0) (9100.0,11375.0) (0.0,11375.0)                    |
+| EXTERIOR           | 0.0        | (0.0,0.0) (9100.0,0.0) (9100.0,11375.0) (0.0,11375.0)                    |
 
 ---
 
@@ -49,8 +49,8 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | description          | vertices                                              |
 |----------------------|-------------------------------------------------------|
-| Western cliff face   | (0,1500) (200,1500) (200,3500) (0,3500)                |
-| Eastern cliff drop   | (2400,1500) (2800,1500) (2800,3500) (2400,3500)        |
+| Western cliff face   | (0.0,4875.0) (650.0,4875.0) (650.0,11375.0) (0.0,11375.0)                |
+| Eastern cliff drop   | (7800.0,4875.0) (9100.0,4875.0) (9100.0,11375.0) (7800.0,11375.0)        |
 
 ---
 
@@ -58,10 +58,10 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | name                | x      | y      | destination                              |
 |---------------------|--------|--------|------------------------------------------|
-| approach_south      | 900.0  | 100.0  | places/driftmoor                         |
-| to_obelisk          | 1000.0 | 2300.0 | places/obelisk_reach/shattered_obelisk   |
-| to_caverns          | 1300.0 | 2000.0 | places/obelisk_reach/echoing_caverns     |
-| to_mistwood_east    | 2600.0 | 1500.0 | places/mistwood_hills                    |
+| approach_south      | 2925.0  | 325.0  | places/driftmoor                         |
+| to_obelisk          | 3250.0 | 7475.0 | places/obelisk_reach/shattered_obelisk   |
+| to_caverns          | 4225.0 | 6500.0 | places/obelisk_reach/echoing_caverns     |
+| to_mistwood_east    | 8450.0 | 4875.0 | places/mistwood_hills                    |
 
 ---
 
@@ -72,4 +72,4 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 - **type:** magical
 - **blocks:** none
 - **effect:** perception checks degraded, compasses spin, light sources flicker; stronger near the obelisk
-- **vertices:** (200,1000) (2400,1000) (2400,3200) (200,3200)
+- **vertices:** (650.0,3250.0) (7800.0,3250.0) (7800.0,10400.0) (650.0,10400.0)

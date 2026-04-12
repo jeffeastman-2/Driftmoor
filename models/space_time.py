@@ -9,7 +9,7 @@ from typing import Optional
 
 @dataclass
 class Position:
-    """3D position in meters."""
+    """3D position in feet."""
 
     x: float
     y: float

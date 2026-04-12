@@ -4,21 +4,21 @@
 
 - **name:** The Fey Glade
 - **place_path:** places/mistwood_hills/fey_glade
-- **z_level:** 0.2
-- **width:** 100.0
-- **height:** 100.0
-- **origin:** 1222.0, 2608.0, 0.2
+- **z_level:** 0.65
+- **width:** 325.0
+- **height:** 325.0
+- **origin:** 3971.5, 8476.0, 0.65
 
 ## Landmarks
 
 | name             | x     | y     |
 |------------------|-------|-------|
-| glade_center     | 50.0  | 50.0  |
-| pool_surface     | 42.5  | 52.5  |
-| carved_stone     | 42.0  | 52.0  |
-| trail_entrance   | 59.0  | 45.0  |
-| oak_west         | 43.0  | 50.0  |
-| oak_east         | 57.0  | 50.0  |
+| glade_center     | 162.5  | 162.5  |
+| pool_surface     | 138.12  | 170.62  |
+| carved_stone     | 136.5  | 169.0  |
+| trail_entrance   | 191.75  | 146.25  |
+| oak_west         | 139.75  | 162.5  |
+| oak_east         | 185.25  | 162.5  |
 
 ## Zones
 
@@ -26,22 +26,22 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 
 | name     | vertices                                                   |
 |----------|------------------------------------------------------------|
-| POOL     | (42,52,0.3) (43,52,0.3) (43,53,0.3) (42,53,0.3)          |
-| GLADE    | (40,45,0.2) (60,45,0.2) (60,55,0.2) (40,55,0.2)          |
-| TRAIL    | (59,45,0.1) (60,45,0.1) (100,4,0.0) (99,3,0.0)           |
-| FOREST   | (0,0,0.0) (100,0,0.0) (100,100,0.0) (0,100,0.0)          |
+| POOL     | (136.5,169.0,0.97) (139.75,169.0,0.97) (139.75,172.25,0.97) (136.5,172.25,0.97)          |
+| GLADE    | (130.0,146.25,0.65) (195.0,146.25,0.65) (195.0,178.75,0.65) (130.0,178.75,0.65)          |
+| TRAIL    | (191.75,146.25,0.33) (195.0,146.25,0.33) (325.0,13.0,0.0) (321.75,9.75,0.0)           |
+| FOREST   | (0.0,0.0,0.0) (325.0,0.0,0.0) (325.0,325.0,0.0) (0.0,325.0,0.0)          |
 
 ## Impassable
 
 | description  | vertices                         |
 |--------------|----------------------------------|
-| Pool surface | (42,52) (43,52) (43,53) (42,53)  |
+| Pool surface | (136.5,169.0) (139.75,169.0) (139.75,172.25) (136.5,172.25)  |
 
 ## Connections
 
 | name          | x     | y    | destination          |
 |---------------|-------|------|----------------------|
-| trail_exit    | 99.0  | 4.0  | mistwood_hills path  |
+| trail_exit    | 321.75  | 13.0  | mistwood_hills path  |
 
 ## Boundaries
 
@@ -50,13 +50,13 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 - **type:** magical
 - **blocks:** shadowbeast, shadow_creature, undead
 - **effect:** fey resonance antithetical to shadow essence — blocked creatures feel deep sourceless wrongness
-- **vertices:** (39,44) (61,44) (61,56) (39,56)
+- **vertices:** (126.75,143.0) (198.25,143.0) (198.25,182.0) (126.75,182.0)
 - **behavior:** see LORE.md — barrier strength varies by time of day and conditions; do not adjudicate from this file
 
 ## Starting Positions
 
 | character    | x     | y     | zone     |
 |--------------|-------|-------|----------|
-| aeliana      | 79.0  | 25.0  | TRAIL    |
-| fennel       | 44.0  | 52.0  | GLADE    |
-| shadowbeast  | 39.0  | 50.0  | FOREST   |
+| aeliana      | 256.75  | 81.25  | TRAIL    |
+| fennel       | 143.0  | 169.0  | GLADE    |
+| shadowbeast  | 126.75  | 162.5  | FOREST   |

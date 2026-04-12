@@ -27,30 +27,30 @@ class TestParseGeometryMd:
         assert fey_glade_data["place_path"] == "places/mistwood_hills/fey_glade"
 
     def test_scene_dimensions(self, fey_glade_data):
-        assert fey_glade_data["width"] == 100.0
-        assert fey_glade_data["height"] == 100.0
+        assert fey_glade_data["width"] == 325.0
+        assert fey_glade_data["height"] == 325.0
 
     def test_scene_z_level(self, fey_glade_data):
-        assert fey_glade_data["z_level"] == 0.2
+        assert fey_glade_data["z_level"] == 0.65
 
     def test_scene_origin(self, fey_glade_data):
         origin = fey_glade_data["origin"]
-        assert origin.x == 1222.0
-        assert origin.y == 2608.0
-        assert origin.z == 0.2
+        assert origin.x == 3971.5
+        assert origin.y == 8476.0
+        assert origin.z == 0.65
 
     def test_landmarks_count(self, fey_glade_data):
         assert len(fey_glade_data["landmarks"]) == 6
 
     def test_landmark_trail_entrance(self, fey_glade_data):
         pos = fey_glade_data["landmarks"]["trail_entrance"]
-        assert pos.x == 59.0
-        assert pos.y == 45.0
+        assert pos.x == 191.75
+        assert pos.y == 146.25
 
     def test_landmark_carved_stone(self, fey_glade_data):
         pos = fey_glade_data["landmarks"]["carved_stone"]
-        assert pos.x == 42.0
-        assert pos.y == 52.0
+        assert pos.x == 136.5
+        assert pos.y == 169.0
 
     def test_zones_count(self, fey_glade_data):
         assert len(fey_glade_data["zones"]) == 4
@@ -62,13 +62,13 @@ class TestParseGeometryMd:
 
     def test_zone_trail_vertices(self, fey_glade_data):
         trail = fey_glade_data["zones"]["TRAIL"]
-        assert trail.vertices == [(59, 45, 0.1), (60, 45, 0.1), (100, 4, 0.0), (99, 3, 0.0)]
+        assert trail.vertices == [(191.75, 146.25, 0.33), (195.0, 146.25, 0.33), (325.0, 13.0, 0.0), (321.75, 9.75, 0.0)]
 
     def test_zone_z_elevation(self, fey_glade_data):
         zones = fey_glade_data["zones"]
         assert zones["FOREST"].z == pytest.approx(0.0)
-        assert zones["GLADE"].z == pytest.approx(0.2)
-        assert zones["POOL"].z == pytest.approx(0.3)
+        assert zones["GLADE"].z == pytest.approx(0.65)
+        assert zones["POOL"].z == pytest.approx(0.97)
 
     def test_impassable_count(self, fey_glade_data):
         assert len(fey_glade_data["impassable"]) == 1
@@ -78,8 +78,8 @@ class TestParseGeometryMd:
 
     def test_connection_trail_exit(self, fey_glade_data):
         pos = fey_glade_data["connections"]["trail_exit"]
-        assert pos.x == 99.0
-        assert pos.y == 4.0
+        assert pos.x == 321.75
+        assert pos.y == 13.0
 
     def test_boundaries_count(self, fey_glade_data):
         assert len(fey_glade_data["boundaries"]) == 1
@@ -106,18 +106,18 @@ class TestParseGeometryMd:
 
     def test_starting_aeliana(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["aeliana"]
-        assert pos.x == 79.0
-        assert pos.y == 25.0
+        assert pos.x == 256.75
+        assert pos.y == 81.25
 
     def test_starting_fennel(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["fennel"]
-        assert pos.x == 44.0
-        assert pos.y == 52.0
+        assert pos.x == 143.0
+        assert pos.y == 169.0
 
     def test_starting_shadowbeast(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["shadowbeast"]
-        assert pos.x == 39.0
-        assert pos.y == 50.0
+        assert pos.x == 126.75
+        assert pos.y == 162.5
 
 
 class TestLoadGeometry:
@@ -130,9 +130,9 @@ class TestLoadGeometry:
 
     def test_load_zones_work(self):
         geo = load_geometry(FEY_GLADE_PATH)
-        assert geo.zone_at(Position(79, 25)) == "TRAIL"
-        assert geo.zone_at(Position(50, 50)) == "GLADE"
-        assert geo.zone_at(Position(10, 10)) == "FOREST"
+        assert geo.zone_at(Position(256.75, 81.25)) == "TRAIL"
+        assert geo.zone_at(Position(162.5, 162.5)) == "GLADE"
+        assert geo.zone_at(Position(32.5, 32.5)) == "FOREST"
 
     def test_load_full_returns_tuple(self):
         geo, boundaries, starting = load_geometry_full(FEY_GLADE_PATH)
@@ -154,5 +154,5 @@ class TestLoadGeometry:
 
     def test_loaded_zone_z_elevations(self):
         geo, _, _ = load_geometry_full(FEY_GLADE_PATH)
-        assert geo.zones["POOL"].z == pytest.approx(0.3)
+        assert geo.zones["POOL"].z == pytest.approx(0.97)
         assert geo.zones["FOREST"].z == pytest.approx(0.0)

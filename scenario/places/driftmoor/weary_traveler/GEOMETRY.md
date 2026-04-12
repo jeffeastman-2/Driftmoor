@@ -4,10 +4,10 @@
 
 - **name:** The Weary Traveler
 - **place_path:** places/driftmoor/weary_traveler
-- **z_level:** 5.0
-- **width:** 20.0
-- **height:** 16.0
-- **origin:** 2875.0, 2632.0, 5.0
+- **z_level:** 16.25
+- **width:** 65.0
+- **height:** 52.0
+- **origin:** 9343.75, 8554.0, 16.25
 
 Notes: Two-story timber-framed rooming house. Origin at southwest
 corner. Common room on the ground floor (tables, hearth), guest
@@ -20,16 +20,16 @@ Martha Greaves runs it.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 10.0 | 0.0  |
-| hearth          | 3.0  | 4.0  |
-| dining_table    | 8.0  | 4.0  |
-| bar_counter     | 14.0 | 4.0  |
-| staircase       | 17.0 | 6.0  |
-| upstairs_hall   | 10.0 | 12.0 |
-| guest_room_1    | 4.0  | 12.0 |
-| guest_room_2    | 10.0 | 14.0 |
-| guest_room_3    | 16.0 | 12.0 |
-| storage_shed    | 22.0 | 4.0  |
+| front_door      | 32.5 | 0.0  |
+| hearth          | 9.75  | 13.0  |
+| dining_table    | 26.0  | 13.0  |
+| bar_counter     | 45.5 | 13.0  |
+| staircase       | 55.25 | 19.5  |
+| upstairs_hall   | 32.5 | 39.0 |
+| guest_room_3.25    | 13.0  | 39.0 |
+| guest_room_6.5    | 32.5 | 45.5 |
+| guest_room_9.75    | 52.0 | 39.0 |
+| storage_shed    | 71.5 | 13.0  |
 
 ---
 
@@ -37,10 +37,10 @@ Martha Greaves runs it.
 
 | name            | render_z | vertices                        |
 |-----------------|----------|---------------------------------|
-| GUEST_ROOMS     | 3        | (0,8) (20,8) (20,16) (0,16)      |
-| COMMON_ROOM     | 1        | (0,0) (20,0) (20,8) (0,8)        |
-| STORAGE_SHED    | 1        | (20,0) (26,0) (26,8) (20,8)      |
-| EXTERIOR        | 0        | (-3,-3) (29,-3) (29,19) (-3,19)  |
+| GUEST_ROOMS     | 9.75        | (0.0,26.0) (65.0,26.0) (65.0,52.0) (0.0,52.0)      |
+| COMMON_ROOM     | 3.25        | (0.0,0.0) (65.0,0.0) (65.0,26.0) (0.0,26.0)        |
+| STORAGE_SHED    | 3.25        | (65.0,0.0) (84.5,0.0) (84.5,26.0) (65.0,26.0)      |
+| EXTERIOR        | 0.0        | (-9.75,-9.75) (94.25,-9.75) (94.25,61.75) (-9.75,61.75)  |
 
 ---
 
@@ -48,8 +48,8 @@ Martha Greaves runs it.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Floor division | (0,8) (20,8) (20,9) (0,9)        |
-| Back wall      | (0,15) (20,15) (20,16) (0,16)    |
+| Floor division | (0.0,26.0) (65.0,26.0) (65.0,29.25) (0.0,29.25)        |
+| Back wall      | (0.0,48.75) (65.0,48.75) (65.0,52.0) (0.0,52.0)    |
 
 ---
 
@@ -57,7 +57,7 @@ Martha Greaves runs it.
 
 | name       | x    | y   | destination      |
 |------------|------|-----|------------------|
-| front_door | 10.0 | 0.0 | places/driftmoor |
+| front_door | 32.5 | 0.0 | places/driftmoor |
 
 ---
 
@@ -68,4 +68,4 @@ Martha Greaves runs it.
 - **type:** conditional
 - **blocks:** all
 - **effect:** upstairs corridor and guest rooms; must rent a room or be invited
-- **vertices:** (0,8) (20,8) (20,16) (0,16)
+- **vertices:** (0.0,26.0) (65.0,26.0) (65.0,52.0) (0.0,52.0)

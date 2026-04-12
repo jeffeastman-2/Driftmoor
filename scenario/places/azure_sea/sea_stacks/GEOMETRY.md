@@ -5,13 +5,13 @@
 - **name:** The Sea Stacks
 - **place_path:** places/azure_sea/sea_stacks
 - **z_level:** 0.0
-- **width:** 120.0
-- **height:** 100.0
-- **origin:** 1140.0, 5750.0, 0.0
+- **width:** 390.0
+- **height:** 325.0
+- **origin:** 3705.0, 18687.5, 0.0
 
 Notes: Tall isolated rock formations rising from the water near
 shore. Origin at southwest corner of the cluster area. The stacks
-themselves are vertical stone pillars 15-30m tall. The bases are
+themselves are vertical stone pillars 48.75-97.5m tall. The bases are
 accessible at low tide on foot; at high tide the bases are submerged.
 Seabirds nest in the crevices above. The gaps between stacks are
 navigable by small boat.
@@ -22,13 +22,13 @@ navigable by small boat.
 
 | name            | x     | y     |
 |-----------------|-------|-------|
-| stack_north     | 50.0  | 80.0  |
-| stack_central   | 60.0  | 50.0  |
-| stack_south     | 40.0  | 20.0  |
-| stack_east      | 90.0  | 55.0  |
-| nesting_ledge   | 55.0  | 82.0  |
-| shelter_cove    | 70.0  | 40.0  |
-| tidal_passage   | 30.0  | 50.0  |
+| stack_north     | 162.5  | 260.0  |
+| stack_central   | 195.0  | 162.5  |
+| stack_south     | 130.0  | 65.0  |
+| stack_east      | 292.5  | 178.75  |
+| nesting_ledge   | 178.75  | 266.5  |
+| shelter_cove    | 227.5  | 130.0  |
+| tidal_passage   | 97.5  | 162.5  |
 
 ---
 
@@ -36,12 +36,12 @@ navigable by small boat.
 
 | name           | render_z | vertices                                    |
 |----------------|----------|---------------------------------------------|
-| STACK_NORTH    | 3        | (40,70) (60,70) (60,90) (40,90)              |
-| STACK_CENTRAL  | 3        | (50,40) (70,40) (70,60) (50,60)              |
-| STACK_SOUTH    | 3        | (30,10) (50,10) (50,30) (30,30)              |
-| STACK_EAST     | 3        | (80,45) (100,45) (100,65) (80,65)            |
-| SHALLOWS       | 1        | (10,5) (110,5) (110,95) (10,95)              |
-| EXTERIOR       | 0        | (0,0) (120,0) (120,100) (0,100)              |
+| STACK_NORTH    | 9.75        | (130.0,227.5) (195.0,227.5) (195.0,292.5) (130.0,292.5)              |
+| STACK_CENTRAL  | 9.75        | (162.5,130.0) (227.5,130.0) (227.5,195.0) (162.5,195.0)              |
+| STACK_SOUTH    | 9.75        | (97.5,32.5) (162.5,32.5) (162.5,97.5) (97.5,97.5)              |
+| STACK_EAST     | 9.75        | (260.0,146.25) (325.0,146.25) (325.0,211.25) (260.0,211.25)            |
+| SHALLOWS       | 3.25        | (32.5,16.25) (357.5,16.25) (357.5,308.75) (32.5,308.75)              |
+| EXTERIOR       | 0.0        | (0.0,0.0) (390.0,0.0) (390.0,325.0) (0.0,325.0)              |
 
 ---
 
@@ -49,10 +49,10 @@ navigable by small boat.
 
 | description      | vertices                                    |
 |------------------|---------------------------------------------|
-| Stack North base | (43,73) (57,73) (57,87) (43,87)              |
-| Stack Central    | (53,43) (67,43) (67,57) (53,57)              |
-| Stack South base | (33,13) (47,13) (47,27) (33,27)              |
-| Stack East base  | (83,48) (97,48) (97,62) (83,62)              |
+| Stack North base | (139.75,237.25) (185.25,237.25) (185.25,282.75) (139.75,282.75)              |
+| Stack Central    | (172.25,139.75) (217.75,139.75) (217.75,185.25) (172.25,185.25)              |
+| Stack South base | (107.25,42.25) (152.75,42.25) (152.75,87.75) (107.25,87.75)              |
+| Stack East base  | (269.75,156.0) (315.25,156.0) (315.25,201.5) (269.75,201.5)              |
 
 ---
 
@@ -60,8 +60,8 @@ navigable by small boat.
 
 | name               | x     | y    | destination                    |
 |--------------------|-------|------|--------------------------------|
-| to_drowned_isle    | 10.0  | 10.0 | places/azure_sea/drowned_isle  |
-| to_coastal_path    | 110.0 | 50.0 | places/azure_sea               |
+| to_drowned_isle    | 32.5  | 32.5 | places/azure_sea/drowned_isle  |
+| to_coastal_path    | 357.5 | 162.5 | places/azure_sea               |
 
 ---
 
@@ -71,5 +71,5 @@ navigable by small boat.
 
 - **type:** conditional
 - **blocks:** all
-- **effect:** stack bases accessible only at low tide on foot; at high tide requires swimming (DC 13 Athletics, cold water)
-- **vertices:** (10,5) (110,5) (110,95) (10,95)
+- **effect:** stack bases accessible only at low tide on foot; at high tide requires swimming (DC 42.25 Athletics, cold water)
+- **vertices:** (32.5,16.25) (357.5,16.25) (357.5,308.75) (32.5,308.75)

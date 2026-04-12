@@ -4,14 +4,14 @@
 
 - **name:** The Echoing Caverns
 - **place_path:** places/obelisk_reach/echoing_caverns
-- **z_level:** 70.0
-- **width:** 100.0
-- **height:** 120.0
-- **origin:** 3500.0, 13200.0, 70.0
+- **z_level:** 227.5
+- **width:** 325.0
+- **height:** 390.0
+- **origin:** 11375.0, 42900.0, 227.5
 
 Notes: A network of caves beneath the Obelisk Reach. Origin at
 southwest corner. The entrance is a narrow crack in the cliff face
-(easy to miss, DC 13 Perception). Inside, the caves open into
+(easy to miss, DC 42.25 Perception). Inside, the caves open into
 larger chambers connected by passages. Sounds echo unnaturally.
 The air is cold. Father Elden's companions were lost in the deeper
 chambers decades ago.
@@ -22,15 +22,15 @@ chambers decades ago.
 
 | name              | x    | y    |
 |-------------------|------|------|
-| entrance_crack    | 30.0 | 100.0|
-| entry_chamber     | 40.0 | 90.0 |
-| first_passage     | 50.0 | 75.0 |
-| echo_chamber      | 55.0 | 60.0 |
-| deep_passage      | 40.0 | 45.0 |
-| bone_chamber      | 35.0 | 25.0 |
-| underground_pool  | 60.0 | 35.0 |
-| ancient_carvings  | 25.0 | 50.0 |
-| collapsed_tunnel  | 70.0 | 20.0 |
+| entrance_crack    | 97.5 | 325.0|
+| entry_chamber     | 130.0 | 292.5 |
+| first_passage     | 162.5 | 243.75 |
+| echo_chamber      | 178.75 | 195.0 |
+| deep_passage      | 130.0 | 146.25 |
+| bone_chamber      | 113.75 | 81.25 |
+| underground_pool  | 195.0 | 113.75 |
+| ancient_carvings  | 81.25 | 162.5 |
+| collapsed_tunnel  | 227.5 | 65.0 |
 
 ---
 
@@ -38,13 +38,13 @@ chambers decades ago.
 
 | name             | render_z | vertices                              |
 |------------------|----------|---------------------------------------|
-| ENTRY_CHAMBER    | 2        | (30,80) (55,80) (55,100) (30,100)      |
-| ECHO_CHAMBER     | 2        | (40,50) (70,50) (70,70) (40,70)        |
-| BONE_CHAMBER     | 2        | (20,15) (50,15) (50,35) (20,35)        |
-| DEEP_PASSAGE     | 1        | (30,35) (50,35) (50,50) (30,50)        |
-| FIRST_PASSAGE    | 1        | (40,70) (60,70) (60,80) (40,80)        |
-| POOL_CAVERN      | 1        | (50,25) (75,25) (75,45) (50,45)        |
-| CAVES            | 0        | (0,0) (100,0) (100,120) (0,120)        |
+| ENTRY_CHAMBER    | 6.5        | (97.5,260.0) (178.75,260.0) (178.75,325.0) (97.5,325.0)      |
+| ECHO_CHAMBER     | 6.5        | (130.0,162.5) (227.5,162.5) (227.5,227.5) (130.0,227.5)        |
+| BONE_CHAMBER     | 6.5        | (65.0,48.75) (162.5,48.75) (162.5,113.75) (65.0,113.75)        |
+| DEEP_PASSAGE     | 3.25        | (97.5,113.75) (162.5,113.75) (162.5,162.5) (97.5,162.5)        |
+| FIRST_PASSAGE    | 3.25        | (130.0,227.5) (195.0,227.5) (195.0,260.0) (130.0,260.0)        |
+| POOL_CAVERN      | 3.25        | (162.5,81.25) (243.75,81.25) (243.75,146.25) (162.5,146.25)        |
+| CAVES            | 0.0        | (0.0,0.0) (325.0,0.0) (325.0,390.0) (0.0,390.0)        |
 
 ---
 
@@ -52,10 +52,10 @@ chambers decades ago.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Cave walls north   | (0,105) (100,105) (100,120) (0,120)    |
-| Collapsed tunnel   | (65,15) (80,15) (80,25) (65,25)        |
-| Underground pool   | (53,28) (68,28) (68,42) (53,42)        |
-| Rock fall          | (15,55) (25,55) (25,65) (15,65)        |
+| Cave walls north   | (0.0,341.25) (325.0,341.25) (325.0,390.0) (0.0,390.0)    |
+| Collapsed tunnel   | (211.25,48.75) (260.0,48.75) (260.0,81.25) (211.25,81.25)        |
+| Underground pool   | (172.25,91.0) (221.0,91.0) (221.0,136.5) (172.25,136.5)        |
+| Rock fall          | (48.75,178.75) (81.25,178.75) (81.25,211.25) (48.75,211.25)        |
 
 ---
 
@@ -63,8 +63,8 @@ chambers decades ago.
 
 | name              | x    | y     | destination                              |
 |-------------------|------|-------|------------------------------------------|
-| entrance_crack    | 30.0 | 105.0 | places/obelisk_reach                     |
-| to_obelisk_above  | 50.0 | 95.0  | places/obelisk_reach/shattered_obelisk   |
+| entrance_crack    | 97.5 | 341.25 | places/obelisk_reach                     |
+| to_obelisk_above  | 162.5 | 308.75  | places/obelisk_reach/shattered_obelisk   |
 
 ---
 
@@ -75,4 +75,4 @@ chambers decades ago.
 - **type:** magical
 - **blocks:** none
 - **effect:** sounds carry and distort unnaturally; Perception checks at disadvantage for locating sound sources; occasionally sounds resolve into voice-like fragments
-- **vertices:** (20,10) (75,10) (75,75) (20,75)
+- **vertices:** (65.0,32.5) (243.75,32.5) (243.75,243.75) (65.0,243.75)

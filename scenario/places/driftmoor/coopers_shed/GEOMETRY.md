@@ -4,10 +4,10 @@
 
 - **name:** The Cooper's Shed
 - **place_path:** places/driftmoor/coopers_shed
-- **z_level:** 5.0
-- **width:** 14.0
-- **height:** 10.0
-- **origin:** 2773.0, 2649.0, 5.0
+- **z_level:** 16.25
+- **width:** 45.5
+- **height:** 32.5
+- **origin:** 9012.25, 8609.25, 16.25
 
 Notes: Utilitarian structure near the harbor. Origin at southwest
 corner. Open workspace with barrel-making tools. Yard with wooden
@@ -19,12 +19,12 @@ staves and iron hoops. Small toys near entrance.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 7.0  | 0.0  |
-| main_workspace  | 7.0  | 5.0  |
-| stave_pile      | 12.0 | 7.0  |
-| hoop_rack       | 2.0  | 7.0  |
-| toy_shelf       | 3.0  | 1.0  |
-| yard_area       | 7.0  | -2.0 |
+| front_door      | 22.75  | 0.0  |
+| main_workspace  | 22.75  | 16.25  |
+| stave_pile      | 39.0 | 22.75  |
+| hoop_rack       | 6.5  | 22.75  |
+| toy_shelf       | 9.75  | 3.25  |
+| yard_area       | 22.75  | -6.5 |
 
 ---
 
@@ -32,9 +32,9 @@ staves and iron hoops. Small toys near entrance.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| WORKSPACE  | 1        | (0,0) (14,0) (14,10) (0,10)   |
-| YARD       | 0        | (2,-4) (12,-4) (12,0) (2,0)   |
-| EXTERIOR   | 0        | (-3,-6) (17,-6) (17,13) (-3,13) |
+| WORKSPACE  | 3.25        | (0.0,0.0) (45.5,0.0) (45.5,32.5) (0.0,32.5)   |
+| YARD       | 0.0        | (6.5,-13.0) (39.0,-13.0) (39.0,0.0) (6.5,0.0)   |
+| EXTERIOR   | 0.0        | (-9.75,-19.5) (55.25,-19.5) (55.25,42.25) (-9.75,42.25) |
 
 ---
 
@@ -42,7 +42,7 @@ staves and iron hoops. Small toys near entrance.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0,9) (14,9) (14,10) (0,10)   |
+| Back wall   | (0.0,29.25) (45.5,29.25) (45.5,32.5) (0.0,32.5)   |
 
 ---
 
@@ -50,4 +50,4 @@ staves and iron hoops. Small toys near entrance.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 7.0 | 0.0 | places/driftmoor |
+| front_door | 22.75 | 0.0 | places/driftmoor |

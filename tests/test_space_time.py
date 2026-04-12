@@ -414,11 +414,11 @@ class TestFeyGladeGeometry:
         return load_geometry(self.FEY_GLADE_PATH)
 
     def test_aeliana_starts_in_trail(self, fey_glade):
-        aeliana_pos = Position(79, 25)
+        aeliana_pos = Position(256.75, 81.25)
         assert fey_glade.zone_at(aeliana_pos) == "TRAIL"
 
     def test_fennel_starts_in_glade(self, fey_glade):
-        fennel_pos = Position(44, 52)
+        fennel_pos = Position(143, 169)
         assert fey_glade.zone_at(fennel_pos) == "GLADE"
 
     def test_shadowbeast_starts_in_forest(self, fey_glade):
@@ -426,25 +426,25 @@ class TestFeyGladeGeometry:
         assert fey_glade.zone_at(shadowbeast_pos) == "FOREST"
 
     def test_absolute_position_of_glade_center(self, fey_glade):
-        abs_pos = fey_glade.absolute_position(Position(50, 50))
-        assert abs_pos.x == pytest.approx(1272.0)
-        assert abs_pos.y == pytest.approx(2658.0)
-        assert abs_pos.z == pytest.approx(0.2)
+        abs_pos = fey_glade.absolute_position(Position(162.5, 162.5))
+        assert abs_pos.x == pytest.approx(4134.0)
+        assert abs_pos.y == pytest.approx(8638.5)
+        assert abs_pos.z == pytest.approx(0.65)
 
     def test_nearest_landmark_to_fennel(self, fey_glade):
-        fennel_pos = Position(44, 52)
+        fennel_pos = Position(143, 169)
         name, _ = fey_glade.nearest_landmark(fennel_pos)
-        # pool_surface (42.5,52.5) is ~1.6m; carved_stone (42,52) is 2.0m
+        # pool_surface (138.12,170.62) is ~5 ft; carved_stone (136.5,169) is ~6.5 ft
         assert name == "pool_surface"
 
     def test_nearest_landmark_to_aeliana(self, fey_glade):
-        aeliana_pos = Position(79, 25)
+        aeliana_pos = Position(256.75, 81.25)
         name, _ = fey_glade.nearest_landmark(aeliana_pos)
         assert name == "trail_entrance"
 
     def test_pool_surface_is_impassable(self, fey_glade):
-        """The pool interior (42,52)-(43,53) is impassable."""
-        pool_center = Position(42.5, 52.5)
+        """The pool interior (136.5,169.0)-(139.75,172.25) is impassable."""
+        pool_center = Position(138.12, 170.62)
         blocked = any(
             poly.contains(pool_center) for poly in fey_glade.impassable
         )
@@ -463,7 +463,7 @@ class TestFeyGladeGeometry:
         boundary = boundaries[0]
         assert boundary.is_blocked("shadowbeast") is True
         assert boundary.is_blocked("human") is False
-        # Shadowbeast in forest (37,50) is outside boundary rect (39-61, 44-56)
+        # Shadowbeast in forest (37,50) ft is outside boundary rect (126.75-198.25, 143-182)
         assert boundary.perimeter.contains(Position(37, 50)) is False
-        # Inside glade (50,50) is inside boundary rect
-        assert boundary.perimeter.contains(Position(50, 50)) is True
+        # Inside glade (162.5,162.5) ft is inside boundary rect
+        assert boundary.perimeter.contains(Position(162.5, 162.5)) is True

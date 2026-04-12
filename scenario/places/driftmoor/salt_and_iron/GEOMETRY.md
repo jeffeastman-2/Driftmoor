@@ -4,10 +4,10 @@
 
 - **name:** Salt & Iron Mercantile
 - **place_path:** places/driftmoor/salt_and_iron
-- **z_level:** 5.0
-- **width:** 22.0
-- **height:** 20.0
-- **origin:** 2898.0, 2468.0, 5.0
+- **z_level:** 16.25
+- **width:** 71.5
+- **height:** 65.0
+- **origin:** 9418.5, 8021.0, 16.25
 
 Notes: One of the largest buildings in town — timber reinforced with
 iron bands, both functional and defensible. The ground floor is the
@@ -23,16 +23,16 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_doors     | 11.0 | 0.0  |
-| main_counter    | 11.0 | 12.0 |
-| shelves_west    | 2.0  | 10.0 |
-| shelves_east    | 20.0 | 10.0 |
-| barrel_corner_w | 3.0  | 17.0 |
-| barrel_corner_e | 19.0 | 17.0 |
-| staircase       | 18.0 | 16.0 |
-| clock           | 11.0 | 19.0 |
-| cudgel_under_counter | 13.0 | 13.0 |
-| ledger          | 10.0 | 13.0 |
+| front_doors     | 35.75 | 0.0  |
+| main_counter    | 35.75 | 39.0 |
+| shelves_west    | 6.5  | 32.5 |
+| shelves_east    | 65.0 | 32.5 |
+| barrel_corner_w | 9.75  | 55.25 |
+| barrel_corner_e | 61.75 | 55.25 |
+| staircase       | 58.5 | 52.0 |
+| clock           | 35.75 | 61.75 |
+| cudgel_under_counter | 42.25 | 42.25 |
+| ledger          | 32.5 | 42.25 |
 
 ---
 
@@ -40,10 +40,10 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | name       | render_z | vertices                              |
 |------------|----------|---------------------------------------|
-| BACK_STORE | 2        | (0,14) (22,14) (22,20) (0,20)         |
-| COUNTER    | 2        | (6,11) (18,11) (18,14) (6,14)         |
-| SHOP_FLOOR | 1        | (0,0) (22,0) (22,14) (0,14)           |
-| EXTERIOR   | 0        | (-5,-5) (27,-5) (27,25) (-5,25)       |
+| BACK_STORE | 6.5        | (0.0,45.5) (71.5,45.5) (71.5,65.0) (0.0,65.0)         |
+| COUNTER    | 6.5        | (19.5,35.75) (58.5,35.75) (58.5,45.5) (19.5,45.5)         |
+| SHOP_FLOOR | 3.25        | (0.0,0.0) (71.5,0.0) (71.5,45.5) (0.0,45.5)           |
+| EXTERIOR   | 0.0        | (-16.25,-16.25) (87.75,-16.25) (87.75,81.25) (-16.25,81.25)       |
 
 ---
 
@@ -51,8 +51,8 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | description      | vertices                              |
 |------------------|---------------------------------------|
-| Main counter     | (6,11) (18,11) (18,13) (6,13)         |
-| Back store wall  | (0,14) (22,14) (22,15) (0,15)         |
+| Main counter     | (19.5,35.75) (58.5,35.75) (58.5,42.25) (19.5,42.25)         |
+| Back store wall  | (0.0,45.5) (71.5,45.5) (71.5,48.75) (0.0,48.75)         |
 
 ---
 
@@ -60,8 +60,8 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | name             | x    | y    | destination                          |
 |------------------|------|------|--------------------------------------|
-| front_doors      | 11.0 | 0.0  | places/driftmoor                     |
-| to_upper_floor   | 18.0 | 16.0 | places/driftmoor/salt_and_iron/upper_floor |
+| front_doors      | 35.75 | 0.0  | places/driftmoor                     |
+| to_upper_floor   | 58.5 | 52.0 | places/driftmoor/salt_and_iron/upper_floor |
 
 ---
 
@@ -72,14 +72,14 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 - **type:** conditional
 - **blocks:** all
 - **effect:** crossing behind the counter without permission is trespassing; Jorgen keeps a cudgel beneath the counter and will use it
-- **vertices:** (0,11) (22,11) (22,20) (0,20)
+- **vertices:** (0.0,35.75) (71.5,35.75) (71.5,65.0) (0.0,65.0)
 
 ### Back Store — Private
 
 - **type:** physical
 - **blocks:** all
-- **effect:** locked door; Jorgen's private stock and staircase to quarters; DC 15 Thieves' Tools to pick
-- **vertices:** (0,14) (22,14) (22,20) (0,20)
+- **effect:** locked door; Jorgen's private stock and staircase to quarters; DC 48.75 Thieves' Tools to pick
+- **vertices:** (0.0,45.5) (71.5,45.5) (71.5,65.0) (0.0,65.0)
 
 ---
 
@@ -87,5 +87,5 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | character | x    | y    | zone       |
 |-----------|------|------|------------|
-| varrak    | 10.0 | 8.0  | SHOP_FLOOR |
-| jorgen    | 11.0 | 13.0 | COUNTER    |
+| varrak    | 32.5 | 26.0  | SHOP_FLOOR |
+| jorgen    | 35.75 | 42.25 | COUNTER    |

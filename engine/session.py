@@ -104,6 +104,38 @@ def _update_positions_in_summary(
     return updated
 
 
+def _speed_to_feet(speed_str: str) -> float:
+    """Parse a D&D speed string (e.g. '40 ft', '30 ft.') into feet.
+
+    Coordinates are in feet so no conversion is needed — just extract the number.
+    Returns feet per round. Defaults to 30.0 if unparseable.
+    """
+    m = re.search(r'(\d+)', speed_str or "")
+    return float(m.group(1)) if m else 30.0
+
+
+def _clamp_position(
+    proposed: tuple[float, float, str],
+    origin: tuple[float, float, str],
+    max_feet: float,
+) -> tuple[float, float, str]:
+    """Clamp *proposed* to within *max_feet* of *origin*.
+
+    If the proposed displacement exceeds max_feet, scales it back along
+    the same direction so the character moves at most max_feet.
+    The zone from *proposed* is preserved — zone assignment belongs to the DM.
+    """
+    import math
+    ox, oy = origin[0], origin[1]
+    px, py = proposed[0], proposed[1]
+    dx, dy = px - ox, py - oy
+    dist = math.hypot(dx, dy)
+    if dist <= max_feet or dist == 0:
+        return proposed
+    scale = max_feet / dist
+    return (round(ox + dx * scale, 1), round(oy + dy * scale, 1), proposed[2])
+
+
 # ---------------------------------------------------------------------------
 # DM Ledger
 # ---------------------------------------------------------------------------
@@ -477,8 +509,9 @@ async def iter_session(
             # Fallback: extract x/y coordinates mentioned anywhere in NOTES
             # (DM often writes coords in prose but forgets the structured field).
             if cr.adjudication.approved:
+                raw_pos: tuple[float, float, str] | None = None
                 if cr.adjudication.new_position is not None:
-                    current_positions[character_id] = cr.adjudication.new_position
+                    raw_pos = cr.adjudication.new_position
                 else:
                     notes = cr.adjudication.notes
                     x_m = re.search(r'\bx\s*=\s*(-?\d+\.?\d*)', notes, re.IGNORECASE)
@@ -489,9 +522,16 @@ async def iter_session(
                             r'\b(GLADE|TRAIL|FOREST|CLEARING|POOL)\b', notes, re.IGNORECASE
                         )
                         zone = zone_m.group(1).upper() if zone_m else prev_zone
-                        current_positions[character_id] = (
-                            float(x_m.group(1)), float(y_m.group(1)), zone
-                        )
+                        raw_pos = (float(x_m.group(1)), float(y_m.group(1)), zone)
+
+                if raw_pos is not None:
+                    # Clamp to character's speed (coordinates are in feet)
+                    char = characters[character_id].character
+                    speed_ft = _speed_to_feet(getattr(char, "speed", "30 ft"))
+                    origin = current_positions.get(character_id)
+                    if origin is not None:
+                        raw_pos = _clamp_position(raw_pos, origin, speed_ft)
+                    current_positions[character_id] = raw_pos
 
             # Record result in DM ledger (later chars in this turn see it)
             ledger.record(cr, game_time)

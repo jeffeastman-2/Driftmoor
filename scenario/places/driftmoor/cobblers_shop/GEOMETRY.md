@@ -4,10 +4,10 @@
 
 - **name:** The Cobbler's Shop
 - **place_path:** places/driftmoor/cobblers_shop
-- **z_level:** 5.0
-- **width:** 10.0
-- **height:** 8.0
-- **origin:** 2825.0, 2636.0, 5.0
+- **z_level:** 16.25
+- **width:** 32.5
+- **height:** 26.0
+- **origin:** 9181.25, 8567.0, 16.25
 
 Notes: A snug brick-walled single-room shop. Origin at southwest
 corner. Front window displays shoes. Workbench and tools in the back.
@@ -18,11 +18,11 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 5.0 | 0.0 |
-| display_window  | 2.0 | 0.0 |
-| workbench       | 5.0 | 6.0 |
-| shoe_racks      | 9.0 | 4.0 |
-| stool           | 3.0 | 5.0 |
+| front_door      | 16.25 | 0.0 |
+| display_window  | 6.5 | 0.0 |
+| workbench       | 16.25 | 19.5 |
+| shoe_racks      | 29.25 | 13.0 |
+| stool           | 9.75 | 16.25 |
 
 ---
 
@@ -30,8 +30,8 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| SHOP       | 1        | (0,0) (10,0) (10,8) (0,8)   |
-| EXTERIOR   | 0        | (-3,-3) (13,-3) (13,11) (-3,11) |
+| SHOP       | 3.25        | (0.0,0.0) (32.5,0.0) (32.5,26.0) (0.0,26.0)   |
+| EXTERIOR   | 0.0        | (-9.75,-9.75) (42.25,-9.75) (42.25,35.75) (-9.75,35.75) |
 
 ---
 
@@ -39,7 +39,7 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Back wall   | (0,7) (10,7) (10,8) (0,8)   |
+| Back wall   | (0.0,22.75) (32.5,22.75) (32.5,26.0) (0.0,26.0)   |
 
 ---
 
@@ -47,4 +47,4 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 5.0 | 0.0 | places/driftmoor |
+| front_door | 16.25 | 0.0 | places/driftmoor |

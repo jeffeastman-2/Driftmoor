@@ -4,10 +4,10 @@
 
 - **name:** The Plains of Stonehearth
 - **place_path:** places/plains_of_stonehearth
-- **z_level:** 5.0
-- **width:** 16800.0
-- **height:** 7000.0
-- **origin:** 3200.0, 0.0, 5.0
+- **z_level:** 16.25
+- **width:** 54600.0
+- **height:** 22750.0
+- **origin:** 10400.0, 0.0, 16.25
 
 Notes: Windswept grasslands southeast of Driftmoor. Origin at
 southwest corner. Vast and mostly flat with rocky outcroppings
@@ -21,15 +21,15 @@ have been preying on livestock, especially at night.
 
 | name               | x       | y      |
 |--------------------|---------|--------|
-| plains_center      | 6800.0  | 2000.0 |
-| northern_farmstead | 2000.0  | 5500.0 |
-| southern_farmstead | 5000.0  | 1000.0 |
-| rocky_outcrop_west | 3000.0  | 3000.0 |
-| rocky_outcrop_east | 9000.0  | 2500.0 |
-| sheep_pasture      | 4000.0  | 4000.0 |
-| shadowbeast_den    | 8000.0  | 3500.0 |
-| coastal_path_west  | 500.0   | 3000.0 |
-| road_to_driftmoor  | 1000.0  | 5500.0 |
+| plains_center      | 22100.0  | 6500.0 |
+| northern_farmstead | 6500.0  | 17875.0 |
+| southern_farmstead | 16250.0  | 3250.0 |
+| rocky_outcrop_west | 9750.0  | 9750.0 |
+| rocky_outcrop_east | 29250.0  | 8125.0 |
+| sheep_pasture      | 13000.0  | 13000.0 |
+| shadowbeast_den    | 26000.0  | 11375.0 |
+| coastal_path_west  | 1625.0   | 9750.0 |
+| road_to_driftmoor  | 3250.0  | 17875.0 |
 
 ---
 
@@ -37,11 +37,11 @@ have been preying on livestock, especially at night.
 
 | name              | render_z | vertices                                                    |
 |-------------------|----------|-------------------------------------------------------------|
-| ROCKY_OUTCROP_W   | 2        | (2500,2500) (3500,2500) (3500,3500) (2500,3500)              |
-| ROCKY_OUTCROP_E   | 2        | (8500,2000) (9500,2000) (9500,3000) (8500,3000)              |
-| FARMLANDS         | 1        | (1500,4500) (5000,4500) (5000,6500) (1500,6500)              |
-| PASTURES          | 1        | (3000,3000) (6000,3000) (6000,5000) (3000,5000)              |
-| OPEN_GRASSLAND    | 0        | (0,0) (16800,0) (16800,7000) (0,7000)                        |
+| ROCKY_OUTCROP_W   | 6.5        | (8125.0,8125.0) (11375.0,8125.0) (11375.0,11375.0) (8125.0,11375.0)              |
+| ROCKY_OUTCROP_E   | 6.5        | (27625.0,6500.0) (30875.0,6500.0) (30875.0,9750.0) (27625.0,9750.0)              |
+| FARMLANDS         | 3.25        | (4875.0,14625.0) (16250.0,14625.0) (16250.0,21125.0) (4875.0,21125.0)              |
+| PASTURES          | 3.25        | (9750.0,9750.0) (19500.0,9750.0) (19500.0,16250.0) (9750.0,16250.0)              |
+| OPEN_GRASSLAND    | 0.0        | (0.0,0.0) (54600.0,0.0) (54600.0,22750.0) (0.0,22750.0)                        |
 
 ---
 
@@ -49,8 +49,8 @@ have been preying on livestock, especially at night.
 
 | description           | vertices                                                    |
 |-----------------------|-------------------------------------------------------------|
-| Rocky outcrop W cliffs | (2800,2700) (3200,2700) (3200,3300) (2800,3300)             |
-| Rocky outcrop E cliffs | (8700,2200) (9300,2200) (9300,2800) (8700,2800)             |
+| Rocky outcrop W cliffs | (9100.0,8775.0) (10400.0,8775.0) (10400.0,10725.0) (9100.0,10725.0)             |
+| Rocky outcrop E cliffs | (28275.0,7150.0) (30225.0,7150.0) (30225.0,9100.0) (28275.0,9100.0)             |
 
 ---
 
@@ -58,6 +58,6 @@ have been preying on livestock, especially at night.
 
 | name               | x       | y      | destination                    |
 |--------------------|---------|--------|--------------------------------|
-| road_to_driftmoor  | 1000.0  | 5500.0 | places/driftmoor               |
-| coastal_path_west  | 0.0     | 3000.0 | places/azure_sea               |
-| plains_east        | 16500.0 | 3500.0 | places/plains_of_stonehearth   |
+| road_to_driftmoor  | 3250.0  | 17875.0 | places/driftmoor               |
+| coastal_path_west  | 0.0     | 9750.0 | places/azure_sea               |
+| plains_east        | 53625.0 | 11375.0 | places/plains_of_stonehearth   |

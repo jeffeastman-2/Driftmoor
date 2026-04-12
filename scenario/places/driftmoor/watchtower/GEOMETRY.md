@@ -4,10 +4,10 @@
 
 - **name:** The Watchtower
 - **place_path:** places/driftmoor/watchtower
-- **z_level:** 5.0
-- **width:** 10.0
-- **height:** 10.0
-- **origin:** 2790.0, 2609.0, 5.0
+- **z_level:** 16.25
+- **width:** 32.5
+- **height:** 32.5
+- **origin:** 9067.5, 8479.25, 16.25
 
 Notes: Squat stone tower. Origin at southwest corner. Ground floor
 is a single room with weapon rack and cot. Ladder leads to the roof
@@ -19,11 +19,11 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 5.0 | 0.0 |
-| weapon_rack     | 2.0 | 7.0 |
-| cot             | 8.0 | 7.0 |
-| ladder          | 5.0 | 9.0 |
-| center          | 5.0 | 5.0 |
+| front_door      | 16.25 | 0.0 |
+| weapon_rack     | 6.5 | 22.75 |
+| cot             | 26.0 | 22.75 |
+| ladder          | 16.25 | 29.25 |
+| center          | 16.25 | 16.25 |
 
 ---
 
@@ -31,9 +31,9 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | render_z | vertices                    |
 |-----------------|----------|-----------------------------|
-| ROOF_PLATFORM   | 2        | (1,1) (9,1) (9,9) (1,9)     |
-| GROUND_FLOOR    | 1        | (0,0) (10,0) (10,10) (0,10)  |
-| EXTERIOR        | 0        | (-3,-3) (13,-3) (13,13) (-3,13) |
+| ROOF_PLATFORM   | 6.5        | (3.25,3.25) (29.25,3.25) (29.25,29.25) (3.25,29.25)     |
+| GROUND_FLOOR    | 3.25        | (0.0,0.0) (32.5,0.0) (32.5,32.5) (0.0,32.5)  |
+| EXTERIOR        | 0.0        | (-9.75,-9.75) (42.25,-9.75) (42.25,42.25) (-9.75,42.25) |
 
 ---
 
@@ -41,7 +41,7 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Tower walls | (0,0) (10,0) (10,10) (0,10) |
+| Tower walls | (0.0,0.0) (32.5,0.0) (32.5,32.5) (0.0,32.5) |
 
 ---
 
@@ -49,4 +49,4 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 5.0 | 0.0 | places/driftmoor |
+| front_door | 16.25 | 0.0 | places/driftmoor |
