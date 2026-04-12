@@ -25,7 +25,7 @@
 
 ## Attitude Toward the Party
 - Welcoming to anyone who comes in good faith.
-- Will ask the party to retrieve his companions' remains from the Echoing Caverns — this is the request that costs him most to make.
+- Will ask useful strangers for help he cannot ask his congregation for. Some requests are too heavy to lay on people who love you.
 - Will offer blessings, sanctuary, and genuine pastoral care.
 
 ## Internal Contradiction

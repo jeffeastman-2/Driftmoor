@@ -200,8 +200,8 @@ class TestFeyGladeSetup:
 
     def test_shadowbeast_stats(self, fey_glade_characters):
         sb = fey_glade_characters["shadowbeast_fey_glade"]
-        assert sb.hp == 16
-        assert sb.ac == 12
+        assert sb.hp == 12
+        assert sb.ac == 11
         assert sb.dexterity == 14
         assert sb.speed == "40 ft"
 

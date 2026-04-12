@@ -34,4 +34,4 @@
 - Will not betray them unless it costs him more not to.
 
 ## Internal Contradiction
-He is genuinely fascinated by the obelisk shards and what they might become. Whether this fascination is entrepreneurial, scholarly, or something darker, even Kelem may not be sure.
+He is genuinely fascinated by the obelisk shards and what they might become. Whether this fascination is entrepreneurial, scholarly, or something darker is a question he does not examine directly.

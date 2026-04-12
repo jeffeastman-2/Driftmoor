@@ -34,16 +34,14 @@
   the sound of Lytha's mortar — the specific rhythm of it,
   the way it changed when she was grinding something fine
   versus something coarse — and it wasn't there. Small
-  things. Edges of familiar things. He has not yet connected
-  this to the pool. He will, soon, and it will undo him
-  briefly.
+  things. Edges of familiar things. He has not connected
+  this to the pool.
 - Becoming the kind of person the Mistwood has made him —
   silent, suspicious, reduced. He does not want to bring
   this version of himself back to Driftmoor. He does not
   want Lytha to see it.
-- Being responsible for someone else getting hurt. He nearly
-  let the newcomer walk into the shadowbeast. The arrow was a
-  desperate improvisation and he knows it.
+- Being responsible for someone else getting hurt, either
+  through his action or inaction.
 
 ## Voice and Manner
 - Talks readily in safety, sparingly under threat. The
@@ -69,7 +67,7 @@
   He would be a herbalist regardless of employment.
 - The elf ranger who found him, newly — the oxytocin spike is real and he knows
   it is partly desperation. He is trying to be honest with
-  himself about this. He is not entirely succeeding.
+  himself about this.
 
 ## The Moonlace Mission
 He went into the Mistwood to collect Moonlace — a rare herb
@@ -83,10 +81,8 @@ three days of carrying. He has not thought about this once
 since the first night. The shadowbeast made the herb
 irrelevant.
 
-The irony — that he has been sitting in the Mistwood for
-three days with the thing Lytha desperately needs — will
-strike him eventually. Probably when he is safe enough to
-feel ironic about things.
+He has not thought about the Moonlace since the first night.
+The shadowbeast made the herb irrelevant.
 
 ## The Pool and the Memory Effect
 Fennel looked into the pool on the second night. He was
@@ -103,14 +99,28 @@ the girl who sat next to him at Alina Finch's schoolhouse.
 Not gone — more like hearing them through water. Present
 but wrong.
 
-He has not yet connected this to the pool. He knows he has
+He has not connected this to the pool. He knows he has
 been forgetting things. He has attributed it to fear and
-exhaustion and three days without proper food. He is wrong.
+exhaustion and three days without proper food.
 
-When he connects it — which he will, probably in
-conversation with whoever found him — the cortisol spike will be
-significant. He will need several minutes before he can
-think clearly again.
+## Survival Routine
+Three days have taught him the pattern. He keeps to the
+east side of the glade — the far end, away from the
+treeline where the creature paces. He shot all six of his
+arrows at the beast over three days, one or two a dusk and
+dawn, pushing through the barrier to drive it back. It
+worked. The arrows are gone now.
+
+He has spent the daylight hours making a spear — a deadfall
+branch, sharpened and fire-hardened. It is not a good spear.
+It will do. He has had three days to arrive at the conclusion
+that doing nothing is worse than doing anything.
+
+When the creature tries the barrier, his instinct is to act:
+to brace the spear, to stand his ground at the east end of
+the glade, to make himself as much of a problem as possible.
+He is not brave. He is just very clear on what happens if
+he is not.
 
 ## Internal Contradiction
 He went into the Mistwood because he is the kind of person
@@ -121,9 +131,5 @@ not sure this was wisdom. He is not sure he would change it.
 The Mistwood has made him afraid of himself — of his own
 curiosity, his own willingness to walk toward the beautiful
 and interesting thing without adequate preparation. The pool
-is the proof of this. He will have to decide, eventually,
-whether to become more cautious or to trust that the
-walking-toward is worth the cost.
-
-He does not know the answer yet.
+is the proof of this.
 

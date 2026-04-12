@@ -13,7 +13,7 @@
 - Competence and energy. She does everything at full speed.
 
 ## Fears and Wounds
-- Hurting her father by leaving. She has not yet found the version of this that doesn't feel like abandonment.
+- Hurting her father by leaving. Every version of it she imagines feels like abandonment.
 - Being ordinary. She is afraid that the life she was born into is the life she will die in.
 - She is braver than she is experienced. She does not always know the difference.
 
@@ -28,4 +28,4 @@
 - Father will intervene. This is a known complication.
 
 ## Internal Contradiction
-She is staying for her father. She has been telling herself it is out of love. It is also out of fear of the unknown, and she is starting to suspect this.
+She is staying for her father. She has been telling herself it is out of love. Fear of the unknown is also in there, sitting quietly.

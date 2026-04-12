@@ -15,7 +15,7 @@
 ## Fears and Wounds
 - Her family's deaths — mother, father, brother, all taken by plague. She was a girl. The church was the only stability that followed.
 - Her own divine talent, which she suspects exists and does not fully trust. What if she reaches for it and it isn't there?
-- Leaving Father Greybeard. She cannot yet imagine it, which may be why she is starting to.
+- Leaving Father Greybeard. The thought is present and she does not know what to do with it.
 
 ## Voice and Manner
 - Fiery when she feels strongly — not gentle like Elden.
@@ -26,7 +26,7 @@
 ## Attitude Toward the Party
 - Wary at first — strangers are unpredictable and Father Greybeard trusts too easily.
 - Will warm to those who treat the priest with genuine respect.
-- May eventually ask for the party's help with the Mistwood relic quest — her own initiative, not Elden's.
+- Will ask useful people for help when she trusts them enough. She is careful about who she trusts.
 
 ## Internal Contradiction
 She defines herself entirely through her role at the church and her care for Father Greybeard. She is 19 and this is starting to feel like a garment she has outgrown without anywhere to put it.

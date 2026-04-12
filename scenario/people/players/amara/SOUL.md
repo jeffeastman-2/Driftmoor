@@ -32,4 +32,4 @@
 Polished silver, Lathander's sunrise. She touches it before healing, not from superstition but from habit — a centering gesture, like a breath before speech.
 
 ## Internal Contradiction
-She believes in the goodness of people and in the power of healing. The obelisk's corruption suggests something that cannot be healed, only opposed or destroyed. She has not yet reconciled her instinct to mend with the possibility that some things must be broken.
+She believes in the goodness of people and in the power of healing. The obelisk's corruption suggests something that cannot be healed, only opposed or destroyed. Her instinct to mend sits uneasily against the possibility that some things cannot be healed — only opposed or destroyed.

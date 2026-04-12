@@ -114,6 +114,60 @@ def _speed_to_feet(speed_str: str) -> float:
     return float(m.group(1)) if m else 30.0
 
 
+def _max_attack_range(identity_text: str) -> float:
+    """Return the maximum attack range in feet from a character's identity text.
+
+    Checks (in order): ranged weapon range, AoE radius, melee reach.
+    Defaults to 5 ft (standard melee) if none found.
+    """
+    t = identity_text or ""
+    # Ranged weapon: "range 150/600 ft" or "range 80/320"
+    m = re.search(r'\brange\s+(\d+)/\d+', t, re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+    # Ranged weapon: "range 60 ft"
+    m = re.search(r'\brange\s+(\d+)\s*ft', t, re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+    # AoE radius: "10ft radius" or "10 ft radius"
+    m = re.search(r'(\d+)\s*ft\s+radius', t, re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+    # Melee reach: "reach 10 ft"
+    m = re.search(r'\breach\s+(\d+)\s*ft', t, re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+    return 5.0  # default melee reach
+
+
+def _enforce_attack_range(
+    hp_damage: dict[str, int],
+    attacker_pos: tuple[float, float, str] | None,
+    current_positions: dict[str, tuple[float, float, str]],
+    max_range: float,
+) -> dict[str, int]:
+    """Remove hp_damage entries where the target is beyond the attacker's max range.
+
+    Used to catch LLM arithmetic errors where the DM resolves melee attacks
+    from a position that is actually out of reach.
+    """
+    import math
+    if attacker_pos is None or not hp_damage:
+        return hp_damage
+    ax, ay = attacker_pos[0], attacker_pos[1]
+    filtered: dict[str, int] = {}
+    for target_id, dmg in hp_damage.items():
+        tpos = current_positions.get(target_id)
+        if tpos is None:
+            filtered[target_id] = dmg  # target position unknown, keep it
+            continue
+        dist = math.hypot(tpos[0] - ax, tpos[1] - ay)
+        if dist <= max_range + 0.5:  # 0.5 ft tolerance for floating point
+            filtered[target_id] = dmg
+        # else: silently drop — attacker could not reach this target
+    return filtered
+
+
 def _clamp_position(
     proposed: tuple[float, float, str],
     origin: tuple[float, float, str],
@@ -206,7 +260,10 @@ class DMLedger:
         self._current_turn.append(line)
 
         # Permanent events: boundary crossings, combat start, exits
+        # Only record permanent events when the action was approved.
         for event in events:
+            if not adj.approved:
+                continue
             key = event.lower()
             if any(t in key for t in _PERMANENT_TRIGGERS):
                 perm = f"{timestamp} | {cr.character_id} | {event.upper()}{pos_str}"
@@ -539,6 +596,17 @@ async def iter_session(
             # Apply HP damage immediately so ledger shows current HP
             # for subsequent characters in this turn's initiative order
             if cr.adjudication.approved:
+                # Enforce attack range: strip any target that is beyond the attacker's
+                # max reach/range. Guards against LLM arithmetic errors where the DM
+                # resolves a melee attack from a position that is actually out of reach.
+                attacker_char = characters[character_id].character
+                max_range = _max_attack_range(getattr(attacker_char, "identity", ""))
+                cr.adjudication.hp_damage = _enforce_attack_range(
+                    cr.adjudication.hp_damage,
+                    current_positions.get(character_id),
+                    current_positions,
+                    max_range,
+                )
                 for target_id, dmg in cr.adjudication.hp_damage.items():
                     if target_id not in characters:
                         continue
@@ -548,6 +616,9 @@ async def iter_session(
                         if char.current_hp <= 0:
                             active_characters.discard(target_id)
                             current_positions.pop(target_id, None)
+                            within_turn_history += (
+                                f"\n[{target_id} is dead — reduced to 0 HP]"
+                            )
 
             # Check for exits_scene — remove from active set mid-turn
             if EXIT_EVENT in cr.adjudication.spatial_events:
@@ -556,6 +627,7 @@ async def iter_session(
 
             # Check for combat_initiated — switch to melee time
             if (COMBAT_EVENT in cr.adjudication.spatial_events
+                    and cr.adjudication.approved
                     and not in_combat and game_time is not None):
                 in_combat = True
                 pre_combat_duration = game_time.turn_duration

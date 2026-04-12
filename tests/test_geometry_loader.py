@@ -111,8 +111,8 @@ class TestParseGeometryMd:
 
     def test_starting_fennel(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["fennel"]
-        assert pos.x == 143.0
-        assert pos.y == 169.0
+        assert pos.x == 190.0
+        assert pos.y == 162.5
 
     def test_starting_shadowbeast(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["shadowbeast"]

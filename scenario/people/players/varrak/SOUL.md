@@ -24,12 +24,12 @@
 - Dry, occasionally cutting humor that surfaces unexpectedly.
 
 ## Loyalties
-- The party, grudgingly and increasingly. They joined for access to obelisk sites. They are staying for reasons they have not yet articulated.
+- The party, grudgingly and increasingly. They joined for access to obelisk sites. The reasons for staying are more complicated than utility.
 - Their own draconic lineage — a loyalty to something they do not fully understand.
-- Kelem Dustcloak directed them to Driftmoor. Whether this makes Kelem an ally or a manipulator remains to be seen.
+- Kelem Dustcloak directed them to Driftmoor. His motives are opaque and Varrak is watching him carefully.
 
 ## The Leather Satchel
 Contains meticulous notes and sketches of obelisk fragments, arcane symbols, and draconic script. This is their research — their proof that the obelisk and their bloodline are connected. They do not share it freely.
 
 ## Internal Contradiction
-They insist they are here for the obelisk and nothing more. The fact that they stepped between a shadowbeast and Kaelin without hesitation suggests otherwise. They have not yet reconciled this.
+They insist they are here for the obelisk and nothing more. The fact that they stepped between a shadowbeast and Kaelin without hesitation sits uneasily with that framing.

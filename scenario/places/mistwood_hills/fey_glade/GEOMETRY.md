@@ -58,5 +58,5 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 | character    | x     | y     | zone     |
 |--------------|-------|-------|----------|
 | aeliana      | 256.75  | 81.25  | TRAIL    |
-| fennel       | 143.0  | 169.0  | GLADE    |
+| fennel       | 190.0  | 162.5  | GLADE    |
 | shadowbeast  | 126.75  | 162.5  | FOREST   |

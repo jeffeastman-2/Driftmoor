@@ -418,7 +418,7 @@ class TestFeyGladeGeometry:
         assert fey_glade.zone_at(aeliana_pos) == "TRAIL"
 
     def test_fennel_starts_in_glade(self, fey_glade):
-        fennel_pos = Position(143, 169)
+        fennel_pos = Position(190.0, 162.5)
         assert fey_glade.zone_at(fennel_pos) == "GLADE"
 
     def test_shadowbeast_starts_in_forest(self, fey_glade):
@@ -432,10 +432,10 @@ class TestFeyGladeGeometry:
         assert abs_pos.z == pytest.approx(0.65)
 
     def test_nearest_landmark_to_fennel(self, fey_glade):
-        fennel_pos = Position(143, 169)
+        fennel_pos = Position(190.0, 162.5)
         name, _ = fey_glade.nearest_landmark(fennel_pos)
-        # pool_surface (138.12,170.62) is ~5 ft; carved_stone (136.5,169) is ~6.5 ft
-        assert name == "pool_surface"
+        # oak_east (185.25,162.5) is ~4.75 ft away
+        assert name == "oak_east"
 
     def test_nearest_landmark_to_aeliana(self, fey_glade):
         aeliana_pos = Position(256.75, 81.25)

@@ -14,7 +14,7 @@
 
 ## Fears and Wounds
 - Whatever she did on the pirate ship, she did not leave that life entirely by choice. She does not talk about it.
-- The hidden compartment under the storage room floor contains something she guards carefully. Its nature is left to the DM.
+- The hidden compartment under the storage room floor contains something she guards carefully and does not discuss.
 - Losing the tavern — to debt, to fire, to whatever is coming down from the obelisk.
 
 ## Voice and Manner

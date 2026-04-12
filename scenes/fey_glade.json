@@ -37,7 +37,7 @@
       "soul_file": "scenario/people/players/aeliana/SOUL.md",
       "identity_file": "scenario/people/players/aeliana/IDENTITY.md",
       "scene_handle": "the elf ranger",
-      "initial_scene": "It is dusk. You are on the trail approaching the Fey Glade. The forest ahead has gone unnaturally quiet — no birdsong, no rustling. The air carries a faint luminous warmth from somewhere deeper in the trees. You have heard there is a gatherer sheltering in the glade. You sense something large in the forest shadows to your left, watching. Whatever it is, it is not moving toward you — not yet.",
+      "initial_scene": "It is dusk. You are on the trail approaching the Fey Glade. The forest ahead has gone unnaturally quiet — no birdsong, no rustling. The air carries a faint luminous warmth from somewhere deeper in the trees. You have heard there is a gatherer sheltering in the glade. You sense something large in the forest shadows to your left, watching. It is close. Your bow is already in your hand — you have been tracking this creature and you do not wait for it to act first. The moment you have a clear shot, you take it.",
       "condition_name": "Aeliana",
       "condition": {
         "state": {
@@ -67,7 +67,7 @@
       "race": "Human",
       "class": "Gatherer",
       "level": 1,
-      "hp": 8,
+      "hp": 10,
       "ac": 11,
       "speed": "30 ft",
       "strength": 10,
@@ -82,7 +82,7 @@
       "soul_file": "scenario/people/npcs/fennel/SOUL.md",
       "identity_file": "scenario/people/npcs/fennel/IDENTITY.md",
       "scene_handle": "the young gatherer",
-      "initial_scene": "It is dusk. Three days you have learned the pattern: dusk is when it tries, and dawn is a second window. Not midnight — during full dark the barrier is at its peak and the creature paces and snarls but cannot push through. During daylight it doesn't come at all; you think the light itself is painful to it. But dusk and dawn, the transitions, those are when the barrier thins and the creature is still able to move. Every dusk it comes. This is that hour. The wrongness at the forest edge is back — you can hear it, or rather you hear the absence of everything else. Someone is coming down the trail from the east. You don't know if that is good news.",
+      "initial_scene": "It is dusk. Three days you have learned the pattern: dusk is when it tries, and dawn is a second window. Not midnight — during full dark the barrier is at its peak and the creature paces and snarls but cannot push through. During daylight it doesn't come at all; you think the light itself is painful to it. But dusk and dawn, the transitions, those are when the barrier thins and the creature is still able to move. Every dusk it comes. This is that hour. The wrongness at the forest edge is back — you can hear it, or rather you hear the absence of everything else. You are standing at the east end of the glade with your improvised spear — a fire-hardened stake you made from a deadfall branch. Your arrows are gone, spent over three days keeping the beast back. The spear is what you have. Someone is coming down the trail from the east. You don't know if that is good news.",
       "condition_name": "Fennel",
       "condition": {
         "state": {
@@ -112,8 +112,8 @@
       "race": "Medium Monstrosity",
       "faction": "hostile",
       "alignment": "Neutral Evil",
-      "hp": 16,
-      "ac": 12,
+      "hp": 12,
+      "ac": 11,
       "speed": "40 ft",
       "challenge": "½",
       "strength": 6,
@@ -153,7 +153,7 @@
       "provider": "deepseek",
       "model": "deepseek-chat",
       "soul": "You are the SHADOWBEAST — a predator of shadow and instinct. You do not think in words. You sense heat, motion, pressure, the shimmer of the boundary that contains you. Communicate through sensation-language: vibration, scent-trails, thermal impressions. Never use human speech or abstract reasoning. When you are inside the barrier, ATTACK. Do not stalk. Do not wait. The hunger is NOW.",
-      "identity": "Shadowbeast. CR ½. HP 16. AC 12 (semi-corporeal). Speed 40ft. STR 6 DEX 14 CON 13 INT 6 WIS 10 CHA 8. Shadow Stealth: Hide as bonus action in dim light/darkness. Sunlight Sensitivity: disadvantage on attacks in sunlight. Multiattack: two claw attacks. Claw: +4, 2d4+2 slashing. Shadow Swipe (Recharge 5-6): 10ft radius, DC 12 DEX, 2d6 necrotic + slow. Resistant to nonmagical B/P/S. Vulnerable to radiant. Immune to charmed, frightened.",
+      "identity": "Shadowbeast. CR ½. HP 12. AC 11 (semi-corporeal). Speed 40ft. STR 6 DEX 14 CON 13 INT 6 WIS 10 CHA 8. Shadow Stealth: Hide as bonus action in dim light/darkness. Sunlight Sensitivity: disadvantage on attacks in sunlight. Multiattack: two claw attacks. Claw: +4, 1d6 slashing. Shadow Swipe (Recharge 5-6): 10ft radius, DC 12 DEX, 2d6 necrotic + slow. Resistant to nonmagical B/P/S. Vulnerable to radiant. Immune to charmed, frightened.",
       "initial_scene": "Dusk. The burning wrongness of full day is fading from the shimmer ahead. Three days you have circled this place. Three nights the wall held. But this hour — the transition — you have learned. The light that burns leaves with the sun. The wall weakens before it strengthens again at full dark. This is your window. The prey near the pool has not moved. A new heat arrives from the east — tall, carrying metal. Two prey now. The wall is soft. Probe it. Find the weak point. The hunger says now.",
       "condition_name": "Shadowbeast",
       "condition": {
@@ -194,7 +194,7 @@
     },
     {
       "header": "Character Starting Positions",
-      "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 256.75 | 81.25 | TRAIL |\n| fennel | 143.0 | 169.0 | GLADE |\n| shadowbeast_3.25 | 126.75 | 162.5 | FOREST |"
+      "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 256.75 | 81.25 | TRAIL |\n| fennel | 190.0 | 162.5 | GLADE |\n| shadowbeast_3.25 | 126.75 | 162.5 | FOREST |"
     },
     {
       "header": "Exit Motivations (DM only)",

@@ -31,4 +31,4 @@
 A rare concession to sentimentality. She never explains it. It is the one item she would not trade or abandon.
 
 ## Internal Contradiction
-She believes she is in this for herself. She is increasingly wrong about that, and some part of her knows it.
+She believes she is in this for herself. The bonds she is building with the party are harder to dismiss than she expected.

@@ -31,4 +31,4 @@
 Etched into his shoulder pauldron. A reminder of what he fights for and what he lost. He touches it unconsciously before battle.
 
 ## Internal Contradiction
-He believes he deserves no peace until he has earned it. The party may eventually convince him otherwise. He will resist this strenuously.
+He believes he deserves no peace until he has earned it. The people beside him are making this position harder to hold.

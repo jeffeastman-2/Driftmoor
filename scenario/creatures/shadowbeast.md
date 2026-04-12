@@ -4,8 +4,8 @@ Shadowbeasts are unnerving to behold, their bodies appearing as swirling, semi-c
 
 Race: Medium Monstrosity
 Alignment: Neutral Evil
-Armor Class: 12
-Hit Points: 16 (3d8 + 3)
+Armor Class: 11
+Hit Points: 12 (2d8 + 3)
 Speed: 40 ft
 Challenge: ½ (100 XP)
 

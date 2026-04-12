@@ -27,6 +27,17 @@ def _roll_dice(n: int = 8, sides: int = 20) -> list[int]:
     return [random.randint(1, sides) for _ in range(n)]
 
 
+def _roll_damage_pools(n: int = 6) -> dict[str, list[int]]:
+    """Pre-roll damage dice pools for all common die sizes."""
+    return {
+        "d4":  [random.randint(1, 4)  for _ in range(n)],
+        "d6":  [random.randint(1, 6)  for _ in range(n)],
+        "d8":  [random.randint(1, 8)  for _ in range(n)],
+        "d10": [random.randint(1, 10) for _ in range(n)],
+        "d12": [random.randint(1, 12) for _ in range(n)],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Data types
 # ---------------------------------------------------------------------------
@@ -74,11 +85,14 @@ class DMLeft:
             "Evaluate the character's proposed action against game rules, "
             "spatial constraints, and the current game state.\n\n"
             "## Dice Rolls\n"
-            "A set of pre-rolled d20 results will be provided in the user "
-            "prompt under '## Dice Rolls'. You MUST use these rolls in order "
-            "for any saving throws, attack rolls, or contested checks — do NOT "
-            "invent or assume your own values. Consume from left to right; "
-            "unused rolls are discarded.\n\n"
+            "A set of pre-rolled d20 results and damage dice will be provided "
+            "in the user prompt under '## Dice Rolls'. You MUST use these rolls "
+            "in order for any saving throws, attack rolls, contested checks, and "
+            "damage rolls — do NOT invent or assume your own values. "
+            "Consume from each pool left to right; unused rolls are discarded. "
+            "For damage: use the matching die pool (e.g. '2d6' → take 2 values "
+            "from the d6 pool and sum them). Never use maximum or average damage "
+            "— always use the pre-rolled values.\n\n"
             "## Melee and Ranged Combat Rules\n"
             "1 melee round = 6 seconds (one D&D 5e round). "
             "Coordinates are in feet. All D&D 5e stat block distances "
@@ -143,11 +157,18 @@ class DMLeft:
             "or offensive spell against an opponent.\n"
             "  - exits_scene: when a character leaves the scene "
             "area entirely (fleeing, retreating, departing), "
-            "or when a character or creature is reduced to 0 HP.\n"
-            "**HP DAMAGE** — Hit point damage dealt by this action. "
+            "or when a character or creature is reduced to 0 HP.\n"            "  CRITICAL: If APPROVED is No (barrier crossing failed, "
+            "action rejected), do NOT emit boundary_crossed or "
+            "combat_initiated. Those events only apply when the action "
+            "actually succeeds.\n"            "**HP DAMAGE** — Hit point damage dealt by this action. "
             "Format as target_id: amount for each target hit "
             "(e.g. \"aeliana: 7\" or \"aeliana: 5, fennel: 3\"). "
             "Use \"none\" if no HP damage was dealt. "
+            "CRITICAL: If your NOTES state the attack cannot land for ANY reason "
+            "(target out of melee range, target out of ranged range, attack roll "
+            "failed, action was not an attack), you MUST use \"none\" here. "
+            "Your NOTES and HP DAMAGE must be fully consistent — never populate "
+            "HP DAMAGE when the attack failed or could not reach its target. "
             "Only emit damage that was actually rolled and resolved.\n"
             "**NOTES** — Brief adjudication reasoning, including any "
             "dice rolls used and their outcomes."
@@ -159,12 +180,17 @@ class DMLeft:
         game_state_summary: str,
         geometry_summary: str,
         dice_rolls: list[int] | None = None,
+        damage_pools: dict[str, list[int]] | None = None,
         dm_ledger: str = "",
     ) -> str:
         dice_section = ""
         if dice_rolls:
             rolls_str = ", ".join(str(r) for r in dice_rolls)
             dice_section = f"\n\n## Dice Rolls\nd20 pool (use in order): [{rolls_str}]"
+            if damage_pools:
+                for die, pool in damage_pools.items():
+                    pool_str = ", ".join(str(r) for r in pool)
+                    dice_section += f"\n{die} pool (use in order): [{pool_str}]"
         ledger_section = f"{dm_ledger}\n\n" if dm_ledger else ""
         return (
             f"{ledger_section}"
@@ -320,9 +346,10 @@ class DMLeft:
             )
         system = self.build_system_prompt()
         dice_rolls = _roll_dice(8)
+        damage_pools = _roll_damage_pools(6)
         user = self.build_user_prompt(
             character_output, game_state_summary, geometry_summary,
-            dice_rolls=dice_rolls, dm_ledger=dm_ledger,
+            dice_rolls=dice_rolls, damage_pools=damage_pools, dm_ledger=dm_ledger,
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(
