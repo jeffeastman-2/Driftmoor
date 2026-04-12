@@ -80,8 +80,18 @@ and unreliable under pressure. He proved this on night one.*
 
 ## What He Knows
 - Moonlace location and identification (his mission)
-- The glade boundary stops the shadowbeast
+- The glade boundary stops the shadowbeast — but not at dusk or dawn
 - The pool brightens at dusk, peaks at midnight, dims at dawn
+- The shadowbeast has two attack windows: dusk (primary — barrier
+  weakest) and dawn (secondary — barrier softening again). During
+  full daylight it does not come at all — he suspects the light
+  itself hurts it. During full night it paces and growls but cannot
+  get through — the barrier is at its peak. Only the transitions
+  are dangerous.
+- Three days has shown this pattern clearly. Dusk is the bad hour.
+  Dawn may be a second threat but the beast has not pressed hard
+  at dawn yet.
+- The danger is worst RIGHT NOW — dusk — not later at night
 - The shadowbeast follows sound — silence is survival
 - He has been losing small memories since night two
   (has NOT yet connected this to the pool)

@@ -105,6 +105,7 @@ class TurnCycle:
         game_state_summary: str = "",
         geometry_summary: str = "",
         scene_history: str = "",
+        dm_ledger: str = "",
     ) -> CharacterTurnResult:
         """Execute one character's full turn through the 4-role pipeline."""
         roles = self._roles_for(context.character_id)
@@ -117,7 +118,7 @@ class TurnCycle:
 
         # 3. DM-Left: adjudicate
         adjudication = await roles.dm_left.adjudicate(
-            output, game_state_summary, geometry_summary,
+            output, game_state_summary, geometry_summary, dm_ledger=dm_ledger,
         )
 
         # 4. DM-Right: narrate

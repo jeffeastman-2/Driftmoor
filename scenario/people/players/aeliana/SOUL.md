@@ -33,3 +33,4 @@ Carved in the shape of a tree, worn around her neck. A connection to Lyrendel an
 
 ## Internal Contradiction
 She left her tribe to investigate the obelisk's disruption — a solitary mission. She has found, unexpectedly, that she travels better with others than alone. This surprises her more than it would surprise them.
+

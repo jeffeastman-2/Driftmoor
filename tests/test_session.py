@@ -352,6 +352,20 @@ class TestCheckpointing:
         assert "aeliana" in data["conditions"]
         assert "dopamine" in data["conditions"]["aeliana"]
 
+    def test_checkpoint_contains_hp(self, aeliana_session, tmp_path):
+        characters = {"aeliana": aeliana_session}
+        roles = {"aeliana": RoleSet()}
+        asyncio.run(run_session(
+            characters, roles, num_turns=1,
+            checkpoint_dir=tmp_path,
+        ))
+
+        data = json.loads((tmp_path / "turn_0001.json").read_text())
+        assert "hp" in data
+        assert "aeliana" in data["hp"]
+        assert "current" in data["hp"]["aeliana"]
+        assert "max" in data["hp"]["aeliana"]
+
     def test_no_checkpoint_when_dir_is_none(self, aeliana_session, tmp_path):
         characters = {"aeliana": aeliana_session}
         roles = {"aeliana": RoleSet()}

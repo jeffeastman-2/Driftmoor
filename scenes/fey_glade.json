@@ -30,6 +30,7 @@
       "model": "grok-3",
       "soul_file": "scenario/people/players/aeliana/SOUL.md",
       "identity_file": "scenario/people/players/aeliana/IDENTITY.md",
+      "scene_handle": "the elf ranger",
       "initial_scene": "It is dusk. You are on the trail approaching the Fey Glade. The forest ahead has gone unnaturally quiet — no birdsong, no rustling. The air carries a faint luminous warmth from somewhere deeper in the trees. You have heard there is a gatherer sheltering in the glade. You sense something large in the forest shadows to your left, watching. Whatever it is, it is not moving toward you — not yet.",
       "condition_name": "Aeliana",
       "condition": {
@@ -67,7 +68,8 @@
       "model": "gpt-4o",
       "soul_file": "scenario/people/npcs/fennel/SOUL.md",
       "identity_file": "scenario/people/npcs/fennel/IDENTITY.md",
-      "initial_scene": "It is dusk. You have spent the day safe in the glade — the light kept the shadow creature at bay. But the light is changing now, the pool beginning to brighten with its own strange glow, and you can feel the wrongness at the forest edge returning. The shadow that has circled this place for three days is back. You can hear it — or rather, you hear the absence of everything else. Someone is coming down the trail from the east. You don't know if that is good news.",
+      "scene_handle": "the young gatherer",
+      "initial_scene": "It is dusk. Three days you have learned the pattern: dusk is when it tries, and dawn is a second window. Not midnight — during full dark the barrier is at its peak and the creature paces and snarls but cannot push through. During daylight it doesn't come at all; you think the light itself is painful to it. But dusk and dawn, the transitions, those are when the barrier thins and the creature is still able to move. Every dusk it comes. This is that hour. The wrongness at the forest edge is back — you can hear it, or rather you hear the absence of everything else. Someone is coming down the trail from the east. You don't know if that is good news.",
       "condition_name": "Fennel",
       "condition": {
         "state": {

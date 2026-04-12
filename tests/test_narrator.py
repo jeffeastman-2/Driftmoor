@@ -2,7 +2,7 @@
 
 import pytest
 
-from engine.narrator import build_narrative_prompt, extract_scene_material
+from engine.narrator import build_narrative_prompt, extract_scene_material, _chunk_turns
 
 
 # ---------------------------------------------------------------------------
@@ -139,3 +139,76 @@ class TestBuildNarrativePrompt:
         system, user = build_narrative_prompt("Material.")
         # Should ask for prose fiction, not game mechanics
         assert "prose" in system.lower() or "fiction" in system.lower()
+
+
+# =========================================================================
+# _chunk_turns
+# =========================================================================
+
+def _turn_with_time(turn: int, hour: int, period: str = "dusk", day: int = 1) -> dict:
+    return {
+        "turn": turn,
+        "game_time": {"hour": hour, "minute": 0, "day": day, "season": "spring", "period": period},
+        "initiative_order": [],
+        "character_results": [],
+        "conditions": {},
+    }
+
+
+class TestChunkTurns:
+    def test_empty_returns_empty(self):
+        assert _chunk_turns([]) == []
+
+    def test_fewer_than_n_returns_single_chunk(self):
+        turns = [_turn_with_time(1, 19), _turn_with_time(2, 19)]
+        chunks = _chunk_turns(turns, n=4)
+        assert len(chunks) == 1
+        assert len(chunks[0][1]) == 2
+
+    def test_exactly_n_returns_single_chunk(self):
+        turns = [_turn_with_time(i, 19) for i in range(1, 5)]
+        chunks = _chunk_turns(turns, n=4)
+        assert len(chunks) == 1
+
+    def test_more_than_n_creates_multiple_chunks(self):
+        turns = [_turn_with_time(i, 19) for i in range(1, 6)]
+        chunks = _chunk_turns(turns, n=4)
+        assert len(chunks) == 2
+        assert len(chunks[0][1]) == 4
+        assert len(chunks[1][1]) == 1
+
+    def test_label_includes_hour_and_period(self):
+        turns = [_turn_with_time(1, 19, period="dusk")]
+        chunks = _chunk_turns(turns, n=4)
+        label = chunks[0][0]
+        assert "19:00" in label
+        assert "Dusk" in label
+
+    def test_label_uses_first_turn_in_chunk(self):
+        # Chunk starts at hour 19 even though turn 5 is hour 20
+        turns = [_turn_with_time(i, 19) for i in range(1, 5)] + [_turn_with_time(5, 20)]
+        chunks = _chunk_turns(turns, n=4)
+        assert "19:00" in chunks[0][0]
+        assert "20:00" in chunks[1][0]
+
+    def test_day_2_label_includes_day(self):
+        turns = [_turn_with_time(1, 8, day=2)]
+        chunks = _chunk_turns(turns, n=4)
+        assert "Day 2" in chunks[0][0]
+
+    def test_day_1_label_omits_day(self):
+        turns = [_turn_with_time(1, 19, day=1)]
+        chunks = _chunk_turns(turns, n=4)
+        assert "Day 1" not in chunks[0][0]
+
+    def test_no_game_time_uses_turn_range_label(self):
+        turns = [_turn_data(1, []), _turn_data(2, []), _turn_data(3, [])]
+        chunks = _chunk_turns(turns, n=4)
+        assert len(chunks) == 1
+        assert "1" in chunks[0][0] and "3" in chunks[0][0]
+
+    def test_many_melee_rounds_still_chunk_by_n(self):
+        # 20 melee turns all at same hour — should produce 5 chunks of 4, not 1 huge group
+        turns = [_turn_with_time(i, 19, period="dusk") for i in range(1, 21)]
+        chunks = _chunk_turns(turns, n=4)
+        assert len(chunks) == 5

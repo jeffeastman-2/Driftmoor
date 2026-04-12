@@ -98,6 +98,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
             character_class=cdata.get("class", ""),
             level=cdata.get("level", 1),
             hp=cdata.get("hp", 0),
+            current_hp=cdata.get("hp", 0),
             ac=cdata.get("ac", 0),
             location=cdata.get("location", ""),
             faction=faction,
@@ -112,6 +113,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
             role=cdata.get("role", ""),
             home_location=cdata.get("home_location", ""),
             hp=cdata.get("hp", 0),
+            current_hp=cdata.get("hp", 0),
             ac=cdata.get("ac", 0),
             knowledge=cdata.get("knowledge", []),
             active_concerns=cdata.get("active_concerns", []),
@@ -128,6 +130,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
             alignment=cdata.get("alignment", ""),
             faction=faction,
             hp=cdata.get("hp", 0),
+            current_hp=cdata.get("hp", 0),
             ac=cdata.get("ac", 0),
             speed=cdata.get("speed", ""),
             challenge=cdata.get("challenge", ""),
@@ -162,6 +165,15 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
     soul = cdata.get("soul", "")
     if cdata.get("soul_file"):
         soul = load_file(ROOT / cdata["soul_file"])
+    if soul:
+        soul += (
+            "\n\n## Names and Strangers\n"
+            "You do not know the name of someone you have not yet met. "
+            "When encountering a new person, refer to them by appearance or role "
+            "\u2014 \"the elf\", \"the ranger\", \"the hooded figure\" \u2014 "
+            "until they tell you their name. "
+            "Once a name has been spoken aloud in conversation, use it naturally."
+        )
     identity = cdata.get("identity", "")
     if cdata.get("identity_file"):
         identity = load_file(ROOT / cdata["identity_file"])
@@ -172,6 +184,7 @@ def _build_character(char_id: str, cdata: dict) -> tuple[CharacterSession, str, 
         soul=soul,
         identity=identity,
         initial_scene=cdata["initial_scene"],
+        scene_handle=cdata.get("scene_handle", ""),
     )
     return session, cdata["provider"], cdata["model"]
 

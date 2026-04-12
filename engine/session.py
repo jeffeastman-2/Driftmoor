@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import random
+from collections import deque
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import AsyncIterator, Optional
@@ -47,6 +48,7 @@ class CharacterSession:
     soul: str
     identity: str
     initial_scene: str
+    scene_handle: str = ""  # How others see this character before names are exchanged
 
 
 @dataclass
@@ -103,6 +105,130 @@ def _update_positions_in_summary(
 
 
 # ---------------------------------------------------------------------------
+# DM Ledger
+# ---------------------------------------------------------------------------
+
+_PERMANENT_TRIGGERS = {"boundary_crossed", "combat_initiated", "exits_scene"}
+
+
+class DMLedger:
+    """Engine-authoritative event log injected into every DM adjudication prompt.
+
+    Solves the stateless-LLM state-tracking problem: the engine owns all
+    authoritative facts (positions, combat status, crossing outcomes) and
+    presents them to the DM as a verified ledger rather than leaving the DM
+    to re-derive them from ambiguous prose.
+
+    Structure:
+      Permanent Events  — first-time significant events kept forever
+      Recent Turns      — sliding window of last 4 turns
+      Current State     — live snapshot rebuilt every turn
+    """
+
+    def __init__(self) -> None:
+        self.permanent_events: list[str] = []
+        self._recent_turns: deque[list[str]] = deque(maxlen=4)
+        self._current_turn: list[str] = []
+
+    def record(self, cr: "CharacterTurnResult", game_time=None) -> None:  # noqa: F821
+        """Record one character result into the current-turn buffer."""
+        from engine.scene_manager import CharacterTurnResult  # local to avoid circular  # noqa: F401
+
+        timestamp = (
+            f"{game_time.hour}:{game_time.minute:02d}"
+            if game_time else f"t{cr.turn}"
+        )
+        adj = cr.adjudication
+
+        # Action summary (first 70 chars)
+        action = (cr.output.action or "")[:70].rstrip()
+
+        # Dice result — "N vs DC M SUCCESS/FAILED"
+        dice_str = ""
+        roll_m = re.search(
+            r'(\d+)\s+(?:vs?\.?\s+)?dc\s*:?\s*(\d+)', adj.notes, re.IGNORECASE
+        )
+        if roll_m:
+            r, d = int(roll_m.group(1)), int(roll_m.group(2))
+            dice_str = f" | d20={r} vs DC={d} {'SUCCESS' if r >= d else 'FAILED'}"
+
+        # Position
+        pos_str = ""
+        if adj.new_position:
+            x, y, zone = adj.new_position
+            pos_str = f" | pos x={x},y={y},{zone}"
+
+        # Events
+        events = [
+            e.strip().rstrip(".")
+            for e in adj.spatial_events
+            if e.strip().lower() not in ("none", "none.", "")
+        ]
+        events_str = f" | {', '.join(events)}" if events else ""
+
+        status = "APPROVED" if adj.approved else "BLOCKED"
+        line = (
+            f"{timestamp} | {cr.character_id} | {action}"
+            f"{dice_str} | {status}{pos_str}{events_str}"
+        )
+        self._current_turn.append(line)
+
+        # Permanent events: boundary crossings, combat start, exits
+        for event in events:
+            key = event.lower()
+            if any(t in key for t in _PERMANENT_TRIGGERS):
+                perm = f"{timestamp} | {cr.character_id} | {event.upper()}{pos_str}"
+                if perm not in self.permanent_events:
+                    self.permanent_events.append(perm)
+
+    def flush_turn(self) -> None:
+        """Move current-turn entries into the recent-turns sliding window."""
+        if self._current_turn:
+            self._recent_turns.append(list(self._current_turn))
+            self._current_turn = []
+
+    def render(
+        self,
+        current_positions: dict[str, tuple[float, float, str]],
+        in_combat: bool,
+        game_time=None,
+        characters: dict | None = None,
+    ) -> str:
+        """Return the full ledger block for insertion at the top of a DM prompt."""
+        lines: list[str] = ["## DM Ledger (engine-verified — do not contradict)\n"]
+
+        if self.permanent_events:
+            lines.append("### Permanent Events")
+            lines.extend(self.permanent_events)
+            lines.append("")
+
+        all_recent = [ln for turn in self._recent_turns for ln in turn]
+        all_recent.extend(self._current_turn)
+        if all_recent:
+            lines.append("### Recent Turns")
+            lines.extend(all_recent)
+            lines.append("")
+
+        lines.append("### Current State")
+        for char_id, (x, y, zone) in current_positions.items():
+            side = "INSIDE barrier" if zone.upper() == "GLADE" else "outside barrier"
+            hp_str = ""
+            if characters and char_id in characters:
+                char = characters[char_id].character
+                curr = getattr(char, "current_hp", char.hp)
+                hp_str = f" | HP {curr}/{char.hp}"
+            lines.append(f"- {char_id}: x={x}, y={y}, zone={zone} ({side}){hp_str}")
+        lines.append(f"- Combat: {'ACTIVE' if in_combat else 'INACTIVE'}")
+        if game_time:
+            lines.append(
+                f"- Game time: {game_time.hour}:{game_time.minute:02d}"
+                f" | period: {game_time.period}"
+            )
+
+        return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -138,6 +264,7 @@ def _save_turn(
     turn_result: TurnResult,
     characters: dict[str, CharacterSession],
     game_time: Optional[GameTime] = None,
+    in_combat: bool = False,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -145,6 +272,7 @@ def _save_turn(
 
     data = {
         "turn": turn,
+        "in_combat": in_combat,
         "game_time": {
             "hour": game_time.hour,
             "minute": game_time.minute,
@@ -166,6 +294,13 @@ def _save_turn(
         ],
         "conditions": {
             char_id: cs.condition.state.to_dict()
+            for char_id, cs in characters.items()
+        },
+        "hp": {
+            char_id: {
+                "current": getattr(cs.character, "current_hp", cs.character.hp),
+                "max": cs.character.hp,
+            }
             for char_id, cs in characters.items()
         },
     }
@@ -283,6 +418,9 @@ async def iter_session(
         game_state_summary
     )
 
+    # DM ledger — authoritative event log injected into every DM prompt
+    ledger = DMLedger()
+
     while True:
         combat_at_start = in_combat
         if combat_at_start:
@@ -330,6 +468,7 @@ async def iter_session(
                 game_state_summary=turn_game_state,
                 geometry_summary=geometry_summary,
                 scene_history=within_turn_history,
+                dm_ledger=ledger.render(current_positions, in_combat, game_time, characters=characters),
             )
             turn_result.character_results.append(cr)
 
@@ -354,9 +493,26 @@ async def iter_session(
                             float(x_m.group(1)), float(y_m.group(1)), zone
                         )
 
+            # Record result in DM ledger (later chars in this turn see it)
+            ledger.record(cr, game_time)
+
+            # Apply HP damage immediately so ledger shows current HP
+            # for subsequent characters in this turn's initiative order
+            if cr.adjudication.approved:
+                for target_id, dmg in cr.adjudication.hp_damage.items():
+                    if target_id not in characters:
+                        continue
+                    char = characters[target_id].character
+                    if hasattr(char, "current_hp"):
+                        char.current_hp = max(0, char.current_hp - dmg)
+                        if char.current_hp <= 0:
+                            active_characters.discard(target_id)
+                            current_positions.pop(target_id, None)
+
             # Check for exits_scene — remove from active set mid-turn
             if EXIT_EVENT in cr.adjudication.spatial_events:
                 active_characters.discard(character_id)
+                current_positions.pop(character_id, None)
 
             # Check for combat_initiated — switch to melee time
             if (COMBAT_EVENT in cr.adjudication.spatial_events
@@ -371,8 +527,10 @@ async def iter_session(
             if spoken.strip() and spoken.strip().lower() not in (
                 "(silent)", "(silence)",
             ):
+                cs = characters[cr.character_id]
+                handle = cs.scene_handle or cr.character_id
                 history_entry += (
-                    f'\n{cr.character_id} says: "{spoken.strip()}"'
+                    f'\n{handle} says: "{spoken.strip()}"'
                 )
             if cr.narration.prose:
                 history_entry += f"\n{cr.narration.prose}"
@@ -391,17 +549,22 @@ async def iter_session(
             if spoken.strip() and spoken.strip().lower() not in (
                 "(silent)", "(silence)",
             ):
+                cs = characters[cr.character_id]
+                handle = cs.scene_handle or cr.character_id
                 history_entry += (
-                    f'\n{cr.character_id} says: "{spoken.strip()}"'
+                    f'\n{handle} says: "{spoken.strip()}"'
                 )
             if cr.narration.prose:
                 history_entry += f"\n{cr.narration.prose}"
             if history_entry:
                 scene_history += history_entry
 
+        # Move current-turn ledger entries into the sliding window
+        ledger.flush_turn()
+
         # Persist checkpoint
         if checkpoint_dir:
-            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time)
+            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time, in_combat=in_combat)
 
         # Advance game clock
         if game_time:

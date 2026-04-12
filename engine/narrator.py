@@ -170,6 +170,43 @@ async def generate_narrative(
     return await call_llm(system, user)
 
 
+# ---------------------------------------------------------------------------
+# Turn chunking — pure helper, fully testable
+# ---------------------------------------------------------------------------
+
+def _chunk_turns(turns: list[dict], n: int = 4) -> list[tuple[str, list[dict]]]:
+    """Split turns into consecutive chunks of at most n turns.
+
+    Returns a list of (label, turns) pairs in chronological order.
+    The label is derived from the game_time of the first turn in the
+    chunk (e.g. "19:00 — Dusk"), or a plain turn-range fallback when
+    no game_time is present.
+    """
+    if not turns:
+        return []
+
+    chunks: list[tuple[str, list[dict]]] = []
+    for i in range(0, len(turns), n):
+        group = turns[i : i + n]
+        gt = next((t["game_time"] for t in group if t.get("game_time")), None)
+        if gt:
+            hour = gt.get("hour", 0)
+            minute = gt.get("minute", 0)
+            label = f"{hour:02d}:{minute:02d}"
+            period = gt.get("period", "")
+            if period:
+                label += f" \u2014 {period.title()}"
+            day = gt.get("day", 1)
+            if day > 1:
+                label = f"Day {day}, {label}"
+        else:
+            first = group[0]["turn"]
+            last = group[-1]["turn"]
+            label = f"Turns {first}\u2013{last}"
+        chunks.append((label, group))
+    return chunks
+
+
 async def generate_narrative_from_dir(
     checkpoint_dir: Path,
     *,
@@ -181,11 +218,15 @@ async def generate_narrative_from_dir(
 ) -> str:
     """Read checkpoints from a directory and generate a narrative.
 
+    Turns are grouped by game hour. Each hour generates a separate
+    narrative section, keeping individual LLM calls small and avoiding
+    token-limit overloads for long sessions.
+
     Args:
         checkpoint_dir: Directory containing turn_0001.json, etc.
         provider:       LLM provider.
         model:          Model name.
-        title:          Optional story title.
+        title:          Optional story title (included in first section only).
         output_path:    If provided, write the story to this file.
         api_key:        Optional API key override.
 
@@ -196,10 +237,25 @@ async def generate_narrative_from_dir(
     turns = [json.loads(f.read_text(encoding="utf-8")) for f in sorted(files)]
     turns.sort(key=lambda d: d["turn"])
 
-    story = await generate_narrative(
-        turns, provider=provider, model=model,
-        title=title, api_key=api_key,
-    )
+    chunks = _chunk_turns(turns, n=4)
+
+    if len(chunks) == 1:
+        section = await generate_narrative(
+            chunks[0][1], provider=provider, model=model,
+            title=title, api_key=api_key,
+        )
+        label = chunks[0][0]
+        story = f"## {label}\n\n{section}" if label else section
+    else:
+        parts: list[str] = []
+        for i, (label, chunk_turns) in enumerate(chunks):
+            section = await generate_narrative(
+                chunk_turns, provider=provider, model=model,
+                title=title if i == 0 else "",
+                api_key=api_key,
+            )
+            parts.append(f"## {label}\n\n{section}")
+        story = "\n\n---\n\n".join(parts)
 
     if output_path:
         output_path.write_text(story, encoding="utf-8")

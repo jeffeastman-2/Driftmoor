@@ -63,7 +63,8 @@ class TestBuildCharacter:
         assert session.character.name == "Test Hero"
         assert session.character.character_class == "Fighter"
         assert session.character.strength == 16
-        assert session.soul == "A brave soul."
+        assert session.soul.startswith("A brave soul.")
+        assert "## Names and Strangers" in session.soul
         assert session.initial_scene == "You are in town."
         assert session.condition.state.dopamine == 0.5
         assert provider == "openai"

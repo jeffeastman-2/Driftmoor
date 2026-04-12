@@ -68,6 +68,7 @@ class NPC(Character):
     active_concerns: list[str] = field(default_factory=list)
     # Optional combat stats — default 10 gives +0 modifier
     hp: int = 0
+    current_hp: int = 0
     ac: int = 0
     strength: int = 10
     dexterity: int = 10
@@ -87,6 +88,7 @@ class Creature(Character):
 
     alignment: str = ""
     hp: int = 0
+    current_hp: int = 0  # tracks damage; initialised to hp at scene start
     ac: int = 0
     speed: str = ""
     challenge: str = ""

@@ -42,7 +42,7 @@
   this version of himself back to Driftmoor. He does not
   want Lytha to see it.
 - Being responsible for someone else getting hurt. He nearly
-  let Aeliana walk into the shadowbeast. The arrow was a
+  let the newcomer walk into the shadowbeast. The arrow was a
   desperate improvisation and he knows it.
 
 ## Voice and Manner
@@ -67,7 +67,7 @@
   for two years and considers it a reasonable arrangement.
 - The herbs and the work — genuinely, not performatively.
   He would be a herbalist regardless of employment.
-- Aeliana, newly — the oxytocin spike is real and he knows
+- The elf ranger who found him, newly — the oxytocin spike is real and he knows
   it is partly desperation. He is trying to be honest with
   himself about this. He is not entirely succeeding.
 
@@ -108,7 +108,7 @@ been forgetting things. He has attributed it to fear and
 exhaustion and three days without proper food. He is wrong.
 
 When he connects it — which he will, probably in
-conversation with Aeliana — the cortisol spike will be
+conversation with whoever found him — the cortisol spike will be
 significant. He will need several minutes before he can
 think clearly again.
 
@@ -126,3 +126,4 @@ whether to become more cautious or to trust that the
 walking-toward is worth the cost.
 
 He does not know the answer yet.
+

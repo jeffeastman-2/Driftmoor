@@ -41,6 +41,7 @@ class Adjudication:
     new_position: Optional[tuple[float, float, str]] = None
     condition_deltas: dict[str, float] = field(default_factory=dict)
     spatial_events: list[str] = field(default_factory=list)
+    hp_damage: dict[str, int] = field(default_factory=dict)  # target_id → damage
     notes: str = ""
 
 
@@ -78,6 +79,33 @@ class DMLeft:
             "for any saving throws, attack rolls, or contested checks — do NOT "
             "invent or assume your own values. Consume from left to right; "
             "unused rolls are discarded.\n\n"
+            "## Melee and Ranged Combat Rules\n"
+            "The coordinate system uses metres (1 unit = 1 metre). "
+            "Convert D&D distances to units by multiplying feet × 0.3. "
+            "Common conversions: 5 ft = 1.5 units, 10 ft = 3 units, "
+            "30 ft = 9 units, 40 ft = 12 units, 60 ft = 18 units, "
+            "80 ft = 24 units, 120 ft = 36 units.\n"
+            "Before resolving any attack, read the weapon's reach or range "
+            "from the attacker's stat block in the Game State and convert to units.\n"
+            "  - Melee weapons (e.g. 'reach 5 ft.' = 1.5 units): the attacker's "
+            "position AFTER moving must be within that many units of the target. "
+            "Check positions in the DM Ledger. If the attacker cannot close the "
+            "gap within its speed this turn (speed ft × 0.3 = max units moved), "
+            "the attack cannot happen — reject it and explain in NOTES.\n"
+            "  - Ranged weapons (e.g. 'range 80/320 ft.' = 24/96 units): the "
+            "attacker can attack from its current position without moving. "
+            "Use the normal range (first number converted) as the maximum "
+            "without disadvantage. The attacker does NOT need to move.\n"
+            "  - A creature may move up to its speed BEFORE attacking, but NOT "
+            "after it has already made an attack this turn.\n"
+            "  - Multiattack means two (or more) attacks on the SAME turn. "
+            "All attacks in a multiattack must target creatures the attacker "
+            "can reach from a SINGLE chosen position — pick one spot, attack "
+            "all reachable targets from there. It cannot move between attacks "
+            "to reach targets in different zones.\n"
+            "  - If a creature uses multiattack, NOTES must show each attack "
+            "roll individually (e.g. 'Attack 1 vs [target]: d20=X+mod=Y vs "
+            "AC Z → hit/miss for N damage').\n\n"
             "## Spatial Boundaries\n"
             "The geometry includes named boundaries that physically block "
             "certain creature types. You must enforce these strictly:\n"
@@ -117,7 +145,13 @@ class DMLeft:
             "  - combat_initiated: when a character uses a weapon "
             "or offensive spell against an opponent.\n"
             "  - exits_scene: when a character leaves the scene "
-            "area entirely (fleeing, retreating, departing).\n"
+            "area entirely (fleeing, retreating, departing), "
+            "or when a character or creature is reduced to 0 HP.\n"
+            "**HP DAMAGE** — Hit point damage dealt by this action. "
+            "Format as target_id: amount for each target hit "
+            "(e.g. \"aeliana: 7\" or \"aeliana: 5, fennel: 3\"). "
+            "Use \"none\" if no HP damage was dealt. "
+            "Only emit damage that was actually rolled and resolved.\n"
             "**NOTES** — Brief adjudication reasoning, including any "
             "dice rolls used and their outcomes."
         )
@@ -128,12 +162,15 @@ class DMLeft:
         game_state_summary: str,
         geometry_summary: str,
         dice_rolls: list[int] | None = None,
+        dm_ledger: str = "",
     ) -> str:
         dice_section = ""
         if dice_rolls:
             rolls_str = ", ".join(str(r) for r in dice_rolls)
             dice_section = f"\n\n## Dice Rolls\nd20 pool (use in order): [{rolls_str}]"
+        ledger_section = f"{dm_ledger}\n\n" if dm_ledger else ""
         return (
+            f"{ledger_section}"
             f"# Character: {character_output.character_id} "
             f"(Turn {character_output.turn})\n\n"
             f"## Proposed Output\n"
@@ -161,6 +198,7 @@ class DMLeft:
         pos_raw = _extract("NEW POSITION")
         condition_raw = _extract("CONDITION")
         events_raw = _extract("EVENTS")
+        hp_damage_raw = _extract("HP DAMAGE")
         notes_raw = _extract("NOTES")
 
         # Parse approved
@@ -248,9 +286,15 @@ class DMLeft:
             # Split on commas, newlines, or bullet markers
             parts = re.split(r'[,\n]|\s*[-•]\s+', events_raw)
             spatial_events = [
-                e.strip().strip('-•').strip()
+                e.strip().strip('-•').strip().rstrip('.')
                 for e in parts if e.strip() and e.strip() not in ('-', '•')
             ]
+
+        # Parse HP damage: "shadowbeast_1: 8, aeliana: 5" or "none"
+        hp_damage: dict[str, int] = {}
+        if hp_damage_raw and hp_damage_raw.lower() not in ("none", "null", "n/a", ""):
+            for m in re.finditer(r'(\w+)\s*:\s*(\d+)', hp_damage_raw):
+                hp_damage[m.group(1)] = int(m.group(2))
 
         return Adjudication(
             character_id=character_id,
@@ -260,6 +304,7 @@ class DMLeft:
             new_position=pos,
             condition_deltas=condition_deltas,
             spatial_events=spatial_events,
+            hp_damage=hp_damage,
             notes=notes_raw,
         )
 
@@ -268,6 +313,7 @@ class DMLeft:
         character_output: CharacterOutput,
         game_state_summary: str,
         geometry_summary: str,
+        dm_ledger: str = "",
     ) -> Adjudication:
         if self._call_llm is None:
             return Adjudication(
@@ -279,7 +325,7 @@ class DMLeft:
         dice_rolls = _roll_dice(8)
         user = self.build_user_prompt(
             character_output, game_state_summary, geometry_summary,
-            dice_rolls=dice_rolls,
+            dice_rolls=dice_rolls, dm_ledger=dm_ledger,
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(
