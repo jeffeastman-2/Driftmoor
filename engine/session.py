@@ -333,9 +333,26 @@ async def iter_session(
             )
             turn_result.character_results.append(cr)
 
-            # Update live position from approved DM adjudication
-            if cr.adjudication.approved and cr.adjudication.new_position is not None:
-                current_positions[character_id] = cr.adjudication.new_position
+            # Update live position from approved DM adjudication.
+            # Primary: structured NEW POSITION field.
+            # Fallback: extract x/y coordinates mentioned anywhere in NOTES
+            # (DM often writes coords in prose but forgets the structured field).
+            if cr.adjudication.approved:
+                if cr.adjudication.new_position is not None:
+                    current_positions[character_id] = cr.adjudication.new_position
+                else:
+                    notes = cr.adjudication.notes
+                    x_m = re.search(r'\bx\s*=\s*(-?\d+\.?\d*)', notes, re.IGNORECASE)
+                    y_m = re.search(r'\by\s*=\s*(-?\d+\.?\d*)', notes, re.IGNORECASE)
+                    if x_m and y_m:
+                        prev_zone = current_positions.get(character_id, ('', '', ''))[2]
+                        zone_m = re.search(
+                            r'\b(GLADE|TRAIL|FOREST|CLEARING|POOL)\b', notes, re.IGNORECASE
+                        )
+                        zone = zone_m.group(1).upper() if zone_m else prev_zone
+                        current_positions[character_id] = (
+                            float(x_m.group(1)), float(y_m.group(1)), zone
+                        )
 
             # Check for exits_scene — remove from active set mid-turn
             if EXIT_EVENT in cr.adjudication.spatial_events:

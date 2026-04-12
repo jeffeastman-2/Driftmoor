@@ -166,6 +166,37 @@ class DMLeft:
         # Parse approved
         approved = approved_raw.lower().startswith("yes") if approved_raw else True
 
+        # Safety net: the DM reliably computes saving throws but has a
+        # deep bias toward APPROVED: No whenever a barrier is mentioned,
+        # even when the save succeeded.  Read the math directly from NOTES
+        # and override when roll >= DC.  Only fires when approved is already
+        # False and a DC is present (saves, not attack rolls vs AC).
+        if not approved and notes_raw:
+            # Primary: "N vs DC M" or "N >= DC M" — both values in one match
+            both_m = re.search(
+                r'(\d+)\s+(?:vs?\.?\s+)?dc\s*:?\s*(\d+)',
+                notes_raw, re.IGNORECASE,
+            )
+            if both_m:
+                roll_val, dc_val = int(both_m.group(1)), int(both_m.group(2))
+                if roll_val >= dc_val:
+                    approved = True
+            else:
+                # Fallback: find DC and roll separately.
+                # Prioritise d20/rolling patterns over bare "rolled N" to
+                # avoid accidentally capturing damage rolls like "rolled 4+2".
+                dc_m = re.search(r'\bdc\s*:?\s*(\d+)', notes_raw, re.IGNORECASE)
+                roll_m = (
+                    re.search(r'd20[:\s]+(\d+)', notes_raw, re.IGNORECASE) or
+                    re.search(r'rolling?[:\s]+(\d+)', notes_raw, re.IGNORECASE) or
+                    re.search(r'rolled?[:\s]+(\d+)', notes_raw, re.IGNORECASE)
+                )
+                if dc_m and roll_m:
+                    dc_val = int(dc_m.group(1))
+                    roll_val = int(roll_m.group(1))
+                    if roll_val >= dc_val:
+                        approved = True
+
         # Parse modified action
         modified_action = None
         if modified_raw and modified_raw.lower() not in ("none", "null", "n/a", ""):
