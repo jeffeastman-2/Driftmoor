@@ -783,7 +783,11 @@ async def iter_session(
                 for cid, cs in characters.items()
                 if cid in active_characters
             )
-            if not (hostiles_active and non_hostiles_active):
+            if not non_hostiles_active and hostiles_active:
+                # Allies all dead/fled and hostiles remain — hostiles win, end session
+                break
+            if not hostiles_active:
+                # Hostiles eliminated or fled — return to story pacing
                 in_combat = False
                 game_time.turn_duration = pre_combat_duration or 10
                 pre_combat_duration = None
