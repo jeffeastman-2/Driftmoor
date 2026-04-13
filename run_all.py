@@ -165,6 +165,7 @@ async def run_all(
     num_turns_override: int | None = None,
     resume: bool = False,
     scene_filter: str | None = None,
+    self_dm: bool = False,
 ) -> None:
     # Discover scenes: CONFIG.md folders (preferred) and legacy .json files
     available_md   = {p.name for p in SCENES_DIR.iterdir()
@@ -185,7 +186,7 @@ async def run_all(
 
         md_path = SCENES_DIR / scene_name / "CONFIG.md"
         if md_path.exists():
-            config = configure_from_md(md_path, game_time=game_time)
+            config = configure_from_md(md_path, game_time=game_time, self_dm=self_dm)
         else:
             config = configure_from_json(
                 SCENES_DIR / f"{scene_name}.json", game_time=game_time
@@ -280,6 +281,7 @@ async def run_all(
 def main() -> None:
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
     resume = "--resume" in sys.argv
+    self_dm = "--self-dm" in sys.argv
     scene_filter = None
     if "--scene" in sys.argv:
         idx = sys.argv.index("--scene")
@@ -287,7 +289,7 @@ def main() -> None:
             scene_filter = sys.argv[idx + 1]
             args = [a for a in args if a != scene_filter]
     num_turns = int(args[0]) if args else None
-    asyncio.run(run_all(num_turns, resume=resume, scene_filter=scene_filter))
+    asyncio.run(run_all(num_turns, resume=resume, scene_filter=scene_filter, self_dm=self_dm))
 
 
 if __name__ == "__main__":

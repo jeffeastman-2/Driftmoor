@@ -717,7 +717,8 @@ async def iter_session(
                 # Python resolves all attacks: roll d20+bonus vs AC, roll damage on hit.
                 # The DM declared attacks via **ATTACKS**; we own the dice entirely.
                 attacker_char = characters[character_id].character
-                max_range = _max_attack_range(getattr(attacker_char, "identity", ""))
+                attacker_identity = characters[character_id].identity
+                max_range = _max_attack_range(attacker_identity)
                 hp_damage, attack_log = _resolve_attacks(
                     cr.adjudication.attacks,
                     character_id,

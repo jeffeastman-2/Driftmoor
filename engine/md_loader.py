@@ -514,7 +514,7 @@ def _build_creature(
 # Top-level entry point
 # ---------------------------------------------------------------------------
 
-def configure_from_md(config_path: Path, game_time: GameTime | None = None):
+def configure_from_md(config_path: Path, game_time: GameTime | None = None, self_dm: bool = False):
     """Return a SceneConfig loaded from a CONFIG.md file.
 
     The SceneConfig class is imported lazily from engine.scene_runner to avoid
@@ -598,11 +598,12 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None):
         provider   = cfg.get("provider", "anthropic")
         model      = cfg.get("model", "claude-sonnet-4-20250514")
         player_llm = make_call_llm(provider, model)
+        char_dm_llm = player_llm if self_dm else dm_llm
         roles[char_id] = RoleSet(
             player_left=PlayerLeft(call_llm=player_llm),
             player_right=PlayerRight(call_llm=player_llm),
-            dm_left=DMLeft(call_llm=dm_llm),
-            dm_right=DMRight(call_llm=dm_llm),
+            dm_left=DMLeft(call_llm=char_dm_llm),
+            dm_right=DMRight(call_llm=char_dm_llm),
         )
 
     # ── Game State Sections ───────────────────────────────────────────────────
