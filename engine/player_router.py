@@ -32,6 +32,7 @@ class RoleContext:
     scene_context: str    # Zone, occupancy, visible history
     soul: str             # SOUL.md content
     identity: str         # IDENTITY.md content
+    perception: str = ""  # Python-computed LOS visibility block (authoritative)
 
 
 @dataclass
@@ -125,7 +126,13 @@ class PlayerLeft:
             "(e.g. pick a lock, load a crossbow).\n"
             "- **Use a Special Ability** — Activate a class feature, racial trait, or "
             "other special ability that requires an action.\n\n"
-            "CRITICAL: Read the scene history carefully. Do NOT repeat "
+            "CRITICAL — PERCEPTION: Before choosing any action, read "
+            "'## What you can currently perceive'. You may only Attack "
+            "or directly target characters listed there. If no enemies "
+            "are visible you cannot attack — move toward them instead. "
+            "Characters not listed are unknown to you: do not acknowledge "
+            "their existence or attempt to target them.\n\n"
+            "CRITICAL — HISTORY: Read the scene history carefully. Do NOT repeat "
             "actions already completed. If you have already introduced "
             "yourself, do not introduce yourself again. If a question "
             "has already been asked, do not ask it again. Advance the "
@@ -142,10 +149,16 @@ class PlayerLeft:
         )
 
     def build_user_prompt(self, context: RoleContext) -> str:
+        perception_block = (
+            f"\n\n## What you can currently perceive\n{context.perception}"
+            if context.perception else
+            "\n\n## What you can currently perceive\nNo other characters are visible from your current position."
+        )
         return (
             f"# Turn {context.turn}\n\n"
             f"## Condition\n{context.condition_text}\n\n"
             f"## Scene\n{context.scene_context}"
+            f"{perception_block}"
         )
 
     def parse_response(self, raw: str, context: RoleContext) -> ActionIntent:

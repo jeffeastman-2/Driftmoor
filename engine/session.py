@@ -428,15 +428,57 @@ class DMLedger:
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _build_perception(
+    character_id: str,
+    scene_geometry: Optional[SceneGeometry],
+    current_positions: dict[str, tuple[float, float, str]],
+    active_characters: set[str],
+) -> str:
+    """Return a preformatted perception block for what character_id can see.
+
+    Uses SceneGeometry.can_see() (which enforces LOS and zone visibility rules)
+    to determine which other active characters are currently visible.
+    Returns "" when no geometry is available (falls back to no constraint).
+    """
+    import math
+    if scene_geometry is None:
+        return ""
+    my_pos = current_positions.get(character_id)
+    if my_pos is None:
+        return ""
+
+    lines: list[str] = []
+    for other_id, other_pos in current_positions.items():
+        if other_id == character_id or other_id not in active_characters:
+            continue
+        a = Position(my_pos[0], my_pos[1])
+        b = Position(other_pos[0], other_pos[1])
+        if scene_geometry.can_see(a, b):
+            dist = round(math.hypot(b.x - a.x, b.y - a.y) / 5) * 5
+            zone = other_pos[2] or scene_geometry.zone_at(b) or "?"
+            lines.append(f"- {other_id} ({zone}, ~{dist:.0f} ft away)")
+
+    return "\n".join(lines) if lines else ""
+
+
 def _build_context(
     cs: CharacterSession,
     turn: int,
     scene_history: str,
+    scene_geometry: Optional[SceneGeometry] = None,
+    current_positions: Optional[dict[str, tuple[float, float, str]]] = None,
+    active_characters: Optional[set[str]] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     scene = cs.initial_scene
     if scene_history:
         scene = f"{cs.initial_scene}\n\n{scene_history}"
+    perception = _build_perception(
+        cs.character.id,
+        scene_geometry,
+        current_positions or {},
+        active_characters or set(),
+    )
     return RoleContext(
         character_id=cs.character.id,
         turn=turn,
@@ -444,6 +486,7 @@ def _build_context(
         scene_context=scene,
         soul=cs.soul,
         identity=cs.identity,
+        perception=perception,
     )
 
 
@@ -678,7 +721,12 @@ async def iter_session(
                     if scene_history else within_turn_history
                 )
 
-            context = _build_context(cs, turn_num, combined_history)
+            context = _build_context(
+                cs, turn_num, combined_history,
+                scene_geometry=scene_geometry,
+                current_positions=current_positions,
+                active_characters=active_characters,
+            )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
             intent, output, adjudication = await turn_cycle.adjudicate_turn(
