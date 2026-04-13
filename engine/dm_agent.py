@@ -395,7 +395,13 @@ class DMRight:
             "others can see and hear. No game mechanics, dice, or "
             "meta-commentary. No purple prose — avoid 'seemed to', "
             "'as if', atmospheric clichés, and stacked adjectives. "
-            "Plain language. Let the action speak."
+            "Plain language. Let the action speak.\n\n"
+            "CRITICAL: If an '## Engine resolution' section is present, "
+            "it is the authoritative record of what actually happened — "
+            "attacks blocked by no line of sight did NOT land and must NOT "
+            "be narrated as landing or even as attempted; attacks that missed "
+            "did not hit; only hits cause damage. Never contradict the engine "
+            "resolution in your prose."
         )
 
     def build_user_prompt(
@@ -423,13 +429,16 @@ class DMRight:
             spoken_block = f"\n\n## What they said\n\"{spoken.strip()}\""
         resolution_block = ""
         if resolution_log:
-            resolution_block = "\n\n## Engine resolution\n" + "\n".join(resolution_log)
+            resolution_block = (
+                "\n\n## ENGINE RESOLUTION (authoritative — narrate this, not the intent below)\n"
+                + "\n".join(resolution_log)
+            )
         return (
             f"# Character: {character_output.character_id} "
-            f"(Turn {character_output.turn})\n\n"
-            f"## What they did\n{character_output.action}"
+            f"(Turn {character_output.turn}){resolution_block}\n\n"
+            f"## What they intended\n{character_output.action}"
             f"{spoken_block}\n\n"
-            f"## Adjudication: {status}{mod}{notes}{history_block}{resolution_block}"
+            f"## Adjudication: {status}{mod}{notes}{history_block}"
         )
 
     def parse_response(
