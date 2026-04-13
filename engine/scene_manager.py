@@ -99,15 +99,19 @@ class TurnCycle:
             dm_right=self.dm_right,
         )
 
-    async def execute_character_turn(
+    async def adjudicate_turn(
         self,
         context: RoleContext,
         game_state_summary: str = "",
         geometry_summary: str = "",
         scene_history: str = "",
         dm_ledger: str = "",
-    ) -> CharacterTurnResult:
-        """Execute one character's full turn through the 4-role pipeline."""
+    ) -> tuple[ActionIntent, CharacterOutput, Adjudication]:
+        """Run steps 1-3: Player-Left, Player-Right, DM-Left.
+
+        Returns the raw materials for Python resolution before narration.
+        Call narrate_turn() afterwards with the engine's resolution_log.
+        """
         roles = self._roles_for(context.character_id)
 
         # 1. Player-Left: generate intent
@@ -121,14 +125,32 @@ class TurnCycle:
             output, game_state_summary, geometry_summary, dm_ledger=dm_ledger,
         )
 
-        # 4. DM-Right: narrate
+        return intent, output, adjudication
+
+    async def narrate_turn(
+        self,
+        intent: ActionIntent,
+        output: CharacterOutput,
+        adjudication: Adjudication,
+        scene_history: str,
+        resolution_log: list[str] | None = None,
+    ) -> CharacterTurnResult:
+        """Run step 4: DM-Right narrates the Python-resolved outcome.
+
+        Pass resolution_log from _resolve_attacks so DM-Right knows what
+        the engine actually allowed (hits, misses, blocked LOS, etc.).
+        """
+        roles = self._roles_for(adjudication.character_id)
+
+        # 4. DM-Right: narrate the engine-resolved outcome
         narration = await roles.dm_right.narrate(
             adjudication, output, scene_history,
+            resolution_log=resolution_log,
         )
 
         result = CharacterTurnResult(
-            character_id=context.character_id,
-            turn=context.turn,
+            character_id=adjudication.character_id,
+            turn=adjudication.turn,
             intent=intent,
             output=output,
             adjudication=adjudication,
@@ -136,6 +158,26 @@ class TurnCycle:
         )
         self.history.append(result)
         return result
+
+    async def execute_character_turn(
+        self,
+        context: RoleContext,
+        game_state_summary: str = "",
+        geometry_summary: str = "",
+        scene_history: str = "",
+        dm_ledger: str = "",
+    ) -> CharacterTurnResult:
+        """Execute one character's full turn through the 4-role pipeline.
+
+        Convenience wrapper around adjudicate_turn() + narrate_turn() with no
+        Python resolution step (used by tests and simple callers).
+        For the game loop use adjudicate_turn → Python resolution → narrate_turn.
+        """
+        intent, output, adjudication = await self.adjudicate_turn(
+            context, game_state_summary, geometry_summary,
+            scene_history, dm_ledger,
+        )
+        return await self.narrate_turn(intent, output, adjudication, scene_history)
 
     async def execute_turn(
         self,

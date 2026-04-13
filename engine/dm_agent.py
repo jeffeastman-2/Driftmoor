@@ -403,6 +403,7 @@ class DMRight:
         adjudication: Adjudication,
         character_output: CharacterOutput,
         scene_history: str,
+        resolution_log: list[str] | None = None,
     ) -> str:
         status = "APPROVED" if adjudication.approved else "MODIFIED"
         mod = ""
@@ -420,12 +421,15 @@ class DMRight:
             "(silent)", "(silence)",
         ):
             spoken_block = f"\n\n## What they said\n\"{spoken.strip()}\""
+        resolution_block = ""
+        if resolution_log:
+            resolution_block = "\n\n## Engine resolution\n" + "\n".join(resolution_log)
         return (
             f"# Character: {character_output.character_id} "
             f"(Turn {character_output.turn})\n\n"
             f"## What they did\n{character_output.action}"
             f"{spoken_block}\n\n"
-            f"## Adjudication: {status}{mod}{notes}{history_block}"
+            f"## Adjudication: {status}{mod}{notes}{history_block}{resolution_block}"
         )
 
     def parse_response(
@@ -443,6 +447,7 @@ class DMRight:
         adjudication: Adjudication,
         character_output: CharacterOutput,
         scene_history: str,
+        resolution_log: list[str] | None = None,
     ) -> Narration:
         if self._call_llm is None:
             action_text = character_output.action or "(no action)"
@@ -455,6 +460,7 @@ class DMRight:
         system = self.build_system_prompt()
         user = self.build_user_prompt(
             adjudication, character_output, scene_history,
+            resolution_log=resolution_log,
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(

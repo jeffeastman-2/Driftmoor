@@ -679,20 +679,20 @@ async def iter_session(
                 )
 
             context = _build_context(cs, turn_num, combined_history)
-            cr = await turn_cycle.execute_character_turn(
+
+            # Steps 1-3: Player-Left → Player-Right → DM-Left
+            intent, output, adjudication = await turn_cycle.adjudicate_turn(
                 context=context,
                 game_state_summary=turn_game_state,
                 geometry_summary=geometry_summary,
                 scene_history=within_turn_history,
                 dm_ledger=ledger.render(current_positions, in_combat, game_time, characters=characters),
             )
-            turn_result.character_results.append(cr)
 
-            # Update live position from approved DM movement target.
-            # DM declares intent (MOVEMENT TARGET x,y); Python clamps to speed
-            # and resolves zone via SceneGeometry.zone_at().
-            if cr.adjudication.approved and cr.adjudication.movement_target is not None:
-                tx, ty = cr.adjudication.movement_target
+            # Python movement resolution — clamp to speed, snap to zone.
+            # DM declares intent (MOVEMENT TARGET x,y); Python owns the result.
+            if adjudication.approved and adjudication.movement_target is not None:
+                tx, ty = adjudication.movement_target
                 raw_pos: tuple[float, float, str] = (tx, ty, "")
                 char = characters[character_id].character
                 speed_ft = _speed_to_feet(getattr(char, "speed", "30 ft"))
@@ -705,22 +705,18 @@ async def iter_session(
                 else:
                     zone = current_positions.get(character_id, ("", "", ""))[2]
                 new_pos = (tx, ty, zone.upper())
-                cr.adjudication.new_position = new_pos
+                adjudication.new_position = new_pos
                 current_positions[character_id] = new_pos
 
-            # Record result in DM ledger (later chars in this turn see it)
-            ledger.record(cr, game_time)
-
-            # Apply HP damage immediately so ledger shows current HP
-            # for subsequent characters in this turn's initiative order
-            if cr.adjudication.approved:
-                # Python resolves all attacks: roll d20+bonus vs AC, roll damage on hit.
-                # The DM declared attacks via **ATTACKS**; we own the dice entirely.
+            # Python attack resolution — roll d20+bonus vs AC, check range and
+            # LOS; DM declared targets via **ATTACKS** but Python owns the dice.
+            attack_log: list[str] = []
+            if adjudication.approved:
                 attacker_char = characters[character_id].character
                 attacker_identity = characters[character_id].identity
                 max_range = _max_attack_range(attacker_identity)
                 hp_damage, attack_log = _resolve_attacks(
-                    cr.adjudication.attacks,
+                    adjudication.attacks,
                     character_id,
                     current_positions.get(character_id),
                     current_positions,
@@ -728,11 +724,8 @@ async def iter_session(
                     max_range,
                     scene_geometry=scene_geometry,
                 )
-                # Store resolved damage back onto adjudication for checkpointing/ledger
-                cr.adjudication.hp_damage = hp_damage
-                # Log attack results into turn history so DM ledger reflects them
-                for log_line in attack_log:
-                    within_turn_history += f"\n{log_line}"
+                # Store resolved damage back onto adjudication for checkpointing
+                adjudication.hp_damage = hp_damage
 
                 for target_id, dmg in hp_damage.items():
                     if target_id not in characters:
@@ -743,9 +736,25 @@ async def iter_session(
                         if char.current_hp <= 0:
                             active_characters.discard(target_id)
                             current_positions.pop(target_id, None)
-                            within_turn_history += (
-                                f"\n[{target_id} is dead — reduced to 0 HP]"
+                            attack_log.append(
+                                f"[{target_id} is dead — reduced to 0 HP]"
                             )
+
+            # Step 4: DM-Right narrates what Python actually resolved.
+            # resolution_log tells it which attacks hit, missed, or were blocked.
+            cr = await turn_cycle.narrate_turn(
+                intent, output, adjudication, within_turn_history,
+                resolution_log=attack_log if attack_log else None,
+            )
+            turn_result.character_results.append(cr)
+
+            # Record result in DM ledger (later chars in this turn see it)
+            ledger.record(cr, game_time)
+
+            # Append attack log to within_turn_history so subsequent characters
+            # in this turn can see what happened
+            for log_line in attack_log:
+                within_turn_history += f"\n{log_line}"
 
             # Check for exits_scene — remove from active set mid-turn
             if EXIT_EVENT in cr.adjudication.spatial_events:
