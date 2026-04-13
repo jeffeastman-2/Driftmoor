@@ -221,6 +221,7 @@ def _resolve_attacks(
     current_positions: dict[str, tuple[float, float, str]],
     characters: dict,
     max_range: float,
+    scene_geometry=None,
 ) -> tuple[dict[str, int], list[str]]:
     """Roll d20+bonus vs target AC, roll damage on hit. Returns (hp_damage, log_lines).
 
@@ -236,11 +237,23 @@ def _resolve_attacks(
         hit_bonus = atk.get("hit_bonus", 0)
         damage_expr = atk.get("damage_expr", "1d4")
 
+        # Fuzzy-match target ID: if DM omitted the numeric suffix (e.g. "shadowbeast"
+        # instead of "shadowbeast_1"), find the first character whose id starts with it.
         if target_id not in characters:
-            log_lines.append(f"[ATTACK] {character_id} → {target_id}: unknown target, skipped")
-            continue
+            matched = next(
+                (cid for cid in characters if cid.startswith(target_id) or target_id.startswith(cid)),
+                None,
+            )
+            if matched:
+                log_lines.append(
+                    f"[ATTACK] fuzzy-matched target '{target_id}' → '{matched}'"
+                )
+                target_id = matched
+            else:
+                log_lines.append(f"[ATTACK] {character_id} → {target_id}: unknown target, skipped")
+                continue
 
-        # Range check
+        # Range check and LOS check
         if attacker_pos is not None:
             tpos = current_positions.get(target_id)
             if tpos is not None:
@@ -251,6 +264,17 @@ def _resolve_attacks(
                         f"({dist:.1f} ft > {max_range} ft), skipped"
                     )
                     continue
+                # LOS check
+                if scene_geometry is not None:
+                    a_pos = Position(attacker_pos[0], attacker_pos[1])
+                    t_pos = Position(tpos[0], tpos[1])
+                    if not scene_geometry.can_see(a_pos, t_pos):
+                        log_lines.append(
+                            f"[ATTACK] {character_id} → {target_id}: no line of sight "
+                            f"({scene_geometry.zone_at(a_pos) or '?'} → "
+                            f"{scene_geometry.zone_at(t_pos) or '?'}), skipped"
+                        )
+                        continue
 
         target_char = characters[target_id].character
         ac = getattr(target_char, "ac", 10)
@@ -586,10 +610,29 @@ async def iter_session(
     melee_rounds_remaining = MAX_MELEE_ROUNDS
     turn_num = start_turn
 
-    # Live position tracking — updated from DM-approved NEW POSITION each turn
+    # Live position tracking — seeded from geometry starting positions then
+    # updated each turn from DM-approved MOVEMENT TARGET.
     current_positions: dict[str, tuple[float, float, str]] = _parse_positions_table(
         game_state_summary
     )
+    # Fill any missing entries from the geometry's Starting Positions table
+    # so speed-clamping works from Turn 1 even for characters not in the
+    # game_state_summary position table.
+    if scene_geometry is not None:
+        for char_id in characters:
+            if char_id in current_positions:
+                continue
+            # Exact match first, then prefix match (e.g. "shadowbeast" matches "shadowbeast_1")
+            start_pos = scene_geometry.starting_positions.get(char_id)
+            if start_pos is None:
+                start_pos = next(
+                    (p for k, p in scene_geometry.starting_positions.items()
+                     if char_id.startswith(k) or k.startswith(char_id)),
+                    None,
+                )
+            if start_pos is not None:
+                zone = scene_geometry.zone_at(start_pos) or ""
+                current_positions[char_id] = (start_pos.x, start_pos.y, zone.upper())
 
     # DM ledger — authoritative event log injected into every DM prompt
     ledger = DMLedger()
@@ -682,6 +725,7 @@ async def iter_session(
                     current_positions,
                     characters,
                     max_range,
+                    scene_geometry=scene_geometry,
                 )
                 # Store resolved damage back onto adjudication for checkpointing/ledger
                 cr.adjudication.hp_damage = hp_damage

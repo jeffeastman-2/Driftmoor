@@ -194,7 +194,7 @@
     },
     {
       "header": "Character Starting Positions",
-      "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 256.75 | 81.25 | TRAIL |\n| fennel | 190.0 | 162.5 | GLADE |\n| shadowbeast_3.25 | 126.75 | 162.5 | FOREST |"
+      "text": "| character | x | y | zone |\n|-----------|-----|-----|------|\n| aeliana | 256.75 | 81.25 | TRAIL |\n| fennel | 190.0 | 162.5 | GLADE |\n| shadowbeast_1 | 126.75 | 162.5 | FOREST |"
     },
     {
       "header": "Exit Motivations (DM only)",

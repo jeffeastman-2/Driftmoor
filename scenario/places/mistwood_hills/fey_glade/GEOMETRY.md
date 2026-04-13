@@ -43,6 +43,25 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 |---------------|-------|------|----------------------|
 | trail_exit    | 321.75  | 13.0  | mistwood_hills path  |
 
+## Visibility
+
+Dense Mistwood forest heavily occludes sight-lines. Rules:
+
+| from_zone | to_zone | max_range_ft |
+|-----------|---------|-------------|
+| GLADE     | GLADE   | 9999        |
+| GLADE     | POOL    | 9999        |
+| POOL      | GLADE   | 9999        |
+| POOL      | POOL    | 9999        |
+| GLADE     | TRAIL   | 80          |
+| TRAIL     | GLADE   | 80          |
+| GLADE     | FOREST  | 30          |
+| FOREST    | GLADE   | 30          |
+| TRAIL     | TRAIL   | 9999        |
+| TRAIL     | FOREST  | 0           |
+| FOREST    | TRAIL   | 0           |
+| FOREST    | FOREST  | 30          |
+
 ## Boundaries
 
 ### Fey Glade Repulsion Boundary

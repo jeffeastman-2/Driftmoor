@@ -192,6 +192,10 @@ class SceneGeometry:
     zones: dict[str, Polygon] = field(default_factory=dict)
     impassable: list[Polygon] = field(default_factory=list)
     connections: dict[str, Position] = field(default_factory=dict)
+    # zone-pair → max visible range in ft; missing pair = unlimited
+    visibility_rules: dict[tuple[str, str], float] = field(default_factory=dict)
+    # character_id → starting Position parsed from GEOMETRY.md
+    starting_positions: dict[str, Position] = field(default_factory=dict)
 
     def absolute_position(self, local: Position) -> Position:
         """Convert local scene coordinates to world coordinates."""
@@ -220,6 +224,23 @@ class SceneGeometry:
                 best_name = name
                 best_pos = pos
         return best_name, best_pos
+
+    def can_see(self, pos_a: Position, pos_b: Position) -> bool:
+        """Return True if pos_a has line-of-sight to pos_b per visibility_rules.
+
+        If no rule exists for the zone pair, sight is unrestricted (returns True).
+        """
+        import math
+        zone_a = (self.zone_at(pos_a) or "FOREST").upper()
+        zone_b = (self.zone_at(pos_b) or "FOREST").upper()
+        key = (zone_a, zone_b)
+        if key not in self.visibility_rules:
+            return True  # no rule → no restriction
+        max_range = self.visibility_rules[key]
+        if max_range == 0:
+            return False
+        dist = math.hypot(pos_b.x - pos_a.x, pos_b.y - pos_a.y)
+        return dist <= max_range
 
 
 @dataclass

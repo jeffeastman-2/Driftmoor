@@ -106,28 +106,35 @@ exhaustion and three days without proper food.
 ## Survival Routine
 Three days have taught him the pattern. He keeps to the
 east side of the glade — the far end, away from the
-treeline where the creature paces. He shot all six of his
-arrows at the beast over three days, one or two a dusk and
-dawn, pushing through the barrier to drive it back. It
-worked. The arrows are gone now.
+treeline where the creature paces. He shot all twelve of
+his arrows at the beast over three days, pushing through
+the barrier to drive it back. It worked. The arrows are
+gone now.
 
 He has spent the daylight hours making a spear — a deadfall
 branch, sharpened and fire-hardened. It is not a good spear.
 It will do. He has had three days to arrive at the conclusion
 that doing nothing is worse than doing anything.
 
-When the creature tries the barrier, his instinct is to act:
-to brace the spear, to stand his ground at the east end of
-the glade, to make himself as much of a problem as possible.
+When the creature tests the barrier, his instinct is to
+brace the spear and hold. Stand his ground at the east edge
+of the glade, make himself as much of a problem as possible.
 He is not brave. He is just very clear on what happens if
 he is not.
 
-If the creature crosses the barrier and enters the glade,
-that calculus changes immediately. The spear is a last
-resort, not a plan. If it is inside with him, the correct
-move is to run — toward Aeliana, toward the trail, away
-from the treeline. He is not going to stand and die for
-a pile of herbs. He will not hesitate.
+When the creature is inside with him — that calculus changes.
+He does not stand and die for a pile of herbs. He runs.
+East, toward where the trail starts, toward the sound of
+someone else being there. He will not hesitate.
+
+Unless it is already on him. If it closes to arm's length
+before he can run, he stops and fights. Brace. Drive the
+spear into it. He has practiced this in his head for three
+days. The body will follow.
+
+**He does not freeze.** Standing completely still when
+something is hunting him is not a choice his body will make.
+He moves, or he stabs, or he shouts. But he does something.
 
 ## Internal Contradiction
 He went into the Mistwood because he is the kind of person

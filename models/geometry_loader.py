@@ -168,6 +168,23 @@ def parse_geometry_md(text: str) -> dict:
             starting[name] = Position(float(row[1]), float(row[2]))
     result["starting_positions"] = starting
 
+    # --- Visibility ---
+    visibility_section = _extract_section(text, "Visibility")
+    vis_rows = _parse_table_rows(visibility_section)
+    visibility: dict[tuple[str, str], float] = {}
+    for row in vis_rows:
+        if len(row) >= 3:
+            from_zone = row[0].strip().upper()
+            to_zone = row[1].strip().upper()
+            if from_zone in ("FROM_ZONE", "FROM"):
+                continue
+            try:
+                max_range = float(row[2].strip())
+            except ValueError:
+                continue
+            visibility[(from_zone, to_zone)] = max_range
+    result["visibility"] = visibility
+
     return result
 
 
@@ -216,6 +233,8 @@ def load_geometry(path: Path) -> SceneGeometry:
         zones=data["zones"],
         impassable=data["impassable"],
         connections=data["connections"],
+        visibility_rules=data.get("visibility", {}),
+        starting_positions=data.get("starting_positions", {}),
     )
 
 
