@@ -31,6 +31,7 @@ that curiosity has consequences.
 ## Combat Statistics
 - **HP:** 10
 - **AC:** 11 (no armor)
+- **Speed:** 30 ft
 - **STR:** 10 | **DEX:** 12 (+1) | **CON:** 11
 - **INT:** 14 (+2) | **WIS:** 13 (+1) | **CHA:** 13 (+1)
 

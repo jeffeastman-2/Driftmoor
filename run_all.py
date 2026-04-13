@@ -21,6 +21,7 @@ from pathlib import Path
 
 from models.space_time import GameTime
 from engine.scene_runner import configure_from_json, print_turn_result, ROOT
+from engine.md_loader import configure_from_md
 from engine.session import iter_session, load_resume_state
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
@@ -165,20 +166,30 @@ async def run_all(
     resume: bool = False,
     scene_filter: str | None = None,
 ) -> None:
-    available = {p.stem for p in SCENES_DIR.glob("*.json")}
+    # Discover scenes: CONFIG.md folders (preferred) and legacy .json files
+    available_md   = {p.name for p in SCENES_DIR.iterdir()
+                      if p.is_dir() and (p / "CONFIG.md").exists()}
+    available_json = {p.stem for p in SCENES_DIR.glob("*.json")}
+    available      = available_md | available_json
+
     scene_order = [scene_filter] if scene_filter else SCENE_ORDER
     single_scene = scene_filter is not None
 
     runners: list[SceneRunner] = []
     for scene_name in scene_order:
         if scene_name not in available:
-            print(f"WARNING: {scene_name}.json not found — skipping")
+            print(f"WARNING: {scene_name} not found — skipping")
             continue
-        json_path = SCENES_DIR / f"{scene_name}.json"
-        # Single-scene mode: use the JSON's own game_time (not SESSION_START)
-        # so the scene plays at the time defined in its own config.
+        # Single-scene mode preserves config-file game_time (pass None).
         game_time = None if single_scene else dataclasses.replace(SESSION_START)
-        config = configure_from_json(json_path, game_time=game_time)
+
+        md_path = SCENES_DIR / scene_name / "CONFIG.md"
+        if md_path.exists():
+            config = configure_from_md(md_path, game_time=game_time)
+        else:
+            config = configure_from_json(
+                SCENES_DIR / f"{scene_name}.json", game_time=game_time
+            )
         num_turns = num_turns_override if num_turns_override is not None else config.default_turns
         runners.append(SceneRunner(config, num_turns))
 

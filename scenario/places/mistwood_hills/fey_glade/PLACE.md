@@ -48,6 +48,45 @@ TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in
 - **Current status:** Active fey presence; shadowbeast standoff at boundary
 - **Clock:** Dusk in ~3 hours (mid-afternoon)
 - **Tension:** Rising — Aeliana approaching shadowbeast position
+
+## Scene Introductions
+
+### aeliana
+It is dusk. You are on the trail approaching the Fey Glade. The forest
+ahead has gone unnaturally quiet — no birdsong, no rustling. The air
+carries a faint luminous warmth from somewhere deeper in the trees. You
+have heard there is a gatherer sheltering in the glade. You sense
+something large in the forest shadows to your left, watching. It is
+close. Your bow is already in your hand — you have been tracking this
+creature and you do not wait for it to act first. The moment you have
+a clear shot, you take it.
+
+### fennel
+It is dusk. Three days you have learned the pattern: dusk is when it
+tries, and dawn is a second window. Not midnight — during full dark the
+barrier is at its peak and the creature paces and snarls but cannot
+push through. During daylight it doesn't come at all; you think the
+light itself is painful to it. But dusk and dawn, the transitions,
+those are when the barrier thins and the creature is still able to
+move. Every dusk it comes. This is that hour. The wrongness at the
+forest edge is back — you can hear it, or rather you hear the absence
+of everything else. You are standing at the east end of the glade with
+your improvised spear — a fire-hardened deadfall branch, pointed and
+hardened in the coals. Your arrows are gone, all twelve of them spent
+over three days keeping the beast back. The spear is what you have.
+Your plan if it crosses the barrier: brace the butt of the spear in
+the ground and let the beast run onto it. Someone is coming down the
+trail from the east. You don't know if that is good news.
+
+### shadowbeast_1
+Dusk. The burning wrongness of full day is fading from the shimmer
+ahead. Three days you have circled this place. Three nights the wall
+held. But this hour — the transition — you have learned. The light
+that burns leaves with the sun. The wall weakens before it strengthens
+again at full dark. This is your window. The prey near the pool has
+not moved. A new heat arrives from the east — tall, carrying metal.
+Two prey now. The wall is soft. Probe it. Find the weak point. The
+hunger says now.
 - **Active conditions:**
   - The glade's fey barrier is absolute during daylight — shadowbeasts cannot enter, period
   - At dusk (~3 hours) the barrier will begin to weaken

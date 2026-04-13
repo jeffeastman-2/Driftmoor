@@ -14,6 +14,7 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 ## Combat Statistics
 - **HP:** 12
 - **AC:** 14 (leather armor)
+- **Speed:** 35 ft
 - **STR:** 10 | **DEX:** 16 (+3) | **CON:** 14 (+2)
 - **INT:** 12 (+1) | **WIS:** 15 (+2) | **CHA:** 10
 
