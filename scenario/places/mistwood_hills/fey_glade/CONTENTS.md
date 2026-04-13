@@ -22,7 +22,7 @@
 
 ## Characters Present at Turn 0
 - **Aeliana Moonglade** — TRAIL. Approaching from the south, following shadowbeast tracks.
-- **Fennel** — GLADE. East end, far from the treeline. Has been here three days. Exhausted, hungry. Shot all six arrows at the beast over three days to keep it back — they passed through the barrier and drove it off each time, but the arrows are gone. Has improvised a sharpened fire-hardened stake (makeshift spear, 1d4 piercing, reach 5ft) from a deadfall branch.
+- **Fennel** — GLADE. East end, far from the treeline. Has been here three days. Exhausted, hungry. Shot all six arrows at the beast over three days to keep it back — they passed through the barrier and drove it off each time, but the arrows are gone. Has improvised a spear (fire-hardened deadfall branch, 1d8 piercing, reach 5 ft) from a deadfall branch. His plan if it crosses: brace the butt in the ground and let the beast impale itself on the charge.
 - **Shadowbeast** — TREELINE (outer, TRAIL-facing side). Patrolling perimeter for three days. Cannot cross boundary into GLADE.
 
 ## Creatures

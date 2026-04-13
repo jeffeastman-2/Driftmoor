@@ -325,13 +325,13 @@ class TestDMLeftParsing:
         raw = (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
-            "**NEW POSITION** — x=5.0, y=3.0, zone=GLADE\n"
+            "**MOVEMENT TARGET** — x=5.0, y=3.0\n"
             "**CONDITION** — none\n"
             "**EVENTS** — none\n"
             "**NOTES** — OK"
         )
         result = DMLeft().parse_response(raw, "aeliana", 1)
-        assert result.new_position == (5.0, 3.0, "GLADE")
+        assert result.movement_target == (5.0, 3.0)
 
     def test_parse_multiple_condition_deltas(self):
         raw = (

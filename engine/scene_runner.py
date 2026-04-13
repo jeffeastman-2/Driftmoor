@@ -19,7 +19,8 @@ from models.condition import (
     NeurochemicalState,
     DimensionProfile,
 )
-from models.space_time import GameTime
+from models.space_time import GameTime, SceneGeometry
+from models.geometry_loader import load_geometry
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -61,6 +62,7 @@ class SceneConfig:
     roles: dict[str, RoleSet]
     game_state_summary: str
     geometry_summary: str = ""
+    scene_geometry: SceneGeometry | None = None
     default_turns: int = 4
     game_time: GameTime | None = None
     dm_provider: str = "anthropic"
@@ -248,8 +250,12 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
     game_state_summary = _build_game_state(data.get("game_state_sections", []))
 
     geometry_summary = ""
+    scene_geometry: SceneGeometry | None = None
     if data.get("geometry_file"):
-        geometry_summary = load_file(ROOT / data["geometry_file"])
+        geo_path = ROOT / data["geometry_file"]
+        geometry_summary = load_file(geo_path)
+        if geo_path.exists():
+            scene_geometry = load_geometry(geo_path)
 
     # Inject starting positions into each character's initial_scene so the
     # character agent knows exactly where it is (not just the DM).
@@ -290,6 +296,7 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
         roles=roles,
         game_state_summary=game_state_summary,
         geometry_summary=geometry_summary,
+        scene_geometry=scene_geometry,
         default_turns=data.get("default_turns", 4),
         game_time=game_time,
         dm_provider=dm_provider,
@@ -349,6 +356,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
         num_turns=num_turns,
         game_state_summary=config.game_state_summary,
         geometry_summary=config.geometry_summary,
+        scene_geometry=config.scene_geometry,
         checkpoint_dir=checkpoint_dir,
         game_time=config.game_time,
     )

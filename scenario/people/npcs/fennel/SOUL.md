@@ -122,6 +122,13 @@ the glade, to make himself as much of a problem as possible.
 He is not brave. He is just very clear on what happens if
 he is not.
 
+If the creature crosses the barrier and enters the glade,
+that calculus changes immediately. The spear is a last
+resort, not a plan. If it is inside with him, the correct
+move is to run — toward Aeliana, toward the trail, away
+from the treeline. He is not going to stand and die for
+a pile of herbs. He will not hesitate.
+
 ## Internal Contradiction
 He went into the Mistwood because he is the kind of person
 who goes into the Mistwood when someone needs Moonlace and

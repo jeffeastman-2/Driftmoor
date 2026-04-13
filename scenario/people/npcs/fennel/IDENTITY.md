@@ -29,7 +29,7 @@ anywhere else. The expression of someone who has learned
 that curiosity has consequences.
 
 ## Combat Statistics
-- **HP:** 8
+- **HP:** 10
 - **AC:** 11 (no armor)
 - **STR:** 10 | **DEX:** 12 (+1) | **CON:** 11
 - **INT:** 14 (+2) | **WIS:** 13 (+1) | **CHA:** 13 (+1)
@@ -48,12 +48,11 @@ reasonably coordinated young man with no combat training.*
 - **Persuasion** +3 — warm manner, genuine interest
   in people
 
-*Not proficient with weapons. His bow use is self-taught
-and unreliable under pressure. He proved this on night one.*
+*Not proficient with weapons. He proved this over three days.*
 
 ## Equipment
-- Hunting bow (1d6 piercing) — self-taught, poor form
-- 6 arrows remaining (started with 12)
+- Improvised spear — fire-hardened deadfall branch, pointed at both ends (1d8 piercing, reach 5 ft). Fennel's technique: brace the butt in the ground and hold the shaft at an angle so a charging creature impales itself. Not trained — learned from desperation and three days of watching how the beast moves.
+- Hunting bow (1d6 piercing, range 80/320 ft) — still has it; all 12 arrows spent over three days. Can be resupplied from Aeliana's quiver if she shares arrows.
 - Belt knife (1d4 piercing) — for cutting plants, not people
 - Herb satchel containing:
   - Moonlace (bunch, slightly crushed) — what he came for

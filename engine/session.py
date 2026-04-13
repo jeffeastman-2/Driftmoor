@@ -23,7 +23,8 @@ from engine.player_router import RoleContext
 from engine.scene_manager import TurnCycle, TurnResult, RoleSet
 from models.character import Character
 from models.condition import CharacterCondition, render_condition
-from models.space_time import GameTime
+from models.geometry_loader import load_geometry
+from models.space_time import GameTime, Position, SceneGeometry
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +189,88 @@ def _clamp_position(
         return proposed
     scale = max_feet / dist
     return (round(ox + dx * scale, 1), round(oy + dy * scale, 1), proposed[2])
+
+
+def _roll_damage_expr(expr: str) -> int:
+    """Roll a damage expression such as '1d6', '2d4+2', or '1d8 slashing'.
+
+    Ignores non-numeric descriptors (damage type words).
+    Returns at least 0.
+    """
+    total = 0
+    # Roll all dice terms: NdM
+    for m in re.finditer(r'(\d+)\s*[dD]\s*(\d+)', expr):
+        count, sides = int(m.group(1)), int(m.group(2))
+        for _ in range(count):
+            total += random.randint(1, sides)
+    # Apply flat modifier: the +/- numbers not part of a dice term
+    remainder = re.sub(r'\d+\s*[dD]\s*\d+', '', expr)
+    for m in re.finditer(r'([+-]\s*\d+)', remainder):
+        total += int(m.group(1).replace(' ', ''))
+    # Plain integer with no sign (rare, e.g. just "5")
+    plain = remainder.strip()
+    if re.fullmatch(r'\d+', plain):
+        total += int(plain)
+    return max(0, total)
+
+
+def _resolve_attacks(
+    attacks: list[dict],
+    character_id: str,
+    attacker_pos: tuple[float, float, str] | None,
+    current_positions: dict[str, tuple[float, float, str]],
+    characters: dict,
+    max_range: float,
+) -> tuple[dict[str, int], list[str]]:
+    """Roll d20+bonus vs target AC, roll damage on hit. Returns (hp_damage, log_lines).
+
+    hp_damage: target_id → total damage this turn
+    log_lines: human-readable results injected into turn history for the DM ledger
+    """
+    import math
+    hp_damage: dict[str, int] = {}
+    log_lines: list[str] = []
+
+    for atk in attacks:
+        target_id = atk.get("target", "")
+        hit_bonus = atk.get("hit_bonus", 0)
+        damage_expr = atk.get("damage_expr", "1d4")
+
+        if target_id not in characters:
+            log_lines.append(f"[ATTACK] {character_id} → {target_id}: unknown target, skipped")
+            continue
+
+        # Range check
+        if attacker_pos is not None:
+            tpos = current_positions.get(target_id)
+            if tpos is not None:
+                dist = math.hypot(tpos[0] - attacker_pos[0], tpos[1] - attacker_pos[1])
+                if dist > max_range + 0.5:
+                    log_lines.append(
+                        f"[ATTACK] {character_id} → {target_id}: out of range "
+                        f"({dist:.1f} ft > {max_range} ft), skipped"
+                    )
+                    continue
+
+        target_char = characters[target_id].character
+        ac = getattr(target_char, "ac", 10)
+        d20 = random.randint(1, 20)
+        total_roll = d20 + hit_bonus
+
+        if total_roll >= ac:
+            dmg = _roll_damage_expr(damage_expr)
+            hp_damage[target_id] = hp_damage.get(target_id, 0) + dmg
+            log_lines.append(
+                f"[ATTACK] {character_id} → {target_id}: "
+                f"d20={d20}+{hit_bonus}={total_roll} vs AC {ac} → HIT for {dmg} ({damage_expr})"
+            )
+        else:
+            log_lines.append(
+                f"[ATTACK] {character_id} → {target_id}: "
+                f"d20={d20}+{hit_bonus}={total_roll} vs AC {ac} → MISS"
+            )
+
+    return hp_damage, log_lines
 
 
 # ---------------------------------------------------------------------------
@@ -476,6 +559,7 @@ async def iter_session(
     rng: Optional[random.Random] = None,
     start_turn: int = 1,
     initial_history: str = "",
+    scene_geometry: Optional[SceneGeometry] = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -561,34 +645,25 @@ async def iter_session(
             )
             turn_result.character_results.append(cr)
 
-            # Update live position from approved DM adjudication.
-            # Primary: structured NEW POSITION field.
-            # Fallback: extract x/y coordinates mentioned anywhere in NOTES
-            # (DM often writes coords in prose but forgets the structured field).
-            if cr.adjudication.approved:
-                raw_pos: tuple[float, float, str] | None = None
-                if cr.adjudication.new_position is not None:
-                    raw_pos = cr.adjudication.new_position
+            # Update live position from approved DM movement target.
+            # DM declares intent (MOVEMENT TARGET x,y); Python clamps to speed
+            # and resolves zone via SceneGeometry.zone_at().
+            if cr.adjudication.approved and cr.adjudication.movement_target is not None:
+                tx, ty = cr.adjudication.movement_target
+                raw_pos: tuple[float, float, str] = (tx, ty, "")
+                char = characters[character_id].character
+                speed_ft = _speed_to_feet(getattr(char, "speed", "30 ft"))
+                origin = current_positions.get(character_id)
+                if origin is not None:
+                    raw_pos = _clamp_position(raw_pos, origin, speed_ft)
+                tx, ty = raw_pos[0], raw_pos[1]
+                if scene_geometry is not None:
+                    zone = scene_geometry.zone_at(Position(tx, ty)) or ""
                 else:
-                    notes = cr.adjudication.notes
-                    x_m = re.search(r'\bx\s*=\s*(-?\d+\.?\d*)', notes, re.IGNORECASE)
-                    y_m = re.search(r'\by\s*=\s*(-?\d+\.?\d*)', notes, re.IGNORECASE)
-                    if x_m and y_m:
-                        prev_zone = current_positions.get(character_id, ('', '', ''))[2]
-                        zone_m = re.search(
-                            r'\b(GLADE|TRAIL|FOREST|CLEARING|POOL)\b', notes, re.IGNORECASE
-                        )
-                        zone = zone_m.group(1).upper() if zone_m else prev_zone
-                        raw_pos = (float(x_m.group(1)), float(y_m.group(1)), zone)
-
-                if raw_pos is not None:
-                    # Clamp to character's speed (coordinates are in feet)
-                    char = characters[character_id].character
-                    speed_ft = _speed_to_feet(getattr(char, "speed", "30 ft"))
-                    origin = current_positions.get(character_id)
-                    if origin is not None:
-                        raw_pos = _clamp_position(raw_pos, origin, speed_ft)
-                    current_positions[character_id] = raw_pos
+                    zone = current_positions.get(character_id, ("", "", ""))[2]
+                new_pos = (tx, ty, zone.upper())
+                cr.adjudication.new_position = new_pos
+                current_positions[character_id] = new_pos
 
             # Record result in DM ledger (later chars in this turn see it)
             ledger.record(cr, game_time)
@@ -596,18 +671,25 @@ async def iter_session(
             # Apply HP damage immediately so ledger shows current HP
             # for subsequent characters in this turn's initiative order
             if cr.adjudication.approved:
-                # Enforce attack range: strip any target that is beyond the attacker's
-                # max reach/range. Guards against LLM arithmetic errors where the DM
-                # resolves a melee attack from a position that is actually out of reach.
+                # Python resolves all attacks: roll d20+bonus vs AC, roll damage on hit.
+                # The DM declared attacks via **ATTACKS**; we own the dice entirely.
                 attacker_char = characters[character_id].character
                 max_range = _max_attack_range(getattr(attacker_char, "identity", ""))
-                cr.adjudication.hp_damage = _enforce_attack_range(
-                    cr.adjudication.hp_damage,
+                hp_damage, attack_log = _resolve_attacks(
+                    cr.adjudication.attacks,
+                    character_id,
                     current_positions.get(character_id),
                     current_positions,
+                    characters,
                     max_range,
                 )
-                for target_id, dmg in cr.adjudication.hp_damage.items():
+                # Store resolved damage back onto adjudication for checkpointing/ledger
+                cr.adjudication.hp_damage = hp_damage
+                # Log attack results into turn history so DM ledger reflects them
+                for log_line in attack_log:
+                    within_turn_history += f"\n{log_line}"
+
+                for target_id, dmg in hp_damage.items():
                     if target_id not in characters:
                         continue
                     char = characters[target_id].character
@@ -719,6 +801,7 @@ async def run_session(
     checkpoint_dir: Optional[Path] = None,
     game_time: Optional[GameTime] = None,
     rng: Optional[random.Random] = None,
+    scene_geometry: Optional[SceneGeometry] = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
@@ -734,6 +817,7 @@ async def run_session(
         checkpoint_dir=checkpoint_dir,
         game_time=game_time,
         rng=rng,
+        scene_geometry=scene_geometry,
     ):
         turns.append(turn_result)
 

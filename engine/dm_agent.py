@@ -49,11 +49,14 @@ class Adjudication:
     turn: int
     approved: bool = True
     modified_action: Optional[str] = None
-    new_position: Optional[tuple[float, float, str]] = None
+    new_position: Optional[tuple[float, float, str]] = None  # Python-computed from movement_target
+    movement_target: Optional[tuple[float, float]] = None  # DM-declared destination (x, y)
     condition_deltas: dict[str, float] = field(default_factory=dict)
     spatial_events: list[str] = field(default_factory=list)
-    hp_damage: dict[str, int] = field(default_factory=dict)  # target_id → damage
+    attacks: list[dict] = field(default_factory=list)  # [{target, hit_bonus, damage_expr}]
     notes: str = ""
+    # hp_damage is computed by Python from attacks; kept for checkpoint serialisation
+    hp_damage: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -140,11 +143,11 @@ class DMLeft:
             "**APPROVED** — Yes or No.\n"
             "**MODIFIED ACTION** — Rewritten action if rejected, "
             "otherwise \"none\".\n"
-            "**NEW POSITION** — Character's absolute position after this "
-            "action as x=<val>, y=<val>, zone=<ZONE> "
-            "(or \"none\" if the character did not move). "
-            "When a boundary crossing is approved you MUST emit "
-            "the new coordinates inside the boundary here.\n"
+            "**MOVEMENT TARGET** — Where the character wants to move this turn, "
+            "as x=<val>, y=<val> (no zone — Python resolves zone from geometry). "
+            "Use \"none\" if the character does not move. "
+            "Python will clamp this to the character's speed and determine the "
+            "actual destination and zone — do not compute movement distance yourself.\n"
             "**CONDITION** — Neurochemical deltas as "
             "dimension +/-value, comma separated "
             "(e.g. \"dopamine +0.1, cortisol -0.05\") "
@@ -157,21 +160,26 @@ class DMLeft:
             "or offensive spell against an opponent.\n"
             "  - exits_scene: when a character leaves the scene "
             "area entirely (fleeing, retreating, departing), "
-            "or when a character or creature is reduced to 0 HP.\n"            "  CRITICAL: If APPROVED is No (barrier crossing failed, "
+            "or when a character or creature is reduced to 0 HP.\n"
+            "  CRITICAL: If APPROVED is No (barrier crossing failed, "
             "action rejected), do NOT emit boundary_crossed or "
             "combat_initiated. Those events only apply when the action "
-            "actually succeeds.\n"            "**HP DAMAGE** — Hit point damage dealt by this action. "
-            "Format as target_id: amount for each target hit "
-            "(e.g. \"aeliana: 7\" or \"aeliana: 5, fennel: 3\"). "
-            "Use \"none\" if no HP damage was dealt. "
-            "CRITICAL: If your NOTES state the attack cannot land for ANY reason "
-            "(target out of melee range, target out of ranged range, attack roll "
-            "failed, action was not an attack), you MUST use \"none\" here. "
-            "Your NOTES and HP DAMAGE must be fully consistent — never populate "
-            "HP DAMAGE when the attack failed or could not reach its target. "
-            "Only emit damage that was actually rolled and resolved.\n"
-            "**NOTES** — Brief adjudication reasoning, including any "
-            "dice rolls used and their outcomes."
+            "actually succeeds.\n"
+            "**NOTES** — Full adjudication reasoning: movement distances, "
+            "whether each attack can land (reach/range check), and any saving "
+            "throw results (use pre-rolled d20 pool for saves). "
+            "Do NOT roll or compute damage — Python handles dice.\n"
+            "**ATTACKS** — Declare each attack being made this turn. "
+            "One attack per line in the format:\n"
+            "  target=<character_id>, bonus=<+N>, damage=<XdY+Z>\n"
+            "Example (multiattack):\n"
+            "  target=fennel, bonus=+4, damage=1d6\n"
+            "  target=fennel, bonus=+4, damage=1d6\n"
+            "Use 'none' if no attacks are made. "
+            "Only declare attacks your NOTES confirm are physically possible "
+            "(within reach/range, action approved). "
+            "Python will roll d20+bonus vs target AC and apply damage on hit — "
+            "do not compute hit/miss or damage yourself."
         )
 
     def build_user_prompt(
@@ -180,17 +188,17 @@ class DMLeft:
         game_state_summary: str,
         geometry_summary: str,
         dice_rolls: list[int] | None = None,
-        damage_pools: dict[str, list[int]] | None = None,
         dm_ledger: str = "",
     ) -> str:
         dice_section = ""
         if dice_rolls:
             rolls_str = ", ".join(str(r) for r in dice_rolls)
-            dice_section = f"\n\n## Dice Rolls\nd20 pool (use in order): [{rolls_str}]"
-            if damage_pools:
-                for die, pool in damage_pools.items():
-                    pool_str = ", ".join(str(r) for r in pool)
-                    dice_section += f"\n{die} pool (use in order): [{pool_str}]"
+            dice_section = (
+                f"\n\n## Dice Rolls (d20 pool — use in order for saves/checks)\n"
+                f"[{rolls_str}]\n"
+                f"Note: attack hit/miss and damage are resolved by Python — "
+                f"do not roll damage yourself."
+            )
         ledger_section = f"{dm_ledger}\n\n" if dm_ledger else ""
         return (
             f"{ledger_section}"
@@ -218,11 +226,11 @@ class DMLeft:
 
         approved_raw = _extract("APPROVED")
         modified_raw = _extract("MODIFIED ACTION")
-        pos_raw = _extract("NEW POSITION")
+        target_raw = _extract("MOVEMENT TARGET")
         condition_raw = _extract("CONDITION")
         events_raw = _extract("EVENTS")
-        hp_damage_raw = _extract("HP DAMAGE")
         notes_raw = _extract("NOTES")
+        attacks_raw = _extract("ATTACKS")
 
         # Parse approved
         approved = approved_raw.lower().startswith("yes") if approved_raw else True
@@ -263,15 +271,13 @@ class DMLeft:
         if modified_raw and modified_raw.lower() not in ("none", "null", "n/a", ""):
             modified_action = modified_raw
 
-        # Parse new absolute position: x=<val>, y=<val>, zone=<ZONE>
-        pos = None
-        if pos_raw and pos_raw.lower() not in ("none", "null", "n/a", "no movement", ""):
-            x_m = re.search(r'x\s*=\s*(-?\d+(?:\.\d+)?)', pos_raw, re.IGNORECASE)
-            y_m = re.search(r'y\s*=\s*(-?\d+(?:\.\d+)?)', pos_raw, re.IGNORECASE)
-            zone_m = re.search(r'zone\s*=\s*(\w+)', pos_raw, re.IGNORECASE)
+        # Parse movement target: x=<val>, y=<val> (no zone — Python resolves)
+        movement_target: tuple[float, float] | None = None
+        if target_raw and target_raw.lower() not in ("none", "null", "n/a", "no movement", ""):
+            x_m = re.search(r'x\s*=\s*(-?\d+(?:\.\d+)?)', target_raw, re.IGNORECASE)
+            y_m = re.search(r'y\s*=\s*(-?\d+(?:\.\d+)?)', target_raw, re.IGNORECASE)
             if x_m and y_m:
-                pos = (float(x_m.group(1)), float(y_m.group(1)),
-                       zone_m.group(1).upper() if zone_m else "")
+                movement_target = (float(x_m.group(1)), float(y_m.group(1)))
 
         # Parse condition deltas: handles multiple formats:
         #   "dopamine +0.1, cortisol -0.05"
@@ -313,21 +319,32 @@ class DMLeft:
                 for e in parts if e.strip() and e.strip() not in ('-', '•')
             ]
 
-        # Parse HP damage: "shadowbeast_1: 8, aeliana: 5" or "none"
-        hp_damage: dict[str, int] = {}
-        if hp_damage_raw and hp_damage_raw.lower() not in ("none", "null", "n/a", ""):
-            for m in re.finditer(r'(\w+)\s*:\s*(\d+)', hp_damage_raw):
-                hp_damage[m.group(1)] = int(m.group(2))
+        # Parse attacks: one per line, "target=X, bonus=+N, damage=YdZ+W"
+        attacks: list[dict] = []
+        if attacks_raw and attacks_raw.lower() not in ("none", "null", "n/a", ""):
+            for line in attacks_raw.splitlines():
+                line = line.strip().lstrip('-•').strip()
+                if not line:
+                    continue
+                t_m = re.search(r'target\s*=\s*(\w+)', line, re.IGNORECASE)
+                b_m = re.search(r'bonus\s*=\s*([+-]?\d+)', line, re.IGNORECASE)
+                d_m = re.search(r'damage\s*=\s*([\ddDsS+\-\s]+)', line, re.IGNORECASE)
+                if t_m and b_m and d_m:
+                    attacks.append({
+                        "target": t_m.group(1).lower(),
+                        "hit_bonus": int(b_m.group(1)),
+                        "damage_expr": d_m.group(1).strip(),
+                    })
 
         return Adjudication(
             character_id=character_id,
             turn=turn,
             approved=approved,
             modified_action=modified_action,
-            new_position=pos,
+            movement_target=movement_target,
             condition_deltas=condition_deltas,
             spatial_events=spatial_events,
-            hp_damage=hp_damage,
+            attacks=attacks,
             notes=notes_raw,
         )
 
@@ -345,11 +362,10 @@ class DMLeft:
                 approved=True,
             )
         system = self.build_system_prompt()
-        dice_rolls = _roll_dice(8)
-        damage_pools = _roll_damage_pools(6)
+        dice_rolls = _roll_dice(8)  # d20 pool for saves and skill checks
         user = self.build_user_prompt(
             character_output, game_state_summary, geometry_summary,
-            dice_rolls=dice_rolls, damage_pools=damage_pools, dm_ledger=dm_ledger,
+            dice_rolls=dice_rolls, dm_ledger=dm_ledger,
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(

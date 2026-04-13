@@ -115,6 +115,7 @@ class SceneRunner:
             game_time=self.config.game_time,
             start_turn=self._start_turn,
             initial_history=self._initial_history,
+            scene_geometry=self.config.scene_geometry,
         )
 
     async def advance_from_to(self, start_minutes: int, end_minutes: int) -> list:
