@@ -27,6 +27,9 @@ from models.geometry_loader import load_geometry
 from models.space_time import GameTime, Position, SceneGeometry
 
 
+from engine.debug import _dbg
+
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -442,23 +445,33 @@ def _build_perception(
     """
     import math
     if scene_geometry is None:
+        _dbg(f"[PERCEPTION] {character_id}: no scene_geometry — skipping LOS")
         return ""
     my_pos = current_positions.get(character_id)
     if my_pos is None:
+        _dbg(f"[PERCEPTION] {character_id}: no position — skipping LOS")
         return ""
 
+    _dbg(f"[PERCEPTION] {character_id} at {my_pos}")
     lines: list[str] = []
     for other_id, other_pos in current_positions.items():
         if other_id == character_id or other_id not in active_characters:
             continue
         a = Position(my_pos[0], my_pos[1])
         b = Position(other_pos[0], other_pos[1])
-        if scene_geometry.can_see(a, b):
-            dist = round(math.hypot(b.x - a.x, b.y - a.y) / 5) * 5
-            zone = other_pos[2] or scene_geometry.zone_at(b) or "?"
-            lines.append(f"- {other_id} ({zone}, ~{dist:.0f} ft away)")
+        visible = scene_geometry.can_see(a, b)
+        zone_a = scene_geometry.zone_at(a) or "?"
+        zone_b = scene_geometry.zone_at(b) or "?"
+        dist = math.hypot(b.x - a.x, b.y - a.y)
+        _dbg(f"[PERCEPTION]   {other_id} at {other_pos}: {zone_a}->{zone_b} dist={dist:.1f} visible={visible}")
+        if visible:
+            dist_rounded = round(dist / 5) * 5
+            zone = other_pos[2] or zone_b
+            lines.append(f"- {other_id} ({zone}, ~{dist_rounded:.0f} ft away)")
 
-    return "\n".join(lines) if lines else ""
+    result = "\n".join(lines) if lines else ""
+    _dbg(f"[PERCEPTION]   result: {repr(result)}")
+    return result
 
 
 def _build_context(

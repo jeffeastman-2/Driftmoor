@@ -18,6 +18,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Optional
 
+from engine.debug import _dbg
+
 
 # ---------------------------------------------------------------------------
 # Data types
@@ -152,14 +154,16 @@ class PlayerLeft:
         perception_block = (
             f"\n\n## What you can currently perceive\n{context.perception}"
             if context.perception else
-            "\n\n## What you can currently perceive\nNo other characters are visible from your current position."
+            "\n\n## What you can currently perceive\nNo other creatures are visible from your current position."
         )
-        return (
+        prompt = (
             f"# Turn {context.turn}\n\n"
             f"## Condition\n{context.condition_text}\n\n"
             f"## Scene\n{context.scene_context}"
             f"{perception_block}"
         )
+        _dbg(f"[PLAYER-LEFT] {context.character_id} perception block: {repr(context.perception)}")
+        return prompt
 
     def parse_response(self, raw: str, context: RoleContext) -> ActionIntent:
         def _extract(text: str, section: str) -> str:
@@ -212,7 +216,9 @@ class PlayerLeft:
         system = self.build_system_prompt(context)
         user = self.build_user_prompt(context)
         raw = await self._call_llm(system, user)
-        return self.parse_response(raw, context)
+        result = self.parse_response(raw, context)
+        _dbg(f"[PLAYER-LEFT] {context.character_id} intent: {result.intent!r}")
+        return result
 
 
 # ---------------------------------------------------------------------------
