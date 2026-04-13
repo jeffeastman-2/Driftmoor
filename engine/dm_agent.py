@@ -403,7 +403,6 @@ class DMRight:
             "did not hit; only hits cause damage. Never contradict the engine "
             "resolution in your prose."
         )
-
     def build_user_prompt(
         self,
         adjudication: Adjudication,

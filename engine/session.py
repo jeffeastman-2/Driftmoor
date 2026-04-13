@@ -481,6 +481,7 @@ def _build_context(
     scene_geometry: Optional[SceneGeometry] = None,
     current_positions: Optional[dict[str, tuple[float, float, str]]] = None,
     active_characters: Optional[set[str]] = None,
+    in_combat: bool = False,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     scene = cs.initial_scene
@@ -492,6 +493,23 @@ def _build_context(
         current_positions or {},
         active_characters or set(),
     )
+    # If combat is active and there are combatants not visible (different zone),
+    # add a sound cue — growling and impact sounds carry regardless of LOS.
+    if in_combat and perception is not None:
+        my_pos = (current_positions or {}).get(cs.character.id)
+        my_zone = my_pos[2].upper() if my_pos else ""
+        unseen_combatants = [
+            cid for cid in (active_characters or set())
+            if cid != cs.character.id
+            and cid not in perception
+            and (current_positions or {}).get(cid, (None, None, my_zone))[2].upper() != my_zone
+        ]
+        if unseen_combatants:
+            sound_note = (
+                "- You hear sounds of combat nearby — growling, impact, "
+                "and movement in the surrounding area. Something is fighting close by."
+            )
+            perception = (perception + "\n" + sound_note) if perception else sound_note
     return RoleContext(
         character_id=cs.character.id,
         turn=turn,
@@ -739,6 +757,7 @@ async def iter_session(
                 scene_geometry=scene_geometry,
                 current_positions=current_positions,
                 active_characters=active_characters,
+                in_combat=in_combat,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
@@ -800,6 +819,13 @@ async def iter_session(
                             attack_log.append(
                                 f"[{target_id} is dead — reduced to 0 HP]"
                             )
+                            ts = (
+                                f"{game_time.hour}:{game_time.minute:02d}"
+                                if game_time else f"t{turn}"
+                            )
+                            dead_entry = f"{ts} | {target_id} | DEAD — 0 HP, removed from scene"
+                            if dead_entry not in ledger.permanent_events:
+                                ledger.permanent_events.append(dead_entry)
 
             # Step 4: DM-Right narrates what Python actually resolved.
             # resolution_log tells it which attacks hit, missed, or were blocked.

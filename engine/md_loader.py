@@ -576,6 +576,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     char_cfgs = _parse_all_char_sections(text)
     characters: dict[str, CharacterSession] = {}
     roles: dict = {}
+    character_pronouns: dict[str, str] = {}
 
     for char_id, cfg in char_cfgs.items():
         if cfg.get("type") == "creature":
@@ -594,6 +595,9 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             )
 
         characters[char_id] = session
+
+        if cfg.get("pronouns"):
+            character_pronouns[char_id] = cfg["pronouns"]
 
         provider   = cfg.get("provider", "anthropic")
         model      = cfg.get("model", "claude-sonnet-4-20250514")
@@ -614,6 +618,17 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     if not game_state_summary and geometry_summary:
         game_state_summary = geometry_summary
 
+    # When self_dm, use the first player character's LLM for narrative generation
+    # to avoid hammering the DM provider (e.g. Claude 529s under load).
+    narrative_provider = dm_provider
+    narrative_model = dm_model
+    if self_dm:
+        for char_id, cfg in char_cfgs.items():
+            if cfg.get("type") != "creature" and cfg.get("provider"):
+                narrative_provider = cfg["provider"]
+                narrative_model = cfg.get("model", dm_model)
+                break
+
     return SceneConfig(
         scene_name=scene_name,
         title=title,
@@ -629,4 +644,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         game_time=game_time,
         dm_provider=dm_provider,
         dm_model=dm_model,
+        narrative_provider=narrative_provider,
+        narrative_model=narrative_model,
+        character_pronouns=character_pronouns,
     )

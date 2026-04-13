@@ -273,6 +273,7 @@ async def run_all(
             provider=config.narrative_provider,
             model=config.narrative_model,
             title=config.narrative_title,
+            character_pronouns=config.character_pronouns or None,
             output_path=runner.checkpoint_dir / f"{scene_name}_story.txt",
         )
         print(f"  Written to {runner.checkpoint_dir / f'{scene_name}_story.txt'}")

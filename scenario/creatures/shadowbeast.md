@@ -5,7 +5,7 @@ Shadowbeasts are unnerving to behold, their bodies appearing as swirling, semi-c
 Race: Medium Monstrosity
 Alignment: Neutral Evil
 Armor Class: 11
-Hit Points: 12 (2d8 + 3)
+Hit Points: 8 (1d8 + 3)
 Speed: 40 ft
 Challenge: ½ (100 XP)
 
@@ -35,10 +35,9 @@ Features
 •	Obelisk’s Aura (Optional): When within 1 mile of the shattered obelisk, the shadowbeast gains an additional +1 to attack rolls and damage rolls.
 
 Actions
-Multi-attack: The shadowbeast makes two claw attacks.
-Claw:
+Attack with claws:
 •	Melee Weapon Attack: +4 to hit, reach 5 ft., one target.
-•	Hit: 8 (2d4 + 2) slashing damage.
+•	Hit: 4 (1d6) slashing damage.
 Shadow Swipe (Recharge 5-6):
 The shadowbeast extends its claws in a burst of dark energy. Each creature within a 10-foot radius must make a DC 12 Dexterity saving throw. On a failed save, the creature takes 7 (2d6) necrotic damage and has its speed reduced by 10 feet until the end of its next turn.
 Tactics:

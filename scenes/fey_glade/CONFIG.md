@@ -30,6 +30,7 @@
 - **provider:** xai
 - **model:** grok-3
 - **scene_handle:** the elf ranger
+- **pronouns:** she/her
 - **dopamine:** 0.85
 - **cortisol:** 0.25
 - **norepinephrine:** 0.55
@@ -49,6 +50,7 @@
 - **provider:** openai
 - **model:** gpt-4o
 - **scene_handle:** the young gatherer
+- **pronouns:** he/him
 - **dopamine:** 0.5
 - **cortisol:** 0.6
 - **norepinephrine:** 0.75
@@ -69,6 +71,7 @@
 - **faction:** hostile
 - **provider:** deepseek
 - **model:** deepseek-chat
+- **pronouns:** it/its
 - **dopamine:** 0.8
 - **cortisol:** 0.1
 - **norepinephrine:** 0.85

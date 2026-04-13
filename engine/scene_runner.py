@@ -69,6 +69,7 @@ class SceneConfig:
     dm_model: str = "claude-sonnet-4-20250514"
     narrative_provider: str = "anthropic"
     narrative_model: str = "claude-sonnet-4-20250514"
+    character_pronouns: dict[str, str] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -390,6 +391,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
         checkpoint_dir,
         provider=config.narrative_provider, model=config.narrative_model,
         title=config.narrative_title,
+        character_pronouns=config.character_pronouns or None,
         output_path=checkpoint_dir / f"{scene_name}_story.txt",
     )
     print(f"  Written to {checkpoint_dir / f'{scene_name}_story.txt'}")

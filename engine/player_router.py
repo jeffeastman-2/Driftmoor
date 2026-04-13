@@ -115,10 +115,7 @@ class PlayerLeft:
             "Perception. If successful, you are hidden: attackers have disadvantage against "
             "you and you have advantage on attacks. Moving out of cover or attacking "
             "breaks hiding.\n"
-            "- **Ready** — Declare a trigger ('when the beast crosses the boundary') and "
-            "an action you will hold (e.g. 'I shoot it'). When the trigger occurs before "
-            "your next turn, you use your reaction to take that action. "
-            "If the trigger never occurs, the action is lost.\n"
+
             "- **Search** — Make a Wisdom (Perception) or Intelligence (Investigation) "
             "check to find something hidden or examine the environment carefully.\n"
             "- **Use a Magic Item** — Activate a magic item that requires an action "

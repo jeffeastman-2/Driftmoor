@@ -119,16 +119,28 @@ def build_narrative_prompt(
     material: str,
     *,
     title: str = "",
+    character_pronouns: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     """Build the (system_prompt, user_message) pair for the LLM.
 
     Args:
-        material: Output of extract_scene_material().
-        title:    Optional title to include in the story.
+        material:            Output of extract_scene_material().
+        title:               Optional title to include in the story.
+        character_pronouns:  Optional mapping of character_id → pronouns
+                             (e.g. {"fennel": "he/him"}).  Injected into
+                             the system prompt so the LLM uses correct
+                             pronouns even when the name is ambiguous.
 
     Returns:
         (system_prompt, user_message) ready for call_llm().
     """
+    system = SYSTEM_PROMPT
+    if character_pronouns:
+        roster = ", ".join(
+            f"{cid} ({p})" for cid, p in sorted(character_pronouns.items())
+        )
+        system = system + f"\n\nCharacter pronouns: {roster}."
+
     user_parts: list[str] = []
 
     if title:
@@ -137,7 +149,7 @@ def build_narrative_prompt(
     user_parts.append("Here is the raw scene material:\n")
     user_parts.append(material)
 
-    return SYSTEM_PROMPT, "\n".join(user_parts)
+    return system, "\n".join(user_parts)
 
 
 # ---------------------------------------------------------------------------
@@ -150,22 +162,26 @@ async def generate_narrative(
     provider: str,
     model: str,
     title: str = "",
+    character_pronouns: dict[str, str] | None = None,
     api_key: Optional[str] = None,
 ) -> str:
     """Generate a narrative story from turn checkpoint data.
 
     Args:
-        turns:    List of turn checkpoint dicts (as loaded from JSON).
-        provider: LLM provider ("anthropic", "openai", "xai", etc.).
-        model:    Model name.
-        title:    Optional story title.
-        api_key:  Optional API key override.
+        turns:               List of turn checkpoint dicts (as loaded from JSON).
+        provider:            LLM provider ("anthropic", "openai", "xai", etc.).
+        model:               Model name.
+        title:               Optional story title.
+        character_pronouns:  Optional mapping of character_id → pronouns.
+        api_key:             Optional API key override.
 
     Returns:
         The generated story as a string.
     """
     material = extract_scene_material(turns)
-    system, user = build_narrative_prompt(material, title=title)
+    system, user = build_narrative_prompt(
+        material, title=title, character_pronouns=character_pronouns
+    )
     call_llm = make_call_llm(provider, model, api_key=api_key)
     return await call_llm(system, user)
 
@@ -213,6 +229,7 @@ async def generate_narrative_from_dir(
     provider: str,
     model: str,
     title: str = "",
+    character_pronouns: dict[str, str] | None = None,
     output_path: Optional[Path] = None,
     api_key: Optional[str] = None,
 ) -> str:
@@ -223,12 +240,13 @@ async def generate_narrative_from_dir(
     token-limit overloads for long sessions.
 
     Args:
-        checkpoint_dir: Directory containing turn_0001.json, etc.
-        provider:       LLM provider.
-        model:          Model name.
-        title:          Optional story title (included in first section only).
-        output_path:    If provided, write the story to this file.
-        api_key:        Optional API key override.
+        checkpoint_dir:      Directory containing turn_0001.json, etc.
+        provider:            LLM provider.
+        model:               Model name.
+        title:               Optional story title (included in first section only).
+        character_pronouns:  Optional mapping of character_id → pronouns.
+        output_path:         If provided, write the story to this file.
+        api_key:             Optional API key override.
 
     Returns:
         The generated story as a string.
@@ -242,7 +260,7 @@ async def generate_narrative_from_dir(
     if len(chunks) == 1:
         section = await generate_narrative(
             chunks[0][1], provider=provider, model=model,
-            title=title, api_key=api_key,
+            title=title, character_pronouns=character_pronouns, api_key=api_key,
         )
         label = chunks[0][0]
         story = f"## {label}\n\n{section}" if label else section
@@ -252,6 +270,7 @@ async def generate_narrative_from_dir(
             section = await generate_narrative(
                 chunk_turns, provider=provider, model=model,
                 title=title if i == 0 else "",
+                character_pronouns=character_pronouns,
                 api_key=api_key,
             )
             parts.append(f"## {label}\n\n{section}")

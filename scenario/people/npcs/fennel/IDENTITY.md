@@ -53,7 +53,8 @@ reasonably coordinated young man with no combat training.*
 
 ## Equipment
 - Improvised spear — fire-hardened deadfall branch, pointed at both ends (1d8 piercing, reach 5 ft). Fennel's technique: brace the butt in the ground and hold the shaft at an angle so a charging creature impales itself. Not trained — learned from desperation and three days of watching how the beast moves.
-- Hunting bow (1d6 piercing, range 80/320 ft) — still has it; all 12 arrows spent over three days. Can be resupplied from Aeliana's quiver if she shares arrows.
+- Hunting bow (1d6 piercing, range 80/320 ft) — still has it;  12 arrows spent over three days. Has 3 remaining and can be
+resupplied by others.
 - Belt knife (1d4 piercing) — for cutting plants, not people
 - Herb satchel containing:
   - Moonlace (bunch, slightly crushed) — what he came for
@@ -136,7 +137,7 @@ exists. Elyssa Moonglow would consider it invaluable.
   - Pool memory effect — progressive, unrecognized
   - Physical depletion — hunger, fatigue, blisters
   - Isolation serotonin crash — partially resolving
-- **Resources expended:** 6 arrows (of 12)
+- **Resources expended:** 9 arrows (of 12) — 3 remaining
 - **Open threads:**
   - Moonlace in satchel — Lytha needs this
   - Journal with carved stone sketches — Elyssa needs this

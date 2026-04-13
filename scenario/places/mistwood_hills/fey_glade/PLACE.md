@@ -3,31 +3,35 @@
 ## Description and Atmosphere
 Hidden deep in the Mistwood. The trees thin suddenly into a circular clearing. The light here is different — warmer, cleaner than the fog-filtered dimness of the surrounding forest. The grass is impossibly green. Flowers bloom that have no business blooming in this season. At night, the glade shimmers with faint colored light. The air smells of something sweet and entirely unidentifiable.
 
-Time may pass differently here. The party may not notice immediately.
+Time may pass differently here. A party may not notice immediately.
 
 ## Zones
 
-Four zones arranged linearly. Movement between adjacent zones costs one ACTION.
+Four zones arranged within a large forest in the Mistwood Hills.
 
 ### TRAIL
-Dense pine approaching the glade from the south. Fog-filtered light. Sound carries far in both directions. High cover. Low visibility beyond 10 feet. The shadowbeast tracks go cold here.
+Dense pine-bounded trail approaching the glade from the south-east. Fog-filtered light. Sound carries far in both directions. High cover. Low visibility beyond 10 feet. The shadowbeast tracks go cold here at the treeline.
 
 ### TREELINE
-Where forest meets clearing. The fey barrier runs along this zone's inner edge — an ancient ward that pre-dates the obelisk, woven into the glade itself. The barrier was not built to stop shadowbeasts; it protects the pool and the carved stone. Shadow creatures are repelled as a side effect — the barrier's energy is simply antithetical to their nature. During daylight the barrier is absolute: no creature of shadow or undeath can cross it. At dusk and dawn it weakens. In full darkness it barely holds. Partial cover. Visibility into GLADE: full. Visibility into TRAIL: 20 feet.
+Where the forest meets the clearing. A fey barrier runs along this zone's inner edge — an ancient ward that pre-dates the obelisk, woven into the glade itself. The barrier was not built to stop shadowbeasts; it protects the pool and the carved stone. Shadow creatures are repelled as a side effect — the barrier's energy is simply antithetical to their nature. During nightime the barrier is absolute: no creature of shadow or undeath can cross it. At dusk and dawn it weakens. In full daylight it barely holds. Partial cover. Visibility into GLADE: full. Visibility into TRAIL: 20 feet.
 
 ### GLADE
-Circular clearing approximately 40 feet across. Unnaturally warm. Out-of-season flowers. Air shimmers. No cover. Full visibility to TREELINE and POOL. Safe from the shadowbeast.
+Elliptical clearing approximately 65x40 feet across. Unnaturally warm. Out-of-season flowers. Air shimmers. No cover. Full visibility to TREELINE and POOL. Glade has
+two large oak trees within it. The trail exits its south-east corner and continues
+to the south-east.
 
 ### POOL
 Far (north) side of glade. Light rises from the ground in a slow shimmer. A flat carved stone lies at the water's edge, half-buried — its symbols match those of the obelisk civilization. The pool's luminous cycle tracks with the obelisk's energy pulses, suggesting the glade was a node in whatever network the obelisk was part of. No cover. Full visibility. Do not look directly into the water. What the barrier actually protects is what Fennel saw on night two and cannot remember.
 
 ## Adjacency
-TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in sequence)
+TRAIL → TREELINE → GLADE → POOL 
 
 ## Who Is Normally Here
 - Fey presence (level and nature at DM's discretion)
 - Fennel (Lytha's apprentice) — sheltering in GLADE for three days
-- Shadowbeast — patrolling TREELINE perimeter, cannot cross boundary into GLADE
+- A Shadowbeast — patrolling TREELINE perimeter, fears sunlight and cannot 
+  cross boundary into GLADE during nightime. Entry. is only possible during 
+  dusk or dawn when the boundary weakens.
 
 ## Connections
 - Mistwood Hills deep paths (DC 15 Survival to find deliberately; otherwise stumbled upon)
@@ -35,8 +39,8 @@ TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in
 ## Shared Facts
 - The glade boundary is fey in origin, older than the obelisk — it protects the pool and carved stone
 - Shadow creatures and undead are repelled as a side effect, not by design
-- During daylight the barrier is absolute — no shadowbeast can cross, no save allowed
-- The barrier weakens at dusk/dawn and barely holds in full darkness
+- During nightime the barrier is absolute — no shadowbeast can cross, no save allowed
+- The barrier weakens at dusk/dawn and barely holds in full daylight
 - The pool brightens at dusk, peaks at midnight
 - The carved stone's symbols match the obelisk civilization
 - Something in the trees follows sound
@@ -46,20 +50,17 @@ TRAIL → TREELINE → GLADE → POOL (linear — must pass through each zone in
 *(Updated by monitor agent)*
 
 - **Current status:** Active fey presence; shadowbeast standoff at boundary
-- **Clock:** Dusk in ~3 hours (mid-afternoon)
-- **Tension:** Rising — Aeliana approaching shadowbeast position
+- **Clock:** Dusk is beginning now
+- **Tension:** Rising — Aeliana is approaching from the trail to the south-east
 
 ## Scene Introductions
 
 ### aeliana
 It is dusk. You are on the trail approaching the Fey Glade. The forest
 ahead has gone unnaturally quiet — no birdsong, no rustling. The air
-carries a faint luminous warmth from somewhere deeper in the trees. You
-have heard there is a gatherer sheltering in the glade. You sense
-something large in the forest shadows to your left, watching. It is
-close. Your bow is already in your hand — you have been tracking this
-creature and you do not wait for it to act first. The moment you have
-a clear shot, you take it.
+carries a faint luminous warmth from somewhere deeper in the trees. You have been tracking a creature ahead of you on the trail. You are alert and wary 
+of the possibility of attack as you move up the trail towards the luminous
+warmth ahead.
 
 ### fennel
 It is dusk. Three days you have learned the pattern: dusk is when it
@@ -72,28 +73,27 @@ move. Every dusk it comes. This is that hour. The wrongness at the
 forest edge is back — you can hear it, or rather you hear the absence
 of everything else. You are standing at the east end of the glade with
 your improvised spear — a fire-hardened deadfall branch, pointed and
-hardened in the coals. Your arrows are gone, all twelve of them spent
-over three days keeping the beast back. The spear is what you have.
-Your plan if it crosses the barrier: brace the butt of the spear in
-the ground and let the beast run onto it. Someone is coming down the
-trail from the east. You don't know if that is good news.
+hardened in the coals. Your arrows are mostly gone, spent
+over three days keeping the beast back. You have 3 left. The spear is what you have for backup.
+Your plan if it crosses the barrier: shoot if possible then
+brace the butt of the spear in
+the ground and let the beast run onto it. 
 
 ### shadowbeast_1
 Dusk. The burning wrongness of full day is fading from the shimmer
 ahead. Three days you have circled this place. Three nights the wall
 held. But this hour — the transition — you have learned. The light
-that burns leaves with the sun. The wall weakens before it strengthens
-again at full dark. This is your window. The prey near the pool has
-not moved. A new heat arrives from the east — tall, carrying metal.
-Two prey now. The wall is soft. Probe it. Find the weak point. The
+that burns leaves with the sun. The wall begins to strengthen at dusk
+and is strongest at full dark. This is your window. The prey near the pool has
+not moved. The wall is soft. Probe it. Find the weak point. The
 hunger says now.
 - **Active conditions:**
-  - The glade's fey barrier is absolute during daylight — shadowbeasts cannot enter, period
-  - At dusk (~3 hours) the barrier will begin to weaken
+  - The glade's fey barrier is absolute during nightime — shadowbeasts cannot enter, period
+  - At dusk and dawn (2 hours) the barrier will begin to weaken
   - Shadowbeast has not yet detected Aeliana
-  - Fennel has detected Aeliana and is deciding
+  - Fennel has not yet detected Aeliana
   - Aeliana is unaware of both Fennel and the shadowbeast
 - **Scene flags:**
   - `fennel_memory_degradation_active`
-  - `pool_cycle_approaching` (dusk in 3 hours)
+  - `pool_cycle_approaching` (dusk begins)
   - `shadowbeast_unaware_of_aeliana` (fragile — ends if she makes sound or crosses into TREELINE)
