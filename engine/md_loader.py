@@ -36,10 +36,12 @@ from engine.dm_agent import DMLeft, DMRight
 from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
 from engine.session import CharacterSession
+from engine.weapon_loader import load_weapons, load_armors, parse_character_weapons
 from models.character import PlayerCharacter, NPC, Creature
 from models.condition import CharacterCondition, NeurochemicalState, DimensionProfile
 from models.geometry_loader import load_geometry
 from models.space_time import GameTime, SceneGeometry
+from models.weapon import Armor
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -572,6 +574,12 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
 
     starting_positions = _parse_starting_positions(geometry_summary) if geometry_summary else {}
 
+    # ── Weapon / Armor libraries ──────────────────────────────────────────────
+    weapons_path = ROOT / "scenario" / "things" / "WEAPONS.md"
+    armor_path   = ROOT / "scenario" / "things" / "ARMOR.md"
+    weapon_library = load_weapons(weapons_path)
+    armor_library  = load_armors(armor_path)
+
     # ── Characters ───────────────────────────────────────────────────────────
     char_cfgs = _parse_all_char_sections(text)
     characters: dict[str, CharacterSession] = {}
@@ -583,6 +591,14 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             session = _build_creature(char_id, cfg, introductions)
         else:
             session = _build_player_or_npc(char_id, cfg, introductions)
+
+        # Attach weapons from CONFIG.md: "weapons: longbow+5, shortsword+5"
+        if cfg.get("weapons"):
+            session.weapons = parse_character_weapons(cfg["weapons"], weapon_library)
+
+        # Attach armor from CONFIG.md: "armor: leather_armor"
+        if cfg.get("armor"):
+            session.armor = armor_library.get(cfg["armor"].strip())
 
         # Append starting position to initial_scene so the LLM knows where to begin
         pos = starting_positions.get(char_id) or starting_positions.get(

@@ -35,6 +35,7 @@ class RoleContext:
     soul: str             # SOUL.md content
     identity: str         # IDENTITY.md content
     perception: str = ""  # Python-computed LOS visibility block (authoritative)
+    in_combat: bool = False
 
 
 @dataclass
@@ -148,11 +149,21 @@ class PlayerLeft:
         )
 
     def build_user_prompt(self, context: RoleContext) -> str:
-        perception_block = (
-            f"\n\n## What you can currently perceive\n{context.perception}"
-            if context.perception else
-            "\n\n## What you can currently perceive\nNo other creatures are visible from your current position."
-        )
+        if context.perception:
+            perception_header = "## What you can currently perceive"
+            if context.in_combat:
+                perception_header = "## COMBAT ACTIVE — Visible targets"
+            perception_block = f"\n\n{perception_header}\n{context.perception}"
+            if context.in_combat:
+                perception_block += (
+                    "\n\nYou are in active combat. "
+                    "Attack visible hostile creatures — do not Search or wait."
+                )
+        else:
+            perception_block = (
+                "\n\n## What you can currently perceive\n"
+                "No other creatures are visible from your current position."
+            )
         prompt = (
             f"# Turn {context.turn}\n\n"
             f"## Condition\n{context.condition_text}\n\n"

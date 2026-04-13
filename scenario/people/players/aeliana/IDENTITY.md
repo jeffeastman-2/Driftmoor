@@ -29,7 +29,7 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 
 ## Equipment
 - Leather armor
-- Longbow + 20 arrows (1d4 piercing, range 150/600 ft)
+- Longbow + 20 arrows (1d8 piercing, range 150/600 ft)
 - Short sword (1d6 piercing)
 - Dagger (1d4 piercing)
 - Explorer's pack

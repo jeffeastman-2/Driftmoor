@@ -31,6 +31,8 @@
 - **model:** grok-3
 - **scene_handle:** the elf ranger
 - **pronouns:** she/her
+- **weapons:** longbow+5, shortsword+5, dagger+5
+- **armor:** leather_armor
 - **dopamine:** 0.85
 - **cortisol:** 0.25
 - **norepinephrine:** 0.55
@@ -51,6 +53,8 @@
 - **model:** gpt-4o
 - **scene_handle:** the young gatherer
 - **pronouns:** he/him
+- **weapons:** shortbow+1, improvised_spear+1, belt_knife+1
+- **armor:** no_armor
 - **dopamine:** 0.5
 - **cortisol:** 0.6
 - **norepinephrine:** 0.75
@@ -72,6 +76,8 @@
 - **provider:** deepseek
 - **model:** deepseek-chat
 - **pronouns:** it/its
+- **weapons:** shadowbeast_claw+4
+- **armor:** natural_armor_shadowbeast
 - **dopamine:** 0.8
 - **cortisol:** 0.1
 - **norepinephrine:** 0.85

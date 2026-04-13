@@ -127,6 +127,36 @@ class TurnCycle:
 
         return intent, output, adjudication
 
+    async def player_roles(
+        self,
+        context: RoleContext,
+    ) -> tuple[ActionIntent, CharacterOutput]:
+        """Run steps 1-2 only: Player-Left intent + Player-Right prose.
+
+        Used by the combat resolver path where DM-Left is bypassed.
+        """
+        roles = self._roles_for(context.character_id)
+        intent = await roles.player_left.generate_intent(context)
+        output = await roles.player_right.generate_action(intent, context)
+        return intent, output
+
+    async def dm_adjudicate(
+        self,
+        output: CharacterOutput,
+        game_state_summary: str = "",
+        geometry_summary: str = "",
+        scene_history: str = "",
+        dm_ledger: str = "",
+    ) -> Adjudication:
+        """Run step 3 only: DM-Left adjudication.
+
+        Used when the combat resolver is not active (non-combat or no weapons).
+        """
+        roles = self._roles_for(output.character_id)
+        return await roles.dm_left.adjudicate(
+            output, game_state_summary, geometry_summary, dm_ledger=dm_ledger,
+        )
+
     async def narrate_turn(
         self,
         intent: ActionIntent,

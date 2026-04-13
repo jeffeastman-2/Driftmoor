@@ -28,6 +28,8 @@ from models.space_time import GameTime, Position, SceneGeometry
 
 
 from engine.debug import _dbg
+from engine.combat_resolver import CombatResolver
+from models.weapon import Weapon, Armor
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +55,8 @@ class CharacterSession:
     identity: str
     initial_scene: str
     scene_handle: str = ""  # How others see this character before names are exchanged
+    weapons: list[Weapon] = field(default_factory=list)
+    armor: Armor | None = None
 
 
 @dataclass
@@ -116,6 +120,21 @@ def _speed_to_feet(speed_str: str) -> float:
     """
     m = re.search(r'(\d+)', speed_str or "")
     return float(m.group(1)) if m else 30.0
+
+
+def _max_attacks(identity_text: str) -> int:
+    """Return the maximum number of attacks per turn from a character's identity/stat block.
+
+    Looks for a Multiattack entry (e.g. 'makes 2 attacks'). Defaults to 1.
+    """
+    t = identity_text or ""
+    m = re.search(
+        r'multiattack[^.\n]*makes\s+(\d+)\s+(?:\w+\s+)?attacks',
+        t, re.IGNORECASE,
+    )
+    if m:
+        return int(m.group(1))
+    return 1
 
 
 def _max_attack_range(identity_text: str) -> float:
@@ -518,7 +537,78 @@ def _build_context(
         soul=cs.soul,
         identity=cs.identity,
         perception=perception,
+        in_combat=in_combat,
     )
+
+
+# ---------------------------------------------------------------------------
+# Combat resolver helpers
+# ---------------------------------------------------------------------------
+
+_ATTACK_KEYWORDS = re.compile(
+    r'\b(attack|shoot|fire|strike|shoot|stab|slash|lunge|charge|aim)\b',
+    re.IGNORECASE,
+)
+
+
+def _intent_is_attack(intent_text: str) -> bool:
+    """Return True if the Player-Left intent string describes an attack action."""
+    return bool(_ATTACK_KEYWORDS.search(intent_text or ""))
+
+
+def _find_combat_target(
+    intent,
+    attacker_id: str,
+    characters: dict,
+    current_positions: dict,
+    active_characters: set[str],
+) -> str | None:
+    """Return the best target character_id for an attack.
+
+    Priority:
+    1. intent.interaction_target if it names an active hostile character
+    2. Nearest active hostile character
+    Returns None if no valid target exists.
+    """
+    import math
+
+    attacker_faction = getattr(characters[attacker_id].character, "faction", "party")
+
+    # Collect active hostiles (opposite faction)
+    def is_hostile_to_attacker(cid: str) -> bool:
+        if cid == attacker_id:
+            return False
+        f = getattr(characters[cid].character, "faction", "party")
+        # hostile faction vs party faction, or party attacking hostile
+        return (attacker_faction == "hostile") != (f == "hostile")
+
+    hostiles = [
+        cid for cid in active_characters
+        if cid in characters and is_hostile_to_attacker(cid)
+    ]
+    if not hostiles:
+        return None
+
+    # 1. Check intent.interaction_target
+    hint = (intent.interaction_target or "").strip().lower()
+    if hint:
+        # Fuzzy match: exact or prefix
+        for cid in hostiles:
+            if cid.lower() == hint or cid.lower().startswith(hint) or hint.startswith(cid.lower()):
+                return cid
+
+    # 2. Nearest hostile
+    attacker_pos = current_positions.get(attacker_id)
+    if attacker_pos is None:
+        return hostiles[0]
+
+    def dist_to(cid: str) -> float:
+        pos = current_positions.get(cid)
+        if pos is None:
+            return 9999.0
+        return math.hypot(pos[0] - attacker_pos[0], pos[1] - attacker_pos[1])
+
+    return min(hostiles, key=dist_to)
 
 
 def _checkpoint_filename(turn: int, game_time: Optional[GameTime] = None) -> str:
@@ -761,17 +851,77 @@ async def iter_session(
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
-            intent, output, adjudication = await turn_cycle.adjudicate_turn(
-                context=context,
-                game_state_summary=turn_game_state,
-                geometry_summary=geometry_summary,
-                scene_history=within_turn_history,
-                dm_ledger=ledger.render(current_positions, in_combat, game_time, characters=characters),
+            # When in combat and the character has structured weapons, bypass
+            # DM-Left and use CombatResolver for attack resolution.
+            intent, output = await turn_cycle.player_roles(context)
+            use_resolver = (
+                in_combat
+                and bool(cs.weapons)
+                and _intent_is_attack(intent.intent)
             )
+            if use_resolver:
+                # Find best target: interaction_target hint first, then nearest hostile
+                target_id = _find_combat_target(
+                    intent, character_id, characters, current_positions,
+                    active_characters,
+                )
+                if target_id and target_id in characters:
+                    resolver = CombatResolver()
+                    adjudication, attack_log = resolver.resolve(
+                        character_id=character_id,
+                        turn=turn_num,
+                        attacker_session=cs,
+                        target_id=target_id,
+                        target_session=characters[target_id],
+                        attacker_pos=current_positions.get(character_id, (0.0, 0.0, "")),
+                        target_pos=current_positions.get(target_id, (0.0, 0.0, "")),
+                        scene_geometry=scene_geometry,
+                        game_time=game_time,
+                    )
+                    # Apply movement from resolver
+                    if adjudication.new_position:
+                        current_positions[character_id] = adjudication.new_position
+                    # Apply hp damage immediately
+                    for tid, dmg in adjudication.hp_damage.items():
+                        if tid in characters:
+                            tchar = characters[tid].character
+                            if hasattr(tchar, "current_hp"):
+                                tchar.current_hp = max(0, tchar.current_hp - dmg)
+                                if tchar.current_hp <= 0:
+                                    active_characters.discard(tid)
+                                    current_positions.pop(tid, None)
+                                    attack_log.append(f"[{tid} is dead — reduced to 0 HP]")
+                                    ts = (
+                                        f"{game_time.hour}:{game_time.minute:02d}"
+                                        if game_time else f"t{turn_num}"
+                                    )
+                                    dead_entry = f"{ts} | {tid} | DEAD — 0 HP, removed from scene"
+                                    if dead_entry not in ledger.permanent_events:
+                                        ledger.permanent_events.append(dead_entry)
+                    # Apply condition deltas to target from being hit
+                    if adjudication.hp_damage.get(target_id, 0) > 0:
+                        characters[target_id].condition.apply_delta(
+                            {"cortisol": 0.12, "norepinephrine": 0.08}
+                        )
+                else:
+                    # No valid target — fall through to DM-Left
+                    use_resolver = False
+
+            if not use_resolver:
+                _adjudication = await turn_cycle.dm_adjudicate(
+                    output=output,
+                    game_state_summary=turn_game_state,
+                    geometry_summary=geometry_summary,
+                    scene_history=within_turn_history,
+                    dm_ledger=ledger.render(current_positions, in_combat, game_time, characters=characters),
+                )
+                adjudication = _adjudication
+                attack_log: list[str] = []
 
             # Python movement resolution — clamp to speed, snap to zone.
             # DM declares intent (MOVEMENT TARGET x,y); Python owns the result.
-            if adjudication.approved and adjudication.movement_target is not None:
+            # Skipped when CombatResolver already applied movement.
+            if not use_resolver and adjudication.approved and adjudication.movement_target is not None:
                 tx, ty = adjudication.movement_target
                 raw_pos: tuple[float, float, str] = (tx, ty, "")
                 char = characters[character_id].character
@@ -790,13 +940,20 @@ async def iter_session(
 
             # Python attack resolution — roll d20+bonus vs AC, check range and
             # LOS; DM declared targets via **ATTACKS** but Python owns the dice.
-            attack_log: list[str] = []
-            if adjudication.approved:
+            # Skipped when CombatResolver already resolved the attack.
+            if not use_resolver and adjudication.approved:
                 attacker_char = characters[character_id].character
                 attacker_identity = characters[character_id].identity
                 max_range = _max_attack_range(attacker_identity)
+                max_attacks = _max_attacks(attacker_identity)
+                declared = adjudication.attacks[:max_attacks]
+                if len(adjudication.attacks) > max_attacks:
+                    attack_log.append(
+                        f"[ATTACK] capped from {len(adjudication.attacks)} "
+                        f"to {max_attacks} (stat block limit)"
+                    )
                 hp_damage, attack_log = _resolve_attacks(
-                    adjudication.attacks,
+                    declared,
                     character_id,
                     current_positions.get(character_id),
                     current_positions,
