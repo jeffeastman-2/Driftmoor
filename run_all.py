@@ -67,6 +67,7 @@ class SceneRunner:
         self._start_turn = 1
         self._initial_history = ""
         self._initial_active_characters: set[str] | None = None
+        self._checkpoint_positions: dict = {}
 
     def init(self):
         """Wipe any previous run files so progress is unambiguous."""
@@ -85,7 +86,7 @@ class SceneRunner:
         caller can derive the correct frontier to resume from.
         """
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        last_turn, last_game_minutes, history, active_chars = load_resume_state(
+        last_turn, last_game_minutes, history, active_chars, checkpoint_positions = load_resume_state(
             self.checkpoint_dir, self.config.characters
         )
         if last_turn == 0:
@@ -95,6 +96,7 @@ class SceneRunner:
         self._start_turn = last_turn + 1
         self._initial_history = history
         self._initial_active_characters = active_chars
+        self._checkpoint_positions = checkpoint_positions
         return last_game_minutes
 
     @property
@@ -121,6 +123,7 @@ class SceneRunner:
             scene_geometry=self.config.scene_geometry,
             character_pronouns=self.config.character_pronouns or None,
             initial_active_characters=self._initial_active_characters,
+            initial_positions=self._checkpoint_positions or None,
         )
 
     async def advance_from_to(self, start_minutes: int, end_minutes: int) -> list:

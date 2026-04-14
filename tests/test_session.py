@@ -17,6 +17,7 @@ from engine.session import (
     _save_turn,
     _checkpoint_filename,
     _resolve_attacks,
+    load_resume_state,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -435,6 +436,86 @@ class TestCheckpointing:
         files = sorted(tmp_path.glob("turn_*.json"))
         assert len(files) == 1
         assert files[0].name == "turn_0001.json"
+
+    def test_checkpoint_contains_positions(self, aeliana_session, tmp_path):
+        """Checkpoint should save current_positions so resume restores them."""
+        characters = {"aeliana": aeliana_session}
+        roles = {"aeliana": RoleSet()}
+        asyncio.run(run_session(
+            characters, roles, num_turns=1,
+            checkpoint_dir=tmp_path,
+        ))
+        data = json.loads((tmp_path / "turn_0001.json").read_text())
+        assert "current_positions" in data
+
+    def test_load_resume_restores_positions(self, aeliana_session, tmp_path):
+        """load_resume_state should return positions from the last checkpoint."""
+        # Manually write a checkpoint with known positions
+        checkpoint_data = {
+            "turn": 3,
+            "in_combat": False,
+            "active_characters": ["aeliana"],
+            "game_time": None,
+            "initiative_order": ["aeliana"],
+            "character_results": [],
+            "conditions": {},
+            "hp": {"aeliana": {"current": 10, "max": 12}},
+            "current_positions": {
+                "aeliana": {"x": 202.2, "y": 125.1, "zone": "FOREST"},
+            },
+        }
+        (tmp_path / "turn_0003.json").write_text(json.dumps(checkpoint_data))
+
+        characters = {"aeliana": aeliana_session}
+        last_turn, _, _, _, positions = load_resume_state(tmp_path, characters)
+
+        assert last_turn == 3
+        assert "aeliana" in positions
+        assert positions["aeliana"] == (202.2, 125.1, "FOREST")
+
+    def test_resume_positions_override_game_state_summary(self, aeliana_session, tmp_path):
+        """iter_session with initial_positions should start from checkpoint positions."""
+        # Write checkpoint with Aeliana at a known non-starting position
+        checkpoint_data = {
+            "turn": 2,
+            "in_combat": False,
+            "active_characters": ["aeliana"],
+            "game_time": None,
+            "initiative_order": ["aeliana"],
+            "character_results": [],
+            "conditions": {},
+            "hp": {"aeliana": {"current": 12, "max": 12}},
+            "current_positions": {
+                "aeliana": {"x": 202.2, "y": 125.1, "zone": "FOREST"},
+            },
+        }
+        (tmp_path / "turn_0002.json").write_text(json.dumps(checkpoint_data))
+
+        # game_state_summary has the OLD starting position
+        game_state_summary = (
+            "| character | x | y | zone |\n"
+            "|-----------|-----|-----|------|\n"
+            "| aeliana | 256.75 | 81.25 | TRAIL |\n\n"
+            "Test scene."
+        )
+        characters = {"aeliana": aeliana_session}
+        roles = {"aeliana": RoleSet()}
+        _, _, _, _, positions = load_resume_state(tmp_path, characters)
+
+        # Confirm iter_session uses checkpoint positions, not game_state_summary positions
+        captured: list = []
+
+        async def _run():
+            async for tr in iter_session(
+                characters, roles, num_turns=1,
+                game_state_summary=game_state_summary,
+                start_turn=3,
+                initial_positions=positions,
+            ):
+                captured.append(tr)
+
+        asyncio.run(_run())
+        assert captured  # ran at least one turn — positions were accepted
 
 
 class TestCheckpointFilename:

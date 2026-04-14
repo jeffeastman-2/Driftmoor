@@ -714,6 +714,7 @@ def _save_turn(
     game_time: Optional[GameTime] = None,
     in_combat: bool = False,
     active_characters: Optional[set[str]] = None,
+    current_positions: Optional[dict] = None,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -757,6 +758,10 @@ def _save_turn(
             for char_id, cs in characters.items()
             if char_id in active
         },
+        "current_positions": {
+            char_id: {"x": pos[0], "y": pos[1], "zone": pos[2]}
+            for char_id, pos in (current_positions or {}).items()
+        },
     }
     path.write_text(json.dumps(data, indent=2, default=str))
     return path
@@ -776,12 +781,15 @@ def load_resume_state(
     characters start the next session with their ending emotional state.
 
     Returns:
-        (last_turn, last_game_minutes, scene_history)
+        (last_turn, last_game_minutes, scene_history, last_active_characters, checkpoint_positions)
         - last_turn: the highest turn number found (0 if none)
         - last_game_minutes: absolute game minutes from the last checkpoint's
           game_time (None if no game_time was recorded)
         - scene_history: full reconstructed narrative/dialogue history so
           characters remember what happened in prior turns
+        - last_active_characters: set of character IDs still active at session end
+        - checkpoint_positions: dict of character_id → (x, y, zone) from the last
+          checkpoint, used to seed current_positions when resuming
     """
     from models.condition import NeurochemicalState
 
@@ -790,7 +798,7 @@ def load_resume_state(
         key=lambda p: p.name,
     )
     if not files:
-        return 0, None, ""
+        return 0, None, "", None, {}
 
     scene_history = ""
     last_turn = 0
@@ -823,11 +831,21 @@ def load_resume_state(
         if char_id in characters:
             characters[char_id].condition.state = NeurochemicalState.from_dict(state_dict)
 
+    # Restore HP from last checkpoint so characters resume with correct health
+    for char_id, hp_dict in last_data.get("hp", {}).items():
+        if char_id in characters:
+            characters[char_id].character.current_hp = hp_dict["current"]
+
     # Restore active_characters set if the checkpoint recorded it
     if "active_characters" in last_data:
         last_active_characters = set(last_data["active_characters"])
 
-    return last_turn, last_game_minutes, scene_history, last_active_characters
+    # Restore positions from last checkpoint (may be absent in older checkpoints)
+    checkpoint_positions: dict[str, tuple[float, float, str]] = {}
+    for char_id, pos_dict in last_data.get("current_positions", {}).items():
+        checkpoint_positions[char_id] = (pos_dict["x"], pos_dict["y"], pos_dict["zone"])
+
+    return last_turn, last_game_minutes, scene_history, last_active_characters, checkpoint_positions
 
 
 # ---------------------------------------------------------------------------
@@ -849,6 +867,7 @@ async def iter_session(
     scene_geometry: Optional[SceneGeometry] = None,
     character_pronouns: dict[str, str] | None = None,
     initial_active_characters: set[str] | None = None,
+    initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -902,6 +921,12 @@ async def iter_session(
             if start_pos is not None:
                 zone = scene_geometry.zone_at(start_pos) or ""
                 current_positions[char_id] = (start_pos.x, start_pos.y, zone.upper())
+
+    # When resuming from a checkpoint, override positions with the last known
+    # live positions so characters are placed where they actually ended up, not
+    # at their starting positions in game_state_summary.
+    if initial_positions:
+        current_positions.update(initial_positions)
 
     # DM ledger — authoritative event log injected into every DM prompt
     ledger = DMLedger()
@@ -1209,7 +1234,7 @@ async def iter_session(
 
         # Persist checkpoint
         if checkpoint_dir:
-            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time, in_combat=in_combat, active_characters=active_characters)
+            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time, in_combat=in_combat, active_characters=active_characters, current_positions=current_positions)
 
         # Advance game clock
         if game_time:
