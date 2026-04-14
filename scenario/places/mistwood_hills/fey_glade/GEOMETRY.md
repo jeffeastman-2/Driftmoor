@@ -78,4 +78,4 @@ Dense Mistwood forest heavily occludes sight-lines. Rules:
 |--------------|-------|-------|----------|
 | aeliana      | 256.75  | 81.25  | TRAIL    |
 | fennel       | 190.0  | 162.5  | GLADE    |
-| shadowbeast  | 126.75  | 162.5  | FOREST   |
+| shadowbeast  | 65.0  | 162.5  | FOREST   |

@@ -44,4 +44,11 @@ Tactics:
 Shadowbeasts prefer to ambush their prey, using dim light and darkness to stay hidden.
 They strike from the shadows, targeting weaker party members first.
 If seriously injured or outnumbered, a shadowbeast will retreat, disappearing into the darkness.
+
+Death & Dissolution:
+When a shadowbeast is killed, it does not leave a corpse. Its semi-corporeal body collapses
+inward and dissolves into the ground, leaving a brief shimmering patch of shadow-saturated
+earth. The dissolution is instantaneous — the beast simply ceases to exist as a physical
+presence. There are no remains to loot, no blood, no body. The shimmering residue in the
+soil is the only evidence it was ever there, and it fades within 2 turns.
  

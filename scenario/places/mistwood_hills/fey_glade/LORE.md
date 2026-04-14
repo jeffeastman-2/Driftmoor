@@ -326,3 +326,39 @@ The recognition was mutual.
   party will eventually meet. Who they are and what they
   were doing is the campaign's central mystery. The pool
   showed Fennel the answer before he knew the question.
+
+---
+
+## Shadow Residue After Combat (DM Instruction)
+
+When a shadowbeast is slain inside the glade, its shadow essence
+dissolves into the soil rather than dispersing cleanly into the
+air. The pool's emanation is incompatible with shadow matter —
+the two forces interact, producing a brief, shimmering patch
+where the beast fell. This is real and worth one careful look.
+
+**Duration: 2 turns.** After that the residue is fully absorbed
+by the pool's field and the patch goes cold — no shimmer, no
+energy, nothing more to find.
+
+**Turn 1 after death:** Characters may search the patch. They
+find traces: scorched earth in a faint spiral pattern, one or
+two obsidian-dark scales (inert, no magical properties), and
+a lingering chill that raises the hairs on the arm. The
+shimmer is visible and active.
+
+**Turn 2 after death:** The shimmer is fading visibly. A
+second search finds nothing new. The patch is cooling.
+
+**Turn 3 onward:** The shimmer is gone. The earth looks
+ordinary. Further searching yields nothing. If characters
+attempt to search again, DM-Left should state clearly:
+*"The shimmering has faded completely. The soil is cold and
+unremarkable. There is nothing more here."*
+
+**Redirect:** Once the residue fades, the pool itself should
+become the natural focus. Its light is still present. The
+pool is the source of everything that happened here — the
+beast, the barrier, Fennel's pull toward the glade. DM-Left
+should let the pool draw attention now that the immediate
+threat and its remnants are resolved.

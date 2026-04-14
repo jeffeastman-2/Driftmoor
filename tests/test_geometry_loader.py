@@ -116,7 +116,7 @@ class TestParseGeometryMd:
 
     def test_starting_shadowbeast(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["shadowbeast"]
-        assert pos.x == 126.75
+        assert pos.x == 65.0
         assert pos.y == 162.5
 
 
