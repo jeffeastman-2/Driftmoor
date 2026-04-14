@@ -625,14 +625,18 @@ def _save_turn(
     characters: dict[str, CharacterSession],
     game_time: Optional[GameTime] = None,
     in_combat: bool = False,
+    active_characters: Optional[set[str]] = None,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     path = checkpoint_dir / _checkpoint_filename(turn, game_time)
 
+    active = active_characters if active_characters is not None else set(characters.keys())
+
     data = {
         "turn": turn,
         "in_combat": in_combat,
+        "active_characters": sorted(active),
         "game_time": {
             "hour": game_time.hour,
             "minute": game_time.minute,
@@ -655,6 +659,7 @@ def _save_turn(
         "conditions": {
             char_id: cs.condition.state.to_dict()
             for char_id, cs in characters.items()
+            if char_id in active
         },
         "hp": {
             char_id: {
@@ -662,6 +667,7 @@ def _save_turn(
                 "max": cs.character.hp,
             }
             for char_id, cs in characters.items()
+            if char_id in active
         },
     }
     path.write_text(json.dumps(data, indent=2, default=str))
@@ -701,6 +707,7 @@ def load_resume_state(
     scene_history = ""
     last_turn = 0
     last_game_minutes: int | None = None
+    last_active_characters: set[str] | None = None
 
     for path in files:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -728,7 +735,11 @@ def load_resume_state(
         if char_id in characters:
             characters[char_id].condition.state = NeurochemicalState.from_dict(state_dict)
 
-    return last_turn, last_game_minutes, scene_history
+    # Restore active_characters set if the checkpoint recorded it
+    if "active_characters" in last_data:
+        last_active_characters = set(last_data["active_characters"])
+
+    return last_turn, last_game_minutes, scene_history, last_active_characters
 
 
 # ---------------------------------------------------------------------------
@@ -749,6 +760,7 @@ async def iter_session(
     initial_history: str = "",
     scene_geometry: Optional[SceneGeometry] = None,
     character_pronouns: dict[str, str] | None = None,
+    initial_active_characters: set[str] | None = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -769,7 +781,11 @@ async def iter_session(
     # Combat state
     in_combat = False
     pre_combat_duration: int | None = None
-    active_characters: set[str] = set(characters.keys())
+    active_characters: set[str] = (
+        initial_active_characters & set(characters.keys())
+        if initial_active_characters is not None
+        else set(characters.keys())
+    )
 
     story_turns_remaining = num_turns
     melee_rounds_remaining = MAX_MELEE_ROUNDS
@@ -1059,7 +1075,7 @@ async def iter_session(
 
         # Persist checkpoint
         if checkpoint_dir:
-            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time, in_combat=in_combat)
+            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time, in_combat=in_combat, active_characters=active_characters)
 
         # Advance game clock
         if game_time:
