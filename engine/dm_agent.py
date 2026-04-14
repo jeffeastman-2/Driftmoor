@@ -391,8 +391,11 @@ class DMRight:
     def __init__(self, call_llm: Optional[CallLLM] = None):
         self._call_llm = call_llm
 
-    def build_system_prompt(self) -> str:
-        return (
+    def build_system_prompt(
+        self,
+        character_pronouns: dict[str, str] | None = None,
+    ) -> str:
+        prompt = (
             "You are the narrative voice of the DM. Write 2-4 sentences "
             "of third-person, present-tense prose describing what happens. "
             "Be concrete and specific — what the character does, what "
@@ -407,6 +410,12 @@ class DMRight:
             "did not hit; only hits cause damage. Never contradict the engine "
             "resolution in your prose."
         )
+        if character_pronouns:
+            pronoun_str = ", ".join(
+                f"{name} ({p})" for name, p in character_pronouns.items()
+            )
+            prompt += f"\n\nCharacter pronouns: {pronoun_str}. Use these consistently — never misgender a character."
+        return prompt
     def build_user_prompt(
         self,
         adjudication: Adjudication,
@@ -460,6 +469,7 @@ class DMRight:
         character_output: CharacterOutput,
         scene_history: str,
         resolution_log: list[str] | None = None,
+        character_pronouns: dict[str, str] | None = None,
     ) -> Narration:
         if self._call_llm is None:
             action_text = character_output.action or "(no action)"
@@ -469,7 +479,7 @@ class DMRight:
                 prose=f"{character_output.character_id} {action_text}.",
                 visible_to=[],
             )
-        system = self.build_system_prompt()
+        system = self.build_system_prompt(character_pronouns=character_pronouns)
         user = self.build_user_prompt(
             adjudication, character_output, scene_history,
             resolution_log=resolution_log,

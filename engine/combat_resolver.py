@@ -107,14 +107,20 @@ def _move_toward(
 def _best_weapon(
     weapons: list[Weapon],
     dist: float,
+    prefer_ranged: bool = False,
 ) -> Weapon | None:
     """Pick the best weapon for the given distance to target.
 
-    Preference order:
+    Preference order when prefer_ranged is False:
     1. Ranged weapon when dist > 10 ft (avoid melee disadvantage on ranged)
     2. Melee weapon when dist <= 10 ft
-    3. Thrown/finesse ranged fallback
-    Returns None if no weapon can reach.
+    3. Any ranged weapon still in range as fallback
+
+    When prefer_ranged is True (character stated intent to shoot/use bow):
+    1. Best ranged weapon in range, regardless of distance
+    2. Fall back to melee only if no ranged weapon can reach
+
+    Returns None if no weapon can reach the target.
     """
     if not weapons:
         return None
@@ -122,14 +128,14 @@ def _best_weapon(
     ranged = [w for w in weapons if w.is_ranged and dist <= w.range_normal]
     melee  = [w for w in weapons if not w.is_ranged and dist <= w.reach + 0.5]
 
-    if dist > 10 and ranged:
-        # Prefer ranged at distance — sort by damage dice descending (naive heuristic)
-        return sorted(ranged, key=lambda w: _avg_damage(w.damage_dice), reverse=True)[0]
-    if melee:
-        return sorted(melee, key=lambda w: _avg_damage(w.damage_dice), reverse=True)[0]
-    if ranged:
-        return sorted(ranged, key=lambda w: _avg_damage(w.damage_dice), reverse=True)[0]
-    return None
+    best_ranged = sorted(ranged, key=lambda w: _avg_damage(w.damage_dice), reverse=True)[0] if ranged else None
+    best_melee  = sorted(melee,  key=lambda w: _avg_damage(w.damage_dice), reverse=True)[0] if melee  else None
+
+    if prefer_ranged:
+        return best_ranged or best_melee
+    if dist > 10 and best_ranged:
+        return best_ranged
+    return best_melee or best_ranged
 
 
 def _avg_damage(dice_expr: str) -> float:
@@ -141,6 +147,17 @@ def _avg_damage(dice_expr: str) -> float:
     for m in re.finditer(r'([+-]\s*\d+)', re.sub(r'\d+\s*[dD]\s*\d+', '', dice_expr)):
         total += int(m.group(1).replace(' ', ''))
     return total
+
+
+_RANGED_INTENT_RE = re.compile(
+    r'\b(shoot|arrow|bow|ranged?|fire arrow|from a distance|at range)\b',
+    re.IGNORECASE,
+)
+
+
+def _intent_prefers_ranged(intent_text: str) -> bool:
+    """Return True if the intent text explicitly calls for a ranged attack."""
+    return bool(_RANGED_INTENT_RE.search(intent_text or ""))
 
 
 # ---------------------------------------------------------------------------
@@ -167,6 +184,7 @@ class CombatResolver:
         target_pos: tuple[float, float, str],
         scene_geometry=None,
         game_time=None,
+        intent_text: str = "",
     ) -> tuple[Adjudication, list[str]]:
         """Resolve one attack action. Returns (Adjudication, log_lines).
 
@@ -193,8 +211,9 @@ class CombatResolver:
                 f"toward {target_id} → now {dist_after:.1f} ft away"
             )
 
-        # 2. Select weapon
-        weapon = _best_weapon(weapons, dist_after)
+        # 2. Select weapon — honor ranged intent if the character said so
+        prefer_ranged = _intent_prefers_ranged(intent_text)
+        weapon = _best_weapon(weapons, dist_after, prefer_ranged=prefer_ranged)
         if weapon is None:
             log.append(f"[COMBAT] {character_id}: no weapon can reach {target_id} at {dist_after:.1f} ft")
             adj = Adjudication(

@@ -748,6 +748,7 @@ async def iter_session(
     start_turn: int = 1,
     initial_history: str = "",
     scene_geometry: Optional[SceneGeometry] = None,
+    character_pronouns: dict[str, str] | None = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -877,6 +878,7 @@ async def iter_session(
                         target_pos=current_positions.get(target_id, (0.0, 0.0, "")),
                         scene_geometry=scene_geometry,
                         game_time=game_time,
+                        intent_text=intent.intent,
                     )
                     # Apply movement from resolver
                     if adjudication.new_position:
@@ -989,6 +991,7 @@ async def iter_session(
             cr = await turn_cycle.narrate_turn(
                 intent, output, adjudication, within_turn_history,
                 resolution_log=attack_log if attack_log else None,
+                character_pronouns=character_pronouns,
             )
             turn_result.character_results.append(cr)
 
@@ -1104,6 +1107,7 @@ async def run_session(
     game_time: Optional[GameTime] = None,
     rng: Optional[random.Random] = None,
     scene_geometry: Optional[SceneGeometry] = None,
+    character_pronouns: dict[str, str] | None = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
@@ -1120,6 +1124,7 @@ async def run_session(
         game_time=game_time,
         rng=rng,
         scene_geometry=scene_geometry,
+        character_pronouns=character_pronouns,
     ):
         turns.append(turn_result)
 

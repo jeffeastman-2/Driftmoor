@@ -164,6 +164,7 @@ class TurnCycle:
         adjudication: Adjudication,
         scene_history: str,
         resolution_log: list[str] | None = None,
+        character_pronouns: dict[str, str] | None = None,
     ) -> CharacterTurnResult:
         """Run step 4: DM-Right narrates the Python-resolved outcome.
 
@@ -176,6 +177,7 @@ class TurnCycle:
         narration = await roles.dm_right.narrate(
             adjudication, output, scene_history,
             resolution_log=resolution_log,
+            character_pronouns=character_pronouns,
         )
 
         result = CharacterTurnResult(
