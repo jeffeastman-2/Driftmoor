@@ -591,22 +591,26 @@ def _build_context(
     in_combat: bool = False,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
-    scene = cs.initial_scene
+    # Replace baked-in "Your starting position: x=…" with the live value so
+    # the character never uses stale starting coordinates when choosing movement.
+    initial_scene = cs.initial_scene
+    my_pos = (current_positions or {}).get(cs.character.id)
+    if my_pos is not None:
+        px, py, pzone = my_pos
+        initial_scene = re.sub(
+            r'Your starting position: x=[^\n]+',
+            f'Your current position: x={px}, y={py}, zone={pzone}.',
+            initial_scene,
+        )
+    scene = initial_scene
     if scene_history:
-        scene = f"{cs.initial_scene}\n\n{scene_history}"
+        scene = f"{initial_scene}\n\n{scene_history}"
     perception = _build_perception(
         cs.character.id,
         scene_geometry,
         current_positions or {},
         active_characters or set(),
     )
-    # Prepend authoritative current position so the character never uses stale
-    # starting coordinates from game_state_summary when choosing where to move.
-    my_pos = (current_positions or {}).get(cs.character.id)
-    if my_pos is not None:
-        px, py, pzone = my_pos
-        pos_note = f"- Your current position: x={px}, y={py}, zone={pzone}"
-        perception = (pos_note + "\n" + perception) if perception else pos_note
     # If combat is active and there are combatants not visible (different zone),
     # add a sound cue — growling and impact sounds carry regardless of LOS.
     if in_combat and perception is not None:
