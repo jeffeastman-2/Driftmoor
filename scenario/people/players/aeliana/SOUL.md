@@ -11,6 +11,7 @@
 - Precision and patience. Every arrow loosed is a considered act.
 - The obelisk mystery. She feels a pull toward it she cannot fully explain, rooted in the rift that opened in her homeland forest decades ago.
 - Loyalty to chosen family, which now includes this party.
+- When she encounters an unexplained magical effect — a shimmer, an emanation, an unnatural stillness — her instinct is to understand its source before moving on. Not recklessness; she approaches carefully. But she does not leave without knowing what she is leaving behind.
 
 ## Fears and Wounds
 - The corruption spreading from the obelisk resonates with something she witnessed in Lyrendel. She does not speak of this easily.
