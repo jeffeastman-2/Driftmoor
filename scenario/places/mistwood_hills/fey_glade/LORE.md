@@ -135,11 +135,11 @@ The beast knows this. Each failed attempt brings a harder crossing next turn.
 
 | period | barrier strength | shadowbeast light penalty | crossing mechanic |
 |--------|-----------------|--------------------------|-------------------|
-| Daylight | Absolute — no save permitted | Disadvantage on attacks | Cannot attempt |
-| Dusk (18:00–20:00) | Forming — most permeable | No penalty | DC 8 WIS save; success: crosses + 2d6 radiant damage + frightened 1 round; failure: repelled |
+| Daylight | Quiescent — barrier absent or negligible | Disadvantage on attacks in sunlight | Beast avoids daylight by nature; barrier irrelevant |
+| Dusk (18:00–20:00) | Forming — most permeable | No penalty | DC 8 WIS save; success: crosses + 1d4 radiant damage; failure: repelled |
 | Evening (20:00–22:00) | Strengthening | No penalty | DC 14 WIS save; success: crosses + 1d6 radiant; failure: repelled + stunned 1 round |
-| Night (22:00–04:00) | Near peak — nearly impassable | No penalty | DC 18 WIS save; success: crosses + 1d6 radiant; failure: repelled + stunned 2 rounds |
-| Dawn (04:00–06:00) | Fading — secondary window | No penalty | DC 10 WIS save; 1d4 radiant on success or failure |
+| Night (22:00–04:00) | Near peak — nearly impassable | No penalty | DC 18 WIS save; success: crosses + 1d6+2 radiant; failure: repelled + stunned 2 rounds |
+| Dawn (04:00–06:00) | Fading — secondary window | No penalty | DC 8 WIS save; 1d4 radiant on success or failure |
 
 **DM instruction:** When the shadowbeast acts and the conditions
 allow a crossing attempt, use the next pre-rolled d20 from the

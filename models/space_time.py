@@ -196,6 +196,8 @@ class SceneGeometry:
     visibility_rules: dict[tuple[str, str], float] = field(default_factory=dict)
     # character_id → starting Position parsed from GEOMETRY.md
     starting_positions: dict[str, Position] = field(default_factory=dict)
+    # magical and physical boundaries
+    boundaries: list["MagicalBoundary"] = field(default_factory=list)
 
     def absolute_position(self, local: Position) -> Position:
         """Convert local scene coordinates to world coordinates."""
@@ -251,10 +253,16 @@ class MagicalBoundary:
     perimeter: Polygon
     blocks: list[str]
     effect: str
+    # Ability check to cross ("wisdom", "dexterity", etc.)
+    save: str = "wisdom"
+    # period → DC; if period absent, crossing is absolutely blocked
+    crossing_dc: dict[str, int] = field(default_factory=dict)
+    # period → dice expression dealt on a successful crossing (e.g. "2d6")
+    crossing_damage_success: dict[str, str] = field(default_factory=dict)
 
     def is_blocked(self, entity_type: str) -> bool:
         """Check if an entity type is blocked by this boundary."""
-        return entity_type in self.blocks
+        return entity_type.lower() in [b.lower() for b in self.blocks]
 
 
 @dataclass

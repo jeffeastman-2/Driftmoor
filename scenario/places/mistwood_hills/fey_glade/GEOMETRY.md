@@ -70,7 +70,10 @@ Dense Mistwood forest heavily occludes sight-lines. Rules:
 - **blocks:** shadowbeast, shadow_creature, undead
 - **effect:** fey resonance antithetical to shadow essence — blocked creatures feel deep sourceless wrongness
 - **vertices:** (126.75,143.0) (198.25,143.0) (198.25,182.0) (126.75,182.0)
-- **behavior:** see LORE.md — barrier strength varies by time of day and conditions; do not adjudicate from this file
+- **save:** wisdom
+- **crossing_dc:** dusk:8, evening:14, night:18, dawn:8
+- **crossing_damage_success:** dusk:1d4, evening:1d6, night:1d6+2, dawn:1d4
+- **behavior:** see LORE.md — barrier strength varies by time of day; quiescent in daylight (shadowbeast avoids daylight by its own nature, not barrier force); dusk through dawn uses crossing_dc table
 
 ## Starting Positions
 

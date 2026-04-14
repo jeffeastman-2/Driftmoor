@@ -188,6 +188,17 @@ def parse_geometry_md(text: str) -> dict:
     return result
 
 
+def _parse_period_dict(value: str) -> dict[str, str]:
+    """Parse 'dusk:8, evening:14' or 'dusk:2d6, evening:1d6' into a dict."""
+    result: dict[str, str] = {}
+    for part in value.split(","):
+        part = part.strip()
+        if ":" in part:
+            period, val = part.split(":", 1)
+            result[period.strip().lower()] = val.strip()
+    return result
+
+
 def _parse_boundaries(text: str) -> list[MagicalBoundary]:
     """Parse boundary subsections from the Boundaries section."""
     boundaries: list[MagicalBoundary] = []
@@ -203,12 +214,20 @@ def _parse_boundaries(text: str) -> list[MagicalBoundary]:
         verts_str = meta.get("vertices", "")
         verts = _parse_vertices(verts_str)
 
+        # Crossing rules
+        dc_raw = _parse_period_dict(meta.get("crossing_dc", ""))
+        crossing_dc = {k: int(v) for k, v in dc_raw.items() if v.isdigit()}
+        crossing_damage_success = _parse_period_dict(meta.get("crossing_damage_success", ""))
+
         if verts:
             boundaries.append(MagicalBoundary(
                 name=heading.strip(),
                 perimeter=Polygon(verts),
                 blocks=blocks,
                 effect=meta.get("effect", ""),
+                save=meta.get("save", "wisdom"),
+                crossing_dc=crossing_dc,
+                crossing_damage_success=crossing_damage_success,
             ))
     return boundaries
 
@@ -235,6 +254,7 @@ def load_geometry(path: Path) -> SceneGeometry:
         connections=data["connections"],
         visibility_rules=data.get("visibility", {}),
         starting_positions=data.get("starting_positions", {}),
+        boundaries=data.get("boundaries", []),
     )
 
 

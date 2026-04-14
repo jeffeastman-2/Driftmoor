@@ -236,6 +236,94 @@ def _roll_damage_expr(expr: str) -> int:
     return max(0, total)
 
 
+def _check_boundary_crossing(
+    character_id: str,
+    origin: tuple[float, float, str],
+    new_pos: tuple[float, float, str],
+    character,
+    boundaries: list,
+    game_time,
+) -> tuple[bool, int, list[str]]:
+    """Check if movement crosses a magical boundary inward.
+
+    Returns (move_allowed, radiant_damage, log_lines).
+    If the current period has no DC entry in the boundary table the barrier is
+    quiescent and crossing is freely permitted (e.g. daylight — the beast avoids
+    daylight by its own nature, not barrier force).
+    """
+    log_lines: list[str] = []
+
+    ox, oy = origin[0], origin[1]
+    tx, ty = new_pos[0], new_pos[1]
+    origin_pos = Position(ox, oy)
+    target_pos = Position(tx, ty)
+
+    race = getattr(character, "race", "").lower().replace(" ", "_")
+    char_type = getattr(character, "character_type", "").lower()
+    # Strip trailing _N suffix so "shadowbeast_1" matches block entry "shadowbeast"
+    base_id = re.sub(r"_\d+$", "", character_id).lower()
+
+    for boundary in (boundaries or []):
+        already_inside = boundary.perimeter.contains(origin_pos)
+        would_enter = boundary.perimeter.contains(target_pos)
+
+        if already_inside or not would_enter:
+            continue  # not crossing inward
+
+        if not (
+            boundary.is_blocked(race)
+            or boundary.is_blocked(char_type)
+            or boundary.is_blocked(character_id)
+            or boundary.is_blocked(base_id)
+        ):
+            continue  # this character is not affected by the boundary
+
+        period = game_time.period if game_time else "night"
+        dc = boundary.crossing_dc.get(period)
+
+        if dc is None:
+            # No DC for this period — barrier is quiescent, crossing allowed
+            log_lines.append(
+                f"[BOUNDARY] {character_id} crosses {boundary.name} freely "
+                f"(period={period}, barrier quiescent)"
+            )
+            return True, 0, log_lines
+
+        # Wisdom saving throw
+        wisdom = getattr(character, "wisdom", 10)
+        wis_mod = (wisdom - 10) // 2
+        d20 = random.randint(1, 20)
+        total = d20 + wis_mod
+
+        if total >= dc:
+            damage_expr = boundary.crossing_damage_success.get(period, "")
+            dmg = _roll_damage_expr(damage_expr) if damage_expr else 0
+            # Double for radiant vulnerability if the character has it
+            vulnerabilities = getattr(character, "damage_vulnerabilities", [])
+            if any("radiant" in v.lower() for v in vulnerabilities):
+                dmg *= 2
+                log_lines.append(
+                    f"[BOUNDARY] {character_id} crosses {boundary.name}: "
+                    f"WIS save d20={d20}+{wis_mod}={total} vs DC {dc} → SUCCESS, "
+                    f"{dmg} radiant damage (doubled — radiant vulnerability)"
+                )
+            else:
+                log_lines.append(
+                    f"[BOUNDARY] {character_id} crosses {boundary.name}: "
+                    f"WIS save d20={d20}+{wis_mod}={total} vs DC {dc} → SUCCESS, "
+                    f"{dmg} radiant damage"
+                )
+            return True, dmg, log_lines
+        else:
+            log_lines.append(
+                f"[BOUNDARY] {character_id} repelled by {boundary.name}: "
+                f"WIS save d20={d20}+{wis_mod}={total} vs DC {dc} → FAILED"
+            )
+            return False, 0, log_lines
+
+    return True, 0, log_lines  # no blocking boundary found
+
+
 def _resolve_attacks(
     attacks: list[dict],
     character_id: str,
@@ -896,9 +984,33 @@ async def iter_session(
                         game_time=game_time,
                         intent_text=intent.intent,
                     )
-                    # Apply movement from resolver
+                    # Apply movement from resolver — enforce boundary crossing
                     if adjudication.new_position:
-                        current_positions[character_id] = adjudication.new_position
+                        resolver_origin = current_positions.get(character_id)
+                        resolver_new = adjudication.new_position
+                        boundary_ok = True
+                        if (
+                            scene_geometry is not None
+                            and scene_geometry.boundaries
+                            and resolver_origin is not None
+                        ):
+                            boundary_ok, crossing_dmg, b_log = _check_boundary_crossing(
+                                character_id,
+                                resolver_origin,
+                                resolver_new,
+                                characters[character_id].character,
+                                scene_geometry.boundaries,
+                                game_time,
+                            )
+                            attack_log.extend(b_log)
+                            if crossing_dmg > 0:
+                                char_obj = characters[character_id].character
+                                current_hp = getattr(char_obj, "current_hp", getattr(char_obj, "hp", 0))
+                                char_obj.current_hp = max(0, current_hp - crossing_dmg)
+                        if boundary_ok:
+                            current_positions[character_id] = resolver_new
+                        else:
+                            adjudication.new_position = None
                     # Apply hp damage immediately
                     for tid, dmg in adjudication.hp_damage.items():
                         if tid in characters:
@@ -952,9 +1064,31 @@ async def iter_session(
                     zone = scene_geometry.zone_at(Position(tx, ty)) or ""
                 else:
                     zone = current_positions.get(character_id, ("", "", ""))[2]
-                new_pos = (tx, ty, zone.upper())
-                adjudication.new_position = new_pos
-                current_positions[character_id] = new_pos
+
+                # Boundary crossing check — Python owns enforcement; DM cannot override.
+                boundary_ok = True
+                if scene_geometry is not None and scene_geometry.boundaries and origin is not None:
+                    boundary_ok, crossing_dmg, b_log = _check_boundary_crossing(
+                        character_id,
+                        origin,
+                        (tx, ty, ""),
+                        characters[character_id].character,
+                        scene_geometry.boundaries,
+                        game_time,
+                    )
+                    attack_log.extend(b_log)
+                    if crossing_dmg > 0:
+                        char_obj = characters[character_id].character
+                        current_hp = getattr(char_obj, "current_hp", getattr(char_obj, "hp", 0))
+                        char_obj.current_hp = max(0, current_hp - crossing_dmg)
+
+                if boundary_ok:
+                    new_pos = (tx, ty, zone.upper())
+                    adjudication.new_position = new_pos
+                    current_positions[character_id] = new_pos
+                else:
+                    # Movement denied — keep character at origin
+                    adjudication.movement_target = None
 
             # Python attack resolution — roll d20+bonus vs AC, check range and
             # LOS; DM declared targets via **ATTACKS** but Python owns the dice.

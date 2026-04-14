@@ -16,6 +16,7 @@ from engine.session import (
     _build_context,
     _save_turn,
     _checkpoint_filename,
+    _resolve_attacks,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -825,3 +826,87 @@ class TestDMLeftCombatPrompt:
         dm = DMLeft()
         prompt = dm.build_system_prompt()
         assert "exits_scene" in prompt
+
+
+class TestForestLOSEnforcement:
+    """Verify that FOREST→FOREST visibility (30 ft) blocks attacks beyond that range."""
+
+    FEY_GLADE_GEO = Path(__file__).parent.parent / "scenario/places/mistwood_hills/fey_glade/GEOMETRY.md"
+
+    @pytest.fixture
+    def geo(self):
+        from models.geometry_loader import load_geometry
+        return load_geometry(self.FEY_GLADE_GEO)
+
+    @pytest.fixture
+    def attacker(self, aeliana_char, aeliana_condition):
+        return CharacterSession(
+            character=aeliana_char,
+            condition=aeliana_condition,
+            soul="",
+            identity="Longbow +5 to hit, 1d8 damage.",
+            initial_scene="",
+        )
+
+    @pytest.fixture
+    def target(self):
+        beast = Creature(
+            id="shadowbeast_1", name="Shadowbeast", race="Monstrosity",
+            character_type="creature", dexterity=14, faction="hostile",
+        )
+        beast.current_hp = 8
+        cond = CharacterCondition(
+            character_id="shadowbeast_1", character_name="Shadowbeast",
+            state=NeurochemicalState(),
+        )
+        return CharacterSession(
+            character=beast, condition=cond,
+            soul="", identity="", initial_scene="",
+        )
+
+    def test_forest_attack_blocked_beyond_30ft(self, geo, attacker, target):
+        """Attack from FOREST at 134 ft to another FOREST position must be blocked."""
+        # Aeliana's actual position from the run that fired through LOS
+        attacker_pos = (229.0, 98.3, "FOREST")
+        # Beast's position that same turn (outside boundary, in FOREST)
+        target_pos = (110.0, 160.8, "FOREST")
+
+        characters = {"aeliana": attacker, "shadowbeast_1": target}
+        current_positions = {"aeliana": attacker_pos, "shadowbeast_1": target_pos}
+
+        attacks = [{"target": "shadowbeast_1", "hit_bonus": 5, "damage_expr": "1d8"}]
+        hp_damage, log = _resolve_attacks(
+            attacks,
+            character_id="aeliana",
+            attacker_pos=attacker_pos,
+            current_positions=current_positions,
+            characters=characters,
+            max_range=150.0,  # longbow range — should NOT be the limiting factor
+            scene_geometry=geo,
+        )
+
+        assert hp_damage == {}, f"Attack should be blocked by LOS, got: {log}"
+        assert any("no line of sight" in line for line in log), f"Expected LOS block in log: {log}"
+
+    def test_forest_attack_allowed_within_30ft(self, geo, attacker, target):
+        """Attack from FOREST within 30 ft to another FOREST position is allowed."""
+        # Place both in deep FOREST, 20 ft apart
+        attacker_pos = (50.0, 100.0, "FOREST")
+        target_pos = (65.0, 110.0, "FOREST")  # ~18 ft
+
+        characters = {"aeliana": attacker, "shadowbeast_1": target}
+        current_positions = {"aeliana": attacker_pos, "shadowbeast_1": target_pos}
+
+        attacks = [{"target": "shadowbeast_1", "hit_bonus": 99, "damage_expr": "1d8"}]
+        hp_damage, log = _resolve_attacks(
+            attacks,
+            character_id="aeliana",
+            attacker_pos=attacker_pos,
+            current_positions=current_positions,
+            characters=characters,
+            max_range=150.0,
+            scene_geometry=geo,
+        )
+
+        # With +99 to hit it always hits — damage should be applied
+        assert "shadowbeast_1" in hp_damage, f"Attack within 30ft should land: {log}"
