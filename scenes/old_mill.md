@@ -121,4 +121,4 @@ You were tracing the symbols on the beam when the door opened. A man in white ro
 - header: Scene: The Old Mill | file: scenario/places/greywater_river/old_mill/PLACE.md
 - file: scenario/places/greywater_river/old_mill/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Scene Notes | file: scenes/old_mill/CONFIG.md#Scene Notes
+- header: Scene Notes | file: scenes/old_mill.md#Scene Notes

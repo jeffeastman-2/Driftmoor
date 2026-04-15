@@ -120,4 +120,4 @@ You are in the stables brushing down the bay mare. She is still jittery — all 
 - header: Scene: Ironhoof Forge | file: scenario/places/driftmoor/ironhoof_forge/PLACE.md
 - file: scenario/places/driftmoor/ironhoof_forge/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Scene Notes | file: scenes/ironhoof_forge/CONFIG.md#Scene Notes
+- header: Scene Notes | file: scenes/ironhoof_forge.md#Scene Notes

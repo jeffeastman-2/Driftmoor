@@ -27,45 +27,13 @@
 - **type:** player
 - **soul_file:** scenario/people/players/aeliana/SOUL.md
 - **identity_file:** scenario/people/players/aeliana/IDENTITY.md
-- **provider:** xai
-- **model:** grok-3
 - **scene_handle:** the elf ranger
-- **pronouns:** she/her
-- **weapons:** longbow+5, shortsword+5, dagger+5
-- **armor:** leather_armor
-- **dopamine:** 0.85
-- **cortisol:** 0.25
-- **norepinephrine:** 0.55
-- **endorphins:** 0.75
-- **serotonin:** 0.6
-- **acetylcholine:** 0.5
-- **oxytocin:** 0.5
-- **dopamine_baseline:** 0.55
-- **dopamine_volatility:** 0.8
-- **cortisol_baseline:** 0.35
-- **cortisol_volatility:** 0.6
 
 ### fennel
 - **type:** player
 - **soul_file:** scenario/people/npcs/fennel/SOUL.md
 - **identity_file:** scenario/people/npcs/fennel/IDENTITY.md
-- **provider:** openai
-- **model:** gpt-4o
 - **scene_handle:** the young gatherer
-- **pronouns:** he/him
-- **weapons:** shortbow+1, improvised_spear+1, belt_knife+1
-- **armor:** no_armor
-- **dopamine:** 0.5
-- **cortisol:** 0.6
-- **norepinephrine:** 0.75
-- **endorphins:** 0.45
-- **serotonin:** 0.5
-- **acetylcholine:** 0.65
-- **oxytocin:** 0.3
-- **dopamine_baseline:** 0.5
-- **dopamine_volatility:** 1.0
-- **cortisol_baseline:** 0.4
-- **cortisol_volatility:** 1.2
 
 ### shadowbeast_1
 - **type:** creature

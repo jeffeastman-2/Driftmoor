@@ -106,10 +106,9 @@ exhaustion and three days without proper food.
 ## Survival Routine
 Three days have taught him the pattern. He keeps to the
 east side of the glade — the far end, away from the
-treeline where the creature paces. He shot all twelve of
-his arrows at the beast over three days, pushing through
-the barrier to drive it back. It worked. The arrows are
-gone now.
+treeline where the creature paces. He shot nine of his twelve arrows at the beast over three
+days, pushing through the barrier to drive it back. It
+worked. Three arrows remain. He is rationing them.
 
 He has spent the daylight hours making a spear — a deadfall
 branch, sharpened and fire-hardened. It is not a good spear.

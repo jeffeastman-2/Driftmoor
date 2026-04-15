@@ -96,4 +96,4 @@ A dragonborn just walked into your shop. Red scales, amber eyes, robes, no armor
 - header: Scene: Salt & Iron Mercantile | file: scenario/places/driftmoor/salt_and_iron/PLACE.md
 - file: scenario/places/driftmoor/salt_and_iron/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Scene Notes | file: scenes/salt_and_iron/CONFIG.md#Scene Notes
+- header: Scene Notes | file: scenes/salt_and_iron.md#Scene Notes

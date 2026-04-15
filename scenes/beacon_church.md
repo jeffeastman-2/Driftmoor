@@ -121,4 +121,4 @@ A stranger just walked in. Cleric. Lathander, not Pelor — you can tell from th
 - header: Scene: The Beacon Church | file: scenario/places/driftmoor/beacon_church/PLACE.md
 - file: scenario/places/driftmoor/beacon_church/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Scene Notes | file: scenes/beacon_church/CONFIG.md#Scene Notes
+- header: Scene Notes | file: scenes/beacon_church.md#Scene Notes

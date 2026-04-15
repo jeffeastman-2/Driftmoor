@@ -35,6 +35,28 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 - Explorer's pack
 - Wooden tree talisman (personal)
 
+## Combat Equipment
+- **weapons:** longbow+5, shortsword+5, dagger+5
+- **armor:** leather_armor
+
+## Engine
+- **provider:** xai
+- **model:** grok-3
+- **pronouns:** she/her
+
+## Neurochemical Baseline
+- **dopamine:** 0.85
+- **cortisol:** 0.25
+- **norepinephrine:** 0.55
+- **endorphins:** 0.75
+- **serotonin:** 0.6
+- **acetylcholine:** 0.5
+- **oxytocin:** 0.5
+- **dopamine_baseline:** 0.55
+- **dopamine_volatility:** 0.8
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.6
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

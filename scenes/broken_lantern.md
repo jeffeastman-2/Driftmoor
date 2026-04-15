@@ -42,6 +42,7 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/kaelin/SOUL.md
 - **identity_file:** scenario/people/players/kaelin/IDENTITY.md
+- **pronouns:** they/them
 - **hp:** 9
 - **ac:** 11
 - **provider:** deepseek
@@ -95,4 +96,4 @@ Evening crowd. The usual faces. Wilfred is three ales deep and talking about sha
 ## Game State Sections
 - header: Scene: The Broken Lantern (Tavern) | file: scenario/places/driftmoor/broken_lantern/PLACE.md
 - file: scenario/places/driftmoor/broken_lantern/CONTENTS.md
-- header: Scene Notes | file: scenes/broken_lantern/CONFIG.md#Scene Notes
+- header: Scene Notes | file: scenes/broken_lantern.md#Scene Notes

@@ -1,9 +1,7 @@
 """Load scene configuration from CONFIG.md + source .md files.
 
 Replaces configure_from_json() for scenes that use the .md-based config format.
-A CONFIG.md scene is identified by the presence of scenes/<name>/CONFIG.md
-instead of (or alongside) a scenes/<name>.json file.  The CONFIG.md format
-takes precedence when both exist.
+A scene is identified by the presence of scenes/<name>.md.
 
 Stat parsing conventions
 ------------------------
@@ -121,7 +119,14 @@ def parse_identity_stats(text: str) -> dict:
         "strength": 10, "dexterity": 10, "constitution": 10,
         "intelligence": 10, "wisdom": 10, "charisma": 10,
         "name": "", "race": "", "class_": "", "level": 1,
+        "weapons": "", "armor": "",
+        "provider": "", "model": "", "pronouns": "",
     }
+    # Add neurochemical defaults
+    for _dim in _NEUROCHEMICALS:
+        stats[_dim] = 0.5
+        stats[f"{_dim}_baseline"] = 0.0
+        stats[f"{_dim}_volatility"] = 0.0
 
     # HP, AC, Speed
     for key, pat in [
@@ -159,6 +164,55 @@ def parse_identity_stats(text: str) -> dict:
         if m3:
             stats["class_"] = m3.group(1).strip()
             stats["level"] = int(m3.group(2))
+
+    # Combat Equipment section: structured weapon/armor IDs
+    equip_m = re.search(
+        r"^##\s+Combat Equipment\s*\n(.*?)(?=^##|\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    )
+    if equip_m:
+        block = equip_m.group(1)
+        wm = re.search(r"-\s*\*\*weapons:\*\*\s*(.+)", block, re.IGNORECASE)
+        if wm:
+            stats["weapons"] = wm.group(1).strip()
+        am = re.search(r"-\s*\*\*armor:\*\*\s*(\S+)", block, re.IGNORECASE)
+        if am:
+            stats["armor"] = am.group(1).strip()
+
+    # Engine section: provider, model, pronouns
+    engine_m = re.search(
+        r"^##\s+Engine\s*\n(.*?)(?=^##|\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    )
+    if engine_m:
+        block = engine_m.group(1)
+        for key in ("provider", "model", "pronouns"):
+            m = re.search(rf"-\s*\*\*{key}:\*\*\s*(\S+)", block, re.IGNORECASE)
+            if m:
+                stats[key] = m.group(1).strip()
+
+    # Neurochemical Baseline section
+    neuro_m = re.search(
+        r"^##\s+Neurochemical Baseline\s*\n(.*?)(?=^##|\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    )
+    if neuro_m:
+        block = neuro_m.group(1)
+        for dim in _NEUROCHEMICALS:
+            for suffix in ("", "_baseline", "_volatility"):
+                key = f"{dim}{suffix}"
+                m = re.search(
+                    rf"-\s*\*\*{re.escape(key)}:\*\*\s*([\d.]+)",
+                    block, re.IGNORECASE,
+                )
+                if m:
+                    stats[key] = float(m.group(1))
+
+    # Pronouns: also check Static Profile (- **Pronouns:** they/them)
+    if not stats["pronouns"]:
+        m = re.search(r"-\s*\*\*Pronouns:\*\*\s*(\S+)", text, re.IGNORECASE)
+        if m:
+            stats["pronouns"] = m.group(1).strip().lower()
 
     return stats
 
@@ -587,16 +641,28 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     character_pronouns: dict[str, str] = {}
 
     for char_id, cfg in char_cfgs.items():
+        # For player/NPC characters, pre-fill missing cfg fields from IDENTITY.md
+        if cfg.get("type") != "creature" and cfg.get("identity_file"):
+            id_stats = parse_identity_stats(_load(ROOT / cfg["identity_file"]))
+            for field in ("weapons", "armor", "provider", "model", "pronouns"):
+                if not cfg.get(field) and id_stats.get(field):
+                    cfg[field] = id_stats[field]
+            for dim in _NEUROCHEMICALS:
+                for suffix in ("", "_baseline", "_volatility"):
+                    key = f"{dim}{suffix}"
+                    if key not in cfg and id_stats.get(key):
+                        cfg[key] = str(id_stats[key])
+
         if cfg.get("type") == "creature":
             session = _build_creature(char_id, cfg, introductions)
         else:
             session = _build_player_or_npc(char_id, cfg, introductions)
 
-        # Attach weapons from CONFIG.md: "weapons: longbow+5, shortsword+5"
+        # Attach weapons: CONFIG.md takes precedence, already merged above
         if cfg.get("weapons"):
             session.weapons = parse_character_weapons(cfg["weapons"], weapon_library)
 
-        # Attach armor from CONFIG.md: "armor: leather_armor"
+        # Attach armor: CONFIG.md takes precedence, already merged above
         if cfg.get("armor"):
             session.armor = armor_library.get(cfg["armor"].strip())
 

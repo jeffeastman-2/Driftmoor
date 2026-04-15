@@ -53,8 +53,7 @@ reasonably coordinated young man with no combat training.*
 
 ## Equipment
 - Improvised spear — fire-hardened deadfall branch, pointed at both ends (1d8 piercing, reach 5 ft). Fennel's technique: brace the butt in the ground and hold the shaft at an angle so a charging creature impales itself. Not trained — learned from desperation and three days of watching how the beast moves.
-- Hunting bow (1d6 piercing, range 80/320 ft) — still has it;  12 arrows spent over three days. Has 3 remaining and can be
-resupplied by others.
+- Hunting bow (1d6 piercing, range 80/320 ft) — still has it; 3 arrows remaining (9 of 12 spent over three days). Can be resupplied by others.
 - Belt knife (1d4 piercing) — for cutting plants, not people
 - Herb satchel containing:
   - Moonlace (bunch, slightly crushed) — what he came for
@@ -66,6 +65,29 @@ resupplied by others.
 - Flint and steel
 - Two days of rations remaining (eating minimally)
 - *(Full inventory to move to POSSESSIONS.md when created)*
+
+## Combat Equipment
+- **weapons:** shortbow+1, improvised_spear+1, belt_knife+1
+- **armor:** no_armor
+- **note:** Not proficient with weapons — attack bonuses are ability modifier only, no proficiency bonus.
+
+## Engine
+- **provider:** openai
+- **model:** gpt-4o
+- **pronouns:** he/him
+
+## Neurochemical Baseline
+- **dopamine:** 0.5
+- **cortisol:** 0.6
+- **norepinephrine:** 0.75
+- **endorphins:** 0.45
+- **serotonin:** 0.5
+- **acetylcholine:** 0.65
+- **oxytocin:** 0.3
+- **dopamine_baseline:** 0.5
+- **dopamine_volatility:** 1.0
+- **cortisol_baseline:** 0.4
+- **cortisol_volatility:** 1.2
 
 ## Key Relationships
 - **Lytha Varrow** — employer, mentor, complicated affection.

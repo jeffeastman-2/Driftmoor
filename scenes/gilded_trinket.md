@@ -94,4 +94,4 @@ The bell above the door chimes. A half-elf woman steps in — raven-black hair, 
 - header: Scene: The Gilded Trinket (Pawnshop) | file: scenario/places/driftmoor/gilded_trinket/PLACE.md
 - file: scenario/places/driftmoor/gilded_trinket/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Scene Notes | file: scenes/gilded_trinket/CONFIG.md#Scene Notes
+- header: Scene Notes | file: scenes/gilded_trinket.md#Scene Notes

@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 from models.space_time import GameTime
-from engine.scene_runner import configure_from_json, print_turn_result, ROOT
+from engine.scene_runner import print_turn_result, ROOT
 from engine.md_loader import configure_from_md
 from engine.session import iter_session, load_resume_state
 from engine.transcript import elaborate_session_from_dir
@@ -174,11 +174,9 @@ async def run_all(
     scene_filter: str | None = None,
     self_dm: bool = False,
 ) -> None:
-    # Discover scenes: CONFIG.md folders (preferred) and legacy .json files
-    available_md   = {p.name for p in SCENES_DIR.iterdir()
-                      if p.is_dir() and (p / "CONFIG.md").exists()}
-    available_json = {p.stem for p in SCENES_DIR.glob("*.json")}
-    available      = available_md | available_json
+    # Discover scenes: flat .md files in scenes/
+    available = {p.stem for p in SCENES_DIR.iterdir()
+                 if p.is_file() and p.suffix == ".md"}
 
     scene_order = [scene_filter] if scene_filter else SCENE_ORDER
     single_scene = scene_filter is not None
@@ -191,13 +189,8 @@ async def run_all(
         # Single-scene mode preserves config-file game_time (pass None).
         game_time = None if single_scene else dataclasses.replace(SESSION_START)
 
-        md_path = SCENES_DIR / scene_name / "CONFIG.md"
-        if md_path.exists():
-            config = configure_from_md(md_path, game_time=game_time, self_dm=self_dm)
-        else:
-            config = configure_from_json(
-                SCENES_DIR / f"{scene_name}.json", game_time=game_time
-            )
+        md_path = SCENES_DIR / f"{scene_name}.md"
+        config = configure_from_md(md_path, game_time=game_time, self_dm=self_dm)
         num_turns = num_turns_override if num_turns_override is not None else config.default_turns
         runners.append(SceneRunner(config, num_turns))
 
