@@ -148,8 +148,11 @@ class PlayerLeft:
             "(no markdown fencing):\n\n"
             "**INTENT** — One sentence: what you will do this turn "
             "(name the action type, e.g. 'Dash east toward the trail exit').\n"
-            "**MOVEMENT** — Target coordinates as x, y, z "
-            "(or \"none\" if staying put).\n"
+            "**MOVEMENT** — Target coordinates as x, y "
+            "(or \"none\" if staying put). "
+            "MUST be different from your current position — "
+            "do not repeat your current coordinates here. "
+            "Choose a destination you intend to reach this turn.\n"
             "**TARGET** — Character or item you interact with "
             "(or \"none\")."
         )

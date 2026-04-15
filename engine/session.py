@@ -1042,6 +1042,9 @@ async def iter_session(
                                 char_obj = characters[character_id].character
                                 current_hp = getattr(char_obj, "current_hp", getattr(char_obj, "hp", 0))
                                 char_obj.current_hp = max(0, current_hp - crossing_dmg)
+                                adjudication.hp_damage[character_id] = (
+                                    adjudication.hp_damage.get(character_id, 0) + crossing_dmg
+                                )
                         if boundary_ok:
                             current_positions[character_id] = resolver_new
                         else:
@@ -1116,6 +1119,9 @@ async def iter_session(
                         char_obj = characters[character_id].character
                         current_hp = getattr(char_obj, "current_hp", getattr(char_obj, "hp", 0))
                         char_obj.current_hp = max(0, current_hp - crossing_dmg)
+                        adjudication.hp_damage[character_id] = (
+                            adjudication.hp_damage.get(character_id, 0) + crossing_dmg
+                        )
 
                 if boundary_ok:
                     new_pos = (tx, ty, zone.upper())
