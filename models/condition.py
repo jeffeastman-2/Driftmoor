@@ -200,6 +200,21 @@ def render_condition(cc: CharacterCondition) -> str:
 # CONDITION.md writer
 # ---------------------------------------------------------------------------
 
+def render_condition_numeric(cc: CharacterCondition) -> str:
+    """Render the condition vector as numeric values only — no interpretive labels.
+
+    Used for ablation testing to isolate whether the neurochemical *framing*
+    (terminology + labels) produces behavioral effects independently of the
+    raw numeric values. Compare outputs against render_condition() to assess
+    how much the labels contribute.
+    """
+    lines = ["CURRENT STATE:"]
+    for dim in DIMENSIONS:
+        value = getattr(cc.state, dim)
+        lines.append(f"  {dim + ':':<20s} {value:.2f}")
+    return "\n".join(lines)
+
+
 def write_condition_md(cc: CharacterCondition, filepath: Path) -> None:
     """Write a CONDITION.md file for the character."""
     lines: list[str] = []
