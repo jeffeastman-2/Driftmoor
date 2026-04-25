@@ -519,11 +519,21 @@ class DMLedger:
         for char_id, (x, y, zone) in current_positions.items():
             side = "INSIDE barrier" if zone.upper() == "GLADE" else "outside barrier"
             hp_str = ""
+            stat_str = ""
             if characters and char_id in characters:
                 char = characters[char_id].character
                 curr = getattr(char, "current_hp", char.hp)
                 hp_str = f" | HP {curr}/{char.hp}"
-            lines.append(f"- {char_id}: x={x}, y={y}, zone={zone} ({side}){hp_str}")
+                speed = getattr(char, "speed", "") or ""
+                ac = getattr(char, "ac", 0) or 0
+                bits = []
+                if speed:
+                    bits.append(f"speed {speed}")
+                if ac:
+                    bits.append(f"AC {ac}")
+                if bits:
+                    stat_str = " | " + ", ".join(bits)
+            lines.append(f"- {char_id}: x={x}, y={y}, zone={zone} ({side}){hp_str}{stat_str}")
         lines.append(f"- Combat: {'ACTIVE' if in_combat else 'INACTIVE'}")
         if game_time:
             lines.append(
@@ -543,12 +553,17 @@ def _build_perception(
     scene_geometry: Optional[SceneGeometry],
     current_positions: dict[str, tuple[float, float, str]],
     active_characters: set[str],
+    characters: Optional[dict[str, "CharacterSession"]] = None,
 ) -> str:
     """Return a preformatted perception block for what character_id can see.
 
     Uses SceneGeometry.can_see() (which enforces LOS and zone visibility rules)
     to determine which other active characters are currently visible.
     Returns "" when no geometry is available (falls back to no constraint).
+
+    Other creatures are referred to by their ``scene_handle`` (e.g. "the
+    elf ranger") rather than their internal character_id, because the
+    acting character has not necessarily been introduced to them by name.
     """
     import math
     if scene_geometry is None:
@@ -574,7 +589,12 @@ def _build_perception(
         if visible:
             dist_rounded = round(dist / 5) * 5
             zone = other_pos[2] or zone_b
-            lines.append(f"- {other_id} ({zone}, ~{dist_rounded:.0f} ft away)")
+            label = other_id
+            if characters is not None:
+                cs_other = characters.get(other_id)
+                if cs_other is not None and cs_other.scene_handle:
+                    label = cs_other.scene_handle
+            lines.append(f"- {label} ({zone}, ~{dist_rounded:.0f} ft away)")
 
     result = "\n".join(lines) if lines else ""
     _dbg(f"[PERCEPTION]   result: {repr(result)}")
@@ -589,6 +609,7 @@ def _build_context(
     current_positions: Optional[dict[str, tuple[float, float, str]]] = None,
     active_characters: Optional[set[str]] = None,
     in_combat: bool = False,
+    characters: Optional[dict[str, CharacterSession]] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     # Replace baked-in "Your starting position: x=…" with the live value so
@@ -610,7 +631,21 @@ def _build_context(
         scene_geometry,
         current_positions or {},
         active_characters or set(),
+        characters=characters,
     )
+    # Compute the set of character IDs the acting character can actually see,
+    # for membership tests below (the perception string above uses scene
+    # handles, not IDs, so substring tests against it are unreliable).
+    visible_ids: set[str] = set()
+    if scene_geometry is not None and my_pos is not None:
+        import math as _math  # local alias; outer import inside _build_perception
+        for other_id, other_pos in (current_positions or {}).items():
+            if other_id == cs.character.id or other_id not in (active_characters or set()):
+                continue
+            a = Position(my_pos[0], my_pos[1])
+            b = Position(other_pos[0], other_pos[1])
+            if scene_geometry.can_see(a, b):
+                visible_ids.add(other_id)
     # If combat is active and there are combatants not visible (different zone),
     # add a sound cue — growling and impact sounds carry regardless of LOS.
     if in_combat and perception is not None:
@@ -618,7 +653,7 @@ def _build_context(
         unseen_combatants = [
             cid for cid in (active_characters or set())
             if cid != cs.character.id
-            and cid not in perception
+            and cid not in visible_ids
             and (current_positions or {}).get(cid, (None, None, my_zone))[2].upper() != my_zone
         ]
         if unseen_combatants:
@@ -938,6 +973,15 @@ async def iter_session(
     if initial_positions:
         current_positions.update(initial_positions)
 
+    # Drop positions for characters who are no longer active (e.g. died or
+    # exited the scene in a prior run). Without this, geometry-seeded starting
+    # positions would resurrect dead characters in the position table — they
+    # wouldn't get initiative, but they'd appear in the DM Ledger and LLMs
+    # would reference them.
+    for char_id in list(current_positions.keys()):
+        if char_id not in active_characters:
+            current_positions.pop(char_id, None)
+
     # DM ledger — authoritative event log injected into every DM prompt
     ledger = DMLedger()
 
@@ -988,6 +1032,7 @@ async def iter_session(
                 current_positions=current_positions,
                 active_characters=active_characters,
                 in_combat=in_combat,
+                characters=characters,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
@@ -1179,10 +1224,17 @@ async def iter_session(
 
             # Step 4: DM-Right narrates what Python actually resolved.
             # resolution_log tells it which attacks hit, missed, or were blocked.
+            # perception constrains narration to the acting character's POV.
+            # NOTE: within_turn_history is intentionally NOT passed — other-POV
+            # narration from earlier actors this turn leaks unperceived creatures
+            # into the acting character's narration. The character's own action
+            # already reflects what they perceived; perception + action are
+            # sufficient for the narrator.
             cr = await turn_cycle.narrate_turn(
-                intent, output, adjudication, within_turn_history,
+                intent, output, adjudication, "",
                 resolution_log=attack_log if attack_log else None,
                 character_pronouns=character_pronouns,
+                perception=context.perception,
             )
             turn_result.character_results.append(cr)
 

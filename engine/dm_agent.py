@@ -403,6 +403,28 @@ class DMRight:
             "meta-commentary. No purple prose — avoid 'seemed to', "
             "'as if', atmospheric clichés, and stacked adjectives. "
             "Plain language. Let the action speak.\n\n"
+            "CRITICAL — POV: Narrate strictly from the acting character's "
+            "point of view. If a '## Perception' section is present, it "
+            "is the AUTHORITATIVE and EXHAUSTIVE list of creatures the "
+            "acting character can currently perceive. Do NOT describe, "
+            "name, reference, or imply the presence of any other creature "
+            "— not by sight, sound, scent, heat signature, vibration, "
+            "shadow, or any other sense. Do not write 'the two figures', "
+            "'the companion', 'the watcher' or similar if only one (or "
+            "zero) other creatures are listed. If the perception list is "
+            "empty, narrate only what the acting character alone does and "
+            "senses in their immediate surroundings.\n\n"
+            "IMPORTANT: '## Scene so far' contains narration written for "
+            "OTHER characters this turn, from THEIR points of view. It is "
+            "provided for continuity and tone ONLY. It is NOT evidence of "
+            "what the acting character can perceive. If '## Scene so far' "
+            "mentions a creature that is NOT in the acting character's "
+            "'## Perception' list, that creature is invisible/inaudible/"
+            "undetectable to the acting character and MUST NOT appear, be "
+            "named, or be alluded to in your output (not as 'Aeliana', "
+            "'the ranger', 'the elf', 'the figure on the trail', "
+            "'something in the distance', or any other reference). Write "
+            "as if that creature does not exist.\n\n"
             "CRITICAL: If an '## Engine resolution' section is present, "
             "it is the authoritative record of what actually happened — "
             "attacks blocked by no line of sight did NOT land and must NOT "
@@ -422,6 +444,7 @@ class DMRight:
         character_output: CharacterOutput,
         scene_history: str,
         resolution_log: list[str] | None = None,
+        perception: str | None = None,
     ) -> str:
         status = "APPROVED" if adjudication.approved else "MODIFIED"
         mod = ""
@@ -445,9 +468,29 @@ class DMRight:
                 "\n\n## ENGINE RESOLUTION (authoritative — narrate this, not the intent below)\n"
                 + "\n".join(resolution_log)
             )
+        # Perception block — constrains narrator to acting character's POV.
+        if perception is not None:
+            if perception.strip():
+                perception_block = (
+                    f"\n\n## Perception (authoritative — acting character's POV)\n"
+                    f"{perception}\n"
+                    "Narrate only these creatures. Do not reference any "
+                    "other creature by any sense."
+                )
+            else:
+                perception_block = (
+                    "\n\n## Perception (authoritative — acting character's POV)\n"
+                    "No other creatures are visible, audible, or otherwise "
+                    "detectable. Narrate only the acting character alone in "
+                    "their immediate surroundings. Do not mention, imply, "
+                    "or reference any other character."
+                )
+        else:
+            perception_block = ""
         return (
             f"# Character: {character_output.character_id} "
-            f"(Turn {character_output.turn}){resolution_block}\n\n"
+            f"(Turn {character_output.turn}){resolution_block}"
+            f"{perception_block}\n\n"
             f"## What they intended\n{character_output.action}"
             f"{spoken_block}\n\n"
             f"## Adjudication: {status}{mod}{notes}{history_block}"
@@ -470,6 +513,7 @@ class DMRight:
         scene_history: str,
         resolution_log: list[str] | None = None,
         character_pronouns: dict[str, str] | None = None,
+        perception: str | None = None,
     ) -> Narration:
         if self._call_llm is None:
             action_text = character_output.action or "(no action)"
@@ -483,6 +527,7 @@ class DMRight:
         user = self.build_user_prompt(
             adjudication, character_output, scene_history,
             resolution_log=resolution_log,
+            perception=perception,
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(

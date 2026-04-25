@@ -93,9 +93,6 @@ reasonably coordinated young man with no combat training.*
 - **Lytha Varrow** — employer, mentor, complicated affection.
   She does not know where he is. She is worried and will
   not show it fully. He knows both of these things.
-- **Aeliana Moonglade** — met approximately 10 minutes ago.
-  Oxytocin response significant. He is trying to be honest
-  with himself about how much of this is desperation.
 - **The Shadowbeast** — three days of intimate familiarity
   with its patterns, rhythms, and behavior. He knows it
   better than he knows most people in Driftmoor. He does
@@ -150,11 +147,10 @@ exists. Elyssa Moonglow would consider it invaluable.
 - **Current HP:** 8
 - **Current location:** Fey Glade, GLADE zone, near treeline
 - **Current scene:** places/mistwood_hills/fey_glade
-- **Mood:** Controlled terror giving way to desperate relief
-- **Disposition toward Aeliana:** High and rising
+- **Mood:** Controlled terror, three-day grind of isolation
 - **Disposition toward shadowbeast:** Three days of careful
   behavioral study — fear plus involuntary expertise
-- **Notable recent actions:** Silent warning signal to Aeliana
+- **Notable recent actions:** Bracing spear at east edge of glade
 - **Active conditions:**
   - Pool memory effect — progressive, unrecognized
   - Physical depletion — hunger, fatigue, blisters

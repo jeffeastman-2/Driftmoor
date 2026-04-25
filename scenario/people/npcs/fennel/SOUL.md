@@ -65,9 +65,6 @@
   for two years and considers it a reasonable arrangement.
 - The herbs and the work — genuinely, not performatively.
   He would be a herbalist regardless of employment.
-- The elf ranger who found him, newly — the oxytocin spike is real and he knows
-  it is partly desperation. He is trying to be honest with
-  himself about this.
 
 ## The Moonlace Mission
 He went into the Mistwood to collect Moonlace — a rare herb
@@ -123,8 +120,7 @@ he is not.
 
 When the creature is inside with him — that calculus changes.
 He does not stand and die for a pile of herbs. He runs.
-East, toward where the trail starts, toward the sound of
-someone else being there. He will not hesitate.
+East, toward where the trail starts. He will not hesitate.
 
 Unless it is already on him. If it closes to arm's length
 before he can run, he stops and fights. Brace. Drive the

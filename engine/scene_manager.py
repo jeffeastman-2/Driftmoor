@@ -165,11 +165,16 @@ class TurnCycle:
         scene_history: str,
         resolution_log: list[str] | None = None,
         character_pronouns: dict[str, str] | None = None,
+        perception: str | None = None,
     ) -> CharacterTurnResult:
         """Run step 4: DM-Right narrates the Python-resolved outcome.
 
         Pass resolution_log from _resolve_attacks so DM-Right knows what
         the engine actually allowed (hits, misses, blocked LOS, etc.).
+        Pass perception to constrain narration to what the acting
+        character can actually see/hear/sense (prevents omniscient prose
+        like 'the beast watches the two figures in the glade' when the
+        acting character cannot perceive one of them).
         """
         roles = self._roles_for(adjudication.character_id)
 
@@ -178,6 +183,7 @@ class TurnCycle:
             adjudication, output, scene_history,
             resolution_log=resolution_log,
             character_pronouns=character_pronouns,
+            perception=perception,
         )
 
         result = CharacterTurnResult(
