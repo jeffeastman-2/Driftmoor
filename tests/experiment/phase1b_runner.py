@@ -36,6 +36,7 @@ import csv
 import json
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, asdict
@@ -50,6 +51,56 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from engine.llm_bridge import make_call_llm
 from engine.player_router import PlayerRight, RoleContext, ActionIntent
+
+
+# ---------------------------------------------------------------------------
+# Retry wrapper (exponential backoff for rate limits)
+# ---------------------------------------------------------------------------
+
+async def run_condition_with_retry(
+    model_key: str,
+    model_config: dict,
+    condition_key: str,
+    condition_dict: dict,
+    soul: str,
+    identity: str,
+    dry_run: bool = False,
+) -> "RunResult":
+    """Wrapper around run_condition with exponential backoff for rate limits."""
+    max_wait = 60
+    attempt = 0
+    hit_max_wait = False
+    
+    while True:
+        result = await run_condition(
+            model_key=model_key,
+            model_config=model_config,
+            condition_key=condition_key,
+            condition_dict=condition_dict,
+            soul=soul,
+            identity=identity,
+            dry_run=dry_run,
+        )
+        
+        # Success — return immediately
+        if not result.error:
+            return result
+        
+        # Check if error is rate-limit/overload (429, 503, 529)
+        is_rate_error = any(code in result.error for code in ("429", "503", "529"))
+        
+        if is_rate_error and not hit_max_wait:
+            # Exponential backoff: 2, 4, 8, 16, 32, 60
+            wait = min(2 ** (attempt + 1), max_wait)
+            attempt += 1
+            if wait >= max_wait:
+                hit_max_wait = True  # Last attempt before giving up
+            print(f"  [{model_config['label']}] Rate limit detected. Retrying in {wait}s...")
+            await asyncio.sleep(wait)
+            continue
+        
+        # Not a rate error, or we've exhausted retries — return the error
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -314,8 +365,8 @@ async def run_condition(
         )
         
         raw_response = await call_llm(
-            system=system_prompt,
-            user=user_prompt,
+            system_prompt=system_prompt,
+            user_message=user_prompt,
         )
         
         parsed = parse_response(raw_response)
@@ -347,7 +398,32 @@ async def run_condition(
         )
 
 
+def load_api_keys_from_file() -> None:
+    """Load API keys from ~/.api_keys (bash-style exports)."""
+    api_keys_path = Path.home() / ".api_keys"
+    if not api_keys_path.exists():
+        return  # No file, rely on existing env
+    
+    # Parse bash exports: export KEY=value
+    with open(api_keys_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if line.startswith('export '):
+                line = line[7:]  # Remove 'export '
+            if '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip().strip("'\"")
+                if key and value:
+                    os.environ[key] = value
+
+
 async def main():
+    # Load API keys from ~/.api_keys before doing anything
+    load_api_keys_from_file()
+    
     parser = argparse.ArgumentParser(description="Phase 1b Experiment Runner")
     parser.add_argument(
         "--models",
@@ -406,7 +482,7 @@ async def main():
             
             print(f"Running: {model_config['label']} × {condition_dict['label']}...", end=" ")
             
-            result = await run_condition(
+            result = await run_condition_with_retry(
                 model_key=model_key,
                 model_config=model_config,
                 condition_key=condition_key,
