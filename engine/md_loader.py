@@ -620,11 +620,14 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     # ── Geometry ─────────────────────────────────────────────────────────────
     geometry_summary = ""
     scene_geometry: SceneGeometry | None = None
+    geo_path: Path | None = None
     if geometry_file:
         geo_path = ROOT / geometry_file
         geometry_summary = _load(geo_path)
         if geo_path.exists():
             scene_geometry = load_geometry(geo_path)
+        else:
+            geo_path = None
 
     starting_positions = _parse_starting_positions(geometry_summary) if geometry_summary else {}
 
@@ -722,6 +725,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         game_state_summary=game_state_summary,
         geometry_summary=geometry_summary,
         scene_geometry=scene_geometry,
+        geometry_path=geo_path,
         default_turns=default_turns,
         game_time=game_time,
         dm_provider=dm_provider,

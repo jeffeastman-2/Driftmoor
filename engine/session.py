@@ -236,6 +236,34 @@ def _roll_damage_expr(expr: str) -> int:
     return max(0, total)
 
 
+def _segment_polygon_entry(
+    ox: float, oy: float, tx: float, ty: float,
+    vertices: list[tuple[float, ...]],
+) -> Optional[tuple[float, float]]:
+    """Return (x, y) where segment origin→target first enters the polygon.
+
+    Returns None if the segment does not cross any edge.
+    Caller should verify origin is outside and target inside.
+    """
+    dx, dy = tx - ox, ty - oy
+    best_t = float("inf")
+    best_pt: Optional[tuple[float, float]] = None
+    n = len(vertices)
+    for i in range(n):
+        ax, ay = vertices[i][0], vertices[i][1]
+        bx, by = vertices[(i + 1) % n][0], vertices[(i + 1) % n][1]
+        ex, ey = bx - ax, by - ay
+        denom = dx * ey - dy * ex
+        if abs(denom) < 1e-9:
+            continue  # parallel
+        t = ((ax - ox) * ey - (ay - oy) * ex) / denom
+        u = ((ax - ox) * dy - (ay - oy) * dx) / denom
+        if 0.0 <= t <= 1.0 and 0.0 <= u <= 1.0 and t < best_t:
+            best_t = t
+            best_pt = (ox + t * dx, oy + t * dy)
+    return best_pt
+
+
 def _check_boundary_crossing(
     character_id: str,
     origin: tuple[float, float, str],
@@ -243,10 +271,13 @@ def _check_boundary_crossing(
     character,
     boundaries: list,
     game_time,
-) -> tuple[bool, int, list[str]]:
+) -> tuple[bool, int, list[str], Optional[tuple[float, float]]]:
     """Check if movement crosses a magical boundary inward.
 
-    Returns (move_allowed, radiant_damage, log_lines).
+    Returns (move_allowed, radiant_damage, log_lines, stop_at).
+    ``stop_at`` is set when the save fails: a point just outside the barrier
+    along the origin→target line, so the character visibly approaches the
+    barrier and is repelled (rather than refusing to move at all).
     If the current period has no DC entry in the boundary table the barrier is
     quiescent and crossing is freely permitted (e.g. daylight — the beast avoids
     daylight by its own nature, not barrier force).
@@ -287,7 +318,7 @@ def _check_boundary_crossing(
                 f"[BOUNDARY] {character_id} crosses {boundary.name} freely "
                 f"(period={period}, barrier quiescent)"
             )
-            return True, 0, log_lines
+            return True, 0, log_lines, None
 
         # Wisdom saving throw
         wisdom = getattr(character, "wisdom", 10)
@@ -313,15 +344,34 @@ def _check_boundary_crossing(
                     f"WIS save d20={d20}+{wis_mod}={total} vs DC {dc} → SUCCESS, "
                     f"{dmg} radiant damage"
                 )
-            return True, dmg, log_lines
+            return True, dmg, log_lines, None
         else:
+            # Compute the point where the path enters the barrier and back
+            # off ~0.5 ft so the character visibly approaches and stops at
+            # the shimmer instead of refusing to leave its origin.
+            stop_at: Optional[tuple[float, float]] = None
+            entry = _segment_polygon_entry(
+                ox, oy, tx, ty, boundary.perimeter.vertices,
+            )
+            if entry is not None:
+                ex, ey = entry
+                seg_dx, seg_dy = tx - ox, ty - oy
+                seg_len = (seg_dx * seg_dx + seg_dy * seg_dy) ** 0.5
+                if seg_len > 1e-6:
+                    backoff = min(0.5, seg_len * 0.05)
+                    nx, ny = seg_dx / seg_len, seg_dy / seg_len
+                    stop_at = (ex - nx * backoff, ey - ny * backoff)
+                else:
+                    stop_at = (ex, ey)
             log_lines.append(
                 f"[BOUNDARY] {character_id} repelled by {boundary.name}: "
                 f"WIS save d20={d20}+{wis_mod}={total} vs DC {dc} → FAILED"
+                + (f" — stops at x={stop_at[0]:.1f}, y={stop_at[1]:.1f}"
+                   if stop_at else "")
             )
-            return False, 0, log_lines
+            return False, 0, log_lines, stop_at
 
-    return True, 0, log_lines  # no blocking boundary found
+    return True, 0, log_lines, None  # no blocking boundary found
 
 
 def _resolve_attacks(
@@ -601,6 +651,93 @@ def _build_perception(
     return result
 
 
+def _build_points_of_interest(
+    scene_geometry: Optional[SceneGeometry],
+    my_pos: Optional[tuple[float, float, str]],
+) -> str:
+    """List named landmarks (and zone centers) with absolute coords and
+    distance from the character's current position.
+
+    Player-Left LLMs need explicit coords to write a meaningful MOVEMENT
+    target; otherwise they emit small offsets from their current spot and
+    appear stuck.
+    """
+    if scene_geometry is None or my_pos is None:
+        return ""
+    px, py = my_pos[0], my_pos[1]
+    lines: list[str] = []
+
+    # Landmarks
+    for name, pos in scene_geometry.landmarks.items():
+        dist = ((pos.x - px) ** 2 + (pos.y - py) ** 2) ** 0.5
+        lines.append(
+            f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away)"
+        )
+
+    # Zone centers (helpful when the goal is "move into the GLADE")
+    for zname, polygon in scene_geometry.zones.items():
+        verts = polygon.vertices
+        if not verts:
+            continue
+        cx = sum(v[0] for v in verts) / len(verts)
+        cy = sum(v[1] for v in verts) / len(verts)
+        dist = ((cx - px) ** 2 + (cy - py) ** 2) ** 0.5
+        lines.append(
+            f"- {zname} zone center: x={cx:.0f}, y={cy:.0f} (~{dist:.0f} ft away)"
+        )
+
+    if not lines:
+        return ""
+    return "## Points of interest (use these coordinates in MOVEMENT)\n" + "\n".join(lines)
+
+
+def _events_from_cr(
+    cr,
+    pre_active: set[str],
+    post_active: set[str],
+    handles: dict[str, str],
+    game_time,
+) -> list[str]:
+    """Derive Python-verified event sentences from one character result.
+
+    These are short factual statements (death, damage, boundary crossing,
+    combat start/exit) that get surfaced to all subsequent characters via
+    a "Recent events" block in their context. Lets every character see the
+    consequences of prior actions even if the prose narration is ambiguous.
+    """
+    out: list[str] = []
+    ts = (
+        f"{game_time.hour:02d}:{game_time.minute:02d}"
+        if game_time else f"t{cr.turn}"
+    )
+    actor = handles.get(cr.character_id, cr.character_id)
+    adj = cr.adjudication
+    just_died = pre_active - post_active
+
+    if "combat_initiated" in adj.spatial_events and adj.approved:
+        out.append(f"{ts} — combat begins")
+    if "boundary_crossed" in adj.spatial_events and adj.approved:
+        out.append(f"{ts} — {actor} crossed the magical boundary")
+    if "exits_scene" in adj.spatial_events and adj.approved:
+        out.append(f"{ts} — {actor} left the scene")
+
+    for tid, dmg in (adj.hp_damage or {}).items():
+        if not dmg or dmg <= 0:
+            continue
+        target = handles.get(tid, tid)
+        if tid == cr.character_id:
+            out.append(f"{ts} — {actor} took {dmg} damage from the boundary")
+        else:
+            out.append(f"{ts} — {actor} hit {target} for {dmg} damage")
+        if tid in just_died and tid != cr.character_id:
+            out.append(f"{ts} — {target} was killed")
+
+    if cr.character_id in just_died:
+        out.append(f"{ts} — {actor} was killed")
+
+    return out
+
+
 def _build_context(
     cs: CharacterSession,
     turn: int,
@@ -610,6 +747,7 @@ def _build_context(
     active_characters: Optional[set[str]] = None,
     in_combat: bool = False,
     characters: Optional[dict[str, CharacterSession]] = None,
+    recent_events: Optional[list[str]] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     # Replace baked-in "Your starting position: x=…" with the live value so
@@ -626,6 +764,15 @@ def _build_context(
     scene = initial_scene
     if scene_history:
         scene = f"{initial_scene}\n\n{scene_history}"
+    if recent_events:
+        events_block = (
+            "## Recent events (Python-verified facts; trust over prose)\n"
+            + "\n".join(f"- {ev}" for ev in recent_events)
+        )
+        scene = f"{scene}\n\n{events_block}"
+    poi = _build_points_of_interest(scene_geometry, my_pos)
+    if poi:
+        scene = f"{scene}\n\n{poi}"
     perception = _build_perception(
         cs.character.id,
         scene_geometry,
@@ -985,6 +1132,12 @@ async def iter_session(
     # DM ledger — authoritative event log injected into every DM prompt
     ledger = DMLedger()
 
+    # Player-facing recent events — Python-verified facts (deaths, damage,
+    # boundary crossings, combat start) shown in every player's context so
+    # they don't need to mine prose for state changes. Sliding window keyed
+    # by turn_num.
+    recent_events: deque[tuple[int, str]] = deque(maxlen=40)
+
     while True:
         combat_at_start = in_combat
         if combat_at_start:
@@ -1019,12 +1172,22 @@ async def iter_session(
                 continue
 
             cs = characters[character_id]
+            # Snapshot the active set so we can detect deaths that happen
+            # during damage application this turn.
+            pre_active = set(active_characters)
             combined_history = scene_history
             if within_turn_history:
                 combined_history = (
                     f"{scene_history}\n{within_turn_history}"
                     if scene_history else within_turn_history
                 )
+
+            # Filter to events from the current and the previous 2 turns —
+            # enough to reflect "the beast was killed last turn" without
+            # bloating context with stale combat from earlier in the scene.
+            visible_events = [
+                ev for (et, ev) in recent_events if et >= turn_num - 2
+            ]
 
             context = _build_context(
                 cs, turn_num, combined_history,
@@ -1033,6 +1196,7 @@ async def iter_session(
                 active_characters=active_characters,
                 in_combat=in_combat,
                 characters=characters,
+                recent_events=visible_events,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
@@ -1074,7 +1238,7 @@ async def iter_session(
                             and scene_geometry.boundaries
                             and resolver_origin is not None
                         ):
-                            boundary_ok, crossing_dmg, b_log = _check_boundary_crossing(
+                            boundary_ok, crossing_dmg, b_log, stop_at = _check_boundary_crossing(
                                 character_id,
                                 resolver_origin,
                                 resolver_new,
@@ -1090,8 +1254,23 @@ async def iter_session(
                                 adjudication.hp_damage[character_id] = (
                                     adjudication.hp_damage.get(character_id, 0) + crossing_dmg
                                 )
+                            # Python owns boundary_crossed — emit only when
+                            # the resolver's auto-move actually crossed an
+                            # applicable boundary (b_log non-empty) and the
+                            # crossing was permitted.
+                            if boundary_ok and b_log and "boundary_crossed" not in adjudication.spatial_events:
+                                adjudication.spatial_events.append("boundary_crossed")
                         if boundary_ok:
                             current_positions[character_id] = resolver_new
+                        elif stop_at is not None:
+                            # Repelled — slide to barrier edge so the path
+                            # visibly approaches the shimmer.
+                            sx, sy = stop_at
+                            sz = (scene_geometry.zone_at(Position(sx, sy))
+                                  if scene_geometry else "") or resolver_new[2]
+                            stopped = (sx, sy, sz.upper())
+                            adjudication.new_position = stopped
+                            current_positions[character_id] = stopped
                         else:
                             adjudication.new_position = None
                     # Apply hp damage immediately
@@ -1132,10 +1311,17 @@ async def iter_session(
                 attack_log: list[str] = []
 
             # Python movement resolution — clamp to speed, snap to zone.
-            # DM declares intent (MOVEMENT TARGET x,y); Python owns the result.
+            # Player-Left declares intent.movement_target; Python owns the result.
+            # DM-Left can reject the action (approved=False) but cannot rewrite
+            # the destination — its MOVEMENT TARGET is ignored here.
             # Skipped when CombatResolver already applied movement.
-            if not use_resolver and adjudication.approved and adjudication.movement_target is not None:
-                tx, ty = adjudication.movement_target
+            player_target = intent.movement_target  # (x, y, z) or None
+            if (
+                not use_resolver
+                and adjudication.approved
+                and player_target is not None
+            ):
+                tx, ty = float(player_target[0]), float(player_target[1])
                 raw_pos: tuple[float, float, str] = (tx, ty, "")
                 char = characters[character_id].character
                 speed_ft = _speed_to_feet(getattr(char, "speed", "30 ft"))
@@ -1150,8 +1336,9 @@ async def iter_session(
 
                 # Boundary crossing check — Python owns enforcement; DM cannot override.
                 boundary_ok = True
+                stop_at: Optional[tuple[float, float]] = None
                 if scene_geometry is not None and scene_geometry.boundaries and origin is not None:
-                    boundary_ok, crossing_dmg, b_log = _check_boundary_crossing(
+                    boundary_ok, crossing_dmg, b_log, stop_at = _check_boundary_crossing(
                         character_id,
                         origin,
                         (tx, ty, ""),
@@ -1167,14 +1354,49 @@ async def iter_session(
                         adjudication.hp_damage[character_id] = (
                             adjudication.hp_damage.get(character_id, 0) + crossing_dmg
                         )
+                    # Python owns boundary_crossed event — emit only when an
+                    # applicable boundary was actually traversed (b_log non-empty)
+                    # and crossing succeeded.
+                    if boundary_ok and b_log and "boundary_crossed" not in adjudication.spatial_events:
+                        adjudication.spatial_events.append("boundary_crossed")
 
                 if boundary_ok:
                     new_pos = (tx, ty, zone.upper())
                     adjudication.new_position = new_pos
                     current_positions[character_id] = new_pos
+                    if origin is not None:
+                        ox, oy, oz = origin
+                        moved = (abs(ox - tx) > 0.5 or abs(oy - ty) > 0.5)
+                        if moved:
+                            attack_log.append(
+                                f"[MOVEMENT] {character_id}: "
+                                f"({ox:.1f},{oy:.1f},{oz}) → "
+                                f"({tx:.1f},{ty:.1f},{new_pos[2]})"
+                            )
+                        else:
+                            attack_log.append(
+                                f"[MOVEMENT] {character_id}: held position "
+                                f"({ox:.1f},{oy:.1f},{oz})"
+                            )
+                elif stop_at is not None:
+                    # Repelled by barrier — slide to its outer edge so the
+                    # path visibly approaches the shimmer.
+                    sx, sy = stop_at
+                    sz = (scene_geometry.zone_at(Position(sx, sy))
+                          if scene_geometry else "") or ""
+                    stopped = (sx, sy, sz.upper())
+                    adjudication.new_position = stopped
+                    current_positions[character_id] = stopped
+                    attack_log.append(
+                        f"[MOVEMENT] {character_id}: repelled by barrier — "
+                        f"stopped at ({sx:.1f},{sy:.1f},{sz.upper()})"
+                    )
                 else:
                     # Movement denied — keep character at origin
                     adjudication.movement_target = None
+                    attack_log.append(
+                        f"[MOVEMENT] {character_id}: denied — held at origin"
+                    )
 
             # Python attack resolution — roll d20+bonus vs AC, check range and
             # LOS; DM declared targets via **ATTACKS** but Python owns the dice.
@@ -1190,7 +1412,7 @@ async def iter_session(
                         f"[ATTACK] capped from {len(adjudication.attacks)} "
                         f"to {max_attacks} (stat block limit)"
                     )
-                hp_damage, attack_log = _resolve_attacks(
+                hp_damage, atk_log = _resolve_attacks(
                     declared,
                     character_id,
                     current_positions.get(character_id),
@@ -1199,8 +1421,20 @@ async def iter_session(
                     max_range,
                     scene_geometry=scene_geometry,
                 )
-                # Store resolved damage back onto adjudication for checkpointing
-                adjudication.hp_damage = hp_damage
+                # Append (don't overwrite) so prior MOVEMENT/BOUNDARY entries
+                # in attack_log survive into the narrator's resolution_log.
+                attack_log.extend(atk_log)
+                # Merge resolved attack damage into adjudication.hp_damage
+                # (do not overwrite — boundary-crossing damage may already be
+                # recorded for the moving character).
+                for tid, dmg in hp_damage.items():
+                    adjudication.hp_damage[tid] = (
+                        adjudication.hp_damage.get(tid, 0) + dmg
+                    )
+                # Python owns combat_initiated — emit only when DM-Left actually
+                # declared and approved at least one attack this turn.
+                if declared and "combat_initiated" not in adjudication.spatial_events:
+                    adjudication.spatial_events.append("combat_initiated")
 
                 for target_id, dmg in hp_damage.items():
                     if target_id not in characters:
@@ -1216,7 +1450,7 @@ async def iter_session(
                             )
                             ts = (
                                 f"{game_time.hour}:{game_time.minute:02d}"
-                                if game_time else f"t{turn}"
+                                if game_time else f"t{turn_num}"
                             )
                             dead_entry = f"{ts} | {target_id} | DEAD — 0 HP, removed from scene"
                             if dead_entry not in ledger.permanent_events:
@@ -1241,6 +1475,18 @@ async def iter_session(
             # Record result in DM ledger (later chars in this turn see it)
             ledger.record(cr, game_time)
 
+            # Derive Python-verified events for the player-facing recent-events
+            # block. Compare pre_active vs. current active_characters to detect
+            # deaths that just happened from this cr's damage application.
+            handles = {
+                cid: (c.scene_handle or c.character.name or cid)
+                for cid, c in characters.items()
+            }
+            for ev in _events_from_cr(
+                cr, pre_active, set(active_characters), handles, game_time,
+            ):
+                recent_events.append((turn_num, ev))
+
             # Append attack log to within_turn_history so subsequent characters
             # in this turn can see what happened
             for log_line in attack_log:
@@ -1251,13 +1497,20 @@ async def iter_session(
                 active_characters.discard(character_id)
                 current_positions.pop(character_id, None)
 
-            # Check for combat_initiated — switch to melee time
+            # Check for combat_initiated — switch to melee time.
+            # NOTE: the swap to MELEE_DURATION is deferred until AFTER this
+            # turn's advance() so that the turn during which combat begins
+            # ticks at its original (exploration) cadence. Otherwise a turn
+            # in which combat both starts and ends — e.g. one round of
+            # ranged volley — would advance the clock by only 1 minute,
+            # leaving an awkward 19:21 timestamp between two 10-minute
+            # exploration ticks.
             if (COMBAT_EVENT in cr.adjudication.spatial_events
                     and cr.adjudication.approved
                     and not in_combat and game_time is not None):
                 in_combat = True
                 pre_combat_duration = game_time.turn_duration
-                game_time.turn_duration = MELEE_DURATION
+                # Apply swap after the post-turn advance, below.
 
             # Build history entry: dialogue + narration
             history_entry = ""
@@ -1335,6 +1588,11 @@ async def iter_session(
                 in_combat = False
                 game_time.turn_duration = pre_combat_duration or 10
                 pre_combat_duration = None
+            elif game_time.turn_duration != MELEE_DURATION:
+                # Combat is ongoing into the next turn — switch to melee
+                # cadence now (deferred from when combat_initiated fired
+                # so the starting turn ticks at exploration speed).
+                game_time.turn_duration = MELEE_DURATION
 
         yield turn_result
 

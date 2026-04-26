@@ -46,6 +46,7 @@ def aeliana_char():
         id="aeliana", name="Aeliana", race="Wood Elf",
         character_type="player", character_class="Ranger",
         dexterity=16, location="fey_glade",
+        hp=12, current_hp=12,
     )
 
 
@@ -55,6 +56,7 @@ def fennel_char():
         id="fennel", name="Fennel", race="Human",
         character_type="player", character_class="Gatherer",
         dexterity=12, location="fey_glade",
+        hp=8, current_hp=8,
     )
 
 
@@ -650,14 +652,25 @@ def _make_creature_session(char_id="shadowbeast_1", faction="hostile"):
 
 
 def _combat_dm_llm(event=COMBAT_EVENT):
-    """Return a DMLeft LLM stub that emits the given event."""
+    """Return a DMLeft LLM stub that emits the given event.
+
+    For combat_initiated, also declare an attack so Python's event-ownership
+    layer (which ignores LLM-emitted combat_initiated) actually fires the
+    event off a real declared attack.
+    """
     async def _llm(sys, usr):
+        attacks_section = ""
+        if event == COMBAT_EVENT:
+            attacks_section = (
+                "**ATTACKS** — target=aeliana, bonus=+4, damage=1d6\n"
+            )
         return (
             "**APPROVED** — Yes\n"
             "**MODIFIED ACTION** — none\n"
             "**NEW POSITION** — none\n"
             "**CONDITION** — none\n"
             f"**EVENTS** — {event}\n"
+            f"{attacks_section}"
             "**NOTES** — combat test"
         )
     return _llm
@@ -836,14 +849,17 @@ class TestCombatTimeSwitching:
         ))
         files = sorted(tmp_path.glob("day*.json"))
         names = [f.name for f in files]
-        # Turn 1 at exploration pace (15:00), then combat switches.
-        # Turn 2 at melee (15:01), turn 3 at melee (15:02)
-        # But the switch happens mid-turn-1 so turn 1 checkpoint is still
-        # at the pre-advance time. The advance after turn 1 uses the NEW
-        # duration (1 min). So: turn1=15:00, turn2=15:01, turn3=15:02
+        # The turn during which combat begins still ticks at exploration
+        # cadence; the swap to melee is deferred until after that turn's
+        # advance. So:
+        #   turn1 snapshot at 15:00 (pre-advance)
+        #   turn1 advance uses 10 min → 15:10
+        #   turn2 snapshot at 15:10 (combat ongoing → next advance uses 1 min)
+        #   turn2 advance uses 1 min → 15:11
+        #   turn3 snapshot at 15:11
         assert names[0] == "day1_15h00m.json"
-        assert names[1] == "day1_15h01m.json"
-        assert names[2] == "day1_15h02m.json"
+        assert names[1] == "day1_15h10m.json"
+        assert names[2] == "day1_15h11m.json"
 
     def test_faction_defaults(self):
         """Characters default to appropriate factions."""

@@ -321,7 +321,7 @@ async def score_output(
             api_key=os.environ.get(scorer_config["env_var"], ""),
         )
         
-        raw_response = await call_llm(system=system, user=user)
+        raw_response = await call_llm(system_prompt=system, user_message=user)
         parsed = parse_score_response(raw_response)
         
         return ScoreRecord(
@@ -350,7 +350,31 @@ async def score_output(
         )
 
 
+def load_api_keys_from_file() -> None:
+    """Load API keys from ~/.api_keys (bash-style exports)."""
+    api_keys_path = Path.home() / ".api_keys"
+    if not api_keys_path.exists():
+        return  # No file, rely on existing env
+    
+    # Parse bash exports: export KEY=value
+    with open(api_keys_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if line.startswith('export '):
+                line = line[7:]  # Strip 'export '
+            if '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip().strip('"\'')
+                os.environ[key] = value
+
+
 async def main():
+    # Load API keys from ~/.api_keys before doing anything
+    load_api_keys_from_file()
+    
     parser = argparse.ArgumentParser(description="Phase 1b Scorer")
     parser.add_argument(
         "--input",

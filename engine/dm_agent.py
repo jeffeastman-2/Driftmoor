@@ -146,11 +146,10 @@ class DMLeft:
             "**APPROVED** — Yes or No.\n"
             "**MODIFIED ACTION** — Rewritten action if rejected, "
             "otherwise \"none\".\n"
-            "**MOVEMENT TARGET** — Where the character wants to move this turn, "
-            "as x=<val>, y=<val> (no zone — Python resolves zone from geometry). "
-            "Use \"none\" if the character does not move. "
-            "Python will clamp this to the character's speed and determine the "
-            "actual destination and zone — do not compute movement distance yourself.\n"
+            "**MOVEMENT TARGET** — Echo the character's stated movement "
+            "target (or \"none\"). Python uses the character's own "
+            "MOVEMENT field from their action — not this one — as the "
+            "authoritative destination. This field is for your reasoning only.\n"
             "**CONDITION** — Neurochemical deltas as "
             "dimension +/-value, comma separated "
             "(e.g. \"dopamine +0.1, cortisol -0.05\") "
@@ -322,6 +321,13 @@ class DMLeft:
                 e.strip().strip('-•').strip().rstrip('.')
                 for e in parts if e.strip() and e.strip() not in ('-', '•')
             ]
+        # Python owns these event flags — strip any LLM-emitted versions.
+        # combat_initiated is set by CombatResolver / declared-attacks check.
+        # boundary_crossed is set by _check_boundary_crossing in session.py.
+        _PYTHON_OWNED_EVENTS = {"combat_initiated", "boundary_crossed"}
+        spatial_events = [
+            e for e in spatial_events if e.lower() not in _PYTHON_OWNED_EVENTS
+        ]
 
         # Parse attacks: one per line, "target=X, bonus=+N, damage=YdZ+W"
         attacks: list[dict] = []
@@ -429,8 +435,12 @@ class DMRight:
             "it is the authoritative record of what actually happened — "
             "attacks blocked by no line of sight did NOT land and must NOT "
             "be narrated as landing or even as attempted; attacks that missed "
-            "did not hit; only hits cause damage. Never contradict the engine "
-            "resolution in your prose."
+            "did not hit; only hits cause damage. [MOVEMENT] entries record "
+            "the character's actual movement: if they say the character moved "
+            "from A to B, narrate that motion — do NOT narrate them being "
+            "knocked back, repelled, or stopped short unless the entry says "
+            "'repelled' or 'denied'. Never contradict the engine resolution "
+            "in your prose."
         )
         if character_pronouns:
             pronoun_str = ", ".join(

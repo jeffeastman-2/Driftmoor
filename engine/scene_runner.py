@@ -13,6 +13,7 @@ from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
+from engine.map_renderer import render_map
 from models.character import PlayerCharacter, NPC, Creature
 from models.condition import (
     CharacterCondition,
@@ -63,6 +64,7 @@ class SceneConfig:
     game_state_summary: str
     geometry_summary: str = ""
     scene_geometry: SceneGeometry | None = None
+    geometry_path: Path | None = None
     default_turns: int = 4
     game_time: GameTime | None = None
     dm_provider: str = "anthropic"
@@ -252,6 +254,7 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
 
     geometry_summary = ""
     scene_geometry: SceneGeometry | None = None
+    geo_path: Path | None = None
     if data.get("geometry_file"):
         geo_path = ROOT / data["geometry_file"]
         geometry_summary = load_file(geo_path)
@@ -298,6 +301,7 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
         game_state_summary=game_state_summary,
         geometry_summary=geometry_summary,
         scene_geometry=scene_geometry,
+        geometry_path=geo_path,
         default_turns=data.get("default_turns", 4),
         game_time=game_time,
         dm_provider=dm_provider,
@@ -305,6 +309,32 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
         narrative_provider=data.get("narrative_provider", "anthropic"),
         narrative_model=data.get("narrative_model", "claude-sonnet-4-20250514"),
     )
+
+
+def _write_scene_maps(
+    *,
+    geometry_path: Path,
+    scene_name: str,
+    checkpoint_dir: Path,
+) -> None:
+    """Write the static scenario map (starting positions only) and the
+    runtime map (full character paths from snapshots).
+    """
+    scenario_map = geometry_path.parent / f"{scene_name}_map.png"
+    runtime_map = checkpoint_dir / f"{scene_name}_map.png"
+    try:
+        render_map(
+            geometry_path, scenario_map, snapshot_dir=None,
+            title=f"{scene_name.replace('_', ' ').title()} — starting positions",
+        )
+        print(f"  Written to {scenario_map}")
+        render_map(
+            geometry_path, runtime_map, snapshot_dir=checkpoint_dir,
+            title=f"{scene_name.replace('_', ' ').title()} — character paths",
+        )
+        print(f"  Written to {runtime_map}")
+    except Exception as exc:  # noqa: BLE001 — visualization is best-effort
+        print(f"  [map] failed: {exc}")
 
 
 def print_turn_result(turn_result):
@@ -395,3 +425,10 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
         output_path=checkpoint_dir / f"{scene_name}_story.txt",
     )
     print(f"  Written to {checkpoint_dir / f'{scene_name}_story.txt'}")
+
+    if config.geometry_path is not None and config.geometry_path.exists():
+        _write_scene_maps(
+            geometry_path=config.geometry_path,
+            scene_name=scene_name,
+            checkpoint_dir=checkpoint_dir,
+        )
