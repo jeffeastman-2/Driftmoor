@@ -183,10 +183,21 @@ class PlayerLeft:
             if context.in_combat:
                 perception_header = "## COMBAT ACTIVE — Visible targets"
             perception_block = f"\n\n{perception_header}\n{context.perception}"
+            has_hostile = "HOSTILE" in (context.perception or "")
             if context.in_combat:
                 perception_block += (
                     "\n\nYou are in active combat. "
                     "Attack visible hostile creatures — do not Search or wait."
+                )
+            elif has_hostile:
+                perception_block += (
+                    "\n\nA HOSTILE creature is visible. You do not need to "
+                    "wait for it to attack first. If it is within your "
+                    "weapon's range (longbow 150 ft, shortbow 80 ft, javelin "
+                    "30 ft thrown, melee 5 ft), you may attack now. "
+                    "'Wait and see' against a known hostile is rarely the "
+                    "right call — opening from range before it closes the "
+                    "distance is usually correct for a ranged attacker."
                 )
         else:
             perception_block = (

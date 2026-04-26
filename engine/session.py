@@ -640,11 +640,20 @@ def _build_perception(
             dist_rounded = round(dist / 5) * 5
             zone = other_pos[2] or zone_b
             label = other_id
+            faction_tag = ""
             if characters is not None:
                 cs_other = characters.get(other_id)
-                if cs_other is not None and cs_other.scene_handle:
-                    label = cs_other.scene_handle
-            lines.append(f"- {label} ({zone}, ~{dist_rounded:.0f} ft away)")
+                if cs_other is not None:
+                    if cs_other.scene_handle:
+                        label = cs_other.scene_handle
+                    fac = getattr(cs_other.character, "faction", "neutral")
+                    if fac == "hostile":
+                        faction_tag = "HOSTILE, "
+                    elif fac == "party":
+                        faction_tag = "ally, "
+            lines.append(
+                f"- {label} ({faction_tag}{zone}, ~{dist_rounded:.0f} ft away)"
+            )
 
     result = "\n".join(lines) if lines else ""
     _dbg(f"[PERCEPTION]   result: {repr(result)}")
