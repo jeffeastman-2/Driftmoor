@@ -142,25 +142,19 @@ def load_paths_from_snapshots(snapshot_dir: Path) -> dict[str, list[tuple[float,
 # Styling
 # ---------------------------------------------------------------------------
 
-ZONE_COLORS = {
-    "POOL":   ("#5b8def", 0.45),
-    "GLADE":  ("#7fbf7f", 0.30),
-    "TRAIL":  ("#c2a878", 0.40),
-    "FOREST": ("#3a5f3a", 0.18),
-    # Echoing Caverns and other underground scenes
-    "CAVES":         ("#2b2b2b", 0.55),
-    "ENTRY_CHAMBER": ("#8a6a3f", 0.35),
-    "FIRST_PASSAGE": ("#6e5530", 0.40),
-    "ECHO_CHAMBER":  ("#7a5a8a", 0.35),
-    "DEEP_PASSAGE":  ("#5a4528", 0.45),
-    "BONE_CHAMBER":  ("#a89878", 0.35),
-    "POOL_CAVERN":   ("#3d6e9c", 0.40),
-}
-
-# Fallback palette for zones not in ZONE_COLORS
-_ZONE_FALLBACK = [
-    ("#7fbf7f", 0.30), ("#5b8def", 0.40), ("#c2a878", 0.40),
-    ("#a87fbf", 0.35), ("#bf7f7f", 0.35), ("#7fbfbf", 0.35),
+# Palette indexed by render_z rank within a map (lowest-z = background,
+# higher-z = brighter overlay). Colors are light, perceptually distinct,
+# and avoid dark blue. Wraps if a map has more z-tiers than entries.
+_Z_PALETTE = [
+    ("#3a5f3a", 0.18),  # rank 0: muted forest/cave background
+    ("#c2a878", 0.40),  # rank 1: warm sand/path
+    ("#7fbf7f", 0.30),  # rank 2: soft green
+    ("#d8b48a", 0.40),  # rank 3: light tan
+    ("#b89a78", 0.40),  # rank 4: dusty earth
+    ("#a89878", 0.35),  # rank 5: bone
+    ("#c8b4d8", 0.35),  # rank 6: lavender
+    ("#a8c8f0", 0.40),  # rank 7: sky blue
+    ("#e8d8a8", 0.35),  # rank 8: pale gold
 ]
 
 # Stable palette for character paths; falls back by hashing the id.
@@ -219,32 +213,47 @@ def render_map(
 
     fig, ax = plt.subplots(figsize=(11, 11))
 
-    # Zones — render in ascending render_z so background zones (e.g.
-    # CAVES, FOREST) draw first and chambers/POIs overlay them.
+    # Zones — render in ascending render_z so background zones draw first
+    # and chambers/POIs overlay them.
     zone_order = sorted(
         g["zones"].keys(),
         key=lambda n: (g["zone_z"].get(n, 0.0), n),
     )
-    fallback_idx = 0
-    background_zones = {"FOREST", "CAVES"}
+    # Build a z-rank → palette mapping based on the unique render_z values
+    # in this map. Same z always gets the same color across all zones.
+    unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
+    z_rank = {z: i for i, z in enumerate(unique_z)}
+
+    # Compute the union bbox of all zones, used to detect "background"
+    # zones (those that fill ~the whole scene). Their labels are noisy
+    # since they overlap everything else.
+    all_pts = [p for n in zone_order for p in g["zones"].get(n, ())]
+    if all_pts:
+        ux0 = min(p[0] for p in all_pts); ux1 = max(p[0] for p in all_pts)
+        uy0 = min(p[1] for p in all_pts); uy1 = max(p[1] for p in all_pts)
+        union_area = max((ux1 - ux0) * (uy1 - uy0), 1.0)
+    else:
+        union_area = 1.0
+
+    pending_zone_labels: list[tuple[float, float, str]] = []
     for zname in zone_order:
         v = g["zones"].get(zname)
         if not v:
             continue
-        if zname in ZONE_COLORS:
-            color, alpha = ZONE_COLORS[zname]
-        else:
-            color, alpha = _ZONE_FALLBACK[fallback_idx % len(_ZONE_FALLBACK)]
-            fallback_idx += 1
+        zval = g["zone_z"].get(zname, 0.0)
+        color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
         ax.add_patch(patches.Polygon(
             v, closed=True, facecolor=color, alpha=alpha,
             edgecolor="black", linewidth=0.8,
         ))
-        cx = sum(p[0] for p in v) / len(v)
-        cy = sum(p[1] for p in v) / len(v)
-        if zname not in background_zones:
-            ax.text(cx, cy, zname, ha="center", va="center",
-                    fontsize=10, fontweight="bold", color="black", alpha=0.75)
+        # Skip label for background zones (bbox covers >=80% of all zones).
+        x0 = min(p[0] for p in v); x1 = max(p[0] for p in v)
+        y0 = min(p[1] for p in v); y1 = max(p[1] for p in v)
+        bbox_area = (x1 - x0) * (y1 - y0)
+        if bbox_area / union_area < 0.80:
+            cx = sum(p[0] for p in v) / len(v)
+            cy = sum(p[1] for p in v) / len(v)
+            pending_zone_labels.append((cx, cy, zname))
 
     # Boundaries
     for name, v in g["boundaries"]:
@@ -259,9 +268,19 @@ def render_map(
     for name, v in g["impassable"]:
         if v:
             ax.add_patch(patches.Polygon(
-                v, closed=True, facecolor="#1f3a8a", alpha=0.85,
-                edgecolor="navy", linewidth=1.0,
+                v, closed=True, facecolor="#4a4a4a", alpha=0.75,
+                edgecolor="#2a2a2a", linewidth=1.0,
             ))
+            cx = sum(p[0] for p in v) / len(v)
+            cy = sum(p[1] for p in v) / len(v)
+            ax.text(cx, cy, name, ha="center", va="center",
+                    fontsize=8, fontstyle="italic",
+                    color="white", alpha=0.9)
+
+    # Zone labels — drawn last so they're never covered by overlays.
+    for cx, cy, zname in pending_zone_labels:
+        ax.text(cx, cy, zname, ha="center", va="center",
+                fontsize=10, fontweight="bold", color="black", alpha=0.75)
 
     # Landmarks
     for name, (x, y) in g["landmarks"].items():
