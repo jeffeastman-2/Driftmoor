@@ -22,15 +22,15 @@ chambers decades ago.
 
 | name              | x    | y    |
 |-------------------|------|------|
-| entrance_crack    | 97.5 | 325.0|
-| entry_chamber     | 130.0 | 292.5 |
-| first_passage     | 162.5 | 243.75 |
-| echo_chamber      | 178.75 | 195.0 |
-| deep_passage      | 130.0 | 146.25 |
-| bone_chamber      | 113.75 | 81.25 |
-| underground_pool  | 195.0 | 113.75 |
-| ancient_carvings  | 81.25 | 162.5 |
-| collapsed_tunnel  | 227.5 | 65.0 |
+| entrance_crack    | 97 | 325|
+| entry_chamber     | 130 | 292 |
+| first_passage     | 162 | 243 |
+| echo_chamber      | 178 | 195 |
+| deep_passage      | 130 | 146 |
+| bone_chamber      | 113 | 81 |
+| underground_pool  | 195 | 113 |
+| ancient_carvings  | 81 | 162 |
+| collapsed_tunnel  | 227 | 65 |
 
 ---
 
@@ -38,13 +38,13 @@ chambers decades ago.
 
 | name             | render_z | vertices                              |
 |------------------|----------|---------------------------------------|
-| ENTRY_CHAMBER    | 6.5        | (97.5,260.0) (178.75,260.0) (178.75,325.0) (97.5,325.0)      |
-| ECHO_CHAMBER     | 6.5        | (130.0,162.5) (227.5,162.5) (227.5,227.5) (130.0,227.5)        |
-| BONE_CHAMBER     | 6.5        | (65.0,48.75) (162.5,48.75) (162.5,113.75) (65.0,113.75)        |
-| DEEP_PASSAGE     | 3.25        | (97.5,113.75) (162.5,113.75) (162.5,162.5) (97.5,162.5)        |
-| FIRST_PASSAGE    | 3.25        | (130.0,227.5) (195.0,227.5) (195.0,260.0) (130.0,260.0)        |
-| POOL_CAVERN      | 3.25        | (162.5,81.25) (243.75,81.25) (243.75,146.25) (162.5,146.25)        |
-| CAVES            | 0.0        | (0.0,0.0) (325.0,0.0) (325.0,390.0) (0.0,390.0)        |
+| ENTRY_CHAMBER    | 6.5      | (97,260) (178,260) (178,325) (97,325)      |
+| FIRST_PASSAGE    | 6.5      | (130,227) (145,227) (145,260) (130,260)        |
+| ECHO_CHAMBER     | 6.5      | (130,162) (227,162) (227,227) (130,227)        |
+| DEEP_PASSAGE     | 3.25     | (150,113) (160,113) (160,162) (150,162)        |
+| BONE_CHAMBER     | 6.5      | (65,48) (162,48) (162,113) (65,113)        |
+| POOL_CAVERN      | 3.25     | (162,81) (243,81) (243,146) (162,146)        |
+| CAVES            | 0.0      | (0,0) (325,0) (325,390) (0,390)        |
 
 ---
 
@@ -52,10 +52,10 @@ chambers decades ago.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Cave walls north   | (0.0,341.25) (325.0,341.25) (325.0,390.0) (0.0,390.0)    |
-| Collapsed tunnel   | (211.25,48.75) (260.0,48.75) (260.0,81.25) (211.25,81.25)        |
-| Underground pool   | (172.25,91.0) (221.0,91.0) (221.0,136.5) (172.25,136.5)        |
-| Rock fall          | (48.75,178.75) (81.25,178.75) (81.25,211.25) (48.75,211.25)        |
+| Cave walls north   | (0,341) (325,341) (325,390) (0,390)    |
+| Collapsed tunnel   | (211,48) (260,48) (260,81) (211,81)        |
+| Underground pool   | (172,91) (221,91) (221,136) (172,136)        |
+| Rock fall          | (48,178) (81,178) (81,211) (48,211)        |
 
 ---
 
@@ -63,8 +63,8 @@ chambers decades ago.
 
 | name              | x    | y     | destination                              |
 |-------------------|------|-------|------------------------------------------|
-| entrance_crack    | 97.5 | 341.25 | places/obelisk_reach                     |
-| to_obelisk_above  | 162.5 | 308.75  | places/obelisk_reach/shattered_obelisk   |
+| entrance_crack    | 97 | 341 | places/obelisk_reach                     |
+| to_obelisk_above  | 162 | 308  | places/obelisk_reach/shattered_obelisk   |
 
 ---
 
@@ -75,4 +75,4 @@ chambers decades ago.
 - **type:** magical
 - **blocks:** none
 - **effect:** sounds carry and distort unnaturally; Perception checks at disadvantage for locating sound sources; occasionally sounds resolve into voice-like fragments
-- **vertices:** (65.0,32.5) (243.75,32.5) (243.75,243.75) (65.0,243.75)
+- **vertices:** (65,32) (243,32) (243,243) (65,243)

@@ -21,16 +21,16 @@ Willows line the riverbank. Fields stretch in every direction.
 
 | name              | x    | y    |
 |-------------------|------|------|
-| mill_entrance     | 113.75 | 65.0 |
-| waterwheel        | 146.25 | 146.25 |
-| grinding_stones   | 130.0 | 97.5 |
-| grain_yard        | 65.0 | 48.75 |
-| loading_dock      | 97.5 | 32.5 |
-| willow_bank       | 162.5 | 156.0 |
-| field_path_south  | 97.5 | 0.0  |
-| field_path_east   | 188.5 | 81.25 |
-| staircase         | 156.0 | 91.0 |
-| ivy_wall          | 178.75 | 113.75 |
+| mill_entrance     | 113 | 65 |
+| waterwheel        | 146 | 146 |
+| grinding_stones   | 130 | 97 |
+| grain_yard        | 65 | 48 |
+| loading_dock      | 97 | 32 |
+| willow_bank       | 162 | 156 |
+| field_path_south  | 97 | 0  |
+| field_path_east   | 188 | 81 |
+| staircase         | 156 | 91 |
+| ivy_wall          | 178 | 113 |
 
 ---
 
@@ -38,11 +38,11 @@ Willows line the riverbank. Fields stretch in every direction.
 
 | name           | render_z | vertices                              |
 |----------------|----------|---------------------------------------|
-| UPPER_FLOOR    | 9.75        | (97.5,71.5) (178.75,71.5) (178.75,136.5) (97.5,136.5)       |
-| MILL_INTERIOR  | 6.5        | (97.5,71.5) (178.75,71.5) (178.75,136.5) (97.5,136.5)       |
-| MILL_YARD      | 3.25        | (16.25,16.25) (178.75,16.25) (178.75,71.5) (16.25,71.5)           |
-| RIVERBANK      | 3.25        | (16.25,136.5) (178.75,136.5) (178.75,162.5) (16.25,162.5)         |
-| FIELDS         | 0.0        | (0.0,0.0) (195.0,0.0) (195.0,162.5) (0.0,162.5)           |
+| UPPER_FLOOR    | 9.75        | (97,71) (178,71) (178,136) (97,136)       |
+| MILL_INTERIOR  | 6.5        | (97,71) (178,71) (178,136) (97,136)       |
+| MILL_YARD      | 3.25        | (16,16) (178,16) (178,71) (16,71)           |
+| RIVERBANK      | 3.25        | (16,136) (178,136) (178,162) (16,162)         |
+| FIELDS         | 0.0        | (0,0) (195,0) (195,162) (0,162)           |
 
 ---
 
@@ -50,9 +50,9 @@ Willows line the riverbank. Fields stretch in every direction.
 
 | description       | vertices                              |
 |-------------------|---------------------------------------|
-| Mill south wall   | (97.5,65.0) (178.75,65.0) (178.75,71.5) (97.5,71.5)       |
-| Mill north wall   | (97.5,136.5) (178.75,136.5) (178.75,143.0) (97.5,143.0)       |
-| River             | (0.0,149.5) (195.0,149.5) (195.0,162.5) (0.0,162.5)         |
+| Mill south wall   | (97,65) (178,65) (178,71) (97,71)       |
+| Mill north wall   | (97,136) (178,136) (178,143) (97,143)       |
+| River             | (0,149) (195,149) (195,162) (0,162)         |
 
 ---
 
@@ -60,10 +60,10 @@ Willows line the riverbank. Fields stretch in every direction.
 
 | name               | x    | y    | destination                               |
 |--------------------|------|------|-------------------------------------------|
-| field_path_south   | 97.5 | 0.0  | places/greywater_river                    |
-| field_path_east    | 188.5 | 81.25 | places/greywater_river                    |
-| to_ground_floor    | 113.75 | 71.5 | places/greywater_river/old_mill/ground_floor |
-| to_upper_floor     | 156.0 | 91.0 | places/greywater_river/old_mill/upper_floor  |
+| field_path_south   | 97 | 0  | places/greywater_river                    |
+| field_path_east    | 188 | 81 | places/greywater_river                    |
+| to_ground_floor    | 113 | 71 | places/greywater_river/old_mill/ground_floor |
+| to_upper_floor     | 156 | 91 | places/greywater_river/old_mill/upper_floor  |
 
 ---
 
@@ -71,6 +71,6 @@ Willows line the riverbank. Fields stretch in every direction.
 
 | character | x    | y    | zone          |
 |-----------|------|------|---------------|
-| lilar     | 65.0 | 48.75 | MILL_YARD     |
-| gregan    | 130.0 | 97.5 | MILL_INTERIOR |
-| tessa     | 156.0 | 91.0 | MILL_INTERIOR |
+| lilar     | 65 | 48 | MILL_YARD     |
+| gregan    | 130 | 97 | MILL_INTERIOR |
+| tessa     | 156 | 91 | MILL_INTERIOR |

@@ -21,14 +21,14 @@ forest beyond.
 
 | name              | x    | y    |
 |-------------------|------|------|
-| tower_base        | 48.75 | 48.75 |
-| tower_entrance    | 48.75 | 35.75 |
-| staircase         | 42.25 | 48.75 |
-| upper_level       | 48.75 | 48.75 |
-| collapsed_section | 55.25 | 58.5 |
-| clearing_south    | 48.75 | 16.25  |
-| clearing_north    | 48.75 | 81.25 |
-| viewpoint         | 48.75 | 52.0 |
+| tower_base        | 48 | 48 |
+| tower_entrance    | 48 | 35 |
+| staircase         | 42 | 48 |
+| upper_level       | 48 | 48 |
+| collapsed_section | 55 | 58 |
+| clearing_south    | 48 | 16  |
+| clearing_north    | 48 | 81 |
+| viewpoint         | 48 | 52 |
 
 ---
 
@@ -36,9 +36,9 @@ forest beyond.
 
 | name            | render_z | vertices                              |
 |-----------------|----------|---------------------------------------|
-| TOWER_INTERIOR  | 6.5        | (35.75,35.75) (61.75,35.75) (61.75,61.75) (35.75,61.75)        |
-| CLEARING        | 3.25        | (9.75,9.75) (87.75,9.75) (87.75,87.75) (9.75,87.75)            |
-| FOREST          | 0.0        | (0.0,0.0) (97.5,0.0) (97.5,97.5) (0.0,97.5)            |
+| TOWER_INTERIOR  | 6.5        | (35,35) (61,35) (61,61) (35,61)        |
+| CLEARING        | 3.25        | (9,9) (87,9) (87,87) (9,87)            |
+| FOREST          | 0.0        | (0,0) (97,0) (97,97) (0,97)            |
 
 ---
 
@@ -46,8 +46,8 @@ forest beyond.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Tower walls        | (32.5,32.5) (65.0,32.5) (65.0,35.75) (32.5,35.75)        |
-| Collapsed section  | (52.0,55.25) (65.0,55.25) (65.0,65.0) (52.0,65.0)        |
+| Tower walls        | (32,32) (65,32) (65,35) (32,35)        |
+| Collapsed section  | (52,55) (65,55) (65,65) (52,65)        |
 
 ---
 
@@ -55,4 +55,4 @@ forest beyond.
 
 | name              | x    | y    | destination                  |
 |-------------------|------|------|------------------------------|
-| trail_south       | 48.75 | 0.0  | places/mistwood_hills        |
+| trail_south       | 48 | 0  | places/mistwood_hills        |

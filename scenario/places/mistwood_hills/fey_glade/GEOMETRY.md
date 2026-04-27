@@ -13,12 +13,12 @@
 
 | name             | x     | y     |
 |------------------|-------|-------|
-| glade_center     | 162.5  | 162.5  |
-| pool_surface     | 138.12  | 170.62  |
-| carved_stone     | 136.5  | 169.0  |
-| trail_entrance   | 191.75  | 146.25  |
-| oak_west         | 139.75  | 162.5  |
-| oak_east         | 185.25  | 162.5  |
+| glade_center     | 162  | 162  |
+| pool_surface     | 138  | 170  |
+| carved_stone     | 136  | 169  |
+| trail_entrance   | 191  | 146  |
+| oak_west         | 139  | 162  |
+| oak_east         | 185  | 162  |
 
 ## Zones
 
@@ -26,22 +26,22 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 
 | name     | vertices                                                   |
 |----------|------------------------------------------------------------|
-| POOL     | (132.0,164.0,0.97) (144.0,164.0,0.97) (144.0,176.0,0.97) (132.0,176.0,0.97)          |
-| GLADE    | (130.0,146.25,0.65) (195.0,146.25,0.65) (195.0,178.75,0.65) (130.0,178.75,0.65)          |
-| TRAIL    | (191.75,146.25,0.33) (195.0,146.25,0.33) (325.0,13.0,0.0) (321.75,9.75,0.0)           |
-| FOREST   | (0.0,0.0,0.0) (325.0,0.0,0.0) (325.0,325.0,0.0) (0.0,325.0,0.0)          |
+| POOL     | (132,164,0.97) (144,164,0.97) (144,176,0.97) (132,176,0.97)          |
+| GLADE    | (130,146,0.65) (195,146,0.65) (195,178,0.65) (130,178,0.65)          |
+| TRAIL    | (191,146,0.33) (195,146,0.33) (325,13,0.0) (321,9,0.0)           |
+| FOREST   | (0,0,0.0) (325,0,0.0) (325,325,0.0) (0,325,0.0)          |
 
 ## Impassable
 
 | description  | vertices                         |
 |--------------|----------------------------------|
-| Pool surface | (136.5,169.0) (139.75,169.0) (139.75,172.25) (136.5,172.25)  |
+| Pool surface | (136,169) (139,169) (139,172) (136,172)  |
 
 ## Connections
 
 | name          | x     | y    | destination          |
 |---------------|-------|------|----------------------|
-| trail_exit    | 321.75  | 13.0  | mistwood_hills path  |
+| trail_exit    | 321  | 13  | mistwood_hills path  |
 
 ## Visibility
 
@@ -69,7 +69,7 @@ Dense Mistwood forest heavily occludes sight-lines. Rules:
 - **type:** magical
 - **blocks:** shadowbeast, shadow_creature, undead
 - **effect:** fey resonance antithetical to shadow essence — blocked creatures feel deep sourceless wrongness
-- **vertices:** (126.75,143.0) (198.25,143.0) (198.25,182.0) (126.75,182.0)
+- **vertices:** (126,143) (198,143) (198,182) (126,182)
 - **save:** wisdom
 - **crossing_dc:** dusk:8, evening:14, night:18, dawn:8
 - **crossing_damage_success:** dusk:1d4, evening:1d6, night:1d6+2, dawn:1d4
@@ -79,6 +79,6 @@ Dense Mistwood forest heavily occludes sight-lines. Rules:
 
 | character    | x     | y     | zone     |
 |--------------|-------|-------|----------|
-| aeliana      | 256.75  | 81.25  | TRAIL    |
-| fennel       | 190.0  | 162.5  | GLADE    |
-| shadowbeast  | 65.0  | 162.5  | FOREST   |
+| aeliana      | 256  | 81  | TRAIL    |
+| fennel       | 190  | 162  | GLADE    |
+| shadowbeast  | 65  | 162  | FOREST   |

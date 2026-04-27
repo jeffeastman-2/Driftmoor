@@ -21,14 +21,14 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | name                  | x      | y      |
 |-----------------------|--------|--------|
-| obelisk_reach_edge    | 3575.0 | 4225.0 |
-| shattered_obelisk     | 3250.0 | 7475.0 |
-| echoing_caverns_mouth | 4225.0 | 6500.0 |
-| cliff_approach        | 2600.0  | 2600.0  |
-| symbol_cliff          | 1625.0  | 4875.0 |
-| narrow_path           | 3900.0 | 5200.0 |
-| scorched_ground       | 3250.0 | 8125.0 |
-| outlook_ledge         | 5850.0 | 5850.0 |
+| obelisk_reach_edge    | 3575 | 4225 |
+| shattered_obelisk     | 3250 | 7475 |
+| echoing_caverns_mouth | 4225 | 6500 |
+| cliff_approach        | 2600  | 2600  |
+| symbol_cliff          | 1625  | 4875 |
+| narrow_path           | 3900 | 5200 |
+| scorched_ground       | 3250 | 8125 |
+| outlook_ledge         | 5850 | 5850 |
 
 ---
 
@@ -36,12 +36,12 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | name               | render_z | vertices                                              |
 |--------------------|----------|-------------------------------------------------------|
-| SHATTERED_OBELISK  | 9.75        | (2275.0,6500.0) (4225.0,6500.0) (4225.0,8775.0) (2275.0,8775.0)          |
-| ECHOING_CAVERNS    | 9.75        | (3575.0,5525.0) (5200.0,5525.0) (5200.0,7475.0) (3575.0,7475.0)        |
-| CLIFF_PLATEAU      | 6.5        | (650.0,3250.0) (7150.0,3250.0) (7800.0,10400.0) (0.0,10400.0)            |
-| APPROACH_PATH      | 3.25        | (1300.0,650.0) (4550.0,650.0) (4550.0,3250.0) (1300.0,3250.0)            |
-| CLIFFS             | 3.25        | (0.0,0.0) (9100.0,0.0) (9100.0,11375.0) (0.0,11375.0)                    |
-| EXTERIOR           | 0.0        | (0.0,0.0) (9100.0,0.0) (9100.0,11375.0) (0.0,11375.0)                    |
+| SHATTERED_OBELISK  | 9.75        | (2275,6500) (4225,6500) (4225,8775) (2275,8775)          |
+| ECHOING_CAVERNS    | 9.75        | (3575,5525) (5200,5525) (5200,7475) (3575,7475)        |
+| CLIFF_PLATEAU      | 6.5        | (650,3250) (7150,3250) (7800,10400) (0,10400)            |
+| APPROACH_PATH      | 3.25        | (1300,650) (4550,650) (4550,3250) (1300,3250)            |
+| CLIFFS             | 3.25        | (0,0) (9100,0) (9100,11375) (0,11375)                    |
+| EXTERIOR           | 0.0        | (0,0) (9100,0) (9100,11375) (0,11375)                    |
 
 ---
 
@@ -49,8 +49,8 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | description          | vertices                                              |
 |----------------------|-------------------------------------------------------|
-| Western cliff face   | (0.0,4875.0) (650.0,4875.0) (650.0,11375.0) (0.0,11375.0)                |
-| Eastern cliff drop   | (7800.0,4875.0) (9100.0,4875.0) (9100.0,11375.0) (7800.0,11375.0)        |
+| Western cliff face   | (0,4875) (650,4875) (650,11375) (0,11375)                |
+| Eastern cliff drop   | (7800,4875) (9100,4875) (9100,11375) (7800,11375)        |
 
 ---
 
@@ -58,10 +58,10 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 | name                | x      | y      | destination                              |
 |---------------------|--------|--------|------------------------------------------|
-| approach_south      | 2925.0  | 325.0  | places/driftmoor                         |
-| to_obelisk          | 3250.0 | 7475.0 | places/obelisk_reach/shattered_obelisk   |
-| to_caverns          | 4225.0 | 6500.0 | places/obelisk_reach/echoing_caverns     |
-| to_mistwood_east    | 8450.0 | 4875.0 | places/mistwood_hills                    |
+| approach_south      | 2925  | 325  | places/driftmoor                         |
+| to_obelisk          | 3250 | 7475 | places/obelisk_reach/shattered_obelisk   |
+| to_caverns          | 4225 | 6500 | places/obelisk_reach/echoing_caverns     |
+| to_mistwood_east    | 8450 | 4875 | places/mistwood_hills                    |
 
 ---
 
@@ -72,4 +72,4 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 - **type:** magical
 - **blocks:** none
 - **effect:** perception checks degraded, compasses spin, light sources flicker; stronger near the obelisk
-- **vertices:** (650.0,3250.0) (7800.0,3250.0) (7800.0,10400.0) (650.0,10400.0)
+- **vertices:** (650,3250) (7800,3250) (7800,10400) (650,10400)

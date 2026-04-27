@@ -19,12 +19,12 @@ hide racks and tools. Strong smell keeps visitors away.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_entrance  | 26.0  | 0.0  |
-| hide_racks      | 13.0  | 19.5  |
-| tool_bench      | 39.0 | 19.5  |
-| drying_line     | 26.0  | 32.5 |
-| tanning_vat_3.25   | 13.0  | -6.5 |
-| tanning_vat_6.5   | 39.0 | -6.5 |
+| front_entrance  | 26  | 0  |
+| hide_racks      | 13  | 19  |
+| tool_bench      | 39 | 19  |
+| drying_line     | 26  | 32 |
+| tanning_vat_3.25   | 13  | -6 |
+| tanning_vat_6.5   | 39 | -6 |
 
 ---
 
@@ -32,9 +32,9 @@ hide racks and tools. Strong smell keeps visitors away.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| WORKSHOP   | 3.25        | (0.0,0.0) (52.0,0.0) (52.0,39.0) (0.0,39.0)     |
-| VAT_YARD   | 0.0        | (0.0,-13.0) (52.0,-13.0) (52.0,0.0) (0.0,0.0)     |
-| EXTERIOR   | 0.0        | (-9.75,-19.5) (61.75,-19.5) (61.75,48.75) (-9.75,48.75)  |
+| WORKSHOP   | 3.25        | (0,0) (52,0) (52,39) (0,39)     |
+| VAT_YARD   | 0.0        | (0,-13) (52,-13) (52,0) (0,0)     |
+| EXTERIOR   | 0.0        | (-9,-19) (61,-19) (61,48) (-9,48)  |
 
 ---
 
@@ -42,7 +42,7 @@ hide racks and tools. Strong smell keeps visitors away.
 
 | description | vertices                        |
 |-------------|---------------------------------|
-| Back wall   | (0.0,35.75) (52.0,35.75) (52.0,39.0) (0.0,39.0)   |
+| Back wall   | (0,35) (52,35) (52,39) (0,39)   |
 
 ---
 
@@ -50,4 +50,4 @@ hide racks and tools. Strong smell keeps visitors away.
 
 | name            | x   | y   | destination      |
 |-----------------|-----|-----|------------------|
-| front_entrance  | 26.0 | 0.0 | places/driftmoor |
+| front_entrance  | 26 | 0 | places/driftmoor |

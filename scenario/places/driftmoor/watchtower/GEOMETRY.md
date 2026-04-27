@@ -19,11 +19,11 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 16.25 | 0.0 |
-| weapon_rack     | 6.5 | 22.75 |
-| cot             | 26.0 | 22.75 |
-| ladder          | 16.25 | 29.25 |
-| center          | 16.25 | 16.25 |
+| front_door      | 16 | 0 |
+| weapon_rack     | 6 | 22 |
+| cot             | 26 | 22 |
+| ladder          | 16 | 29 |
+| center          | 16 | 16 |
 
 ---
 
@@ -31,9 +31,9 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | render_z | vertices                    |
 |-----------------|----------|-----------------------------|
-| ROOF_PLATFORM   | 6.5        | (3.25,3.25) (29.25,3.25) (29.25,29.25) (3.25,29.25)     |
-| GROUND_FLOOR    | 3.25        | (0.0,0.0) (32.5,0.0) (32.5,32.5) (0.0,32.5)  |
-| EXTERIOR        | 0.0        | (-9.75,-9.75) (42.25,-9.75) (42.25,42.25) (-9.75,42.25) |
+| ROOF_PLATFORM   | 6.5        | (3,3) (29,3) (29,29) (3,29)     |
+| GROUND_FLOOR    | 3.25        | (0,0) (32,0) (32,32) (0,32)  |
+| EXTERIOR        | 0.0        | (-9,-9) (42,-9) (42,42) (-9,42) |
 
 ---
 
@@ -41,7 +41,7 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Tower walls | (0.0,0.0) (32.5,0.0) (32.5,32.5) (0.0,32.5) |
+| Tower walls | (0,0) (32,0) (32,32) (0,32) |
 
 ---
 
@@ -49,4 +49,4 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 16.25 | 0.0 | places/driftmoor |
+| front_door | 16 | 0 | places/driftmoor |

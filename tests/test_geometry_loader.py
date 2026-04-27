@@ -44,12 +44,12 @@ class TestParseGeometryMd:
 
     def test_landmark_trail_entrance(self, fey_glade_data):
         pos = fey_glade_data["landmarks"]["trail_entrance"]
-        assert pos.x == 191.75
-        assert pos.y == 146.25
+        assert pos.x == 191.0
+        assert pos.y == 146.0
 
     def test_landmark_carved_stone(self, fey_glade_data):
         pos = fey_glade_data["landmarks"]["carved_stone"]
-        assert pos.x == 136.5
+        assert pos.x == 136.0
         assert pos.y == 169.0
 
     def test_zones_count(self, fey_glade_data):
@@ -62,7 +62,7 @@ class TestParseGeometryMd:
 
     def test_zone_trail_vertices(self, fey_glade_data):
         trail = fey_glade_data["zones"]["TRAIL"]
-        assert trail.vertices == [(191.75, 146.25, 0.33), (195.0, 146.25, 0.33), (325.0, 13.0, 0.0), (321.75, 9.75, 0.0)]
+        assert trail.vertices == [(191.0, 146.0, 0.33), (195.0, 146.0, 0.33), (325.0, 13.0, 0.0), (321.0, 9.0, 0.0)]
 
     def test_zone_z_elevation(self, fey_glade_data):
         zones = fey_glade_data["zones"]
@@ -78,7 +78,7 @@ class TestParseGeometryMd:
 
     def test_connection_trail_exit(self, fey_glade_data):
         pos = fey_glade_data["connections"]["trail_exit"]
-        assert pos.x == 321.75
+        assert pos.x == 321.0
         assert pos.y == 13.0
 
     def test_boundaries_count(self, fey_glade_data):
@@ -106,18 +106,18 @@ class TestParseGeometryMd:
 
     def test_starting_aeliana(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["aeliana"]
-        assert pos.x == 256.75
-        assert pos.y == 81.25
+        assert pos.x == 256.0
+        assert pos.y == 81.0
 
     def test_starting_fennel(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["fennel"]
         assert pos.x == 190.0
-        assert pos.y == 162.5
+        assert pos.y == 162.0
 
     def test_starting_shadowbeast(self, fey_glade_data):
         pos = fey_glade_data["starting_positions"]["shadowbeast"]
         assert pos.x == 65.0
-        assert pos.y == 162.5
+        assert pos.y == 162.0
 
 
 class TestLoadGeometry:
@@ -130,9 +130,10 @@ class TestLoadGeometry:
 
     def test_load_zones_work(self):
         geo = load_geometry(FEY_GLADE_PATH)
-        assert geo.zone_at(Position(256.75, 81.25)) == "TRAIL"
-        assert geo.zone_at(Position(162.5, 162.5)) == "GLADE"
-        assert geo.zone_at(Position(32.5, 32.5)) == "FOREST"
+        assert geo.zone_at(Position(256.0, 81.0)) == "TRAIL"
+        assert geo.zone_at(Position(162.0, 162.0)) == "GLADE"
+        assert geo.zone_at(Position(32.0, 32.0)) == "FOREST"
+
 
     def test_load_full_returns_tuple(self):
         geo, boundaries, starting = load_geometry_full(FEY_GLADE_PATH)

@@ -20,12 +20,12 @@ near the entrance.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| open_front      | 26.0  | 0.0  |
-| main_workbench  | 26.0  | 19.5  |
-| lumber_pile     | 45.5 | 29.25  |
-| tool_wall       | 0.0  | 19.5  |
-| display_area    | 13.0  | 6.5  |
-| sawdust_pile    | 39.0 | 13.0  |
+| open_front      | 26  | 0  |
+| main_workbench  | 26  | 19  |
+| lumber_pile     | 45 | 29  |
+| tool_wall       | 0  | 19  |
+| display_area    | 13  | 6  |
+| sawdust_pile    | 39 | 13  |
 
 ---
 
@@ -33,9 +33,9 @@ near the entrance.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| STORAGE    | 6.5        | (32.5,19.5) (52.0,19.5) (52.0,39.0) (32.5,39.0)  |
-| WORKSHOP   | 3.25        | (0.0,0.0) (52.0,0.0) (52.0,39.0) (0.0,39.0)    |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (61.75,-9.75) (61.75,48.75) (-9.75,48.75) |
+| STORAGE    | 6.5        | (32,19) (52,19) (52,39) (32,39)  |
+| WORKSHOP   | 3.25        | (0,0) (52,0) (52,39) (0,39)    |
+| EXTERIOR   | 0.0        | (-9,-9) (61,-9) (61,48) (-9,48) |
 
 ---
 
@@ -43,7 +43,7 @@ near the entrance.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0.0,35.75) (52.0,35.75) (52.0,39.0) (0.0,39.0) |
+| Back wall   | (0,35) (52,35) (52,39) (0,39) |
 
 ---
 
@@ -51,4 +51,4 @@ near the entrance.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| open_front | 26.0 | 0.0 | places/driftmoor |
+| open_front | 26 | 0 | places/driftmoor |

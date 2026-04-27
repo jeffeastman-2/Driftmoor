@@ -19,12 +19,12 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 19.5  | 0.0  |
-| front_counter   | 19.5  | 9.75  |
-| ovens           | 9.75  | 26.0  |
-| workspace       | 29.25  | 22.75  |
-| chimney         | 19.5  | 32.5 |
-| display_shelves | 9.75  | 9.75  |
+| front_door      | 19  | 0  |
+| front_counter   | 19  | 9  |
+| ovens           | 9  | 26  |
+| workspace       | 29  | 22  |
+| chimney         | 19  | 32 |
+| display_shelves | 9  | 9  |
 
 ---
 
@@ -32,9 +32,9 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| KITCHEN    | 6.5        | (0.0,16.25) (39.0,16.25) (39.0,32.5) (0.0,32.5) |
-| SHOPFRONT  | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,16.25) (0.0,16.25)   |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (48.75,-9.75) (48.75,42.25) (-9.75,42.25) |
+| KITCHEN    | 6.5        | (0,16) (39,16) (39,32) (0,32) |
+| SHOPFRONT  | 3.25        | (0,0) (39,0) (39,16) (0,16)   |
+| EXTERIOR   | 0.0        | (-9,-9) (48,-9) (48,42) (-9,42) |
 
 ---
 
@@ -42,8 +42,8 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | description   | vertices                    |
 |---------------|-----------------------------|
-| Oven wall     | (0.0,22.75) (19.5,22.75) (19.5,32.5) (0.0,32.5)   |
-| Back wall     | (0.0,29.25) (39.0,29.25) (39.0,32.5) (0.0,32.5) |
+| Oven wall     | (0,22) (19,22) (19,32) (0,32)   |
+| Back wall     | (0,29) (39,29) (39,32) (0,32) |
 
 ---
 
@@ -51,4 +51,4 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 19.5 | 0.0 | places/driftmoor |
+| front_door | 19 | 0 | places/driftmoor |

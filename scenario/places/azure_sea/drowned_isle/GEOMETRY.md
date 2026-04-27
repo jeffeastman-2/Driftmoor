@@ -22,14 +22,14 @@ Two hours of access at low tide before water returns.
 
 | name              | x    | y    |
 |-------------------|------|------|
-| isle_center       | 130.0 | 130.0 |
-| tidal_pool        | 113.75 | 146.25 |
-| eastern_ruins     | 195.0 | 113.75 |
-| western_ruins     | 65.0 | 130.0 |
-| barnacle_chest    | 188.5 | 107.25 |
-| landing_rocks     | 227.5 | 32.5 |
-| highest_point     | 130.0 | 162.5 |
-| collapsed_chamber | 81.25 | 162.5 |
+| isle_center       | 130 | 130 |
+| tidal_pool        | 113 | 146 |
+| eastern_ruins     | 195 | 113 |
+| western_ruins     | 65 | 130 |
+| barnacle_chest    | 188 | 107 |
+| landing_rocks     | 227 | 32 |
+| highest_point     | 130 | 162 |
+| collapsed_chamber | 81 | 162 |
 
 ---
 
@@ -37,11 +37,11 @@ Two hours of access at low tide before water returns.
 
 | name            | render_z | vertices                                    |
 |-----------------|----------|---------------------------------------------|
-| EASTERN_RUINS   | 6.5        | (162.5,81.25) (227.5,81.25) (227.5,146.25) (162.5,146.25)              |
-| WESTERN_RUINS   | 6.5        | (32.5,97.5) (97.5,97.5) (97.5,178.75) (32.5,178.75)              |
-| TIDAL_POOL      | 6.5        | (97.5,130.0) (130.0,130.0) (130.0,162.5) (97.5,162.5)              |
-| EXPOSED_ROCK    | 3.25        | (16.25,16.25) (243.75,16.25) (243.75,243.75) (16.25,243.75)                  |
-| SUBMERGED       | 0.0        | (0.0,0.0) (260.0,0.0) (260.0,260.0) (0.0,260.0)                  |
+| EASTERN_RUINS   | 6.5        | (162,81) (227,81) (227,146) (162,146)              |
+| WESTERN_RUINS   | 6.5        | (32,97) (97,97) (97,178) (32,178)              |
+| TIDAL_POOL      | 6.5        | (97,130) (130,130) (130,162) (97,162)              |
+| EXPOSED_ROCK    | 3.25        | (16,16) (243,16) (243,243) (16,243)                  |
+| SUBMERGED       | 0.0        | (0,0) (260,0) (260,260) (0,260)                  |
 
 ---
 
@@ -49,8 +49,8 @@ Two hours of access at low tide before water returns.
 
 | description     | vertices                                    |
 |-----------------|---------------------------------------------|
-| Tidal pool      | (97.5,130.0) (130.0,130.0) (130.0,162.5) (97.5,162.5)              |
-| Collapsed walls | (39.0,136.5) (58.5,136.5) (58.5,169.0) (39.0,169.0)              |
+| Tidal pool      | (97,130) (130,130) (130,162) (97,162)              |
+| Collapsed walls | (39,136) (58,136) (58,169) (39,169)              |
 
 ---
 
@@ -58,8 +58,8 @@ Two hours of access at low tide before water returns.
 
 | name            | x    | y    | destination                  |
 |-----------------|------|------|------------------------------|
-| landing_rocks   | 227.5 | 32.5 | places/azure_sea/sea_stacks  |
-| swim_to_sea     | 130.0 | 0.0  | places/azure_sea             |
+| landing_rocks   | 227 | 32 | places/azure_sea/sea_stacks  |
+| swim_to_sea     | 130 | 0  | places/azure_sea             |
 
 ---
 
@@ -70,4 +70,4 @@ Two hours of access at low tide before water returns.
 - **type:** conditional
 - **blocks:** all
 - **effect:** at high tide, all zones except HIGHEST_POINT are submerged; 6.5-hour access window at low tide
-- **vertices:** (0.0,0.0) (260.0,0.0) (260.0,260.0) (0.0,260.0)
+- **vertices:** (0,0) (260,0) (260,260) (0,260)

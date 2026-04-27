@@ -19,12 +19,12 @@ Striped pole outside the door.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 13.0 | 0.0 |
-| barber_chair_3.25  | 9.75 | 13.0 |
-| barber_chair_6.5  | 19.5 | 13.0 |
-| mirror          | 13.0 | 22.75 |
-| tonic_shelf     | 3.25 | 19.5 |
-| striped_pole    | 16.25 | -3.25|
+| front_door      | 13 | 0 |
+| barber_chair_3.25  | 9 | 13 |
+| barber_chair_6.5  | 19 | 13 |
+| mirror          | 13 | 22 |
+| tonic_shelf     | 3 | 19 |
+| striped_pole    | 16 | -3|
 
 ---
 
@@ -32,8 +32,8 @@ Striped pole outside the door.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| SHOP       | 3.25        | (0.0,0.0) (26.0,0.0) (26.0,26.0) (0.0,26.0)     |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (35.75,-9.75) (35.75,35.75) (-9.75,35.75) |
+| SHOP       | 3.25        | (0,0) (26,0) (26,26) (0,26)     |
+| EXTERIOR   | 0.0        | (-9,-9) (35,-9) (35,35) (-9,35) |
 
 ---
 
@@ -41,7 +41,7 @@ Striped pole outside the door.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Back wall   | (0.0,22.75) (26.0,22.75) (26.0,26.0) (0.0,26.0)     |
+| Back wall   | (0,22) (26,22) (26,26) (0,26)     |
 
 ---
 
@@ -49,4 +49,4 @@ Striped pole outside the door.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 13.0 | 0.0 | places/driftmoor |
+| front_door | 13 | 0 | places/driftmoor |

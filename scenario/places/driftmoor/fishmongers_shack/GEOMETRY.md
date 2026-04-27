@@ -19,12 +19,12 @@ Slanted roof. Fish-shaped sign outside.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 16.25 | 0.0 |
-| fish_crates     | 9.75 | 16.25 |
-| salt_barrels    | 26.0 | 19.5 |
-| hanging_nets    | 16.25 | 22.75 |
-| counter         | 16.25 | 9.75 |
-| fish_sign       | 16.25 | -3.25|
+| front_door      | 16 | 0 |
+| fish_crates     | 9 | 16 |
+| salt_barrels    | 26 | 19 |
+| hanging_nets    | 16 | 22 |
+| counter         | 16 | 9 |
+| fish_sign       | 16 | -3|
 
 ---
 
@@ -32,8 +32,8 @@ Slanted roof. Fish-shaped sign outside.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| SHACK      | 3.25        | (0.0,0.0) (32.5,0.0) (32.5,26.0) (0.0,26.0)   |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (42.25,-9.75) (42.25,35.75) (-9.75,35.75) |
+| SHACK      | 3.25        | (0,0) (32,0) (32,26) (0,26)   |
+| EXTERIOR   | 0.0        | (-9,-9) (42,-9) (42,35) (-9,35) |
 
 ---
 
@@ -41,7 +41,7 @@ Slanted roof. Fish-shaped sign outside.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Back wall   | (0.0,22.75) (32.5,22.75) (32.5,26.0) (0.0,26.0)   |
+| Back wall   | (0,22) (32,22) (32,26) (0,26)   |
 
 ---
 
@@ -49,4 +49,4 @@ Slanted roof. Fish-shaped sign outside.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 16.25 | 0.0 | places/driftmoor |
+| front_door | 16 | 0 | places/driftmoor |

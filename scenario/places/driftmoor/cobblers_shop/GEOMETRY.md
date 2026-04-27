@@ -18,11 +18,11 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 16.25 | 0.0 |
-| display_window  | 6.5 | 0.0 |
-| workbench       | 16.25 | 19.5 |
-| shoe_racks      | 29.25 | 13.0 |
-| stool           | 9.75 | 16.25 |
+| front_door      | 16 | 0 |
+| display_window  | 6 | 0 |
+| workbench       | 16 | 19 |
+| shoe_racks      | 29 | 13 |
+| stool           | 9 | 16 |
 
 ---
 
@@ -30,8 +30,8 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| SHOP       | 3.25        | (0.0,0.0) (32.5,0.0) (32.5,26.0) (0.0,26.0)   |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (42.25,-9.75) (42.25,35.75) (-9.75,35.75) |
+| SHOP       | 3.25        | (0,0) (32,0) (32,26) (0,26)   |
+| EXTERIOR   | 0.0        | (-9,-9) (42,-9) (42,35) (-9,35) |
 
 ---
 
@@ -39,7 +39,7 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Back wall   | (0.0,22.75) (32.5,22.75) (32.5,26.0) (0.0,26.0)   |
+| Back wall   | (0,22) (32,22) (32,26) (0,26)   |
 
 ---
 
@@ -47,4 +47,4 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 16.25 | 0.0 | places/driftmoor |
+| front_door | 16 | 0 | places/driftmoor |

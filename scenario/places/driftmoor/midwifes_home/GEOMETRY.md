@@ -19,13 +19,13 @@ side. Smells of herbs and dried flowers.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 19.5  | 0.0  |
-| hearth          | 6.5  | 9.75  |
-| rocking_chair   | 13.0  | 9.75  |
-| remedy_shelf    | 32.5 | 9.75  |
-| treatment_door  | 19.5  | 19.5  |
-| treatment_cot   | 19.5  | 29.25  |
-| herb_garden     | 45.5 | 22.75  |
+| front_door      | 19  | 0  |
+| hearth          | 6  | 9  |
+| rocking_chair   | 13  | 9  |
+| remedy_shelf    | 32 | 9  |
+| treatment_door  | 19  | 19  |
+| treatment_cot   | 19  | 29  |
+| herb_garden     | 45 | 22  |
 
 ---
 
@@ -33,10 +33,10 @@ side. Smells of herbs and dried flowers.
 
 | name            | render_z | vertices                        |
 |-----------------|----------|---------------------------------|
-| TREATMENT_ROOM  | 6.5        | (0.0,19.5) (39.0,19.5) (39.0,39.0) (0.0,39.0)      |
-| LIVING_ROOM     | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,19.5) (0.0,19.5)        |
-| HERB_GARDEN     | 3.25        | (39.0,9.75) (58.5,9.75) (58.5,35.75) (39.0,35.75)    |
-| EXTERIOR        | 0.0        | (-9.75,-9.75) (68.25,-9.75) (68.25,48.75) (-9.75,48.75)  |
+| TREATMENT_ROOM  | 6.5        | (0,19) (39,19) (39,39) (0,39)      |
+| LIVING_ROOM     | 3.25        | (0,0) (39,0) (39,19) (0,19)        |
+| HERB_GARDEN     | 3.25        | (39,9) (58,9) (58,35) (39,35)    |
+| EXTERIOR        | 0.0        | (-9,-9) (68,-9) (68,48) (-9,48)  |
 
 ---
 
@@ -44,8 +44,8 @@ side. Smells of herbs and dried flowers.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Dividing wall  | (0.0,19.5) (39.0,19.5) (39.0,22.75) (0.0,22.75)        |
-| Back wall      | (0.0,35.75) (39.0,35.75) (39.0,39.0) (0.0,39.0)    |
+| Dividing wall  | (0,19) (39,19) (39,22) (0,22)        |
+| Back wall      | (0,35) (39,35) (39,39) (0,39)    |
 
 ---
 
@@ -53,4 +53,4 @@ side. Smells of herbs and dried flowers.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 19.5 | 0.0 | places/driftmoor |
+| front_door | 19 | 0 | places/driftmoor |

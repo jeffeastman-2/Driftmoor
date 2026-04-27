@@ -21,16 +21,16 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | name             | x    | y    |
 |------------------|------|------|
-| front_door       | 39.0 | 0.0  |
-| hearth           | 71.5 | 39.0 |
-| bar_counter      | 65.0 | 22.75  |
-| stage_corner     | 9.75  | 45.5 |
-| booth_row        | 9.75  | 22.75  |
-| staircase        | 58.5 | 55.25 |
-| kitchen_center   | 65.0 | 55.25 |
-| storage_center   | 26.0  | 55.25 |
-| meeting_room_ctr | 9.75  | 55.25 |
-| broken_lantern   | 39.0 | -3.25 |
+| front_door       | 39 | 0  |
+| hearth           | 71 | 39 |
+| bar_counter      | 65 | 22  |
+| stage_corner     | 9  | 45 |
+| booth_row        | 9  | 22  |
+| staircase        | 58 | 55 |
+| kitchen_center   | 65 | 55 |
+| storage_center   | 26  | 55 |
+| meeting_room_ctr | 9  | 55 |
+| broken_lantern   | 39 | -3 |
 
 ---
 
@@ -38,14 +38,14 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | name          | render_z | vertices                              |
 |---------------|----------|---------------------------------------|
-| STAGE         | 6.5        | (0.0,39.0) (26.0,39.0) (26.0,55.25) (0.0,55.25)           |
-| BOOTHS        | 6.5        | (0.0,13.0) (26.0,13.0) (26.0,39.0) (0.0,39.0)             |
-| BAR           | 6.5        | (48.75,13.0) (74.75,13.0) (74.75,45.5) (48.75,45.5)         |
-| KITCHEN       | 6.5        | (48.75,45.5) (81.25,45.5) (81.25,65.0) (48.75,65.0)       |
-| STORAGE_ROOM  | 6.5        | (26.0,45.5) (48.75,45.5) (48.75,65.0) (26.0,65.0)         |
-| MEETING_ROOM  | 6.5        | (0.0,45.5) (26.0,45.5) (26.0,65.0) (0.0,65.0)           |
-| MAIN_ROOM     | 3.25        | (0.0,0.0) (81.25,0.0) (81.25,45.5) (0.0,45.5)           |
-| EXTERIOR      | 0.0        | (-16.25,-16.25) (97.5,-16.25) (97.5,81.25) (-16.25,81.25)       |
+| STAGE         | 6.5        | (0,39) (26,39) (26,55) (0,55)           |
+| BOOTHS        | 6.5        | (0,13) (26,13) (26,39) (0,39)             |
+| BAR           | 6.5        | (48,13) (74,13) (74,45) (48,45)         |
+| KITCHEN       | 6.5        | (48,45) (81,45) (81,65) (48,65)       |
+| STORAGE_ROOM  | 6.5        | (26,45) (48,45) (48,65) (26,65)         |
+| MEETING_ROOM  | 6.5        | (0,45) (26,45) (26,65) (0,65)           |
+| MAIN_ROOM     | 3.25        | (0,0) (81,0) (81,45) (0,45)           |
+| EXTERIOR      | 0.0        | (-16,-16) (97,-16) (97,81) (-16,81)       |
 
 ---
 
@@ -53,9 +53,9 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | description      | vertices                              |
 |------------------|---------------------------------------|
-| Bar counter      | (48.75,16.25) (74.75,16.25) (74.75,22.75) (48.75,22.75)           |
-| Kitchen wall     | (48.75,45.5) (81.25,45.5) (81.25,48.75) (48.75,48.75)       |
-| Back wall        | (0.0,61.75) (81.25,61.75) (81.25,65.0) (0.0,65.0)         |
+| Bar counter      | (48,16) (74,16) (74,22) (48,22)           |
+| Kitchen wall     | (48,45) (81,45) (81,48) (48,48)       |
+| Back wall        | (0,61) (81,61) (81,65) (0,65)         |
 
 ---
 
@@ -63,9 +63,9 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | name              | x    | y    | destination                    |
 |-------------------|------|------|--------------------------------|
-| front_door        | 39.0 | 0.0  | places/driftmoor               |
-| to_upper_floor    | 58.5 | 55.25 | places/driftmoor/broken_lantern/upper_floor |
-| kitchen_back_door | 81.25 | 55.25 | places/driftmoor               |
+| front_door        | 39 | 0  | places/driftmoor               |
+| to_upper_floor    | 58 | 55 | places/driftmoor/broken_lantern/upper_floor |
+| kitchen_back_door | 81 | 55 | places/driftmoor               |
 
 ---
 
@@ -76,7 +76,7 @@ building is timber with a sloping roof and ivy on the east wall.
 - **type:** conditional
 - **blocks:** all
 - **effect:** storage room and meeting room require Tess's permission or a successful Persuasion/Deception check to access
-- **vertices:** (0.0,45.5) (81.25,45.5) (81.25,65.0) (0.0,65.0)
+- **vertices:** (0,45) (81,45) (81,65) (0,65)
 
 ---
 
@@ -84,5 +84,5 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | character | x    | y    | zone      |
 |-----------|------|------|-----------|
-| kaelin    | 16.25  | 26.0  | BOOTHS    |
-| tess      | 65.0 | 26.0  | BAR       |
+| kaelin    | 16  | 26  | BOOTHS    |
+| tess      | 65 | 26  | BAR       |

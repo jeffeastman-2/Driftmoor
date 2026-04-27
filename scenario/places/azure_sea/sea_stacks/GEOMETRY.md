@@ -22,13 +22,13 @@ navigable by small boat.
 
 | name            | x     | y     |
 |-----------------|-------|-------|
-| stack_north     | 162.5  | 260.0  |
-| stack_central   | 195.0  | 162.5  |
-| stack_south     | 130.0  | 65.0  |
-| stack_east      | 292.5  | 178.75  |
-| nesting_ledge   | 178.75  | 266.5  |
-| shelter_cove    | 227.5  | 130.0  |
-| tidal_passage   | 97.5  | 162.5  |
+| stack_north     | 162  | 260  |
+| stack_central   | 195  | 162  |
+| stack_south     | 130  | 65  |
+| stack_east      | 292  | 178  |
+| nesting_ledge   | 178  | 266  |
+| shelter_cove    | 227  | 130  |
+| tidal_passage   | 97  | 162  |
 
 ---
 
@@ -36,12 +36,12 @@ navigable by small boat.
 
 | name           | render_z | vertices                                    |
 |----------------|----------|---------------------------------------------|
-| STACK_NORTH    | 9.75        | (130.0,227.5) (195.0,227.5) (195.0,292.5) (130.0,292.5)              |
-| STACK_CENTRAL  | 9.75        | (162.5,130.0) (227.5,130.0) (227.5,195.0) (162.5,195.0)              |
-| STACK_SOUTH    | 9.75        | (97.5,32.5) (162.5,32.5) (162.5,97.5) (97.5,97.5)              |
-| STACK_EAST     | 9.75        | (260.0,146.25) (325.0,146.25) (325.0,211.25) (260.0,211.25)            |
-| SHALLOWS       | 3.25        | (32.5,16.25) (357.5,16.25) (357.5,308.75) (32.5,308.75)              |
-| EXTERIOR       | 0.0        | (0.0,0.0) (390.0,0.0) (390.0,325.0) (0.0,325.0)              |
+| STACK_NORTH    | 9.75        | (130,227) (195,227) (195,292) (130,292)              |
+| STACK_CENTRAL  | 9.75        | (162,130) (227,130) (227,195) (162,195)              |
+| STACK_SOUTH    | 9.75        | (97,32) (162,32) (162,97) (97,97)              |
+| STACK_EAST     | 9.75        | (260,146) (325,146) (325,211) (260,211)            |
+| SHALLOWS       | 3.25        | (32,16) (357,16) (357,308) (32,308)              |
+| EXTERIOR       | 0.0        | (0,0) (390,0) (390,325) (0,325)              |
 
 ---
 
@@ -49,10 +49,10 @@ navigable by small boat.
 
 | description      | vertices                                    |
 |------------------|---------------------------------------------|
-| Stack North base | (139.75,237.25) (185.25,237.25) (185.25,282.75) (139.75,282.75)              |
-| Stack Central    | (172.25,139.75) (217.75,139.75) (217.75,185.25) (172.25,185.25)              |
-| Stack South base | (107.25,42.25) (152.75,42.25) (152.75,87.75) (107.25,87.75)              |
-| Stack East base  | (269.75,156.0) (315.25,156.0) (315.25,201.5) (269.75,201.5)              |
+| Stack North base | (139,237) (185,237) (185,282) (139,282)              |
+| Stack Central    | (172,139) (217,139) (217,185) (172,185)              |
+| Stack South base | (107,42) (152,42) (152,87) (107,87)              |
+| Stack East base  | (269,156) (315,156) (315,201) (269,201)              |
 
 ---
 
@@ -60,8 +60,8 @@ navigable by small boat.
 
 | name               | x     | y    | destination                    |
 |--------------------|-------|------|--------------------------------|
-| to_drowned_isle    | 32.5  | 32.5 | places/azure_sea/drowned_isle  |
-| to_coastal_path    | 357.5 | 162.5 | places/azure_sea               |
+| to_drowned_isle    | 32  | 32 | places/azure_sea/drowned_isle  |
+| to_coastal_path    | 357 | 162 | places/azure_sea               |
 
 ---
 
@@ -72,4 +72,4 @@ navigable by small boat.
 - **type:** conditional
 - **blocks:** all
 - **effect:** stack bases accessible only at low tide on foot; at high tide requires swimming (DC 42.25 Athletics, cold water)
-- **vertices:** (32.5,16.25) (357.5,16.25) (357.5,308.75) (32.5,308.75)
+- **vertices:** (32,16) (357,16) (357,308) (32,308)

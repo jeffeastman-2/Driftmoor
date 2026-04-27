@@ -19,12 +19,12 @@ staves and iron hoops. Small toys near entrance.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22.75  | 0.0  |
-| main_workspace  | 22.75  | 16.25  |
-| stave_pile      | 39.0 | 22.75  |
-| hoop_rack       | 6.5  | 22.75  |
-| toy_shelf       | 9.75  | 3.25  |
-| yard_area       | 22.75  | -6.5 |
+| front_door      | 22  | 0  |
+| main_workspace  | 22  | 16  |
+| stave_pile      | 39 | 22  |
+| hoop_rack       | 6  | 22  |
+| toy_shelf       | 9  | 3  |
+| yard_area       | 22  | -6 |
 
 ---
 
@@ -32,9 +32,9 @@ staves and iron hoops. Small toys near entrance.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| WORKSPACE  | 3.25        | (0.0,0.0) (45.5,0.0) (45.5,32.5) (0.0,32.5)   |
-| YARD       | 0.0        | (6.5,-13.0) (39.0,-13.0) (39.0,0.0) (6.5,0.0)   |
-| EXTERIOR   | 0.0        | (-9.75,-19.5) (55.25,-19.5) (55.25,42.25) (-9.75,42.25) |
+| WORKSPACE  | 3.25        | (0,0) (45,0) (45,32) (0,32)   |
+| YARD       | 0.0        | (6,-13) (39,-13) (39,0) (6,0)   |
+| EXTERIOR   | 0.0        | (-9,-19) (55,-19) (55,42) (-9,42) |
 
 ---
 
@@ -42,7 +42,7 @@ staves and iron hoops. Small toys near entrance.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0.0,29.25) (45.5,29.25) (45.5,32.5) (0.0,32.5)   |
+| Back wall   | (0,29) (45,29) (45,32) (0,32)   |
 
 ---
 
@@ -50,4 +50,4 @@ staves and iron hoops. Small toys near entrance.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 22.75 | 0.0 | places/driftmoor |
+| front_door | 22 | 0 | places/driftmoor |

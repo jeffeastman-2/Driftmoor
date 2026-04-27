@@ -38,7 +38,7 @@ def _verts(s: str) -> list[tuple[float, float]]:
 def parse_geometry(text: str) -> dict:
     """Return {zones, landmarks, impassable, boundaries, starting_positions}."""
     g: dict = {
-        "zones": {}, "landmarks": {}, "impassable": [],
+        "zones": {}, "zone_z": {}, "landmarks": {}, "impassable": [],
         "boundaries": [], "starting_positions": {},
     }
 
@@ -60,8 +60,17 @@ def parse_geometry(text: str) -> dict:
     for cells in _table("Zones"):
         if cells[0] == "name":
             continue
-        if len(cells) >= 2:
+        # Schema is either: name | vertices  (2 cols)
+        # or:              name | render_z | vertices  (3 cols)
+        if len(cells) >= 3:
+            try:
+                g["zone_z"][cells[0]] = float(cells[1])
+            except ValueError:
+                g["zone_z"][cells[0]] = 0.0
+            g["zones"][cells[0]] = _verts(cells[2])
+        elif len(cells) >= 2:
             g["zones"][cells[0]] = _verts(cells[1])
+            g["zone_z"][cells[0]] = 0.0
 
     for cells in _table("Landmarks"):
         if cells[0] == "name":
@@ -138,7 +147,21 @@ ZONE_COLORS = {
     "GLADE":  ("#7fbf7f", 0.30),
     "TRAIL":  ("#c2a878", 0.40),
     "FOREST": ("#3a5f3a", 0.18),
+    # Echoing Caverns and other underground scenes
+    "CAVES":         ("#2b2b2b", 0.55),
+    "ENTRY_CHAMBER": ("#8a6a3f", 0.35),
+    "FIRST_PASSAGE": ("#6e5530", 0.40),
+    "ECHO_CHAMBER":  ("#7a5a8a", 0.35),
+    "DEEP_PASSAGE":  ("#5a4528", 0.45),
+    "BONE_CHAMBER":  ("#a89878", 0.35),
+    "POOL_CAVERN":   ("#3d6e9c", 0.40),
 }
+
+# Fallback palette for zones not in ZONE_COLORS
+_ZONE_FALLBACK = [
+    ("#7fbf7f", 0.30), ("#5b8def", 0.40), ("#c2a878", 0.40),
+    ("#a87fbf", 0.35), ("#bf7f7f", 0.35), ("#7fbfbf", 0.35),
+]
 
 # Stable palette for character paths; falls back by hashing the id.
 _PALETTE = [
@@ -196,21 +219,32 @@ def render_map(
 
     fig, ax = plt.subplots(figsize=(11, 11))
 
-    # Zones — FOREST first so others overlay.
-    for zname in ("FOREST", "GLADE", "POOL", "TRAIL"):
+    # Zones — render in ascending render_z so background zones (e.g.
+    # CAVES, FOREST) draw first and chambers/POIs overlay them.
+    zone_order = sorted(
+        g["zones"].keys(),
+        key=lambda n: (g["zone_z"].get(n, 0.0), n),
+    )
+    fallback_idx = 0
+    background_zones = {"FOREST", "CAVES"}
+    for zname in zone_order:
         v = g["zones"].get(zname)
         if not v:
             continue
-        color, alpha = ZONE_COLORS.get(zname, ("#888", 0.2))
+        if zname in ZONE_COLORS:
+            color, alpha = ZONE_COLORS[zname]
+        else:
+            color, alpha = _ZONE_FALLBACK[fallback_idx % len(_ZONE_FALLBACK)]
+            fallback_idx += 1
         ax.add_patch(patches.Polygon(
             v, closed=True, facecolor=color, alpha=alpha,
-            edgecolor="black", linewidth=0.6,
+            edgecolor="black", linewidth=0.8,
         ))
         cx = sum(p[0] for p in v) / len(v)
         cy = sum(p[1] for p in v) / len(v)
-        if zname != "FOREST":
+        if zname not in background_zones:
             ax.text(cx, cy, zname, ha="center", va="center",
-                    fontsize=11, fontweight="bold", color="black", alpha=0.7)
+                    fontsize=10, fontweight="bold", color="black", alpha=0.75)
 
     # Boundaries
     for name, v in g["boundaries"]:
@@ -292,3 +326,85 @@ def render_map(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=150)
     plt.close(fig)
+
+
+def update_place_map(place_path: str | Path) -> Path:
+    """Regenerate the static scenario map for a place.
+
+    Parameters
+    ----------
+    place_path:
+        Path to a place directory containing ``GEOMETRY.md``. May be
+        absolute, workspace-relative (e.g.
+        ``"scenario/places/obelisk_reach/echoing_caverns"``), or just the
+        scene slug (e.g. ``"echoing_caverns"`` or ``"fey_glade"``) — in
+        which case the function searches under ``scenario/places``.
+
+    Returns
+    -------
+    Path to the written PNG (``<place>/<scene>_map.png``).
+
+    Raises
+    ------
+    FileNotFoundError if the place directory or its ``GEOMETRY.md`` cannot
+    be located.
+    """
+    p = Path(place_path)
+
+    if not p.exists():
+        # Try resolving as a scene slug under scenario/places (any depth).
+        slug = p.name or str(place_path)
+        roots = [Path("scenario/places"), Path.cwd() / "scenario" / "places"]
+        match: Path | None = None
+        for root in roots:
+            if not root.exists():
+                continue
+            for cand in root.rglob(slug):
+                if cand.is_dir() and (cand / "GEOMETRY.md").is_file():
+                    match = cand
+                    break
+            if match is not None:
+                break
+        if match is None:
+            raise FileNotFoundError(
+                f"Could not locate place directory for {place_path!r}"
+            )
+        p = match
+
+    if not p.is_dir():
+        raise FileNotFoundError(f"{p} is not a directory")
+
+    geometry_path = p / "GEOMETRY.md"
+    if not geometry_path.is_file():
+        raise FileNotFoundError(f"No GEOMETRY.md in {p}")
+
+    scene_name = p.name
+    output_path = p / f"{scene_name}_map.png"
+    render_map(
+        geometry_path,
+        output_path,
+        snapshot_dir=None,
+        title=f"{scene_name.replace('_', ' ').title()} — starting positions",
+    )
+    return output_path
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+        sys.stderr.write(
+            "usage: python -m engine.map_renderer <place_path_or_slug> ...\n"
+            "  e.g. python -m engine.map_renderer echoing_caverns\n"
+            "       python -m engine.map_renderer scenario/places/mistwood_hills/fey_glade\n"
+        )
+        sys.exit(2)
+
+    for arg in sys.argv[1:]:
+        try:
+            out = update_place_map(arg)
+            print(f"Wrote {out}")
+        except FileNotFoundError as exc:
+            sys.stderr.write(f"error: {exc}\n")
+            sys.exit(1)
+

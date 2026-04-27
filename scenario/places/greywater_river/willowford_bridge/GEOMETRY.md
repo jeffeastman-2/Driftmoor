@@ -20,13 +20,13 @@ north-south across the river. A small toll booth sits on the south
 
 | name            | x    | y    |
 |-----------------|------|------|
-| bridge_south    | 81.25 | 39.0 |
-| bridge_center   | 81.25 | 65.0 |
-| bridge_north    | 81.25 | 91.0 |
-| toll_booth      | 58.5 | 32.5 |
-| willow_south    | 32.5 | 26.0  |
-| willow_north    | 32.5 | 104.0 |
-| ford_crossing   | 26.0  | 65.0 |
+| bridge_south    | 81 | 39 |
+| bridge_center   | 81 | 65 |
+| bridge_north    | 81 | 91 |
+| toll_booth      | 58 | 32 |
+| willow_south    | 32 | 26  |
+| willow_north    | 32 | 104 |
+| ford_crossing   | 26  | 65 |
 
 ---
 
@@ -34,12 +34,12 @@ north-south across the river. A small toll booth sits on the south
 
 | name          | render_z | vertices                              |
 |---------------|----------|---------------------------------------|
-| BRIDGE        | 6.5        | (65.0,32.5) (97.5,32.5) (97.5,97.5) (65.0,97.5)        |
-| TOLL_BOOTH    | 6.5        | (45.5,26.0) (71.5,26.0) (71.5,42.25) (45.5,42.25)          |
-| RIVER         | 3.25        | (0.0,45.5) (162.5,45.5) (162.5,84.5) (0.0,84.5)          |
-| SOUTH_BANK    | 3.25        | (0.0,0.0) (162.5,0.0) (162.5,45.5) (0.0,45.5)            |
-| NORTH_BANK    | 3.25        | (0.0,84.5) (162.5,84.5) (162.5,130.0) (0.0,130.0)          |
-| EXTERIOR      | 0.0        | (0.0,0.0) (162.5,0.0) (162.5,130.0) (0.0,130.0)            |
+| BRIDGE        | 6.5        | (65,32) (97,32) (97,97) (65,97)        |
+| TOLL_BOOTH    | 6.5        | (45,26) (71,26) (71,42) (45,42)          |
+| RIVER         | 3.25        | (0,45) (162,45) (162,84) (0,84)          |
+| SOUTH_BANK    | 3.25        | (0,0) (162,0) (162,45) (0,45)            |
+| NORTH_BANK    | 3.25        | (0,84) (162,84) (162,130) (0,130)          |
+| EXTERIOR      | 0.0        | (0,0) (162,0) (162,130) (0,130)            |
 
 ---
 
@@ -47,7 +47,7 @@ north-south across the river. A small toll booth sits on the south
 
 | description    | vertices                              |
 |----------------|---------------------------------------|
-| River water    | (0.0,48.75) (162.5,48.75) (162.5,81.25) (0.0,81.25)          |
+| River water    | (0,48) (162,48) (162,81) (0,81)          |
 
 ---
 
@@ -55,6 +55,6 @@ north-south across the river. A small toll booth sits on the south
 
 | name            | x    | y    | destination                    |
 |-----------------|------|------|--------------------------------|
-| road_south      | 81.25 | 0.0  | places/greywater_river         |
-| road_north      | 81.25 | 130.0 | places/greywater_river         |
-| ford_crossing   | 26.0  | 65.0 | places/greywater_river         |
+| road_south      | 81 | 0  | places/greywater_river         |
+| road_north      | 81 | 130 | places/greywater_river         |
+| ford_crossing   | 26  | 65 | places/greywater_river         |

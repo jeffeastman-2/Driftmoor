@@ -20,15 +20,15 @@ Stone construction, iron-banded door.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| main_entrance   | 35.75 | 0.0  |
-| great_table     | 35.75 | 16.25  |
-| hearth          | 6.5  | 16.25  |
-| notice_board    | 9.75  | 3.25  |
-| office_door     | 52.0 | 22.75  |
-| mayor_desk      | 58.5 | 32.5 |
-| records_door    | 26.0  | 32.5 |
-| filing_shelves  | 16.25  | 45.5 |
-| staircase       | 65.0 | 45.5 |
+| main_entrance   | 35 | 0  |
+| great_table     | 35 | 16  |
+| hearth          | 6  | 16  |
+| notice_board    | 9  | 3  |
+| office_door     | 52 | 22  |
+| mayor_desk      | 58 | 32 |
+| records_door    | 26  | 32 |
+| filing_shelves  | 16  | 45 |
+| staircase       | 65 | 45 |
 
 ---
 
@@ -36,11 +36,11 @@ Stone construction, iron-banded door.
 
 | name            | render_z | vertices                        |
 |-----------------|----------|---------------------------------|
-| LIVING_QUARTERS | 9.75        | (32.5,39.0) (71.5,39.0) (71.5,65.0) (32.5,65.0) |
-| RECORDS_ROOM    | 6.5        | (0.0,32.5) (32.5,32.5) (32.5,65.0) (0.0,65.0)   |
-| OFFICE          | 6.5        | (45.5,22.75) (71.5,22.75) (71.5,39.0) (45.5,39.0)   |
-| MAIN_HALL       | 3.25        | (0.0,0.0) (71.5,0.0) (71.5,32.5) (0.0,32.5)     |
-| EXTERIOR        | 0.0        | (-9.75,-9.75) (81.25,-9.75) (81.25,74.75) (-9.75,74.75)  |
+| LIVING_QUARTERS | 9.75        | (32,39) (71,39) (71,65) (32,65) |
+| RECORDS_ROOM    | 6.5        | (0,32) (32,32) (32,65) (0,65)   |
+| OFFICE          | 6.5        | (45,22) (71,22) (71,39) (45,39)   |
+| MAIN_HALL       | 3.25        | (0,0) (71,0) (71,32) (0,32)     |
+| EXTERIOR        | 0.0        | (-9,-9) (81,-9) (81,74) (-9,74)  |
 
 ---
 
@@ -48,8 +48,8 @@ Stone construction, iron-banded door.
 
 | description        | vertices                        |
 |--------------------|---------------------------------|
-| Hall back wall     | (0.0,32.5) (71.5,32.5) (71.5,35.75) (0.0,35.75)    |
-| Office divider     | (45.5,22.75) (45.5,39.0) (48.75,39.0) (48.75,22.75)    |
+| Hall back wall     | (0,32) (71,32) (71,35) (0,35)    |
+| Office divider     | (45,22) (45,39) (48,39) (48,22)    |
 
 ---
 
@@ -57,7 +57,7 @@ Stone construction, iron-banded door.
 
 | name           | x    | y   | destination      |
 |----------------|------|-----|------------------|
-| main_entrance  | 35.75 | 0.0 | places/driftmoor |
+| main_entrance  | 35 | 0 | places/driftmoor |
 
 ---
 
@@ -68,4 +68,4 @@ Stone construction, iron-banded door.
 - **type:** conditional
 - **blocks:** all
 - **effect:** locked door; town records and correspondence; requires mayor's permission
-- **vertices:** (0.0,32.5) (32.5,32.5) (32.5,65.0) (0.0,65.0)
+- **vertices:** (0,32) (32,32) (32,65) (0,65)

@@ -23,14 +23,14 @@ sits behind the counter near the back wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22.75  | 0.0  |
-| display_case    | 32.5 | 39.0 |
-| counter         | 26.0  | 35.75 |
-| obsidian_ring   | 34.12 | 42.25 |
-| safe             | 42.25 | 48.75 |
-| shelves_west    | 6.5  | 26.0  |
-| shelves_east    | 42.25 | 26.0  |
-| oil_lamp_main   | 22.75  | 22.75  |
+| front_door      | 22  | 0  |
+| display_case    | 32 | 39 |
+| counter         | 26  | 35 |
+| obsidian_ring   | 34 | 42 |
+| safe             | 42 | 48 |
+| shelves_west    | 6  | 26  |
+| shelves_east    | 42 | 26  |
+| oil_lamp_main   | 22  | 22  |
 
 ---
 
@@ -38,10 +38,10 @@ sits behind the counter near the back wall.
 
 | name       | render_z | vertices                              |
 |------------|----------|---------------------------------------|
-| BACK_AREA  | 6.5        | (0.0,39.0) (48.75,39.0) (48.75,58.5) (0.0,58.5)         |
-| DISPLAY    | 6.5        | (22.75,32.5) (45.5,32.5) (45.5,45.5) (22.75,45.5)         |
-| SHOPFRONT  | 3.25        | (0.0,0.0) (48.75,0.0) (48.75,39.0) (0.0,39.0)           |
-| EXTERIOR   | 0.0        | (-16.25,-16.25) (65.0,-16.25) (65.0,74.75) (-16.25,74.75)       |
+| BACK_AREA  | 6.5        | (0,39) (48,39) (48,58) (0,58)         |
+| DISPLAY    | 6.5        | (22,32) (45,32) (45,45) (22,45)         |
+| SHOPFRONT  | 3.25        | (0,0) (48,0) (48,39) (0,39)           |
+| EXTERIOR   | 0.0        | (-16,-16) (65,-16) (65,74) (-16,74)       |
 
 ---
 
@@ -49,10 +49,10 @@ sits behind the counter near the back wall.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Counter barrier    | (13.0,32.5) (45.5,32.5) (45.5,35.75) (13.0,35.75)         |
-| Grated windows E   | (45.5,9.75) (48.75,9.75) (48.75,26.0) (45.5,26.0)           |
-| Grated windows W   | (0.0,9.75) (3.25,9.75) (3.25,26.0) (0.0,26.0)               |
-| Safe alcove wall   | (35.75,45.5) (48.75,45.5) (48.75,58.5) (35.75,58.5)       |
+| Counter barrier    | (13,32) (45,32) (45,35) (13,35)         |
+| Grated windows E   | (45,9) (48,9) (48,26) (45,26)           |
+| Grated windows W   | (0,9) (3,9) (3,26) (0,26)               |
+| Safe alcove wall   | (35,45) (48,45) (48,58) (35,58)       |
 
 ---
 
@@ -60,8 +60,8 @@ sits behind the counter near the back wall.
 
 | name          | x    | y    | destination      |
 |---------------|------|------|------------------|
-| front_door    | 22.75  | 0.0  | places/driftmoor |
-| back_door     | 22.75  | 58.5 | places/driftmoor |
+| front_door    | 22  | 0  | places/driftmoor |
+| back_door     | 22  | 58 | places/driftmoor |
 
 ---
 
@@ -72,14 +72,14 @@ sits behind the counter near the back wall.
 - **type:** conditional
 - **blocks:** all
 - **effect:** counter marks the boundary of Tavian's domain; crossing without permission triggers immediate hostile response
-- **vertices:** (0.0,32.5) (48.75,32.5) (48.75,58.5) (0.0,58.5)
+- **vertices:** (0,32) (48,32) (48,58) (0,58)
 
 ### Display Case — Obelisk Ring Aura
 
 - **type:** magical
 - **blocks:** none
 - **effect:** the obsidian ring pulses with obelisk energy; characters with obelisk shard attunement feel drawn toward it; Perception DC 45.5 to notice the pulse
-- **vertices:** (22.75,32.5) (45.5,32.5) (45.5,45.5) (22.75,45.5)
+- **vertices:** (22,32) (45,32) (45,45) (22,45)
 
 ---
 
@@ -87,5 +87,5 @@ sits behind the counter near the back wall.
 
 | character | x    | y    | zone      |
 |-----------|------|------|-----------|
-| seraphina | 16.25  | 19.5  | SHOPFRONT |
-| tavian    | 32.5 | 39.0 | BACK_AREA |
+| seraphina | 16  | 19  | SHOPFRONT |
+| tavian    | 32 | 39 | BACK_AREA |

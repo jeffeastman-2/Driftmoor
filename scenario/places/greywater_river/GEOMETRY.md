@@ -21,14 +21,14 @@ fields upstream. Willowford Bridge crosses midway.
 
 | name                | x      | y      |
 |---------------------|--------|--------|
-| river_mouth         | 650.0  | 325.0  |
-| willowford_bridge   | 6175.0 | 2925.0  |
-| willowford_ford     | 5525.0 | 2275.0  |
-| old_mill            | 8125.0 | 4550.0 |
-| willow_bend         | 2600.0  | 1300.0  |
-| fishing_bank        | 1625.0  | 650.0  |
-| farmers_landing     | 4550.0 | 1950.0  |
-| otter_den           | 3575.0 | 1787.5  |
+| river_mouth         | 650  | 325  |
+| willowford_bridge   | 6175 | 2925  |
+| willowford_ford     | 5525 | 2275  |
+| old_mill            | 8125 | 4550 |
+| willow_bend         | 2600  | 1300  |
+| fishing_bank        | 1625  | 650  |
+| farmers_landing     | 4550 | 1950  |
+| otter_den           | 3575 | 1787  |
 
 ---
 
@@ -36,12 +36,12 @@ fields upstream. Willowford Bridge crosses midway.
 
 | name              | render_z | vertices                                              |
 |-------------------|----------|-------------------------------------------------------|
-| OLD_MILL_AREA     | 6.5        | (7475.0,3900.0) (8775.0,3900.0) (8775.0,5200.0) (7475.0,5200.0)        |
-| WILLOWFORD        | 6.5        | (5200.0,2275.0) (6825.0,2275.0) (6825.0,3575.0) (5200.0,3575.0)          |
-| RIVER_CHANNEL     | 3.25        | (325.0,162.5) (8775.0,4387.5) (8775.0,4875.0) (325.0,650.0)             |
-| NORTH_BANK        | 3.25        | (325.0,650.0) (8775.0,4875.0) (8775.0,6500.0) (325.0,6500.0)           |
-| SOUTH_BANK        | 3.25        | (325.0,0.0) (8775.0,0.0) (8775.0,4387.5) (325.0,162.5)                  |
-| EXTERIOR          | 0.0        | (0.0,0.0) (9750.0,0.0) (9750.0,6500.0) (0.0,6500.0)                    |
+| OLD_MILL_AREA     | 6.5        | (7475,3900) (8775,3900) (8775,5200) (7475,5200)        |
+| WILLOWFORD        | 6.5        | (5200,2275) (6825,2275) (6825,3575) (5200,3575)          |
+| RIVER_CHANNEL     | 3.25        | (325,162) (8775,4387) (8775,4875) (325,650)             |
+| NORTH_BANK        | 3.25        | (325,650) (8775,4875) (8775,6500) (325,6500)           |
+| SOUTH_BANK        | 3.25        | (325,0) (8775,0) (8775,4387) (325,162)                  |
+| EXTERIOR          | 0.0        | (0,0) (9750,0) (9750,6500) (0,6500)                    |
 
 ---
 
@@ -49,7 +49,7 @@ fields upstream. Willowford Bridge crosses midway.
 
 | description         | vertices                                              |
 |---------------------|-------------------------------------------------------|
-| River deep channel  | (650.0,260.0) (8450.0,4485.0) (8450.0,4777.5) (650.0,552.5)            |
+| River deep channel  | (650,260) (8450,4485) (8450,4777) (650,552)            |
 
 ---
 
@@ -57,11 +57,11 @@ fields upstream. Willowford Bridge crosses midway.
 
 | name               | x      | y      | destination                              |
 |--------------------|--------|--------|------------------------------------------|
-| to_driftmoor       | 325.0  | 325.0  | places/driftmoor                         |
-| to_willowford      | 6175.0 | 2925.0  | places/greywater_river/willowford_bridge |
-| to_old_mill        | 8125.0 | 4550.0 | places/greywater_river/old_mill          |
-| to_mistwood        | 9100.0 | 5850.0 | places/mistwood_hills                    |
-| to_farms           | 4875.0 | 325.0  | places/driftmoor                         |
+| to_driftmoor       | 325  | 325  | places/driftmoor                         |
+| to_willowford      | 6175 | 2925  | places/greywater_river/willowford_bridge |
+| to_old_mill        | 8125 | 4550 | places/greywater_river/old_mill          |
+| to_mistwood        | 9100 | 5850 | places/mistwood_hills                    |
+| to_farms           | 4875 | 325  | places/driftmoor                         |
 
 ---
 
@@ -72,4 +72,4 @@ fields upstream. Willowford Bridge crosses midway.
 - **type:** physical
 - **blocks:** land_creature
 - **effect:** river impassable except at Willowford Bridge or ford (DC 45.5 Athletics to ford, cold fast water)
-- **vertices:** (325.0,162.5) (8775.0,4387.5) (8775.0,4875.0) (325.0,650.0)
+- **vertices:** (325,162) (8775,4387) (8775,4875) (325,650)

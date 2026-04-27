@@ -20,14 +20,14 @@ on exterior walls. Crooked chimney.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22.75  | 0.0  |
-| counter         | 22.75  | 13.0  |
-| herb_shelves_w  | 6.5  | 9.75  |
-| herb_shelves_e  | 39.0 | 9.75  |
-| mortar_pestle   | 19.5  | 16.25  |
-| back_room_door  | 22.75  | 22.75  |
-| experiment_table| 22.75  | 32.5 |
-| volatile_shelf  | 39.0 | 32.5 |
+| front_door      | 22  | 0  |
+| counter         | 22  | 13  |
+| herb_shelves_w  | 6  | 9  |
+| herb_shelves_e  | 39 | 9  |
+| mortar_pestle   | 19  | 16  |
+| back_room_door  | 22  | 22  |
+| experiment_table| 22  | 32 |
+| volatile_shelf  | 39 | 32 |
 
 ---
 
@@ -35,9 +35,9 @@ on exterior walls. Crooked chimney.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| BACK_ROOM  | 6.5        | (0.0,22.75) (45.5,22.75) (45.5,39.0) (0.0,39.0)   |
-| SHOPFRONT  | 3.25        | (0.0,0.0) (45.5,0.0) (45.5,22.75) (0.0,22.75)     |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (55.25,-9.75) (55.25,48.75) (-9.75,48.75) |
+| BACK_ROOM  | 6.5        | (0,22) (45,22) (45,39) (0,39)   |
+| SHOPFRONT  | 3.25        | (0,0) (45,0) (45,22) (0,22)     |
+| EXTERIOR   | 0.0        | (-9,-9) (55,-9) (55,48) (-9,48) |
 
 ---
 
@@ -45,8 +45,8 @@ on exterior walls. Crooked chimney.
 
 | description    | vertices                      |
 |----------------|-------------------------------|
-| Counter        | (9.75,13.0) (35.75,13.0) (35.75,16.25) (9.75,16.25)     |
-| Dividing wall  | (0.0,22.75) (45.5,22.75) (45.5,26.0) (0.0,26.0)     |
+| Counter        | (9,13) (35,13) (35,16) (9,16)     |
+| Dividing wall  | (0,22) (45,22) (45,26) (0,26)     |
 
 ---
 
@@ -54,7 +54,7 @@ on exterior walls. Crooked chimney.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 22.75 | 0.0 | places/driftmoor |
+| front_door | 22 | 0 | places/driftmoor |
 
 ---
 
@@ -65,4 +65,4 @@ on exterior walls. Crooked chimney.
 - **type:** conditional
 - **blocks:** all
 - **effect:** back room off-limits to customers; contains volatile ingredients and personal experiments
-- **vertices:** (0.0,22.75) (45.5,22.75) (45.5,39.0) (0.0,39.0)
+- **vertices:** (0,22) (45,22) (45,39) (0,39)

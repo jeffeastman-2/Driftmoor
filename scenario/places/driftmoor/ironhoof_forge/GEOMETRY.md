@@ -22,17 +22,17 @@ the combined forge+stable footprint, excluding corral.
 
 | name             | x    | y    |
 |------------------|------|------|
-| anvil            | 26.0  | 71.5 |
-| forge_hearth     | 13.0  | 84.5 |
-| forge_entrance   | 0.0  | 65.0 |
-| stable_entrance  | 65.0 | 0.0  |
-| stall_row_center | 104.0 | 55.25 |
-| feed_bins        | 123.5 | 26.0  |
-| saddle_racks     | 71.5 | 26.0  |
-| corral_gate      | 146.25 | 55.25 |
-| thorgrim_leanto  | 78.0 | 6.5  |
-| forge_wall_marks | 32.5 | 91.0 |
-| road_frontage    | 0.0  | 55.25 |
+| anvil            | 26  | 71 |
+| forge_hearth     | 13  | 84 |
+| forge_entrance   | 0  | 65 |
+| stable_entrance  | 65 | 0  |
+| stall_row_center | 104 | 55 |
+| feed_bins        | 123 | 26  |
+| saddle_racks     | 71 | 26  |
+| corral_gate      | 146 | 55 |
+| thorgrim_leanto  | 78 | 6  |
+| forge_wall_marks | 32 | 91 |
+| road_frontage    | 0  | 55 |
 
 ---
 
@@ -40,11 +40,11 @@ the combined forge+stable footprint, excluding corral.
 
 | name         | render_z | vertices                              |
 |--------------|----------|---------------------------------------|
-| FORGE        | 6.5        | (0.0,58.5) (58.5,58.5) (58.5,113.75) (0.0,113.75)         |
-| LEANTO       | 6.5        | (58.5,0.0) (97.5,0.0) (97.5,26.0) (58.5,26.0)           |
-| STABLES      | 3.25        | (58.5,0.0) (146.25,0.0) (146.25,113.75) (58.5,113.75)         |
-| CORRAL       | 3.25        | (146.25,16.25) (211.25,16.25) (211.25,97.5) (146.25,97.5)         |
-| EXTERIOR     | 0.0        | (-16.25,-16.25) (227.5,-16.25) (227.5,130.0) (-16.25,130.0)       |
+| FORGE        | 6.5        | (0,58) (58,58) (58,113) (0,113)         |
+| LEANTO       | 6.5        | (58,0) (97,0) (97,26) (58,26)           |
+| STABLES      | 3.25        | (58,0) (146,0) (146,113) (58,113)         |
+| CORRAL       | 3.25        | (146,16) (211,16) (211,97) (146,97)         |
+| EXTERIOR     | 0.0        | (-16,-16) (227,-16) (227,130) (-16,130)       |
 
 ---
 
@@ -52,9 +52,9 @@ the combined forge+stable footprint, excluding corral.
 
 | description     | vertices                              |
 |-----------------|---------------------------------------|
-| Forge back wall | (0.0,107.25) (58.5,107.25) (58.5,113.75) (0.0,113.75)         |
-| Stall partitions | (58.5,32.5) (146.25,32.5) (146.25,39.0) (58.5,39.0)      |
-| Corral fence    | (146.25,16.25) (211.25,16.25) (211.25,22.75) (146.25,22.75)           |
+| Forge back wall | (0,107) (58,107) (58,113) (0,113)         |
+| Stall partitions | (58,32) (146,32) (146,39) (58,39)      |
+| Corral fence    | (146,16) (211,16) (211,22) (146,22)           |
 
 ---
 
@@ -62,10 +62,10 @@ the combined forge+stable footprint, excluding corral.
 
 | name              | x    | y    | destination          |
 |-------------------|------|------|----------------------|
-| forge_to_street   | 0.0  | 65.0 | places/driftmoor     |
-| stable_to_street  | 65.0 | 0.0  | places/driftmoor     |
-| corral_gate       | 211.25 | 55.25 | places/driftmoor     |
-| road_stonehearth  | 97.5 | -16.25 | places/plains_of_stonehearth |
+| forge_to_street   | 0  | 65 | places/driftmoor     |
+| stable_to_street  | 65 | 0  | places/driftmoor     |
+| corral_gate       | 211 | 55 | places/driftmoor     |
+| road_stonehearth  | 97 | -16 | places/plains_of_stonehearth |
 
 ---
 
@@ -76,7 +76,7 @@ the combined forge+stable footprint, excluding corral.
 - **type:** conditional
 - **blocks:** none
 - **effect:** within 9.75m of hearth — extreme heat; unprotected characters risk exhaustion after prolonged exposure
-- **vertices:** (0.0,71.5) (32.5,71.5) (32.5,113.75) (0.0,113.75)
+- **vertices:** (0,71) (32,71) (32,113) (0,113)
 
 ---
 
@@ -84,6 +84,6 @@ the combined forge+stable footprint, excluding corral.
 
 | character | x    | y    | zone    |
 |-----------|------|------|---------|
-| thorgrim  | 26.0  | 78.0 | FORGE   |
-| darrin    | 19.5  | 65.0 | FORGE   |
-| kara      | 71.5 | 58.5 | STABLES |
+| thorgrim  | 26  | 78 | FORGE   |
+| darrin    | 19  | 65 | FORGE   |
+| kara      | 71 | 58 | STABLES |

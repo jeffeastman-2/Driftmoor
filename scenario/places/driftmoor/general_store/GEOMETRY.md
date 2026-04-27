@@ -19,14 +19,14 @@ at the back of the shop area.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22.75  | 0.0  |
-| counter         | 22.75  | 22.75  |
-| tool_shelves    | 6.5  | 13.0  |
-| rope_rack       | 39.0 | 13.0  |
-| candle_shelf    | 6.5  | 19.5  |
-| back_door       | 22.75  | 29.25  |
-| garden_center   | 22.75  | 45.5 |
-| garden_gate     | 22.75  | 29.25  |
+| front_door      | 22  | 0  |
+| counter         | 22  | 22  |
+| tool_shelves    | 6  | 13  |
+| rope_rack       | 39 | 13  |
+| candle_shelf    | 6  | 19  |
+| back_door       | 22  | 29  |
+| garden_center   | 22  | 45 |
+| garden_gate     | 22  | 29  |
 
 ---
 
@@ -34,9 +34,9 @@ at the back of the shop area.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| SHOP       | 3.25        | (0.0,0.0) (45.5,0.0) (45.5,29.25) (0.0,29.25)       |
-| GARDEN     | 3.25        | (6.5,29.25) (39.0,29.25) (39.0,58.5) (6.5,58.5)     |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (55.25,-9.75) (55.25,68.25) (-9.75,68.25)  |
+| SHOP       | 3.25        | (0,0) (45,0) (45,29) (0,29)       |
+| GARDEN     | 3.25        | (6,29) (39,29) (39,58) (6,58)     |
+| EXTERIOR   | 0.0        | (-9,-9) (55,-9) (55,68) (-9,68)  |
 
 ---
 
@@ -44,8 +44,8 @@ at the back of the shop area.
 
 | description  | vertices                        |
 |--------------|---------------------------------|
-| Back wall    | (0.0,26.0) (45.5,26.0) (45.5,29.25) (0.0,29.25)       |
-| Garden fence | (6.5,55.25) (39.0,55.25) (39.0,58.5) (6.5,58.5)   |
+| Back wall    | (0,26) (45,26) (45,29) (0,29)       |
+| Garden fence | (6,55) (39,55) (39,58) (6,58)   |
 
 ---
 
@@ -53,4 +53,4 @@ at the back of the shop area.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 22.75 | 0.0 | places/driftmoor |
+| front_door | 22 | 0 | places/driftmoor |

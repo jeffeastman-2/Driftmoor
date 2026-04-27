@@ -19,12 +19,12 @@ in the back with bolts of cloth and a cutting table.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 19.5  | 0.0  |
-| mannequin_3.25     | 9.75  | 6.5  |
-| mannequin_6.5     | 29.25  | 6.5  |
-| cutting_table   | 19.5  | 22.75  |
-| fabric_bolts    | 35.75 | 26.0  |
-| sewing_station  | 6.5  | 22.75  |
+| front_door      | 19  | 0  |
+| mannequin_3.25     | 9  | 6  |
+| mannequin_6.5     | 29  | 6  |
+| cutting_table   | 19  | 22  |
+| fabric_bolts    | 35 | 26  |
+| sewing_station  | 6  | 22  |
 
 ---
 
@@ -32,9 +32,9 @@ in the back with bolts of cloth and a cutting table.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| WORKSPACE  | 6.5        | (0.0,16.25) (39.0,16.25) (39.0,32.5) (0.0,32.5)   |
-| DISPLAY    | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,16.25) (0.0,16.25)     |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (48.75,-9.75) (48.75,42.25) (-9.75,42.25) |
+| WORKSPACE  | 6.5        | (0,16) (39,16) (39,32) (0,32)   |
+| DISPLAY    | 3.25        | (0,0) (39,0) (39,16) (0,16)     |
+| EXTERIOR   | 0.0        | (-9,-9) (48,-9) (48,42) (-9,42) |
 
 ---
 
@@ -42,7 +42,7 @@ in the back with bolts of cloth and a cutting table.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0.0,29.25) (39.0,29.25) (39.0,32.5) (0.0,32.5)   |
+| Back wall   | (0,29) (39,29) (39,32) (0,32)   |
 
 ---
 
@@ -50,4 +50,4 @@ in the back with bolts of cloth and a cutting table.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 19.5 | 0.0 | places/driftmoor |
+| front_door | 19 | 0 | places/driftmoor |

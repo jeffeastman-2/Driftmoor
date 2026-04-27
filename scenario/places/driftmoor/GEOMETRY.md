@@ -27,43 +27,43 @@ buildings do not.
 
 | name                  | x     | y     |
 |-----------------------|-------|-------|
-| town_center           | 812.5 | 682.5 |
-| well                  | 1007.5 | 698.75 |
-| watchtower            | 633.75 | 698.75 |
-| greywater_bend        | 682.5 | 1105.0 |
-| bridge_crossing       | 1267.5 | 1137.5 |
-| harbor_pier_north     | 178.75  | 1007.5 |
-| harbor_pier_south     | 146.25  | 812.5 |
-| road_to_obelisk       | 568.75 | 1397.5 |
-| road_to_old_mill      | 1592.5 | 747.5 |
-| road_to_stonehearth   | 877.5 | 32.5  |
-| dustcloaks_house      | 503.75 | 1283.75 |
-| graveyard_center      | 861.25 | 1348.75 |
-| church_center         | 1153.75 | 1300.0 |
-| mayors_hall_center    | 1365.0 | 942.5 |
-| midwife_center        | 1462.5 | 1007.5 |
-| schoolhouse_center    | 1365.0 | 747.5 |
-| elyssa_house_center   | 1446.25 | 536.25 |
-| tannery_center        | 698.75 | 991.25 |
-| carpenter_center      | 601.25 | 942.5 |
-| cooper_center         | 585.0 | 828.75 |
-| tailor_center         | 828.75 | 942.5 |
-| weaver_center         | 958.75 | 942.5 |
-| cobbler_center        | 747.5 | 780.0 |
-| barber_center         | 828.75 | 780.0 |
-| rooming_house_center  | 926.25 | 780.0 |
-| apothecary_center     | 1040.0 | 780.0 |
-| fishmonger_center     | 455.0 | 682.5 |
-| bakery_center         | 682.5 | 568.75 |
-| pawn_shop_center      | 796.25 | 568.75 |
-| tavern_center         | 910.0 | 568.75 |
-| mercantile_center     | 1040.0 | 568.75 |
-| general_store_center  | 552.5 | 260.0  |
-| garden_center         | 877.5 | 243.75  |
-| forge_center          | 1267.5 | 292.5  |
-| stable_center         | 1267.5 | 195.0  |
-| corral_center         | 1446.25 | 227.5  |
-| fisherfolk_center     | 292.5  | 130.0  |
+| town_center           | 812 | 682 |
+| well                  | 1007 | 698 |
+| watchtower            | 633 | 698 |
+| greywater_bend        | 682 | 1105 |
+| bridge_crossing       | 1267 | 1137 |
+| harbor_pier_north     | 178  | 1007 |
+| harbor_pier_south     | 146  | 812 |
+| road_to_obelisk       | 568 | 1397 |
+| road_to_old_mill      | 1592 | 747 |
+| road_to_stonehearth   | 877 | 32  |
+| dustcloaks_house      | 503 | 1283 |
+| graveyard_center      | 861 | 1348 |
+| church_center         | 1153 | 1300 |
+| mayors_hall_center    | 1365 | 942 |
+| midwife_center        | 1462 | 1007 |
+| schoolhouse_center    | 1365 | 747 |
+| elyssa_house_center   | 1446 | 536 |
+| tannery_center        | 698 | 991 |
+| carpenter_center      | 601 | 942 |
+| cooper_center         | 585 | 828 |
+| tailor_center         | 828 | 942 |
+| weaver_center         | 958 | 942 |
+| cobbler_center        | 747 | 780 |
+| barber_center         | 828 | 780 |
+| rooming_house_center  | 926 | 780 |
+| apothecary_center     | 1040 | 780 |
+| fishmonger_center     | 455 | 682 |
+| bakery_center         | 682 | 568 |
+| pawn_shop_center      | 796 | 568 |
+| tavern_center         | 910 | 568 |
+| mercantile_center     | 1040 | 568 |
+| general_store_center  | 552 | 260  |
+| garden_center         | 877 | 243  |
+| forge_center          | 1267 | 292  |
+| stable_center         | 1267 | 195  |
+| corral_center         | 1446 | 227  |
+| fisherfolk_center     | 292  | 130  |
 
 ---
 
@@ -74,19 +74,19 @@ Sub-zones (individual buildings) appear before their district zone.
 
 | name              | render_z | vertices                                                    |
 |-------------------|----------|-------------------------------------------------------------|
-| GREYWATER_RIVER   | 6.5        | (260.0,1072.5) (1625.0,1072.5) (1625.0,1202.5) (1267.5,1202.5) (260.0,1170.0)            |
-| GRAVEYARD         | 6.5        | (698.75,1218.75) (1023.75,1218.75) (1023.75,1430.0) (698.75,1430.0)                     |
-| HARBOR_WATER      | 6.5        | (0.0,650.0) (243.75,650.0) (243.75,1105.0) (0.0,1105.0)                           |
-| DOCKS             | 6.5        | (97.5,715.0) (260.0,715.0) (260.0,1072.5) (97.5,1072.5)                         |
-| NORTH_BANK        | 3.25        | (260.0,1105.0) (1625.0,1105.0) (1625.0,1462.5) (260.0,1462.5)                       |
-| HARBOR_DISTRICT   | 3.25        | (0.0,325.0) (422.5,325.0) (422.5,1105.0) (0.0,1105.0)                         |
-| CRAFTSMEN_QUARTER | 3.25        | (422.5,780.0) (715.0,780.0) (715.0,1072.5) (422.5,1072.5)                     |
-| VILLAGE_CENTER    | 3.25        | (422.5,617.5) (1365.0,617.5) (1365.0,1072.5) (422.5,1072.5)                     |
-| SOUTH_ROW         | 3.25        | (617.5,503.75) (1397.5,503.75) (1397.5,650.0) (617.5,650.0)                     |
-| EAST_QUARTER      | 3.25        | (1267.5,325.0) (1625.0,325.0) (1625.0,1072.5) (1267.5,1072.5)                     |
-| SOUTH_QUARTER     | 3.25        | (422.5,65.0) (1625.0,65.0) (1625.0,503.75) (422.5,503.75)                       |
-| FISHERFOLK        | 3.25        | (0.0,0.0) (422.5,0.0) (422.5,325.0) (0.0,325.0)                             |
-| EXTERIOR          | 0.0        | (0.0,0.0) (1625.0,0.0) (1625.0,1462.5) (0.0,1462.5)                             |
+| GREYWATER_RIVER   | 6.5        | (260,1072) (1625,1072) (1625,1202) (1267,1202) (260,1170)            |
+| GRAVEYARD         | 6.5        | (698,1218) (1023,1218) (1023,1430) (698,1430)                     |
+| HARBOR_WATER      | 6.5        | (0,650) (243,650) (243,1105) (0,1105)                           |
+| DOCKS             | 6.5        | (97,715) (260,715) (260,1072) (97,1072)                         |
+| NORTH_BANK        | 3.25        | (260,1105) (1625,1105) (1625,1462) (260,1462)                       |
+| HARBOR_DISTRICT   | 3.25        | (0,325) (422,325) (422,1105) (0,1105)                         |
+| CRAFTSMEN_QUARTER | 3.25        | (422,780) (715,780) (715,1072) (422,1072)                     |
+| VILLAGE_CENTER    | 3.25        | (422,617) (1365,617) (1365,1072) (422,1072)                     |
+| SOUTH_ROW         | 3.25        | (617,503) (1397,503) (1397,650) (617,650)                     |
+| EAST_QUARTER      | 3.25        | (1267,325) (1625,325) (1625,1072) (1267,1072)                     |
+| SOUTH_QUARTER     | 3.25        | (422,65) (1625,65) (1625,503) (422,503)                       |
+| FISHERFOLK        | 3.25        | (0,0) (422,0) (422,325) (0,325)                             |
+| EXTERIOR          | 0.0        | (0,0) (1625,0) (1625,1462) (0,1462)                             |
 
 ---
 
@@ -94,9 +94,9 @@ Sub-zones (individual buildings) appear before their district zone.
 
 | description           | vertices                                                    |
 |-----------------------|-------------------------------------------------------------|
-| Greywater River       | (260.0,1072.5) (1625.0,1072.5) (1625.0,1202.5) (1267.5,1202.5) (260.0,1170.0)            |
-| Harbor open water     | (0.0,650.0) (178.75,650.0) (178.75,1105.0) (0.0,1105.0)                           |
-| Graveyard wall        | (698.75,1218.75) (1023.75,1218.75) (1023.75,1430.0) (698.75,1430.0)                     |
+| Greywater River       | (260,1072) (1625,1072) (1625,1202) (1267,1202) (260,1170)            |
+| Harbor open water     | (0,650) (178,650) (178,1105) (0,1105)                           |
+| Graveyard wall        | (698,1218) (1023,1218) (1023,1430) (698,1430)                     |
 
 ---
 
@@ -104,22 +104,22 @@ Sub-zones (individual buildings) appear before their district zone.
 
 | name                   | x     | y     | destination                              |
 |------------------------|-------|-------|------------------------------------------|
-| to_region              | 812.5 | 731.25 | places/                                  |
-| to_obelisk_road        | 568.75 | 1446.25 | places/obelisk_reach                     |
-| to_old_mill_road       | 1608.75 | 747.5 | places/greywater_river/old_mill          |
-| to_stonehearth_road    | 877.5 | 16.25   | places/plains_of_stonehearth             |
-| to_mistwood_trail      | 1608.75 | 1235.0 | places/mistwood_hills                    |
-| to_harbor_water        | 97.5  | 877.5 | places/azure_sea                         |
-| to_dustcloaks_house    | 503.75 | 1283.75 | places/driftmoor/dustcloaks_curios       |
-| to_church              | 1153.75 | 1300.0 | places/driftmoor/beacon_church           |
-| to_mayors_hall         | 1365.0 | 942.5 | places/driftmoor/mayors_hall             |
-| to_broken_lantern      | 910.0 | 568.75 | places/driftmoor/broken_lantern          |
-| to_salt_and_iron       | 1040.0 | 568.75 | places/driftmoor/salt_and_iron           |
-| to_forge               | 1267.5 | 292.5  | places/driftmoor/ironhoof_forge          |
-| to_elyssa_house        | 1446.25 | 536.25 | places/driftmoor/elyssa_residence        |
-| to_apothecary          | 1040.0 | 780.0 | places/driftmoor/bitter_remedy           |
-| to_gilded_trinket      | 796.25 | 568.75 | places/driftmoor/gilded_trinket          |
-| to_rooming_house       | 926.25 | 780.0 | places/driftmoor/weary_traveler          |
+| to_region              | 812 | 731 | places/                                  |
+| to_obelisk_road        | 568 | 1446 | places/obelisk_reach                     |
+| to_old_mill_road       | 1608 | 747 | places/greywater_river/old_mill          |
+| to_stonehearth_road    | 877 | 16   | places/plains_of_stonehearth             |
+| to_mistwood_trail      | 1608 | 1235 | places/mistwood_hills                    |
+| to_harbor_water        | 97  | 877 | places/azure_sea                         |
+| to_dustcloaks_house    | 503 | 1283 | places/driftmoor/dustcloaks_curios       |
+| to_church              | 1153 | 1300 | places/driftmoor/beacon_church           |
+| to_mayors_hall         | 1365 | 942 | places/driftmoor/mayors_hall             |
+| to_broken_lantern      | 910 | 568 | places/driftmoor/broken_lantern          |
+| to_salt_and_iron       | 1040 | 568 | places/driftmoor/salt_and_iron           |
+| to_forge               | 1267 | 292  | places/driftmoor/ironhoof_forge          |
+| to_elyssa_house        | 1446 | 536 | places/driftmoor/elyssa_residence        |
+| to_apothecary          | 1040 | 780 | places/driftmoor/bitter_remedy           |
+| to_gilded_trinket      | 796 | 568 | places/driftmoor/gilded_trinket          |
+| to_rooming_house       | 926 | 780 | places/driftmoor/weary_traveler          |
 
 ---
 
@@ -130,14 +130,14 @@ Sub-zones (individual buildings) appear before their district zone.
 - **type:** conditional
 - **blocks:** none
 - **effect:** beyond this line is wilderness; shadowbeast sightings increase sharply
-- **vertices:** (0.0,0.0) (1625.0,0.0) (1625.0,1462.5) (0.0,1462.5)
+- **vertices:** (0,0) (1625,0) (1625,1462) (0,1462)
 
 ### Greywater River — North Bank Crossing
 
 - **type:** physical
 - **blocks:** land_creature
-- **effect:** impassable except at bridge crossing (1267.5, 1137.5); swimming possible but cold and fast
-- **vertices:** (260.0,1072.5) (1625.0,1072.5) (1625.0,1202.5) (1267.5,1202.5) (260.0,1170.0)
+- **effect:** impassable except at bridge crossing (1267,1137); swimming possible but cold and fast
+- **vertices:** (260,1072) (1625,1072) (1625,1202) (1267,1202) (260,1170)
 
 ---
 
@@ -145,8 +145,8 @@ Sub-zones (individual buildings) appear before their district zone.
 
 | character  | x     | y     | zone            |
 |------------|-------|-------|-----------------|
-| thorgrim   | 1267.5 | 292.5  | SOUTH_QUARTER   |
-| kaelin     | 910.0 | 568.75 | SOUTH_ROW       |
-| seraphina  | 796.25 | 568.75 | SOUTH_ROW       |
-| lilar      | 1267.5 | 942.5 | EAST_QUARTER    |
-| aeliana    | 812.5 | 682.5 | VILLAGE_CENTER  |
+| thorgrim   | 1267 | 292  | SOUTH_QUARTER   |
+| kaelin     | 910 | 568 | SOUTH_ROW       |
+| seraphina  | 796 | 568 | SOUTH_ROW       |
+| lilar      | 1267 | 942 | EAST_QUARTER    |
+| aeliana    | 812 | 682 | VILLAGE_CENTER  |

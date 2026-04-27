@@ -19,12 +19,12 @@ Teacher's desk at front. Door faces south. Yard behind for recess.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22.75  | 0.0  |
-| teacher_desk    | 22.75  | 26.0  |
-| chalkboard      | 22.75  | 29.25  |
-| student_desks   | 22.75  | 13.0  |
-| bell_rope       | 39.0 | 26.0  |
-| bookshelf       | 3.25  | 26.0  |
+| front_door      | 22  | 0  |
+| teacher_desk    | 22  | 26  |
+| chalkboard      | 22  | 29  |
+| student_desks   | 22  | 13  |
+| bell_rope       | 39 | 26  |
+| bookshelf       | 3  | 26  |
 
 ---
 
@@ -32,8 +32,8 @@ Teacher's desk at front. Door faces south. Yard behind for recess.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| CLASSROOM  | 3.25        | (0.0,0.0) (45.5,0.0) (45.5,32.5) (0.0,32.5)     |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (55.25,-9.75) (55.25,42.25) (-9.75,42.25)  |
+| CLASSROOM  | 3.25        | (0,0) (45,0) (45,32) (0,32)     |
+| EXTERIOR   | 0.0        | (-9,-9) (55,-9) (55,42) (-9,42)  |
 
 ---
 
@@ -41,7 +41,7 @@ Teacher's desk at front. Door faces south. Yard behind for recess.
 
 | description | vertices                        |
 |-------------|---------------------------------|
-| Back wall   | (0.0,29.25) (45.5,29.25) (45.5,32.5) (0.0,32.5)     |
+| Back wall   | (0,29) (45,29) (45,32) (0,32)     |
 
 ---
 
@@ -49,4 +49,4 @@ Teacher's desk at front. Door faces south. Yard behind for recess.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 22.75 | 0.0 | places/driftmoor |
+| front_door | 22 | 0 | places/driftmoor |

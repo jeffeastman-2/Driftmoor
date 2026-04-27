@@ -19,12 +19,12 @@ yarn and dyed thread. Small living area in the back.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 19.5  | 0.0  |
-| main_loom       | 19.5  | 13.0  |
-| yarn_baskets    | 6.5  | 9.75  |
-| dye_pots        | 32.5 | 9.75  |
-| living_nook     | 19.5  | 26.0  |
-| finished_cloth  | 32.5 | 22.75  |
+| front_door      | 19  | 0  |
+| main_loom       | 19  | 13  |
+| yarn_baskets    | 6  | 9  |
+| dye_pots        | 32 | 9  |
+| living_nook     | 19  | 26  |
+| finished_cloth  | 32 | 22  |
 
 ---
 
@@ -32,9 +32,9 @@ yarn and dyed thread. Small living area in the back.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| LIVING     | 6.5        | (0.0,19.5) (39.0,19.5) (39.0,32.5) (0.0,32.5)   |
-| WORKSHOP   | 3.25        | (0.0,0.0) (39.0,0.0) (39.0,19.5) (0.0,19.5)     |
-| EXTERIOR   | 0.0        | (-9.75,-9.75) (48.75,-9.75) (48.75,42.25) (-9.75,42.25) |
+| LIVING     | 6.5        | (0,19) (39,19) (39,32) (0,32)   |
+| WORKSHOP   | 3.25        | (0,0) (39,0) (39,19) (0,19)     |
+| EXTERIOR   | 0.0        | (-9,-9) (48,-9) (48,42) (-9,42) |
 
 ---
 
@@ -42,7 +42,7 @@ yarn and dyed thread. Small living area in the back.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0.0,29.25) (39.0,29.25) (39.0,32.5) (0.0,32.5)   |
+| Back wall   | (0,29) (39,29) (39,32) (0,32)   |
 
 ---
 
@@ -50,4 +50,4 @@ yarn and dyed thread. Small living area in the back.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 19.5 | 0.0 | places/driftmoor |
+| front_door | 19 | 0 | places/driftmoor |
