@@ -35,6 +35,20 @@ def _verts(s: str) -> list[tuple[float, float]]:
     return out
 
 
+def _verts3(s: str) -> list[tuple[float, float, float]]:
+    """Parse vertex tuples capturing z when present (defaults to 0.0)."""
+    out: list[tuple[float, float, float]] = []
+    pat = re.compile(
+        r"\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)"
+        r"(?:\s*,\s*(-?\d+(?:\.\d+)?))?\s*\)"
+    )
+    for m in pat.finditer(s):
+        x, y = float(m.group(1)), float(m.group(2))
+        z = float(m.group(3)) if m.group(3) is not None else 0.0
+        out.append((x, y, z))
+    return out
+
+
 def parse_geometry(text: str) -> dict:
     """Return {zones, landmarks, impassable, boundaries, starting_positions}."""
     g: dict = {
@@ -60,17 +74,26 @@ def parse_geometry(text: str) -> dict:
     for cells in _table("Zones"):
         if cells[0] == "name":
             continue
-        # Schema is either: name | vertices  (2 cols)
-        # or:              name | render_z | vertices  (3 cols)
-        if len(cells) >= 3:
+        # Vertices are always in the last column. Per-vertex z (in
+        # "(x,y,z)" notation) is the source of truth for stacking; the
+        # legacy "render_z" middle column is honored if no per-vertex z
+        # is provided.
+        verts3 = _verts3(cells[-1])
+        if not verts3:
+            continue
+        name = cells[0]
+        g["zones"][name] = [(x, y) for (x, y, _z) in verts3]
+        per_vertex_zs = [z for (_x, _y, z) in verts3]
+        if any(z != 0.0 for z in per_vertex_zs):
+            g["zone_z"][name] = sum(per_vertex_zs) / len(per_vertex_zs)
+        elif len(cells) >= 3:
+            # Legacy schema: name | render_z | vertices
             try:
-                g["zone_z"][cells[0]] = float(cells[1])
+                g["zone_z"][name] = float(cells[1])
             except ValueError:
-                g["zone_z"][cells[0]] = 0.0
-            g["zones"][cells[0]] = _verts(cells[2])
-        elif len(cells) >= 2:
-            g["zones"][cells[0]] = _verts(cells[1])
-            g["zone_z"][cells[0]] = 0.0
+                g["zone_z"][name] = 0.0
+        else:
+            g["zone_z"][name] = 0.0
 
     for cells in _table("Landmarks"):
         if cells[0] == "name":
@@ -325,6 +348,11 @@ def render_map(
     all_pts: list[tuple[float, float]] = []
     for v in g["zones"].values():
         all_pts.extend(v)
+    for _name, v in g["impassable"]:
+        all_pts.extend(v)
+    for _name, v in g["boundaries"]:
+        all_pts.extend(v)
+    all_pts.extend(g["landmarks"].values())
     for pts in paths.values():
         all_pts.extend(pts)
     if all_pts:
