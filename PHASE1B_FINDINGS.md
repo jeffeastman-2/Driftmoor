@@ -3,8 +3,10 @@
 # April 2026
 #
 # This document records the design, execution, and findings of the
-# Phase 1b experiment. It is the quantitative follow-up to the manual
-# Phase 1 ground truth session (GROUND_TRUTH.md).
+# Phase 1b experiment. It is the quantitative follow-up to the
+# Phase 1 ground truth session (GROUND_TRUTH.md), which used
+# selfsame LLM gen+score methodology (each model scored its own
+# output).
 #
 # Models tested: Claude (Opus-4-5), GPT-4o, Grok-3, Gemini-2.5-flash
 # Conditions: 16 binary neurotransmitter permutations + 1 ablation = 17

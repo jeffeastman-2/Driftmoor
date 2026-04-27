@@ -20,6 +20,12 @@ scene. Phase 1 blind scoring confirmed 14/16 predicted directional
 comparisons. This experiment operationalizes that result into a
 reproducible, automated validation suite.
 
+**Phase 1 scoring methodology was selfsame LLM gen+score:** each
+model generated its own output and scored its own output. NOT
+human scoring, NOT cross-model. This is the methodology that
+produced the 14/16 result and is the referent when this design
+doc says "ground truth methodology."
+
 ======================================================================
 PHASE 1 — SINGLE-TURN CONDITION DIFFERENTIATION
 Goal: Replicate and extend the two-condition Phase 1 result
@@ -210,6 +216,9 @@ IMPLEMENTATION NOTES
 - Scoring should be blind where possible (score before reviewing
   condition vector used)
 - All raw outputs should be saved for manual review
+- Phase 1 ground-truth scoring methodology was **selfsame LLM
+  gen+score** (each model scores its own output). Replication
+  attempts must use the same methodology to be a valid comparison.
 
 ======================================================================
 END OF EXPERIMENT DESIGN

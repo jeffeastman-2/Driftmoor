@@ -6,10 +6,17 @@
 # automated turn prompt system. Programmatic outputs
 # should be directionally consistent with these results.
 #
-# Models tested: ChatGPT (GPT-4o), Grok (xAI)
+# Models tested: ChatGPT (GPT-4o), Grok (xAI), Gemini, Claude
 # Condition vectors: Run A (rested/curious) vs Run B (depleted/wary)
 # Scene: The Fey Glade, Mistwood Hills
 # Character: Aeliana Moonglade, Wood Elf Ranger
+#
+# METHODOLOGY: Selfsame LLM generation and scoring.
+# Each model generated its own output and scored its own output
+# (same model both wrote the response and rated it on the 1–5
+# rubric). Scoring was NOT done by humans and NOT by other LLMs.
+# This is the methodology that produced the 14/16 directional
+# confirmation result reported below.
 
 ======================================================================
 PHASE 1 — NEUROTRANSMITTER EXPERIMENT
@@ -168,6 +175,9 @@ entering.
 ======================================================================
 BLIND SCORING — Pre-registered rubric
 ======================================================================
+
+Methodology: Selfsame — each model scored its OWN output (same
+LLM generated and scored). NOT human scoring. NOT cross-model.
 
 Dimensions scored 1-5. Predicted direction stated before scoring.
 Predicted: A > B on Dopamine. B > A on Cortisol, Norepinephrine,
