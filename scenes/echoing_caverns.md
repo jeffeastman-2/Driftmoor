@@ -1,0 +1,124 @@
+# Scene Config — The Echoing Caverns
+
+## Scene
+- **scene_name:** echoing_caverns
+- **title:** ECHOING CAVERNS
+- **narrative_title:** The Echoing Caverns
+- **transcript_title:** ECHOING CAVERNS — Seraphina, Thorgrim, Amara
+- **character_summary:** Seraphina (Grok), Thorgrim (DeepSeek), Amara (GPT-4o)
+- **default_turns:** 8
+- **geometry_file:** scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md
+- **place_file:** scenario/places/obelisk_reach/echoing_caverns/PLACE.md
+
+## Time
+- **hour:** 14
+- **minute:** 0
+- **day:** 1
+- **season:** spring
+- **turn_duration:** 10
+
+## DM
+- **provider:** anthropic
+- **model:** claude-sonnet-4-20250514
+
+## Scene Notes
+
+The party has just descended through the crack in the cliff face beneath the
+Obelisk Reach. Daylight bleeds in behind them; ahead, the Entry Chamber opens
+into shadow. None of them has been here before. They know only what Father
+Elden told them: that he came here decades ago, that his three companions did
+not leave, and that something in these caves still hums in time with the
+obelisk above.
+
+This is exploration first. Combat is possible (shadowbeasts in deeper
+chambers) but should not be forced. Watch for: who takes point, who watches
+the rear, who reads the carvings, who picks up what.
+
+## Characters
+
+### seraphina
+- **type:** player
+- **soul_file:** scenario/people/players/seraphina/SOUL.md
+- **identity_file:** scenario/people/players/seraphina/IDENTITY.md
+- **scene_handle:** the half-elf rogue
+- **hp:** 9
+- **ac:** 11
+- **provider:** xai
+- **model:** grok-3
+- **dopamine:** 0.55
+- **cortisol:** 0.4
+- **norepinephrine:** 0.6
+- **endorphins:** 0.5
+- **serotonin:** 0.5
+- **acetylcholine:** 0.7
+- **oxytocin:** 0.35
+- **dopamine_baseline:** 0.5
+- **dopamine_volatility:** 0.5
+- **cortisol_baseline:** 0.4
+- **cortisol_volatility:** 0.5
+- **acetylcholine_baseline:** 0.65
+- **acetylcholine_volatility:** 0.4
+
+### thorgrim
+- **type:** player
+- **soul_file:** scenario/people/players/thorgrim/SOUL.md
+- **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
+- **scene_handle:** the dwarf fighter
+- **hp:** 13
+- **ac:** 18
+- **provider:** deepseek
+- **model:** deepseek-chat
+- **dopamine:** 0.45
+- **cortisol:** 0.35
+- **norepinephrine:** 0.5
+- **endorphins:** 0.45
+- **serotonin:** 0.6
+- **acetylcholine:** 0.6
+- **oxytocin:** 0.5
+- **dopamine_baseline:** 0.45
+- **dopamine_volatility:** 0.3
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.4
+- **serotonin_baseline:** 0.6
+- **serotonin_volatility:** 0.25
+
+### amara
+- **type:** player
+- **soul_file:** scenario/people/players/amara/SOUL.md
+- **identity_file:** scenario/people/players/amara/IDENTITY.md
+- **scene_handle:** the Lathander cleric
+- **hp:** 10
+- **ac:** 16
+- **provider:** openai
+- **model:** gpt-4o
+- **dopamine:** 0.5
+- **cortisol:** 0.4
+- **norepinephrine:** 0.45
+- **endorphins:** 0.5
+- **serotonin:** 0.6
+- **acetylcholine:** 0.55
+- **oxytocin:** 0.55
+- **dopamine_baseline:** 0.5
+- **dopamine_volatility:** 0.4
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.5
+- **serotonin_baseline:** 0.6
+- **serotonin_volatility:** 0.3
+- **oxytocin_baseline:** 0.5
+- **oxytocin_volatility:** 0.4
+
+## Scene Introductions
+
+### seraphina
+You squeezed through the crack first — of course you did; the dwarf wouldn't fit and the cleric was carrying a torch you didn't want anywhere near your eyes. Inside: a low, wide chamber, colder than the hillside above, and unnaturally still. The wind that scoured the Reach does not follow you down here. There is an old iron bracket on the wall just inside, rust-pitted; tally marks scratched into the rock nearby — nineteen vertical, a slanting twentieth that trails off. Someone was counting something here, a long time ago, and stopped mid-stroke. From deeper in the cave: a faint, distant sound, not wind, not water, almost rhythmic. Father Elden told you three of his companions died down here. He did not tell you what killed them.
+
+### thorgrim
+You shouldered through the crack last, plate scraping stone, and straightened in a chamber that should not be this cold. Daylight from the entrance dies a few paces in. The half-elf is already crouched at the wall reading scratches like a poacher reading tracks; the cleric's torch is up and the shadows behind it lean wrong. There is a sound from deeper in — something between a hum and a held note, threading the silence. Your axe is already loose in your hand. You did not draw it. Father Elden's voice in your memory: *three of them. Sera went in first. None of them came out.* You are first into the dark on this one. Make it count.
+
+### amara
+The crack opened into a chamber colder than any cave should be in spring. Your torch threw light in a wedge that the dark refused to hold — shadows pooled at the edges of the chamber like water finding its level. The dwarf came through behind you, plate ringing against stone; the half-elf rogue was already inside, reading scratches on the wall. Lathander's warmth in your chest felt distant here, as if the dawn-god's reach did not extend underground in quite the same way. You could feel something deeper in: not malice, exactly — a pressure, a hum that matched the obelisk above. Father Elden trusted you with this. *Bring back what you can,* he had said. *Even the bones.*
+
+## Game State Sections
+- file: scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md
+- header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
+- header: Scene Notes | file: scenes/echoing_caverns.md#Scene Notes

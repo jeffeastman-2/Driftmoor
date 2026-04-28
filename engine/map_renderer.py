@@ -270,6 +270,30 @@ def render_map(
     else:
         union_area = 1.0
 
+    # Split impassable into background (covers ~the whole scene, e.g.
+    # 'Solid Rock' under a cavern) and foreground (walls, rubble, pools).
+    # Background impassable is drawn BEFORE zones so chambers overlay it;
+    # foreground is drawn AFTER zones as obstacles.
+    bg_impassable: list[tuple[str, list[tuple[float, float]]]] = []
+    fg_impassable: list[tuple[str, list[tuple[float, float]]]] = []
+    for name, v in g["impassable"]:
+        if not v:
+            continue
+        x0 = min(p[0] for p in v); x1 = max(p[0] for p in v)
+        y0 = min(p[1] for p in v); y1 = max(p[1] for p in v)
+        if (x1 - x0) * (y1 - y0) / union_area >= 0.80:
+            bg_impassable.append((name, v))
+        else:
+            fg_impassable.append((name, v))
+
+    # Background impassable (drawn under zones) — lighter grey so the
+    # foreground walls/pools/rubble layered on top of zones read as darker.
+    for name, v in bg_impassable:
+        ax.add_patch(patches.Polygon(
+            v, closed=True, facecolor="#b8b8b8", alpha=0.85,
+            edgecolor="#7a7a7a", linewidth=1.0,
+        ))
+
     pending_zone_labels: list[tuple[float, float, str]] = []
     for zname in zone_order:
         v = g["zones"].get(zname)
@@ -299,18 +323,17 @@ def render_map(
                 label=name,
             ))
 
-    # Impassable
-    for name, v in g["impassable"]:
-        if v:
-            ax.add_patch(patches.Polygon(
-                v, closed=True, facecolor="#4a4a4a", alpha=0.75,
-                edgecolor="#2a2a2a", linewidth=1.0,
-            ))
-            cx = sum(p[0] for p in v) / len(v)
-            cy = sum(p[1] for p in v) / len(v)
-            ax.text(cx, cy, name, ha="center", va="center",
-                    fontsize=8, fontstyle="italic",
-                    color="white", alpha=0.9)
+    # Foreground impassable (walls, pools, rubble) — drawn over zones.
+    for name, v in fg_impassable:
+        ax.add_patch(patches.Polygon(
+            v, closed=True, facecolor="#4a4a4a", alpha=0.75,
+            edgecolor="#2a2a2a", linewidth=1.0,
+        ))
+        cx = sum(p[0] for p in v) / len(v)
+        cy = sum(p[1] for p in v) / len(v)
+        ax.text(cx, cy, name, ha="center", va="center",
+                fontsize=8, fontstyle="italic",
+                color="white", alpha=0.9)
 
     # Zone labels — drawn last so they're never covered by overlays.
     for cx, cy, zname in pending_zone_labels:

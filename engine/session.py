@@ -264,6 +264,120 @@ def _segment_polygon_entry(
     return best_pt
 
 
+def _check_impassable(
+    character_id: str,
+    origin: tuple[float, float, str],
+    new_pos: tuple[float, float, str],
+    impassable: list,
+    zones: Optional[dict] = None,
+) -> tuple[bool, list[str], Optional[tuple[float, float]]]:
+    """Check whether origin→new_pos enters impassable space.
+
+    Two rules combine:
+
+    1. **Outside all zones** — if ``zones`` is provided and the destination
+       is not inside any walkable zone, the move is blocked. This naturally
+       handles "background rock" (the negative space between chambers in a
+       cavern) without requiring it to be enumerated as an impassable
+       polygon.
+    2. **Inside an impassable polygon** — for finer-grained obstacles (a
+       pool inside a chamber, a pillar in a room) declared in the
+       ``## Impassable`` table. Polygons that already contain the origin are
+       skipped so a character standing in a pool can step out of it; this is
+       also why rule 1 (not rule 2) handles whole-scene "Solid Rock" entries.
+
+    Returns (move_allowed, log_lines, stop_at). ``stop_at`` is set to a
+    point just outside the offending edge so the character visibly slides
+    up to the wall instead of refusing to leave its origin.
+    """
+    log_lines: list[str] = []
+    if not impassable and not zones:
+        return True, log_lines, None
+
+    ox, oy = origin[0], origin[1]
+    tx, ty = new_pos[0], new_pos[1]
+
+    # Skip if origin and target are the same point.
+    if abs(tx - ox) < 1e-6 and abs(ty - oy) < 1e-6:
+        return True, log_lines, None
+
+    origin_pos = Position(ox, oy)
+    target_pos = Position(tx, ty)
+
+    best_t = float("inf")
+    best_stop: Optional[tuple[float, float]] = None
+    best_name = ""
+
+    # Rule 1: destination outside all walkable zones.
+    if zones:
+        in_any_zone = any(z.contains(target_pos) for z in zones.values())
+        if not in_any_zone:
+            origin_in_any_zone = any(z.contains(origin_pos) for z in zones.values())
+            if origin_in_any_zone:
+                # Find first zone exit along origin→target.
+                for zname, zpoly in zones.items():
+                    if not zpoly.contains(origin_pos):
+                        continue
+                    exit_pt = _segment_polygon_entry(
+                        ox, oy, tx, ty, zpoly.vertices,
+                    )
+                    if exit_pt is None:
+                        continue
+                    seg_dx, seg_dy = tx - ox, ty - oy
+                    seg_len_sq = seg_dx * seg_dx + seg_dy * seg_dy
+                    if seg_len_sq < 1e-9:
+                        continue
+                    t = ((exit_pt[0] - ox) * seg_dx + (exit_pt[1] - oy) * seg_dy) / seg_len_sq
+                    if t < best_t:
+                        best_t = t
+                        best_stop = exit_pt
+                        best_name = f"edge of {zname}"
+            else:
+                # Origin already outside zones — rare; let them try to move.
+                pass
+
+    # Rule 2: inside a foreground impassable polygon.
+    for poly in (impassable or []):
+        if poly.contains(origin_pos):
+            continue  # already inside (e.g. pool) — let them try to leave
+        crosses_in = poly.contains(target_pos)
+        entry = _segment_polygon_entry(ox, oy, tx, ty, poly.vertices)
+        if not crosses_in and entry is None:
+            continue
+        if entry is None:
+            continue
+        ex, ey = entry
+        seg_dx, seg_dy = tx - ox, ty - oy
+        seg_len_sq = seg_dx * seg_dx + seg_dy * seg_dy
+        if seg_len_sq < 1e-9:
+            continue
+        t = ((ex - ox) * seg_dx + (ey - oy) * seg_dy) / seg_len_sq
+        if t < best_t:
+            best_t = t
+            best_stop = (ex, ey)
+            best_name = getattr(poly, "name", None) or "impassable"
+
+    if best_stop is None:
+        return True, log_lines, None
+
+    # Back off ~0.5 ft from the edge so the character is clearly outside.
+    ex, ey = best_stop
+    seg_dx, seg_dy = tx - ox, ty - oy
+    seg_len = (seg_dx * seg_dx + seg_dy * seg_dy) ** 0.5
+    if seg_len > 1e-6:
+        backoff = min(0.5, seg_len * 0.05)
+        nx, ny = seg_dx / seg_len, seg_dy / seg_len
+        stop_at = (ex - nx * backoff, ey - ny * backoff)
+    else:
+        stop_at = (ex, ey)
+
+    log_lines.append(
+        f"[IMPASSABLE] {character_id} blocked by {best_name}: "
+        f"stops at x={stop_at[0]:.1f}, y={stop_at[1]:.1f}"
+    )
+    return False, log_lines, stop_at
+
+
 def _check_boundary_crossing(
     character_id: str,
     origin: tuple[float, float, str],
@@ -1270,7 +1384,33 @@ async def iter_session(
                             if boundary_ok and b_log and "boundary_crossed" not in adjudication.spatial_events:
                                 adjudication.spatial_events.append("boundary_crossed")
                         if boundary_ok:
-                            current_positions[character_id] = resolver_new
+                            # Check impassable polygons after boundaries pass.
+                            impassable_ok = True
+                            imp_stop: Optional[tuple[float, float]] = None
+                            if (
+                                scene_geometry is not None
+                                and resolver_origin is not None
+                                and (scene_geometry.impassable or scene_geometry.zones)
+                            ):
+                                impassable_ok, i_log, imp_stop = _check_impassable(
+                                    character_id,
+                                    resolver_origin,
+                                    resolver_new,
+                                    scene_geometry.impassable,
+                                    scene_geometry.zones,
+                                )
+                                attack_log.extend(i_log)
+                            if impassable_ok:
+                                current_positions[character_id] = resolver_new
+                            elif imp_stop is not None:
+                                sx, sy = imp_stop
+                                sz = (scene_geometry.zone_at(Position(sx, sy))
+                                      if scene_geometry else "") or resolver_new[2]
+                                stopped = (sx, sy, sz.upper())
+                                adjudication.new_position = stopped
+                                current_positions[character_id] = stopped
+                            else:
+                                adjudication.new_position = None
                         elif stop_at is not None:
                             # Repelled — slide to barrier edge so the path
                             # visibly approaches the shimmer.
@@ -1371,22 +1511,41 @@ async def iter_session(
 
                 if boundary_ok:
                     new_pos = (tx, ty, zone.upper())
-                    adjudication.new_position = new_pos
-                    current_positions[character_id] = new_pos
-                    if origin is not None:
-                        ox, oy, oz = origin
-                        moved = (abs(ox - tx) > 0.5 or abs(oy - ty) > 0.5)
-                        if moved:
-                            attack_log.append(
-                                f"[MOVEMENT] {character_id}: "
-                                f"({ox:.1f},{oy:.1f},{oz}) → "
-                                f"({tx:.1f},{ty:.1f},{new_pos[2]})"
-                            )
-                        else:
-                            attack_log.append(
-                                f"[MOVEMENT] {character_id}: held position "
-                                f"({ox:.1f},{oy:.1f},{oz})"
-                            )
+                    # Impassable polygons + outside-zones blocking.
+                    impassable_ok = True
+                    imp_stop: Optional[tuple[float, float]] = None
+                    if scene_geometry is not None and origin is not None and (
+                        scene_geometry.impassable or scene_geometry.zones
+                    ):
+                        impassable_ok, i_log, imp_stop = _check_impassable(
+                            character_id, origin, new_pos,
+                            scene_geometry.impassable, scene_geometry.zones,
+                        )
+                        attack_log.extend(i_log)
+                    if impassable_ok:
+                        adjudication.new_position = new_pos
+                        current_positions[character_id] = new_pos
+                        if origin is not None:
+                            ox, oy, oz = origin
+                            moved = (abs(ox - tx) > 0.5 or abs(oy - ty) > 0.5)
+                            if moved:
+                                attack_log.append(
+                                    f"[MOVEMENT] {character_id}: "
+                                    f"({ox:.1f},{oy:.1f},{oz}) → "
+                                    f"({tx:.1f},{ty:.1f},{new_pos[2]})"
+                                )
+                            else:
+                                attack_log.append(
+                                    f"[MOVEMENT] {character_id}: held position "
+                                    f"({ox:.1f},{oy:.1f},{oz})"
+                                )
+                    elif imp_stop is not None:
+                        sx, sy = imp_stop
+                        sz = (scene_geometry.zone_at(Position(sx, sy))
+                              if scene_geometry else "") or ""
+                        stopped = (sx, sy, sz.upper())
+                        adjudication.new_position = stopped
+                        current_positions[character_id] = stopped
                 elif stop_at is not None:
                     # Repelled by barrier — slide to its outer edge so the
                     # path visibly approaches the shimmer.

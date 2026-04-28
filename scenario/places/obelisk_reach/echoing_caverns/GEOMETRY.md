@@ -39,7 +39,6 @@ chambers decades ago.
 | Pool Passage     | (200,146,-10) (210,146,-10) (210,162,-2) (200,162,-2)                                       |
 | Bone Chamber     | (65,48,-10) (162,48,-10) (162,113,-10) (65,113,-10)                                           |
 | Pool Cavern      | (170,81,-10) (243,81,-10) (243,146,-10) (170,146,-10)                                         |
-| Solid Rock       | (0,0,-20) (300,0,-20) (300,325,-20) (0,325,-20)                                               |
 
 ---
 
@@ -50,6 +49,7 @@ chambers decades ago.
 | Collapsed tunnel   | (211,48) (221,48) (221,81) (211,81)        |
 | Underground pool   | (190,91) (221,91) (221,110) (190,110)        |
 | Rock fall          | (48,178) (81,178) (81,211) (48,211)        |
+| Solid Rock         | (0,0) (300,0) (300,325) (0,325)            |
 
 ---
 
@@ -84,3 +84,13 @@ chambers decades ago.
 - **blocks:** none
 - **effect:** sounds carry and distort unnaturally; Perception checks at disadvantage for locating sound sources; occasionally sounds resolve into voice-like fragments
 - **vertices:** (65,160) (243,160) (243,243) (65,243)
+
+---
+
+## Starting Positions
+
+| character   | x   | y   | zone          |
+|-------------|-----|-----|---------------|
+| thorgrim    | 138 | 295 | Entry Chamber |
+| amara       | 120 | 305 | Entry Chamber |
+| seraphina   | 155 | 285 | Entry Chamber |
