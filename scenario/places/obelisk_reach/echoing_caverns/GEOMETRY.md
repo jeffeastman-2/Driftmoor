@@ -13,7 +13,7 @@ Notes: A network of caves beneath the Obelisk Reach. Origin at
 southwest corner. The entrance is a narrow crack in the cliff face
 (easy to miss, DC 42.25 Perception). Inside, the caves open into
 larger chambers connected by passages. Sounds echo unnaturally.
-The air is cold. Father Elden's companions were lost in the deeper
+The air is cold. Father Elden's companions were lost in the deeper 
 chambers decades ago.
 
 ---
@@ -36,8 +36,9 @@ chambers decades ago.
 | Echo Chamber     | (130,162,-2) (227,162,-2) (227,227,-2) (130,227,-2)                                       |
 | Rocky Passage    | (81,190,-5) (81,200,-5) (130,200,-2) (130,190,-2)                                         |
 | Deep Passage     | (150,113,-10) (160,113,-10) (160,162,-2) (150,162,-2)                                       |
+| Pool Passage     | (200,146,-10) (210,146,-10) (210,162,-2) (200,162,-2)                                       |
 | Bone Chamber     | (65,48,-10) (162,48,-10) (162,113,-10) (65,113,-10)                                           |
-| Pool Cavern      | (162,81,-10) (243,81,-10) (243,146,-10) (162,146,-10)                                         |
+| Pool Cavern      | (170,81,-10) (243,81,-10) (243,146,-10) (170,146,-10)                                         |
 | Solid Rock       | (0,0,-20) (300,0,-20) (300,325,-20) (0,325,-20)                                               |
 
 ---
@@ -49,6 +50,20 @@ chambers decades ago.
 | Collapsed tunnel   | (211,48) (221,48) (221,81) (211,81)        |
 | Underground pool   | (190,91) (221,91) (221,110) (190,110)        |
 | Rock fall          | (48,178) (81,178) (81,211) (48,211)        |
+
+---
+
+## Items
+
+| id                  | x   | y   | label              |
+|---------------------|-----|-----|--------------------|
+| torch_bracket       | 100 | 270 | Torch bracket      |
+| wall_scratches      | 115 | 320 | Tally scratches    |
+| carved_symbols      | 222 | 200 | Carved symbols     |
+| obelisk_fragment    | 178 | 195 | Obelisk fragment   |
+| companion_remains   | 88  | 75  | Skeletal remains   |
+| holy_symbol_pelor   | 92  | 78  | Holy symbol        |
+| parchment_fragment  | 96  | 73  | Parchment fragment |
 
 ---
 
@@ -68,4 +83,4 @@ chambers decades ago.
 - **type:** magical
 - **blocks:** none
 - **effect:** sounds carry and distort unnaturally; Perception checks at disadvantage for locating sound sources; occasionally sounds resolve into voice-like fragments
-- **vertices:** (65,32) (243,32) (243,243) (65,243)
+- **vertices:** (65,160) (243,160) (243,243) (65,243)

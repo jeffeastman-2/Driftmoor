@@ -53,7 +53,7 @@ def parse_geometry(text: str) -> dict:
     """Return {zones, landmarks, impassable, boundaries, starting_positions}."""
     g: dict = {
         "zones": {}, "zone_z": {}, "landmarks": {}, "impassable": [],
-        "boundaries": [], "starting_positions": {},
+        "boundaries": [], "starting_positions": {}, "items": {},
     }
 
     def _table(section: str) -> list[list[str]]:
@@ -111,6 +111,18 @@ def parse_geometry(text: str) -> dict:
             v = _verts(cells[1])
             if v:
                 g["impassable"].append((cells[0], v))
+
+    for cells in _table("Items"):
+        if cells[0].lower() == "id":
+            continue
+        if len(cells) >= 3:
+            try:
+                x, y = float(cells[1]), float(cells[2])
+            except ValueError:
+                continue
+            # Optional 4th col is label; otherwise humanize the id.
+            label = cells[3] if len(cells) >= 4 else cells[0].replace("_", " ")
+            g["items"][cells[0]] = (x, y, label)
 
     for cells in _table("Starting Positions"):
         if cells[0].lower() == "character":
@@ -312,6 +324,15 @@ def render_map(
         ax.annotate(name, (x, y), textcoords="offset points",
                     xytext=(6, 4), fontsize=8, color="#333")
 
+    # Items — small diamonds, distinct from landmark stars.
+    for iid, (x, y, label) in g["items"].items():
+        ax.plot(x, y, marker="D", markersize=6,
+                markerfacecolor="#d4a017", markeredgecolor="#5a4a10",
+                markeredgewidth=0.8, zorder=6)
+        ax.annotate(label, (x, y), textcoords="offset points",
+                    xytext=(6, -8), fontsize=7, color="#5a4a10",
+                    fontstyle="italic")
+
     # Characters — path or single dot
     char_colors = char_colors or {}
     palette_pos = 0
@@ -353,6 +374,7 @@ def render_map(
     for _name, v in g["boundaries"]:
         all_pts.extend(v)
     all_pts.extend(g["landmarks"].values())
+    all_pts.extend((x, y) for (x, y, _label) in g["items"].values())
     for pts in paths.values():
         all_pts.extend(pts)
     if all_pts:
