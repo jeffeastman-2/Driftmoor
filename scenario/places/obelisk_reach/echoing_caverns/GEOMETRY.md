@@ -20,10 +20,19 @@ chambers decades ago.
 
 ## Landmarks
 
-| name              | x    | y    |
-|-------------------|------|------|
-| entrance_crack    | 110 | 325|
-| ancient_carvings  | 160 | 170 |
+| name                       | x   | y   |
+|----------------------------|-----|-----|
+| entrance_crack             | 110 | 325 |
+| ancient_carvings           | 160 | 170 |
+| first_passage_mouth        | 137 | 260 |
+| echo_chamber_arch          | 137 | 227 |
+| rocky_passage_squeeze      | 130 | 195 |
+| deep_passage_descent       | 155 | 162 |
+| pool_passage_descent       | 205 | 162 |
+| bone_chamber_threshold     | 155 | 113 |
+| pool_cavern_threshold      | 205 | 146 |
+| collapsed_tunnel_rubble    | 216 | 82  |
+| hidden_cavern_opening      | 216 | 47  |
 
 ---
 
@@ -31,14 +40,16 @@ chambers decades ago.
 
 | name             | vertices                                                                                          |
 |------------------|---------------------------------------------------------------------------------------------------|
-| Entry Chamber    | (97,260,0.0) (178,260,0.0) (178,325,0.0) (97,325,0.0)                                             |
-| First Passage    | (130,227,-2) (145,227,-2) (145,260,0.0) (130,260,0.0)                                       |
-| Echo Chamber     | (130,162,-2) (227,162,-2) (227,227,-2) (130,227,-2)                                       |
-| Rocky Passage    | (81,190,-5) (81,200,-5) (130,200,-2) (130,190,-2)                                         |
-| Deep Passage     | (150,113,-10) (160,113,-10) (160,162,-2) (150,162,-2)                                       |
-| Pool Passage     | (200,146,-10) (210,146,-10) (210,162,-2) (200,162,-2)                                       |
-| Bone Chamber     | (65,48,-10) (162,48,-10) (162,113,-10) (65,113,-10)                                           |
-| Pool Cavern      | (170,81,-10) (243,81,-10) (243,146,-10) (170,146,-10)                                         |
+| Entry Chamber    | (97,260,0.0) (178,260,0.0) (178,325,0.0) (97,325,0.0)|
+| First Passage    | (130,227,-2) (145,227,-2) (145,260,0.0) (130,260,0.0)|
+| Echo Chamber     | (130,162,-2) (227,162,-2) (227,227,-2) (130,227,-2)|
+| Rocky Passage    | (81,190,-5) (81,200,-5) (130,200,-2) (130,190,-2)|
+| Deep Passage     | (150,113,-10) (160,113,-10) (160,162,-2) (150,162,-2)|
+| Pool Passage     | (200,146,-10) (210,146,-10) (210,162,-2) (200,162,-2)|
+| Bone Chamber     | (65,48,-10) (162,48,-10) (162,113,-10) (65,113,-10)|
+| Pool Cavern      | (170,81,-10) (243,81,-10) (243,146,-10) (170,146,-10)|
+| Collapsed Tunnel | (211,48,-20) (221,48,-10) (221,81,-10) (211,81,-20)|
+| Hidden Cavern    | (210,48,-20) (243,48,-20) (243,31,-20) (210,31,-20)|
 
 ---
 
@@ -46,7 +57,7 @@ chambers decades ago.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Collapsed tunnel   | (211,48) (221,48) (221,81) (211,81)        |
+| Collapsed Tunnel   | (211,48) (221,48) (221,81) (211,81)        |
 | Underground pool   | (190,91) (221,91) (221,110) (190,110)        |
 | Rock fall          | (48,178) (81,178) (81,211) (48,211)        |
 | Solid Rock         | (0,0) (300,0) (300,325) (0,325)            |
@@ -71,8 +82,8 @@ chambers decades ago.
 
 | name              | x    | y     | destination                              |
 |-------------------|------|-------|------------------------------------------|
-| entrance_crack    | 97 | 341 | places/obelisk_reach                     |
-| to_obelisk_above  | 162 | 308  | places/obelisk_reach/shattered_obelisk   |
+| entrance_crack    | 97   | 341   | places/obelisk_reach                     |
+| to_obelisk_above  | 162  | 308   | places/obelisk_reach/shattered_obelisk   |
 
 ---
 

@@ -774,9 +774,44 @@ def _build_perception(
     return result
 
 
+def _zones_for_point(
+    pos: Position,
+    zones: dict[str, "Polygon"],
+    edge_tol: float = 3.0,
+) -> set[str]:
+    """Return zones containing pos, or whose polygon edges are within
+    edge_tol feet of pos. Lets landmarks on a zone seam (e.g. a doorway
+    polygon vertex shared by two chambers) be associated with both.
+    """
+    out: set[str] = set()
+    for zname, poly in zones.items():
+        if poly.contains(pos):
+            out.add(zname.upper())
+            continue
+        verts = poly.vertices
+        n = len(verts)
+        for i in range(n):
+            x1, y1 = verts[i][0], verts[i][1]
+            x2, y2 = verts[(i + 1) % n][0], verts[(i + 1) % n][1]
+            dx, dy = x2 - x1, y2 - y1
+            length_sq = dx * dx + dy * dy
+            if length_sq == 0:
+                d = ((pos.x - x1) ** 2 + (pos.y - y1) ** 2) ** 0.5
+            else:
+                t = max(0.0, min(1.0,
+                    ((pos.x - x1) * dx + (pos.y - y1) * dy) / length_sq))
+                qx, qy = x1 + t * dx, y1 + t * dy
+                d = ((pos.x - qx) ** 2 + (pos.y - qy) ** 2) ** 0.5
+            if d <= edge_tol:
+                out.add(zname.upper())
+                break
+    return out
+
+
 def _build_points_of_interest(
     scene_geometry: Optional[SceneGeometry],
     my_pos: Optional[tuple[float, float, str]],
+    visited_zones: Optional[set[str]] = None,
 ) -> str:
     """List named landmarks (and zone centers) with absolute coords and
     distance from the character's current position.
@@ -784,21 +819,41 @@ def _build_points_of_interest(
     Player-Left LLMs need explicit coords to write a meaningful MOVEMENT
     target; otherwise they emit small offsets from their current spot and
     appear stuck.
+
+    Visibility filter: a landmark/zone center is shown only if it lies in
+    the character's current zone OR a previously visited zone. Junction
+    landmarks (on a zone seam) are shown if either adjacent zone is
+    visible. Landmarks not associated with any zone (e.g. a scene-edge
+    crack) are always shown — they're effectively "outside" the chamber
+    map.
     """
     if scene_geometry is None or my_pos is None:
         return ""
     px, py = my_pos[0], my_pos[1]
+    current_zone = (my_pos[2] or "").upper()
+    visible_zones: set[str] = set(visited_zones or set())
+    if current_zone:
+        visible_zones.add(current_zone)
     lines: list[str] = []
 
-    # Landmarks
+    # Landmarks — filtered by zone visibility
     for name, pos in scene_geometry.landmarks.items():
+        lm_zones = _zones_for_point(pos, scene_geometry.zones)
+        # If a landmark sits in zones the character has not encountered,
+        # hide it. If it's not in any zone (lm_zones empty), show it
+        # (treat as scene-level / outside-the-map waypoint).
+        if lm_zones and not (lm_zones & visible_zones):
+            continue
         dist = ((pos.x - px) ** 2 + (pos.y - py) ** 2) ** 0.5
         lines.append(
             f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away)"
         )
 
-    # Zone centers (helpful when the goal is "move into the GLADE")
+    # Zone centers (helpful when the goal is "move into the GLADE") —
+    # only for visible zones.
     for zname, polygon in scene_geometry.zones.items():
+        if zname.upper() not in visible_zones:
+            continue
         verts = polygon.vertices
         if not verts:
             continue
@@ -871,6 +926,7 @@ def _build_context(
     in_combat: bool = False,
     characters: Optional[dict[str, CharacterSession]] = None,
     recent_events: Optional[list[str]] = None,
+    visited_zones: Optional[dict[str, set[str]]] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     # Replace baked-in "Your starting position: x=…" with the live value so
@@ -893,7 +949,14 @@ def _build_context(
             + "\n".join(f"- {ev}" for ev in recent_events)
         )
         scene = f"{scene}\n\n{events_block}"
-    poi = _build_points_of_interest(scene_geometry, my_pos)
+    # Maintain visited_zones for this character. The zone the character is
+    # currently standing in counts as visited for future turns.
+    char_visited: set[str] = set()
+    if visited_zones is not None:
+        char_visited = visited_zones.setdefault(cs.character.id, set())
+        if my_pos is not None and my_pos[2]:
+            char_visited.add(my_pos[2].upper())
+    poi = _build_points_of_interest(scene_geometry, my_pos, char_visited)
     if poi:
         scene = f"{scene}\n\n{poi}"
     perception = _build_perception(
@@ -1261,6 +1324,15 @@ async def iter_session(
     # by turn_num.
     recent_events: deque[tuple[int, str]] = deque(maxlen=40)
 
+    # Per-character visited-zone tracking. A character is aware of named
+    # landmarks/zone-centers only in zones they have entered. Seed with each
+    # character's current zone so the starting chamber's contents are
+    # immediately visible.
+    visited_zones: dict[str, set[str]] = {}
+    for _cid, _pos in current_positions.items():
+        if _pos and _pos[2]:
+            visited_zones.setdefault(_cid, set()).add(_pos[2].upper())
+
     while True:
         combat_at_start = in_combat
         if combat_at_start:
@@ -1320,6 +1392,7 @@ async def iter_session(
                 in_combat=in_combat,
                 characters=characters,
                 recent_events=visible_events,
+                visited_zones=visited_zones,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left

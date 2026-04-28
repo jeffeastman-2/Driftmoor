@@ -34,6 +34,25 @@ This is exploration first. Combat is possible (shadowbeasts in deeper
 chambers) but should not be forced. Watch for: who takes point, who watches
 the rear, who reads the carvings, who picks up what.
 
+## Spelunking Notes (shared)
+
+Father Elden gave the party careful counsel before they descended. The
+characters know, in-fiction, the following caver's wisdom:
+
+- **Stay together.** No one wanders out of torchlight alone. The caverns
+  echo wrong; a lost voice may not find its way back to the right chamber.
+- **Mark the path.** Chalk arrows at every junction, pointing back toward
+  the entrance. Do not trust memory in here. (Amara carries chalk; Seraphina
+  has charcoal sticks.)
+- **One torch lit, one held in reserve.** Amara's torch is the lit one.
+  Thorgrim has a second wrapped in oilcloth in his pack.
+- **Three knocks means trouble.** A pre-arranged signal: three sharp raps
+  of metal on stone, repeated, means come back to this chamber now.
+- **The pool is not for drinking, washing, or wading.** Whatever it is,
+  it isn't only water.
+- **The remains are to be wrapped before being moved.** Father Elden was
+  explicit: bones first, dignity second only to safety.
+
 ## Characters
 
 ### seraphina
@@ -112,11 +131,17 @@ the rear, who reads the carvings, who picks up what.
 ### seraphina
 You squeezed through the crack first — of course you did; the dwarf wouldn't fit and the cleric was carrying a torch you didn't want anywhere near your eyes. Inside: a low, wide chamber, colder than the hillside above, and unnaturally still. The wind that scoured the Reach does not follow you down here. There is an old iron bracket on the wall just inside, rust-pitted; tally marks scratched into the rock nearby — nineteen vertical, a slanting twentieth that trails off. Someone was counting something here, a long time ago, and stopped mid-stroke. From deeper in the cave: a faint, distant sound, not wind, not water, almost rhythmic. Father Elden told you three of his companions died down here. He did not tell you what killed them.
 
+Elden's parting words ride the back of your mind: *stay in torchlight, mark every turn, three knocks means come back.* You have a stub of charcoal in a belt pouch for marking; Amara has chalk. Whatever quiet thing you do alone in here, do it within sight of the others.
+
 ### thorgrim
 You shouldered through the crack last, plate scraping stone, and straightened in a chamber that should not be this cold. Daylight from the entrance dies a few paces in. The half-elf is already crouched at the wall reading scratches like a poacher reading tracks; the cleric's torch is up and the shadows behind it lean wrong. There is a sound from deeper in — something between a hum and a held note, threading the silence. Your axe is already loose in your hand. You did not draw it. Father Elden's voice in your memory: *three of them. Sera went in first. None of them came out.* You are first into the dark on this one. Make it count.
 
+Elden's other words sit closer: *stay together, mark every junction, three knocks of steel on stone means form up here.* You carry a second torch wrapped in oilcloth, and a stub of chalk in your belt pouch beside the whetstone. Underground is dwarf country; the others will look to you for tempo. Don't let them strung out across more than one chamber.
+
 ### amara
 The crack opened into a chamber colder than any cave should be in spring. Your torch threw light in a wedge that the dark refused to hold — shadows pooled at the edges of the chamber like water finding its level. The dwarf came through behind you, plate ringing against stone; the half-elf rogue was already inside, reading scratches on the wall. Lathander's warmth in your chest felt distant here, as if the dawn-god's reach did not extend underground in quite the same way. You could feel something deeper in: not malice, exactly — a pressure, a hum that matched the obelisk above. Father Elden trusted you with this. *Bring back what you can,* he had said. *Even the bones.*
+
+Elden gave you the chalk himself, pressed into your palm at the trailhead with a working cleric's seriousness: *mark every junction, both directions. Stay in torchlight. If anything goes wrong, three knocks on stone and we form up.* The torch in your hand is the only lit one; Thorgrim has the second in reserve. Whatever the pool is, you are not to wade. The remains, when you find them, are to be wrapped — he was firm on that.
 
 ## Game State Sections
 - file: scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md
