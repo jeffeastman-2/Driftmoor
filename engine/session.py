@@ -1738,6 +1738,56 @@ async def iter_session(
             # into the acting character's narration. The character's own action
             # already reflects what they perceived; perception + action are
             # sufficient for the narrator.
+
+            # Phase 2b: resolve item interactions BEFORE narration so the
+            # narrator sees DM-authoritative findings instead of inventing
+            # them. Only when the action was approved and not consumed by
+            # the combat resolver.
+            if (
+                adjudication.approved
+                and not use_resolver
+                and items
+                and intent.interaction_target
+            ):
+                from engine.verb_resolver import resolve_item_interaction
+                actor_zone = current_positions.get(character_id, ("", "", ""))[2]
+                # Geometry-rendered zones come uppercase; items carry the
+                # canonical-cased zone from CONTENTS.md. Match case-insensitive.
+                resolved = resolve_item_interaction(
+                    intent_text=intent.intent or "",
+                    interaction_target=intent.interaction_target,
+                    items=items,
+                    character_zone=actor_zone,
+                )
+                if resolved is not None:
+                    item_obj, interaction_obj = resolved
+                    label = item_obj.label or item_obj.id
+                    response = (interaction_obj.response or "").strip()
+                    if response:
+                        attack_log.append(
+                            f"[ITEM-INTERACTION] {character_id} {interaction_obj.verb} "
+                            f"{label}: {response}"
+                        )
+                        ts = (
+                            f"{game_time.hour}:{game_time.minute:02d}"
+                            if game_time else f"t{turn_num}"
+                        )
+                        # First sentence keeps the recent-events bullet tight.
+                        first_sentence = response.split(". ", 1)[0].strip()
+                        if first_sentence and not first_sentence.endswith("."):
+                            first_sentence += "."
+                        handle = (
+                            characters[character_id].scene_handle
+                            or characters[character_id].character.name
+                            or character_id
+                        )
+                        ev = (
+                            f"{ts} | {handle} examined {label} — "
+                            f"{first_sentence}"
+                        )
+                        recent_events.append((turn_num, ev))
+                        item_obj.discovered_by.add(character_id)
+
             cr = await turn_cycle.narrate_turn(
                 intent, output, adjudication, "",
                 resolution_log=attack_log if attack_log else None,
