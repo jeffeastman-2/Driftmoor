@@ -799,7 +799,10 @@ def _build_perception(
             dist = math.hypot(dx, dy)
             dist_rounded = round(dist / 5) * 5
             label = item.label or item.id.replace("_", " ")
-            item_lines.append(f"- {label} (~{dist_rounded:.0f} ft away)")
+            # Phase 3b.1: tag items already examined by anyone in the
+            # party so the LLM stops looping on the same Search action.
+            tag = " (already examined)" if item.discovered_by else ""
+            item_lines.append(f"- {label} (~{dist_rounded:.0f} ft away){tag}")
         if item_lines:
             items_block = "Items in this zone:\n" + "\n".join(item_lines)
             result = f"{result}\n\n{items_block}" if result else items_block
@@ -1588,6 +1591,52 @@ async def iter_session(
             # the destination — its MOVEMENT TARGET is ignored here.
             # Skipped when CombatResolver already applied movement.
             player_target = intent.movement_target  # (x, y, z) or None
+
+            # Phase 3b.1: if the actor declared an interaction_target whose
+            # item lives in their current zone, auto-route movement to that
+            # item's position. Distance is still clamped to walking speed
+            # downstream, so a far item just gets closer this turn — but
+            # the actor stops standing 30 ft from a thing they say they
+            # are examining. Only fires when the actor didn't already pick
+            # a movement target near the item.
+            if (
+                not use_resolver
+                and adjudication.approved
+                and items
+                and intent.interaction_target
+            ):
+                from engine.verb_resolver import resolve_item_interaction
+                _actor_zone = current_positions.get(
+                    character_id, ("", "", "")
+                )[2]
+                _resolved = resolve_item_interaction(
+                    intent_text=intent.intent or "",
+                    interaction_target=intent.interaction_target,
+                    items=items,
+                    character_zone=_actor_zone,
+                )
+                if _resolved is not None:
+                    _it_obj, _ = _resolved
+                    if _it_obj.position is not None:
+                        ix, iy = _it_obj.position.x, _it_obj.position.y
+                        existing = player_target
+                        # Replace movement_target unless it is already
+                        # within ~5 ft of the item.
+                        replace = True
+                        if existing is not None:
+                            ex, ey = float(existing[0]), float(existing[1])
+                            if math.hypot(ex - ix, ey - iy) <= 5.0:
+                                replace = False
+                        if replace:
+                            player_target = (ix, iy, _it_obj.zone or "")
+                            intent.movement_target = player_target
+                            attack_log.append(
+                                f"[AUTO-MOVE] {character_id}: routing to "
+                                f"interaction target "
+                                f"'{_it_obj.label or _it_obj.id}' at "
+                                f"({ix:.1f},{iy:.1f})"
+                            )
+
             if (
                 not use_resolver
                 and adjudication.approved
@@ -1776,6 +1825,43 @@ async def iter_session(
                     items=items,
                     character_zone=actor_zone,
                 )
+                if resolved is None and intent.interaction_target.strip():
+                    # Phase 3b.1: actor named a target but the verb
+                    # resolver could not match it in their current zone.
+                    # Check whether the item exists in *some other* zone
+                    # so the narrator gets an honest "out of reach" line
+                    # instead of fabricating the interaction.
+                    other_zone_match = resolve_item_interaction(
+                        intent_text=intent.intent or "",
+                        interaction_target=intent.interaction_target,
+                        items=items,
+                        character_zone=None,
+                    )
+                    if other_zone_match is not None:
+                        oz_item, _ = other_zone_match
+                        oz_label = oz_item.label or oz_item.id
+                        oz_zone = oz_item.zone or "elsewhere"
+                        attack_log.append(
+                            f"[ITEM-INTERACTION] {character_id} cannot "
+                            f"interact with '{oz_label}': it is in "
+                            f"{oz_zone}, not in {actor_zone or 'this zone'}. "
+                            f"The character is not within reach and the "
+                            f"narration must reflect this — do not describe "
+                            f"examining or touching it."
+                        )
+                        ts = (
+                            f"{game_time.hour}:{game_time.minute:02d}"
+                            if game_time else f"t{turn_num}"
+                        )
+                        handle = (
+                            characters[character_id].scene_handle
+                            or characters[character_id].character.name
+                            or character_id
+                        )
+                        recent_events.append((turn_num, (
+                            f"{ts} | {handle} reaches toward {oz_label} "
+                            f"but it is in {oz_zone}, beyond reach from here."
+                        )))
                 if resolved is not None:
                     item_obj, interaction_obj = resolved
                     label = item_obj.label or item_obj.id
