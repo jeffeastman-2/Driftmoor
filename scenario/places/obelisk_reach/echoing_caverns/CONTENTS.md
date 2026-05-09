@@ -11,7 +11,7 @@
 
 ---
 
-## Chamber Descriptions
+## Zone Descriptions
 
 ### Entry Chamber
 The crack in the cliff face opens into a low, wide chamber, no taller than a
