@@ -23,9 +23,23 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 - Persuasion +2 (CHA)
 
 ## Spells and Abilities
-- Bardic Inspiration: +1d6 on next d20 roll within 10 minutes (2 uses per long rest)
-- Cure Wounds: 1d8+1 HP to creature touched
-- Faerie Fire: All objects/creatures in 20-ft cube within 60 ft outlined in colored aura for 1 minute unless DEX save
+**Spellcasting ability:** CHA | **Spell save DC:** 13 | **Spell attack:** +5
+
+**Bardic Inspiration:** 1 bonus action, target one creature within 60 ft (not self); they gain 1 Bardic Inspiration die (1d6 at level 1) usable within 10 min on one attack roll, ability check, or saving throw. **3 uses per long rest** (CHA mod), recharge on long rest.
+
+**Cantrips known (2, at-will):**
+- Vicious Mockery: 60 ft, WIS save DC 13 or 1d4 psychic + disadvantage on next attack roll before end of target's next turn
+- Minor Illusion: 30 ft, 1 min, sound or image (5 ft cube)
+
+**1st-level spell slots:** 2 per long rest
+
+**Spells known (4, fixed list — bards do not prepare):**
+- Cure Wounds — 1 action, touch, 1d8 + 3 HP
+- Faerie Fire — 1 action, 60 ft, conc. up to 1 min, 20-ft cube outlined; attacks vs targets within have advantage; DEX save DC 13 negates
+- Healing Word — 1 bonus action, 60 ft, 1d4 + 3 HP
+- Dissonant Whispers — 1 action, 60 ft, 3d6 psychic + target uses reaction to move away; WIS save DC 13 for half and no movement
+
+**Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
 ## Equipment
 - Leather armor
@@ -38,7 +52,7 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 *(Updated by monitor agent each round)*
 
 - **Current HP:** 9
-- **Bardic Inspiration uses remaining:** 2/2
+- **Bardic Inspiration uses remaining:** 3/3
 - **Spell slots used:** None
 - **Mood:** Bright, watchful beneath the brightness
 - **Disposition toward party:** Fiercely attached, frames this as casual

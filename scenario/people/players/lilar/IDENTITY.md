@@ -21,9 +21,26 @@ Weathered face, marks of a life in service. Broad-shouldered, sturdy. Graying br
 - Intimidation +2 (CHA)
 
 ## Spells
-- Healing Word: 1d4+1 HP to creature within 60 ft (bonus action)
-- Bless: Up to 3 creatures within 30 ft gain 1d4 on attack rolls and saving throws
-- Guiding Bolt: 4d6 damage to creature within 120 ft; next attack on target has advantage
+**Spellcasting ability:** WIS | **Spell save DC:** 13 | **Spell attack:** +5
+
+**Cantrips known (3, at-will):**
+- Sacred Flame: 1d8 radiant, 60 ft, DEX save DC 13
+- Light: object (≤10 ft cube) sheds bright 20 ft / dim 20 ft for 1 hr; one object at a time
+- Spare the Dying: stabilize creature at 0 HP, touch
+
+**1st-level spell slots:** 2 per long rest
+
+**Prepared spells (WIS mod 3 + cleric level 1 = 4):**
+- Burning Hands *(Light domain — always prepared, does not count against the 4)* — 1 action, 15 ft cone, 3d6 fire, DEX save DC 13 for half
+- Faerie Fire *(Light domain — always prepared, does not count against the 4)* — 1 action, 60 ft, conc. up to 1 min, 20-ft cube outlined; attacks vs targets within have advantage; DEX save DC 13 negates
+- Healing Word — 1 bonus action, 60 ft, 1d4 + 3 HP
+- Bless — 1 action, 30 ft, conc. up to 1 min, 3 creatures gain +1d4 on attack rolls & saves
+- Guiding Bolt — 1 action, 120 ft, 4d6 radiant; next attack vs target has advantage
+- Shield of Faith — 1 bonus action, 60 ft, conc. up to 10 min, +2 AC to one ally
+
+**Channel Divinity (1/short rest, available at level 2):** Turn Undead; Radiance of the Dawn (Light Domain). *(Not yet available at level 1.)*
+
+**Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
 ## Equipment
 - Studded leather armor (AC 12)

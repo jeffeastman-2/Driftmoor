@@ -24,11 +24,24 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 - Religion +2 (INT)
 
 ## Spells
-- Sacred Flame: 1d8 radiant damage, 60 ft, DEX save DC 13
-- Spare the Dying: stabilize creature at 0 HP, touch
-- Cure Wounds: 1d8+3 HP to creature touched (boosted to 1d8+6 with Disciple of Life)
-- Bless: up to 3 creatures within 30 ft gain 1d4 on attack rolls and saving throws
-- Shield of Faith: +2 AC to creature within 60 ft, concentration, up to 10 minutes
+**Spellcasting ability:** WIS | **Spell save DC:** 13 | **Spell attack:** +5
+
+**Cantrips known (3, at-will):**
+- Sacred Flame: 1d8 radiant, 60 ft, DEX save DC 13
+- Spare the Dying: stabilize creature at 0 HP, touch (range)
+- Light: object (≤10 ft cube) sheds bright 20 ft / dim 20 ft for 1 hr; one object at a time
+
+**1st-level spell slots:** 2 per long rest
+
+**Prepared spells (WIS mod 3 + cleric level 1 = 4):**
+- Bless *(Life domain — always prepared, does not count against the 4)* — 1 action, conc. up to 1 min, 3 creatures within 30 ft gain +1d4 on attack rolls & saves
+- Cure Wounds *(Life domain — always prepared, does not count against the 4)* — 1 action, touch, 1d8 + 3 HP (1d8 + 6 with Disciple of Life)
+- Shield of Faith — 1 bonus action, 60 ft, conc. up to 10 min, +2 AC to one ally
+- Healing Word — 1 bonus action, 60 ft, 1d4 + 3 HP
+- Guiding Bolt — 1 action, 120 ft, 4d6 radiant; next attack vs target before end of next turn has advantage
+- Sanctuary — 1 bonus action, 30 ft, conc. up to 1 min, attackers must WIS save or pick another target
+
+**Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
 ## Equipment
 - Chain mail (AC 16)

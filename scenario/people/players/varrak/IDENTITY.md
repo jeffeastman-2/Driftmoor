@@ -25,10 +25,23 @@ Tall and imposing, scales the deep crimson of cooling iron. Amber eyes with vert
 - Insight +2 (WIS)
 
 ## Spells
-- Fire Bolt: 1d10 fire damage, 120 ft range
-- Mage Hand: spectral hand, 30 ft range, 1 minute
-- Shield: reaction, +5 AC until start of next turn
-- Burning Hands: 3d6 fire damage, 15 ft cone, DEX save DC 13
+**Spellcasting ability:** CHA | **Spell save DC:** 13 | **Spell attack:** +5
+
+**Cantrips known (4, at-will):**
+- Fire Bolt: 1d10 fire, 120 ft, ranged spell attack
+- Mage Hand: 30 ft, 1 min, spectral hand (≤10 lb objects)
+- Prestidigitation: 10 ft, minor magical effects (clean, flavor, snuff/light flame, etc.)
+- Light: object (≤10 ft cube) sheds bright 20 ft / dim 20 ft for 1 hr; one object at a time
+
+**1st-level spell slots:** 2 per long rest
+
+**Spells known (2, fixed list — sorcerers do not prepare):**
+- Shield — 1 reaction (when hit by attack or targeted by Magic Missile), +5 AC until start of next turn, negates Magic Missile
+- Burning Hands — 1 action, 15 ft cone, 3d6 fire, DEX save DC 13 for half
+
+**Sorcery Points:** 0 at level 1 (gained at level 2). Metamagic gained at level 3.
+
+**Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
 ## Equipment
 - Quarterstaff (1d6 bludgeoning)
