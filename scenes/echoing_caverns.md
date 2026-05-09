@@ -141,6 +141,7 @@ characters know, in-fiction, the following caver's wisdom:
 - **hp:** 26
 - **ac:** 14
 - **faction:** hostile
+- **activation:** zone_entry:Secret Chamber
 - **provider:** deepseek
 - **model:** deepseek-chat
 - **pronouns:** it/its

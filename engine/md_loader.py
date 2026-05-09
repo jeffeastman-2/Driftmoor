@@ -697,6 +697,9 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
                 f"\n\nYour starting position: x={x}, y={y}, zone={zone}."
             )
 
+        # Phase 3b: per-character activation trigger (default "always").
+        session.activation = cfg.get("activation", "always").strip() or "always"
+
         characters[char_id] = session
 
         if cfg.get("pronouns"):

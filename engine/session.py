@@ -57,6 +57,11 @@ class CharacterSession:
     scene_handle: str = ""  # How others see this character before names are exchanged
     weapons: list[Weapon] = field(default_factory=list)
     armor: Armor | None = None
+    # Phase 3b: dormancy. "always" = active from turn 1 (default).
+    # "zone_entry:<Zone Name>" = activate when an opposing-faction
+    # character enters that zone. "door_open:<door_id>" = activate when
+    # the named door fires its open side effect.
+    activation: str = "always"
 
 
 @dataclass
@@ -1298,10 +1303,17 @@ async def iter_session(
     # Combat state
     in_combat = False
     pre_combat_duration: int | None = None
+
+    # Phase 3b: dormancy. Creatures with activation triggers (e.g.
+    # zone_entry:Secret Chamber) are excluded from initiative and
+    # perception until the trigger fires.
+    from engine.activation import initial_dormant_set, check_activations
+    dormant: set[str] = initial_dormant_set(characters)
+
     active_characters: set[str] = (
         initial_active_characters & set(characters.keys())
         if initial_active_characters is not None
-        else set(characters.keys())
+        else set(characters.keys()) - dormant
     )
 
     story_turns_remaining = num_turns
@@ -1836,6 +1848,36 @@ async def iter_session(
                                 f"wall of the Echo Chamber grinds shut "
                                 f"to a hairline crack again."
                             )))
+
+            # Phase 3b: re-evaluate activation triggers now that movement
+            # and door state may have changed. Promotes dormant creatures
+            # whose triggers fire (e.g. giant spider when a non-spider
+            # enters the Secret Chamber).
+            _door_events_this_turn = []
+            try:
+                _door_events_this_turn = side_effects  # type: ignore[name-defined]
+            except NameError:
+                _door_events_this_turn = []
+            fired_activations = check_activations(
+                characters=characters,
+                active_characters=active_characters,
+                current_positions=current_positions,
+                door_events=_door_events_this_turn,
+            )
+            for activated_id, reason in fired_activations:
+                handle = (
+                    characters[activated_id].scene_handle
+                    or characters[activated_id].character.name
+                    or activated_id
+                )
+                ts = (
+                    f"{game_time.hour}:{game_time.minute:02d}"
+                    if game_time else f"t{turn_num}"
+                )
+                recent_events.append((turn_num, (
+                    f"{ts} | {handle} stirs — its presence becomes apparent "
+                    f"({reason})."
+                )))
 
             cr = await turn_cycle.narrate_turn(
                 intent, output, adjudication, "",
