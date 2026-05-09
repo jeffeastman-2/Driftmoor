@@ -92,3 +92,38 @@ class TestOutOfZoneGuard:
         item, _ = result
         assert item.id == "drag_marks"
         assert item.zone and "Entry" in item.zone
+
+
+class TestDescriptionFallback:
+    def test_flavor_only_item_falls_back_to_description(self, items):
+        # torch_bracket has no *Interactions* block — examine should
+        # still return a synthetic Interaction built from the description
+        # so discovered_by gets populated and the item is tagged
+        # already-examined in subsequent perception ticks.
+        result = resolve_item_interaction(
+            intent_text="examine the torch bracket",
+            interaction_target="Torch bracket",
+            items=items,
+            character_zone="ENTRY CHAMBER",
+        )
+        assert result is not None
+        item, interaction = result
+        assert item.id == "torch_bracket"
+        assert interaction.verb == "examine"
+        # Description text should have flowed into the response.
+        assert interaction.response
+        assert "iron" in interaction.response.lower() or "bracket" in interaction.response.lower()
+
+    def test_authored_interaction_still_wins(self, items):
+        # drag_marks DOES have an authored examine response; fallback
+        # must not shadow it.
+        result = resolve_item_interaction(
+            intent_text="examine the drag marks",
+            interaction_target="Drag marks",
+            items=items,
+            character_zone="ENTRY CHAMBER",
+        )
+        assert result is not None
+        _, interaction = result
+        assert "body dragged south" in interaction.response.lower() or \
+               "passage" in interaction.response.lower()

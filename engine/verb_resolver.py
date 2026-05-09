@@ -146,6 +146,24 @@ def resolve_item_interaction(
     if not matches and verb != "examine":
         matches = _find_by_verb(item, "examine")
     if not matches:
+        # Phase 3b.2: flavor-only items (no authored Interactions block)
+        # still deserve a one-time examine response so the actor's
+        # discovered_by set gets populated and the (already examined)
+        # tag breaks the LLM out of re-examination loops. Falls back to
+        # the item description; if the description is empty we surface a
+        # canned "nothing more to learn" line.
+        if verb == "examine":
+            response_text = (
+                item.description.strip()
+                or f"You examine the {item.label or item.id}, "
+                "but find nothing further of note."
+            )
+            return item, Interaction(
+                verb="examine",
+                aliases=[],
+                condition="",
+                response=response_text,
+            )
         return None
     return item, _pick_by_condition(matches, item.state)
 
