@@ -718,6 +718,7 @@ def _build_perception(
     current_positions: dict[str, tuple[float, float, str]],
     active_characters: set[str],
     characters: Optional[dict[str, "CharacterSession"]] = None,
+    items: Optional[dict] = None,
 ) -> str:
     """Return a preformatted perception block for what character_id can see.
 
@@ -728,6 +729,11 @@ def _build_perception(
     Other creatures are referred to by their ``scene_handle`` (e.g. "the
     elf ranger") rather than their internal character_id, because the
     acting character has not necessarily been introduced to them by name.
+
+    When ``items`` is provided, items in the same zone as the acting
+    character are appended under an ``Items in this zone:`` sub-header.
+    Same-zone items are presumed visible (Phase 5 will add LOS-aware item
+    visibility for items separated from the character by sub-zone walls).
     """
     import math
     if scene_geometry is None:
@@ -770,6 +776,29 @@ def _build_perception(
             )
 
     result = "\n".join(lines) if lines else ""
+
+    # ------------------------------------------------------------------
+    # Items in the character's current zone.
+    # ------------------------------------------------------------------
+    if items:
+        my_zone = (my_pos[2] or scene_geometry.zone_at(Position(my_pos[0], my_pos[1])) or "").upper()
+        item_lines: list[str] = []
+        for item in items.values():
+            iz = (item.zone or "").upper()
+            if not iz or iz != my_zone:
+                continue
+            if item.position is None:
+                continue
+            dx = item.position.x - my_pos[0]
+            dy = item.position.y - my_pos[1]
+            dist = math.hypot(dx, dy)
+            dist_rounded = round(dist / 5) * 5
+            label = item.label or item.id.replace("_", " ")
+            item_lines.append(f"- {label} (~{dist_rounded:.0f} ft away)")
+        if item_lines:
+            items_block = "Items in this zone:\n" + "\n".join(item_lines)
+            result = f"{result}\n\n{items_block}" if result else items_block
+
     _dbg(f"[PERCEPTION]   result: {repr(result)}")
     return result
 
@@ -927,6 +956,7 @@ def _build_context(
     characters: Optional[dict[str, CharacterSession]] = None,
     recent_events: Optional[list[str]] = None,
     visited_zones: Optional[dict[str, set[str]]] = None,
+    items: Optional[dict] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     # Replace baked-in "Your starting position: x=…" with the live value so
@@ -965,6 +995,7 @@ def _build_context(
         current_positions or {},
         active_characters or set(),
         characters=characters,
+        items=items,
     )
     # Compute the set of character IDs the acting character can actually see,
     # for membership tests below (the perception string above uses scene
@@ -1243,6 +1274,7 @@ async def iter_session(
     start_turn: int = 1,
     initial_history: str = "",
     scene_geometry: Optional[SceneGeometry] = None,
+    items: Optional[dict] = None,
     character_pronouns: dict[str, str] | None = None,
     initial_active_characters: set[str] | None = None,
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
@@ -1393,6 +1425,7 @@ async def iter_session(
                 characters=characters,
                 recent_events=visible_events,
                 visited_zones=visited_zones,
+                items=items,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
@@ -1849,6 +1882,7 @@ async def run_session(
     game_time: Optional[GameTime] = None,
     rng: Optional[random.Random] = None,
     scene_geometry: Optional[SceneGeometry] = None,
+    items: Optional[dict] = None,
     character_pronouns: dict[str, str] | None = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
@@ -1866,6 +1900,7 @@ async def run_session(
         game_time=game_time,
         rng=rng,
         scene_geometry=scene_geometry,
+        items=items,
         character_pronouns=character_pronouns,
     ):
         turns.append(turn_result)

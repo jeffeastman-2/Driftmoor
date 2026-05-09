@@ -65,6 +65,7 @@ class SceneConfig:
     geometry_summary: str = ""
     scene_geometry: SceneGeometry | None = None
     geometry_path: Path | None = None
+    items: dict = field(default_factory=dict)  # {item_id: models.item.Item}
     default_turns: int = 4
     game_time: GameTime | None = None
     dm_provider: str = "anthropic"
@@ -388,6 +389,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
         game_state_summary=config.game_state_summary,
         geometry_summary=config.geometry_summary,
         scene_geometry=config.scene_geometry,
+        items=config.items or None,
         checkpoint_dir=checkpoint_dir,
         game_time=config.game_time,
     )

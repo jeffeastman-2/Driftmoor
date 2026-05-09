@@ -630,7 +630,25 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             geo_path = None
 
     starting_positions = _parse_starting_positions(geometry_summary) if geometry_summary else {}
-
+    # ── Contents (items) ──────────────────────────────────────────
+    # CONTENTS.md is expected as a sibling of GEOMETRY.md. Loading is
+    # best-effort: a missing or malformed file leaves ``items`` empty so
+    # legacy scenes without CONTENTS.md continue to run.
+    items: dict = {}
+    if geo_path is not None:
+        contents_path = geo_path.parent / "CONTENTS.md"
+        if contents_path.exists():
+            from models.contents_loader import load_contents_with_geometry
+            try:
+                items = load_contents_with_geometry(
+                    contents_path, geo_path, scene_geometry=scene_geometry,
+                )
+            except Exception as e:  # pragma: no cover - logged for diagnostics
+                import sys
+                print(
+                    f"[md_loader] WARNING: failed to load {contents_path}: {e}",
+                    file=sys.stderr,
+                )
     # ── Weapon / Armor libraries ──────────────────────────────────────────────
     weapons_path = ROOT / "scenario" / "things" / "WEAPONS.md"
     armor_path   = ROOT / "scenario" / "things" / "ARMOR.md"
@@ -726,6 +744,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         geometry_summary=geometry_summary,
         scene_geometry=scene_geometry,
         geometry_path=geo_path,
+        items=items,
         default_turns=default_turns,
         game_time=game_time,
         dm_provider=dm_provider,

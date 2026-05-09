@@ -121,6 +121,7 @@ class SceneRunner:
             start_turn=self._start_turn,
             initial_history=self._initial_history,
             scene_geometry=self.config.scene_geometry,
+            items=self.config.items or None,
             character_pronouns=self.config.character_pronouns or None,
             initial_active_characters=self._initial_active_characters,
             initial_positions=self._checkpoint_positions or None,
