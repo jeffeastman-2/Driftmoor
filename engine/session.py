@@ -1618,6 +1618,7 @@ async def iter_session(
                 if _resolved is not None:
                     _it_obj, _ = _resolved
                     if _it_obj.position is not None:
+                        import math as _math_local
                         ix, iy = _it_obj.position.x, _it_obj.position.y
                         existing = player_target
                         # Replace movement_target unless it is already
@@ -1625,7 +1626,7 @@ async def iter_session(
                         replace = True
                         if existing is not None:
                             ex, ey = float(existing[0]), float(existing[1])
-                            if math.hypot(ex - ix, ey - iy) <= 5.0:
+                            if _math_local.hypot(ex - ix, ey - iy) <= 5.0:
                                 replace = False
                         if replace:
                             player_target = (ix, iy, _it_obj.zone or "")
