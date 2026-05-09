@@ -1356,6 +1356,11 @@ async def iter_session(
     # by turn_num.
     recent_events: deque[tuple[int, str]] = deque(maxlen=40)
 
+    # Phase 3a: per-session puzzle bookkeeping (glyph press sequence,
+    # secret-door state). Owned here, mutated by state_resolver.process_press.
+    from engine.state_resolver import initial_puzzle_state
+    puzzle_state: dict = initial_puzzle_state()
+
     # Per-character visited-zone tracking. A character is aware of named
     # landmarks/zone-centers only in zones they have entered. Seed with each
     # character's current zone so the starting chamber's contents are
@@ -1762,7 +1767,21 @@ async def iter_session(
                 if resolved is not None:
                     item_obj, interaction_obj = resolved
                     label = item_obj.label or item_obj.id
-                    response = (interaction_obj.response or "").strip()
+                    verb_canonical = interaction_obj.verb.lower().split()[0] if interaction_obj.verb else ""
+
+                    # Phase 3a: state-mutating verbs route through the
+                    # state resolver, which OVERRIDES the response so the
+                    # glyph sequence + door state machine drives the truth.
+                    side_effects: list[dict] = []
+                    if verb_canonical == "press":
+                        from engine.state_resolver import process_press
+                        response, side_effects = process_press(
+                            item_obj, items, puzzle_state,
+                        )
+                        response = (response or "").strip()
+                    else:
+                        response = (interaction_obj.response or "").strip()
+
                     if response:
                         attack_log.append(
                             f"[ITEM-INTERACTION] {character_id} {interaction_obj.verb} "
@@ -1781,12 +1800,42 @@ async def iter_session(
                             or characters[character_id].character.name
                             or character_id
                         )
+                        # Verb past tense for the event line; "press" reads
+                        # naturally as "pressed", others use "examined" by
+                        # convention from Phase 2b.
+                        verb_past = "pressed" if verb_canonical == "press" else "examined"
                         ev = (
-                            f"{ts} | {handle} examined {label} — "
+                            f"{ts} | {handle} {verb_past} {label} — "
                             f"{first_sentence}"
                         )
                         recent_events.append((turn_num, ev))
                         item_obj.discovered_by.add(character_id)
+
+                    # Phase 3a: broadcast door state changes to all
+                    # characters via recent_events. The spider in the
+                    # Secret Chamber feels the vibration through its web
+                    # and the LLM can react accordingly on its next turn.
+                    for effect in side_effects:
+                        ts = (
+                            f"{game_time.hour}:{game_time.minute:02d}"
+                            if game_time else f"t{turn_num}"
+                        )
+                        if effect.get("type") == "door_open":
+                            recent_events.append((turn_num, (
+                                f"{ts} | The hairline crack in the west "
+                                f"wall of the Echo Chamber grinds open "
+                                f"into a passable hewn opening. Stone "
+                                f"vibrations carry through the surrounding "
+                                f"rock — anything attuned to the rock or "
+                                f"resting on a web in the Secret Chamber "
+                                f"feels them clearly."
+                            )))
+                        elif effect.get("type") == "door_close":
+                            recent_events.append((turn_num, (
+                                f"{ts} | The hewn opening in the west "
+                                f"wall of the Echo Chamber grinds shut "
+                                f"to a hairline crack again."
+                            )))
 
             cr = await turn_cycle.narrate_turn(
                 intent, output, adjudication, "",

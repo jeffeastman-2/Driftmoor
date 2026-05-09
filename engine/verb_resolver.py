@@ -29,6 +29,7 @@ _VERB_LEXICON: list[tuple[str, list[str]]] = [
     ("examine", ["examine", "inspect", "study", "scrutinize", "observe", "look at", "look over", "look closer"]),
     ("search", ["search", "rummage", "rifle", "investigate", "comb"]),
     ("read", ["read", "decipher", "transcribe"]),
+    ("press", ["press", "push", "depress", "tap", "trigger", "activate"]),
 ]
 
 
