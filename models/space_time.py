@@ -228,21 +228,77 @@ class SceneGeometry:
         return best_name, best_pos
 
     def can_see(self, pos_a: Position, pos_b: Position) -> bool:
-        """Return True if pos_a has line-of-sight to pos_b per visibility_rules.
+        """Return True if pos_a has line-of-sight to pos_b.
 
-        If no rule exists for the zone pair, sight is unrestricted (returns True).
+        Resolution order:
+
+        1. If an explicit ``visibility_rules`` entry exists for the
+           ``(zone_a, zone_b)`` pair, it wins. ``0`` means blocked;
+           otherwise the value is a max-range cap in feet. This lets
+           open-air scenes (e.g. Fey Glade) opt into range-based fall-off
+           without changing the underlying geometric model.
+        2. Within the same zone, visibility is presumed (returns True).
+        3. Between different zones, the segment from a→b is ray-traced
+           through the union of all zone polygons. Every interior sample
+           must lie inside (or on the edge of) some zone polygon. A
+           sample landing in non-zoned space — i.e. "Solid Rock" / void
+           between zones — blocks LOS.
+
+        If the scene has no zones at all, no spatial constraint is applied
+        and the function returns True.
         """
         import math
-        zone_a = (self.zone_at(pos_a) or "FOREST").upper()
-        zone_b = (self.zone_at(pos_b) or "FOREST").upper()
+
+        # No spatial structure: no LOS constraint.
+        if not self.zones:
+            return True
+
+        zone_a = (self.zone_at(pos_a) or "").upper()
+        zone_b = (self.zone_at(pos_b) or "").upper()
+
+        # 1. Explicit rules win.
         key = (zone_a, zone_b)
-        if key not in self.visibility_rules:
-            return True  # no rule → no restriction
-        max_range = self.visibility_rules[key]
-        if max_range == 0:
-            return False
-        dist = math.hypot(pos_b.x - pos_a.x, pos_b.y - pos_a.y)
-        return dist <= max_range
+        if key in self.visibility_rules:
+            max_range = self.visibility_rules[key]
+            if max_range == 0:
+                return False
+            dist = math.hypot(pos_b.x - pos_a.x, pos_b.y - pos_a.y)
+            return dist <= max_range
+
+        # 2. Same zone: presumed visible.
+        if zone_a and zone_a == zone_b:
+            return True
+
+        # 3. Different zones: ray-trace through zone-polygon union.
+        dx = pos_b.x - pos_a.x
+        dy = pos_b.y - pos_a.y
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return True
+        # ~1 ft sample resolution; minimum 4 samples even for tiny segments.
+        n_steps = max(4, int(length))
+        edge_tol = 0.5  # tolerate samples sitting exactly on a zone seam
+        # Skip endpoints — the observer can always "see" their own position
+        # and the target's position is what we're testing reachability TO.
+        for i in range(1, n_steps):
+            t = i / n_steps
+            sample = Position(pos_a.x + t * dx, pos_a.y + t * dy)
+            in_zone = False
+            for poly in self.zones.values():
+                if poly.contains(sample):
+                    in_zone = True
+                    break
+            if not in_zone:
+                # Polygons sharing an edge may both fail .contains() on the
+                # seam due to floating-point inclusivity. Allow samples
+                # within edge_tol of any zone polygon's boundary.
+                for poly in self.zones.values():
+                    if poly.boundary_distance(sample) <= edge_tol:
+                        in_zone = True
+                        break
+            if not in_zone:
+                return False
+        return True
 
 
 @dataclass

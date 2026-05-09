@@ -27,6 +27,7 @@ chambers decades ago.
 | first_passage_mouth        | 137 | 260 |
 | echo_chamber_arch          | 137 | 227 |
 | rocky_passage_squeeze      | 130 | 195 |
+| secret_chamber_threshold   | 81  | 195 |
 | deep_passage_descent       | 155 | 162 |
 | pool_passage_descent       | 205 | 162 |
 | bone_chamber_threshold     | 155 | 113 |
@@ -44,6 +45,7 @@ chambers decades ago.
 | First Passage    | (130,227,-2) (145,227,-2) (145,260,0.0) (130,260,0.0)|
 | Echo Chamber     | (130,162,-2) (227,162,-2) (227,227,-2) (130,227,-2)|
 | Rocky Passage    | (81,190,-5) (81,200,-5) (130,200,-2) (130,190,-2)|
+| Secret Chamber   | (48,178,-5) (81,178,-5) (81,211,-5) (48,211,-5)|
 | Deep Passage     | (150,113,-10) (160,113,-10) (160,162,-2) (150,162,-2)|
 | Pool Passage     | (200,146,-10) (210,146,-10) (210,162,-2) (200,162,-2)|
 | Bone Chamber     | (65,48,-10) (162,48,-10) (162,113,-10) (65,113,-10)|
@@ -59,7 +61,6 @@ chambers decades ago.
 |--------------------|---------------------------------------|
 | Collapsed Tunnel   | (211,48) (221,48) (221,81) (211,81)        |
 | Underground pool   | (190,91) (221,91) (221,110) (190,110)        |
-| Rock fall          | (48,178) (81,178) (81,211) (48,211)        |
 | Solid Rock         | (0,0) (300,0) (300,325) (0,325)            |
 
 ---
@@ -70,8 +71,17 @@ chambers decades ago.
 |---------------------|-----|-----|--------------------|
 | torch_bracket       | 100 | 270 | Torch bracket      |
 | wall_scratches      | 115 | 320 | Tally scratches    |
+| snapped_torch       | 132 | 268 | Snapped torch      |
+| old_bloodstain      | 140 | 263 | Dark stain         |
+| discarded_pack      | 105 | 285 | Discarded pack     |
+| drag_marks          | 130 | 268 | Drag marks         |
 | carved_symbols      | 222 | 200 | Carved symbols     |
 | obelisk_fragment    | 178 | 195 | Obelisk fragment   |
+| trigger_glyph_top    | 133 | 192 | Trigger glyph (top)    |
+| trigger_glyph_middle | 133 | 195 | Trigger glyph (middle) |
+| trigger_glyph_bottom | 133 | 198 | Trigger glyph (bottom) |
+| secret_burial_vault | 64  | 195 | Burial vault       |
+| mace_plus_one       | 64  | 195 | Mace +1            |
 | companion_remains   | 88  | 75  | Skeletal remains   |
 | holy_symbol_pelor   | 92  | 78  | Holy symbol        |
 | parchment_fragment  | 96  | 73  | Parchment fragment |
@@ -105,3 +115,4 @@ chambers decades ago.
 | thorgrim    | 138 | 295 | Entry Chamber |
 | amara       | 120 | 305 | Entry Chamber |
 | seraphina   | 155 | 285 | Entry Chamber |
+| giant_spider | 64 | 195 | Secret Chamber |

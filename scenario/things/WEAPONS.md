@@ -18,3 +18,4 @@ Python reads the base stat (damage, range, reach, properties) from this table.
 | belt_knife | Belt Knife | 1d4 | piercing | 5 | 0 | 0 | light |
 | improvised_spear | Improvised Spear | 1d8 | piercing | 5 | 0 | 0 | two_handed |
 | shadowbeast_claw | Claw | 1d6 | slashing | 5 | 0 | 0 | natural |
+| spider_bite | Bite | 1d8+3 | piercing | 5 | 0 | 0 | natural |

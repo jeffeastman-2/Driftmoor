@@ -2,7 +2,7 @@
 
 ## Core Identity
 - **Full Name:** Aeliana Moonglade
-- **Player:** Rose
+- **Player:** 
 - **Race/Class:** Wood Elf Ranger (Outlander background)
 - **Alignment:** Neutral Good
 

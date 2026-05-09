@@ -52,6 +52,12 @@ characters know, in-fiction, the following caver's wisdom:
   it isn't only water.
 - **The remains are to be wrapped before being moved.** Father Elden was
   explicit: bones first, dignity second only to safety.
+- **Search each chamber before pressing on.** Father Elden was explicit:
+  his companions died because they pushed deeper before securing what they
+  had already entered. Walls, floors, corners, and ceilings all bear
+  examining. The caverns reward thoroughness — old hands, hidden seams,
+  things tucked where torchlight does not naturally fall. Do not move to
+  the next chamber until the current one has been searched.
 
 ## Characters
 
@@ -126,6 +132,34 @@ characters know, in-fiction, the following caver's wisdom:
 - **oxytocin_baseline:** 0.5
 - **oxytocin_volatility:** 0.4
 
+### giant_spider
+- **type:** creature
+- **creature_file:** scenario/creatures/giant_spider.md
+- **soul_file:** scenario/creatures/giant_spider_soul.md
+- **identity_file:** scenario/creatures/giant_spider_identity.md
+- **scene_handle:** the giant spider
+- **hp:** 26
+- **ac:** 14
+- **faction:** hostile
+- **provider:** deepseek
+- **model:** deepseek-chat
+- **pronouns:** it/its
+- **weapons:** spider_bite+5
+- **armor:** natural_armor_spider
+- **dopamine:** 0.6
+- **cortisol:** 0.2
+- **norepinephrine:** 0.7
+- **endorphins:** 0.5
+- **serotonin:** 0.4
+- **acetylcholine:** 0.85
+- **oxytocin:** 0.0
+- **dopamine_baseline:** 0.55
+- **dopamine_volatility:** 0.4
+- **cortisol_baseline:** 0.2
+- **cortisol_volatility:** 0.4
+- **oxytocin_baseline:** 0.0
+- **oxytocin_volatility:** 0.0
+
 ## Scene Introductions
 
 ### seraphina
@@ -143,7 +177,11 @@ The crack opened into a chamber colder than any cave should be in spring. Your t
 
 Elden gave you the chalk himself, pressed into your palm at the trailhead with a working cleric's seriousness: *mark every junction, both directions. Stay in torchlight. If anything goes wrong, three knocks on stone and we form up.* The torch in your hand is the only lit one; Thorgrim has the second in reserve. Whatever the pool is, you are not to wade. The remains, when you find them, are to be wrapped — he was firm on that.
 
+### giant_spider
+Stillness. Eight feet braced against cold stone above. The web-strands hum faint with the small things that live in the dark — but no warmth, no heavy tread, not for a long time. The chamber-mouth has been silent. The hairline in the far stone has not parted. You wait. You have waited longer than this. The webs hold. The vault below is cold and unmoving. Should warmth come — should the wall part and feet enter — drop. Bite the soft thing first. Wrap what does not die fast.
+
 ## Game State Sections
 - file: scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
+- header: Creatures in Scene | file: scenario/creatures/giant_spider.md
 - header: Scene Notes | file: scenes/echoing_caverns.md#Scene Notes

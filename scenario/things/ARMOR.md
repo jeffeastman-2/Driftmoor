@@ -12,3 +12,4 @@ Armor library for the Fey Glade scene. Characters reference armor by `id` in CON
 | draconic_resilience | Draconic Resilience | 13 | none | false |
 | no_armor | No Armor | 10 | none | false |
 | natural_armor_shadowbeast | Natural Armor | 11 | none | false |
+| natural_armor_spider | Natural Armor | 14 | none | false |

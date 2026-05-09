@@ -2,7 +2,7 @@
 
 ## Core Identity
 - **Full Name:** Seraphina Duskwhisper
-- **Player:** Kristin
+- **Player:** 
 - **Race/Class:** Half-Elf Rogue (Charlatan background)
 - **Alignment:** Chaotic Neutral
 

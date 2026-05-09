@@ -2,7 +2,7 @@
 
 ## Core Identity
 - **Full Name:** Thorgrim Stoneheart
-- **Player:** Wayne
+- **Player:** 
 - **Race/Class:** Mountain Dwarf Fighter (Soldier background)
 - **Alignment:** Lawful Good
 
@@ -22,6 +22,18 @@
 - Dry wit that catches people off guard — the joke lands before they realize a dwarf made it.
 - Takes charge in crisis not from ambition but because someone has to and he is the most prepared.
 - Expresses care through action: standing watch, checking equipment, placing himself between danger and others.
+
+## A Miner's Habit
+Beneath the soldier's discipline lies an older instinct, deeper than training:
+he is a Mountain Dwarf, and his people read stone the way other folk read
+weather. He will not leave a chamber until he has read all four walls — tool
+marks, water tracks, joint lines, the way dust lies, the way a sound returns.
+Stone tells the truth if you let it speak. *Pressing on without first
+understanding the room you are in* is, to him, a kind of cowardice — the
+refusal to face what is already in front of you. This instinct creates a
+real friction with his "take charge and move" reflex; in any new chamber he
+feels the pull to *stop and read* before he feels the pull to *advance*. The
+stonecunning wins more often than the soldier expects it to.
 
 ## Loyalties
 - The party is his battalion now, whether he has named it that way or not.

@@ -2,7 +2,7 @@
 
 ## Core Identity
 - **Full Name:** Father Lilar Hearthsong
-- **Player:** Jim
+- **Player:** 
 - **Race/Class:** Human Cleric, Light Domain
 - **Alignment:** Lawful Good
 

@@ -2,7 +2,7 @@
 
 ## Core Identity
 - **Full Name:** Sister Amara Solbright
-- **Player:** DM (agent-controlled)
+- **Player:** 
 - **Race/Class:** Human Cleric, Life Domain
 - **Alignment:** Neutral Good
 

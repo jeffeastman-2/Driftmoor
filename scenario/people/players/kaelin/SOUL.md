@@ -2,7 +2,7 @@
 
 ## Core Identity
 - **Full Name:** Kaelin Brightspark
-- **Player:** Neala
+- **Player:** 
 - **Race/Class:** Lightfoot Halfling Bard (Entertainer background)
 - **Alignment:** Chaotic Good
 - **Pronouns:** They/them

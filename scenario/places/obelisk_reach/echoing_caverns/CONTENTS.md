@@ -4,6 +4,10 @@
 - Shadowbeasts: 2d4 in the deeper chambers
 - Unknown creature(s): responsible for Father Elden's companions' deaths — DM's determination
   - Suggested: a creature of shadow and old magic, bound to the cavern by the obelisk's collapse
+- Giant spider: lairs in the Secret Chamber, clinging to the ceiling above
+  the burial vault. It has held this small chamber for years and ambushes
+  the first creature to enter. Will not pursue prey out of the chamber.
+  See `scenario/creatures/giant_spider.md` for stat block and tactics.
 
 ---
 
@@ -18,6 +22,14 @@ for the season, and unnaturally still; the wind that scoured the Reach above
 does not follow you down here. Listening, you become aware of a faint, distant
 sound from deeper in: not wind, not water — something in between, almost
 rhythmic.
+
+The chamber is not empty of evidence. A snapped torch lies near the mouth of
+the south passage, its pitch-head unburned. A dark stain marks the floor a
+few paces north of the same passage, drawn out into a tapering streak that
+points south. A leather pack, half-buried under fallen rock, slumps against
+the west wall. And running across the chamber floor, ending at the passage
+threshold, is a pair of parallel scrapes — the kind something heavy makes
+when it is dragged. *Someone died here. Someone else moved them.*
 
 *Connections:* the crack to the surface lies along the north wall (the way you
 came in). At the south end of the chamber, near the middle of that wall, the
@@ -45,20 +57,37 @@ the cliff face and the obelisk's base, but more of it, denser, as though this
 is where the message actually begins.
 
 *Connections:* this chamber is the hub. North through the **First Passage**
-back to the entrance. West, a low squeeze opens into the **Rocky Passage**.
-Two openings yawn at the south wall: the eastern one drops into the **Pool
+back to the entrance. The west wall shows a hairline crack flanked by three
+small glyphs — a feature easy to miss, but the wall is not solid here. Two
+openings yawn at the south wall: the eastern one drops into the **Pool
 Passage** (toward water-sound), the western one drops into the **Deep
 Passage** (toward dry, deeper silence).
 
 ### Rocky Passage
-A narrow squeeze westward off the Echo Chamber, choked on one side by a fall
-of loose rock. Passage requires turning sideways in places. The stone here
-feels older — not the smooth, water-worn cave of the entrance but something
-hewn, though by what tools and to what end is no longer clear.
+A narrow passage westward off the Echo Chamber. The stone here feels older —
+not the smooth, water-worn cave of the entrance but something hewn, with the
+straight edges and squared corners of deliberate work. Two cannot easily walk
+abreast. The passage runs roughly thirty paces west before opening into a
+larger space. A few thin strands of cobweb drift across the corridor at face
+height — old, dust-greyed, but not decayed; something tends them.
 
-*Connections:* east back into the **Echo Chamber**. The west end is a dead
-end — the passage is blocked entirely by the rock fall. Whatever lay beyond
-is not reachable without significant excavation.
+*Connections:* east back into the **Echo Chamber** (through the squeeze, when
+open). West, into the **Secret Chamber**. The eastern entrance is itself the
+secret door — from the Echo Chamber side, when closed, it reads only as a
+hairline crack in the wall.
+
+### Secret Chamber
+A small, square chamber at the western end of the Rocky Passage, hewn rather
+than carved by water. The ceiling is low — a tall man would stoop. The air
+here is dry and very still; the obelisk's hum does not reach this room. The
+walls are bare of the angular script that marks the rest of the caverns. In
+the center of the floor stands a single stone burial vault, lid set flush
+with its base, an old weapon resting on top of it. Cobwebs drape the upper
+corners and trail across the ceiling in heavy curtains, thick enough that
+torchlight does not penetrate. Something moves up there if a torch is held
+high; something does not move if a torch is held low.
+
+*Connections:* east into the **Rocky Passage**. There are no other exits.
 
 ### Deep Passage
 A steep descent. The chill deepens. Sounds from the chambers above are
@@ -138,8 +167,13 @@ through the cavern system. They are not items.
 - **echo_chamber_arch** — the south end of the First Passage, where the
   walls fall away and the chamber opens overhead beyond torchlight. Sound
   changes here: an echo's first return, a beat too late.
-- **rocky_passage_squeeze** — the western opening off the Echo Chamber, a
-  hewn squeeze partly choked by the rock fall. Two cannot pass abreast.
+- **rocky_passage_squeeze** — the western opening off the Echo Chamber. When
+  closed it reads as a hairline crack in the wall; when the trigger glyphs
+  are pressed in the correct order it widens into a passable hewn opening,
+  no taller than a stooped man. Two cannot pass abreast.
+- **secret_chamber_threshold** — the western end of the Rocky Passage, where
+  the hewn corridor opens into the Secret Chamber. The ceiling drops here;
+  taller characters must stoop.
 - **deep_passage_descent** — the south-western opening off the Echo
   Chamber, a downward step into dry silence. The carvings end here.
 - **pool_passage_descent** — the south-eastern opening off the Echo
@@ -173,15 +207,101 @@ are weathered and uneven, but the count is legible: nineteen vertical marks,
 crossed by a slanting twentieth that trails off as though the hand making it
 faltered. *(Not pickup-able; flavor.)*
 
+### snapped_torch
+A wooden torch, snapped clean across the middle, lying on the floor near the
+mouth of the First Passage. The pitch-soaked head is intact but never lit; the
+fracture is fresh-looking against the weathered wood, though the wax that
+should have been soft has gone hard with age. Whoever broke it did so in a
+hurry — perhaps in a fall, perhaps as the torch was wrenched from their hand.
+
+*Interactions (DM ground truth):*
+- **examine** → A close look shows the break is across the grain, consistent
+  with a sideways force, not a clean snap. The unburned head means it was
+  dropped *before* it could be lit. Either the carrier never made it past
+  the entry, or they were retreating in the dark.
+- **pick up / take** → The pieces lift freely. The head still has usable
+  pitch; with a few minutes' work and a fresh shaft it could be made to
+  burn. Otherwise it is firewood.
+- **inferences a careful examiner can draw** → Whatever happened to the
+  torch's owner happened in *this* chamber, not deeper in.
+
+### old_bloodstain
+A dark patch on the stone floor near the south wall, three paces shy of the
+passage mouth. Not red — black, the way old blood goes when it has soaked
+into porous rock and dried for a long time. The shape is wrong for a clean
+wound: it is a smear, not a pool, drawn out into a tapering streak that
+points south, into the passage. Something bled here, and then was moved.
+
+*Interactions (DM ground truth):*
+- **examine** → The streak is several feet long and unmistakably directional.
+  The wider end is near where the bleeder fell or was struck; the tapering
+  end points into the First Passage. A character who has seen battle
+  recognizes a body being dragged.
+- **scrape / sample** → The crust lifts in dark flakes. Without alchemical
+  resources nothing more can be learned from it on the spot.
+- **age** → Years, not weeks. Decades is plausible.
+
+### discarded_pack
+A leather pack, half-buried under a pile of fallen rock against the west
+wall. The buckles are tarnished green, the leather gone hard and brittle.
+The flap has come open and the contents are partly visible: a coil of
+mildewed rope, a tin cup, a small wax-sealed packet that has not yet rotted
+through.
+
+*Interactions (DM ground truth):*
+- **examine without disturbing** → The pack is the kind a journeyman carries
+  on a long expedition. The rockfall on top of it is older than the pack;
+  the pack was set down here, and the rocks fell *later*. So someone made
+  it this far, dropped their gear, and either continued without it or never
+  came back for it.
+- **dig out / open** (1 turn) → Recovers: 50 ft of rope (rotted, takes
+  half stress before snapping); a tin cup (usable); a wax-sealed oilcloth
+  packet containing a folded paper map of the upper Reach (water-stained
+  but readable, shows the obelisk and the entrance crack — confirming the
+  pack belonged to one of Father Elden's earlier expeditions or one
+  contemporaneous with it).
+- **damage / burn** → The leather is dry enough to burn, but slowly.
+
+### drag_marks
+A pair of parallel scrapes on the stone floor, each about a hand's breadth
+apart, running roughly six paces from the chamber's center toward the mouth
+of the First Passage. The scrapes are shallow but unmistakable against the
+weathered stone — the kind of marks left by something heavy being hauled
+across rock. They end at the passage threshold.
+
+*Interactions (DM ground truth):*
+- **examine** → The marks pair with the bloodstain: a body dragged south,
+  into the passage. The length of the trail (six paces) suggests the drag
+  began roughly here in the chamber and ended at the passage mouth — or
+  continued into the passage and was lost on the descending stone.
+- **follow** → The scrapes do not continue past the threshold; the floor
+  of the First Passage is too damp and too uneven to record them.
+- **infer the dragger** → The marks are the right width to be heels.
+  Whatever did the dragging was walking on two legs — or carrying the
+  weight high enough that only the feet trailed.
+
 ### carved_symbols
 The walls of the Echo Chamber are densely incised with the same angular
 script that marks the cliff face and the obelisk's base — but here the
 carving runs in unbroken lines, paragraph after paragraph, like a tablet
 rather than a sign. A scholar of dead languages might recognize that this is
-where the message actually *says* something. Aeliana cannot read it; neither
-can anyone else currently in Driftmoor. Elyssa would pay handsomely for a
+where the message actually *says* something. Nobody in the party can read it; 
+neither can anyone else currently in Driftmoor. Elyssa would pay handsomely for a
 careful rubbing. *(Not pickup-able; rubbings can be made with parchment and
 charcoal — 30 minutes per panel.)*
+
+*Interactions (DM ground truth):*
+- **read / decipher** → Nobody in the party can read this script; neither
+  can anyone currently in Driftmoor. Elyssa might recognize fragments.
+- **trace / press / sequence the glyphs** → Nothing happens. These carvings
+  are an inscription, not a mechanism. The stone is inert. No matter what
+  order or pressure is applied, nothing on this wall responds. (The trigger
+  glyphs that *do* respond are on the opposite wall, beside the hairline
+  crack — they are a separate, much smaller feature.)
+- **make rubbing** (requires parchment + charcoal, 30 min/panel) → Produces
+  a `carving_rubbing` item. Up to 4 panels' worth of rubbings can be made.
+- **damage / chisel** → The stone is harder than the party's tools. Surface
+  scoring is possible; no fragment is recoverable.
 
 ### obelisk_fragment
 A slab of the obelisk's dark stone, half-buried in the chamber floor. About
@@ -192,6 +312,76 @@ mentioned aloud, or when blood touches the stone. The slab cannot be moved by
 ordinary means. This is the source of the caverns' wrongness; while it
 remains here, the shadowbeasts will keep coming. *(Not pickup-able as-is;
 significant ritual or magic required to contain or remove.)*
+
+### trigger_glyph_top
+A small angular glyph cut shallow into the west wall of the Echo Chamber,
+just to the right of a hairline crack in the stone. It is one of three —
+arranged top, middle, bottom in a vertical line, each about a hand's breadth
+apart. The glyphs are weathered but distinct, and unlike the dense carvings
+on the opposite wall they are spaced for a hand to find them by touch alone.
+They sit at chest height for an average human. *(Not pickup-able; pressable.)*
+
+*Interactions (DM ground truth):*
+- **examine / search** → A character searching this section of wall finds
+  the three glyphs and the hairline crack between them within a turn. The
+  glyphs feel slightly polished — they have been pressed before, many times,
+  long ago.
+- **press (when crack is closed)** → A faint dry click sounds in the stone.
+  No other effect. The glyph itself does not move; only the click distinguishes
+  a press from a touch.
+- **press (when crack is open)** → The crack snaps shut to a hairline again.
+  Any character in the squeeze when this happens is shoved firmly to one
+  side or the other (no damage, but no longer in the doorway).
+- **damage / chisel** → The glyph is part of the wall; the wall is hewn
+  stone, harder than the party's tools.
+
+### trigger_glyph_middle
+The middle of three glyphs on the west wall of the Echo Chamber, between
+`trigger_glyph_top` and `trigger_glyph_bottom`. Functionally identical to
+the others — only its position in the unlock sequence differs.
+*(Not pickup-able; pressable. See `trigger_glyph_top` for interactions.)*
+
+### trigger_glyph_bottom
+The lowest of three glyphs on the west wall of the Echo Chamber, beneath
+`trigger_glyph_middle`. Functionally identical to the others — only its
+position in the unlock sequence differs.
+*(Not pickup-able; pressable. See `trigger_glyph_top` for interactions.)*
+
+### secret_burial_vault
+A single stone burial vault stands in the center of the Secret Chamber. It
+is a plain rectangular sarcophagus, the lid set flush with the base. There
+are no inscriptions and no markings. The stone is the same dark material as
+the obelisk fragment, though here it does not hum. An old weapon rests on
+top of the lid, exactly centered. *(Not pickup-able; the vault is too heavy
+to move and the lid is too heavy for the party to lift by ordinary means.)*
+
+*Interactions (DM ground truth):*
+- **examine / search** → The lid is plain, joinless, and seamlessly fitted
+  to the base. There are no visible catches, hinges, or seams. The mace
+  resting on top is `mace_plus_one` and may be taken freely.
+- **lift the lid** → The lid is far too heavy for the party to shift by
+  ordinary means. Two strong characters with leverage cannot move it. It
+  may yield to specific magic, ritual, or significantly more help — but
+  not on this expedition.
+- **damage / break** → The stone is harder than any tool the party
+  carries. No fragment is recoverable.
+
+### mace_plus_one
+A heavy footman's mace lying on top of `secret_burial_vault`. The head is
+oak-and-iron, banded; the haft is unmarked and well-balanced. It does not
+appear ceremonial — it is a working weapon, kept clean and oiled by
+something other than the passage of time. To a character with the right
+training, the haft hums faintly when gripped: the weapon is enchanted.
+*(Pickup-able; +1 mace, 1d6+1 bludgeoning, light, no special properties
+beyond the enhancement bonus.)*
+
+*Interactions (DM ground truth):*
+- **examine** → A weapon-trained character (Thorgrim, Amara) recognizes
+  the balance and faint hum as enchantment within a moment of handling.
+- **take** → The mace lifts cleanly; nothing on the vault responds to its
+  removal. No alarm, no hum-spike, no shadowbeast summoned.
+- **use as a weapon** → +1 to attack and damage rolls; otherwise functions
+  as a standard mace.
 
 ### companion_remains
 Three skeletons, their gear long since rotted to scraps of leather and
@@ -232,5 +422,29 @@ beyond the collapsed tunnel.)*
   qualities — destroying or containing it would reduce (not eliminate) the
   shadowbeast threat. Removing the larger Reach obelisk's core is what would
   fully end it.
+- **Secret door / Rocky Passage:** The west wall of the Echo Chamber holds a
+  hairline crack flanked by three small trigger glyphs (top, middle, bottom).
+  Pressing the glyphs in the order **top → bottom → middle** (1, 3, 2) causes
+  the crack to widen into a passable hewn opening. The opening stays open
+  until any of the three glyphs is touched again, at which point it snaps
+  shut. Wrong-order presses produce only a faint dry click — no harm, no
+  alarm, no hum-spike. The party can experiment freely. The dense
+  `carved_symbols` on the opposite (east) wall are NOT the lock and do not
+  respond to pressing or sequencing — they are inscriptions only.
+- **Giant spider in the Secret Chamber:** A giant spider clings to the
+  ceiling of the Secret Chamber, directly above the burial vault. It has
+  held this small chamber for years, undisturbed since the door was last
+  closed. Cobwebs in the Rocky Passage and across the Secret Chamber
+  ceiling foreshadow it; a careful party will see them and look up. The
+  spider ambushes the first creature to step deep into the chamber by
+  dropping from the ceiling. It will NOT pursue prey out into the Rocky
+  Passage or beyond — its lair is the Secret Chamber alone. The +1 mace
+  on the vault is the reward for clearing the lair. See
+  `scenario/creatures/giant_spider.md` for full stats and tactics.
 - Item ids in this file match the `## Items` table in `GEOMETRY.md`. Add new
   items there first (with coordinates), then describe them here.
+- **Item interactions convention:** Items may include an `*Interactions (DM
+  ground truth):*` block listing concrete `<verb> → <result>` pairs. These
+  are authoritative for adjudication. If a player attempts something not
+  listed, resolve to the closest listed interaction or to "nothing happens";
+  never invent new mechanics that aren't written here.
