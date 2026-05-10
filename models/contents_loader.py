@@ -1,6 +1,6 @@
 """Parse scene-level CONTENTS.md files into Item objects.
 
-See ``engine/CONTENTS.md`` for the file-format specification.
+See ``specs/CONTENTS.md`` for the file-format specification.
 The exemplar / reference file is
 ``scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md``.
 

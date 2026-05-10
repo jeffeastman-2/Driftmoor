@@ -1,6 +1,6 @@
 """Item and Interaction dataclasses for scene contents.
 
-See ``engine/CONTENTS.md`` for the file-format specification this module
+See ``specs/CONTENTS.md`` for the file-format specification this module
 parses against. ``models.contents_loader`` builds these objects from a
 ``CONTENTS.md`` file.
 """
