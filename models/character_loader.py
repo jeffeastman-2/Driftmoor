@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from models.character import Character, Creature, PlayerCharacter, NPC
+from models.spellcasting import parse_spellcasting
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +132,8 @@ def parse_player_identity(text: str) -> dict:
     spells_text = _extract_section_flexible(text, "Spells", "Spells and Abilities")
     raw_spells = _parse_list_items(spells_text) if spells_text else []
     result["spells"] = [s for s in raw_spells if s.lower() not in ("none", "*none*")]
+    # Structured spellcasting profile (None for legacy free-form sections).
+    result["spellcasting"] = parse_spellcasting(spells_text)
 
     # Equipment
     equip_text = _extract_section(text, "Equipment")
@@ -295,6 +298,7 @@ def load_player_character(directory: Path) -> PlayerCharacter:
         charisma=p["charisma"],
         abilities=p["abilities"],
         spells=p["spells"],
+        spellcasting=p["spellcasting"],
         equipment=p["equipment"],
         current_hp=p["current_hp"],
         open_threads=p["open_threads"],

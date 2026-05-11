@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from models.spellcasting import SpellcastingProfile
+
 
 @dataclass
 class Character:
@@ -44,6 +46,7 @@ class PlayerCharacter(Character):
     # Lists
     abilities: list[str] = field(default_factory=list)
     spells: list[str] = field(default_factory=list)
+    spellcasting: SpellcastingProfile | None = None
     equipment: list[str] = field(default_factory=list)
     # Dynamic state
     current_hp: int = 0
