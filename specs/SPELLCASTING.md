@@ -167,14 +167,99 @@ Amara casts Bless (1st-level slot, conc. 1 min) on Seraphina, Thorgrim, Amara
   prepared count.
 - Save DC referenced inside individual entries should match the header line.
 
-## Open questions
+## Open questions — resolved
 
-- Where does ChatGPT-authored character content come from? If we let
-  ChatGPT continue to draft characters, we need a validator pass that
-  flags hallucinated spells (wrong level, wrong class list, wrong save DC).
-- Half-casters (Paladin, Ranger) gain spellcasting at level 2. Aeliana
-  and Seraphina are martial (Fighter/Rogue) so this is not yet relevant
-  but should be considered when a Paladin enters the party.
-- Ritual casting: should `Detect Magic` etc. cost a slot or be ritual-tagged?
-  Currently no party member can ritual cast at L1, but Lilar gains it later
-  if multiclassed or via specific class features.
+### Externally generated character content
+
+Existing character files were drafted with help from external LLM
+assistants (treat any/all of ChatGPT, Claude, Grok, Gemini, etc. as
+interchangeable here). That content is **exemplary, not definitive**:
+it served to seed the corpus, but the spec is the source of truth.
+As the spec evolves we will migrate existing characters to match
+— not the other way around. A validator pass that flags non-conforming
+content (wrong level, wrong class list, wrong save DC, missing slot
+line) is planned alongside Migration Step 1 (parse + validate).
+
+### No subclassing of `PlayerCharacter`
+
+`PlayerCharacter` will not be subclassed by caster type
+(`ClericCharacter`, `WizardCharacter`, etc.). Reasons:
+
+1. **Multiclass.** A `Cleric 3 / Fighter 2` does not fit a single
+   class-typed subclass cleanly; picking the highest level is lossy
+   and building a `MulticlassCharacter` re-implements everything.
+2. **Composition beats inheritance.** Spellcasting is a capability,
+   not an identity. A character either has a `SpellcastingProfile`
+   attribute or does not. `if pc.spellcasting is not None:` is the
+   gate.
+3. **Most engine code is class-agnostic.** The resolver, combat,
+   movement, and perception subsystems do not care whether the
+   character casts spells. Only the spell pipeline cares, and it is
+   gated by the attribute.
+4. **Other class-feature systems will follow the same shape.** Rage,
+   Channel Divinity, Sneak Attack, Wild Shape, Ki points, Sorcery
+   Points are all "uses per rest of a named feature". One
+   `class_features: dict[str, FeatureUses]` registry covers them all.
+
+Resulting model:
+
+```python
+@dataclass
+class PlayerCharacter(Character):
+    # ... existing fields ...
+    classes: list[ClassLevel] = field(default_factory=list)
+    spellcasting: SpellcastingProfile | None = None
+    class_features: dict[str, FeatureUses] = field(default_factory=dict)
+```
+
+`ClassLevel` carries `{class_name, level, subclass}`. For multiclass
+casters, the combined slot table is derived from the sum of caster-
+level contributions per PHB multiclass spellcasting rules (full
+casters count full, half casters half, third-casters one-third).
+That lookup lives in a single helper, so per-class IDENTITY.md lines
+remain compact.
+
+### Ritual casting
+
+Some spells carry a **`ritual`** tag in the PHB. Casters with the
+**Ritual Casting** class feature may cast a ritual-tagged spell they
+have prepared/known without expending a spell slot by taking
++10 minutes to cast it.
+
+Who has Ritual Casting at level 1 by default:
+
+- **Wizard** — any ritual-tagged spell in their spellbook.
+- **Cleric** — any ritual-tagged spell currently prepared.
+- **Druid** — any ritual-tagged spell currently prepared.
+- **Bard** — any ritual-tagged spell currently known (Bards gain
+  ritual casting at level 1 in 5e 2014; in 5e 2024 the timing has
+  shifted, confirm against the player's edition).
+
+**Sorcerer and Warlock do not get ritual casting at all** in 5e 2014
+without the Ritual Caster feat.
+
+Spec impact is small. Add:
+
+- `ritual: bool` flag to the parsed `Spell` dataclass.
+- `ritual_caster: bool` to `SpellcastingProfile`.
+
+Resolver gate:
+
+```python
+if spell.ritual and caster.spellcasting.ritual_caster \
+        and intent.cast_time_minutes >= 10:
+    # cast without slot expenditure
+else:
+    # normal slot consumption path
+```
+
+This is a minor extension once slot machinery is in place.
+**Deferred until Migration Step 2 (slot enforcement) ships.**
+
+### Half-casters and partial casters
+
+Paladin and Ranger gain spellcasting at level 2. Aeliana (Ranger) and
+Seraphina (Rogue) do not need spellcasting profiles at level 1.
+Arcane Trickster (Rogue 3+) and Eldritch Knight (Fighter 3+) get
+limited spellcasting; when those subclasses appear, treat them as
+third-casters in the multiclass slot table.
