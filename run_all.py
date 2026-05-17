@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 from models.space_time import GameTime
-from engine.scene_runner import print_turn_result, ROOT, _write_scene_maps
+from engine.scene_runner import print_turn_result, ROOT, _write_runtime_map
 from engine.md_loader import configure_from_md
 from engine.session import iter_session, load_resume_state
 from engine.transcript import elaborate_session_from_dir
@@ -280,7 +280,7 @@ async def run_all(
         print(f"  Written to {runner.checkpoint_dir / f'{scene_name}_story.txt'}")
 
         if config.geometry_path is not None and config.geometry_path.exists():
-            _write_scene_maps(
+            _write_runtime_map(
                 geometry_path=config.geometry_path,
                 scene_name=scene_name,
                 checkpoint_dir=runner.checkpoint_dir,

@@ -312,23 +312,25 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
     )
 
 
-def _write_scene_maps(
+def _write_runtime_map(
     *,
     geometry_path: Path,
     scene_name: str,
     checkpoint_dir: Path,
 ) -> None:
-    """Write the static scenario map (starting positions only) and the
-    runtime map (full character paths from snapshots).
+    """Write the runtime map (full character paths from snapshots) into the
+    checkpoint directory.
+
+    The static scenario map (starting positions only) lives alongside
+    ``GEOMETRY.md`` in ``scenario/places/.../<scene>/`` and is treated as a
+    committed artifact. Regenerate it explicitly with::
+
+        python -m engine.map_renderer <scene_slug>
+
+    when geometry changes — not on every run.
     """
-    scenario_map = geometry_path.parent / f"{scene_name}_map.png"
     runtime_map = checkpoint_dir / f"{scene_name}_map.png"
     try:
-        render_map(
-            geometry_path, scenario_map, snapshot_dir=None,
-            title=f"{scene_name.replace('_', ' ').title()} — starting positions",
-        )
-        print(f"  Written to {scenario_map}")
         render_map(
             geometry_path, runtime_map, snapshot_dir=checkpoint_dir,
             title=f"{scene_name.replace('_', ' ').title()} — character paths",
@@ -429,7 +431,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
     print(f"  Written to {checkpoint_dir / f'{scene_name}_story.txt'}")
 
     if config.geometry_path is not None and config.geometry_path.exists():
-        _write_scene_maps(
+        _write_runtime_map(
             geometry_path=config.geometry_path,
             scene_name=scene_name,
             checkpoint_dir=checkpoint_dir,
