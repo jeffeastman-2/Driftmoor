@@ -1,18 +1,31 @@
 """Ollama agent for running local LLMs"""
 
+import os
+
 import aiohttp
 
 
 class OllamaAgent:
-    """Agent for local Ollama models (Qwen, Llama, Mistral, etc.)"""
+    """Agent for local Ollama models (Qwen, Llama, Gemma, Mistral, etc.).
+
+    ``base_url`` defaults to the ``OLLAMA_HOST`` environment variable when
+    set (matching the convention used by the official Ollama CLI/clients),
+    otherwise to ``http://localhost:11434``. A bare ``host:port`` value from
+    the env var is normalised to a full URL.
+    """
 
     def __init__(self, name: str, model: str = "qwen3:14b", system_prompt: str = None,
-                 base_url: str = "http://localhost:11434"):
+                 base_url: str = None, num_ctx: int = None):
         self.name = name
         self.model = model
         self.system_prompt = system_prompt
         self.conversation_history = []
+        if base_url is None:
+            base_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        if "://" not in base_url:
+            base_url = "http://" + base_url
         self.base_url = base_url.rstrip("/")
+        self.num_ctx = num_ctx or int(os.getenv("OLLAMA_NUM_CTX", "16384"))
         self.api_key = None  # Not needed for local Ollama
 
     async def send_message(self, message: str, session: aiohttp.ClientSession) -> str:
@@ -38,7 +51,7 @@ class OllamaAgent:
             "messages": messages,
             "stream": False,
             "options": {
-                "num_ctx": 4096  # Context window
+                "num_ctx": self.num_ctx
             },
             "think": False  # Disable Qwen3 thinking mode for faster responses
         }

@@ -81,6 +81,15 @@ def make_call_llm(
         ValueError:        Unknown provider.
         EnvironmentError:  API key required but not found.
     """
+    # Global override: ``--all-ollama MODEL`` (or env LLM_FORCE_OLLAMA_MODEL)
+    # forces every agent — DM, players, narrator — onto a single local Ollama
+    # model, regardless of the per-agent provider/model from the scene .md.
+    # Pair with OLLAMA_HOST to point at a remote box.
+    forced = os.environ.get("LLM_FORCE_OLLAMA_MODEL", "").strip()
+    if forced and provider != "ollama":
+        provider = "ollama"
+        model = forced
+
     if provider not in PROVIDER_CONFIGS:
         raise ValueError(f"Unknown provider: {provider}")
 

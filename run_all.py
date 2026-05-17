@@ -297,6 +297,23 @@ def main() -> None:
         if idx + 1 < len(sys.argv):
             scene_filter = sys.argv[idx + 1]
             args = [a for a in args if a != scene_filter]
+    if "--ollama-host" in sys.argv:
+        idx = sys.argv.index("--ollama-host")
+        if idx + 1 >= len(sys.argv):
+            print("--ollama-host requires a URL argument")
+            sys.exit(1)
+        import os
+        os.environ["OLLAMA_HOST"] = sys.argv[idx + 1]
+        args = [a for a in args if a != sys.argv[idx + 1]]
+    if "--all-ollama" in sys.argv:
+        idx = sys.argv.index("--all-ollama")
+        if idx + 1 >= len(sys.argv):
+            print("--all-ollama requires a MODEL argument (e.g. gemma4:latest)")
+            sys.exit(1)
+        import os
+        os.environ["LLM_FORCE_OLLAMA_MODEL"] = sys.argv[idx + 1]
+        args = [a for a in args if a != sys.argv[idx + 1]]
+        print(f"  Forcing every LLM -> ollama / {sys.argv[idx + 1]}")
     num_turns = int(args[0]) if args else None
     asyncio.run(run_all(num_turns, resume=resume, scene_filter=scene_filter, self_dm=self_dm))
 
