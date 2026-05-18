@@ -25,6 +25,7 @@ from engine.md_loader import configure_from_md
 from engine.session import iter_session, load_resume_state
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
+from engine.runtime_paths import get_scene_dir, get_session_dir
 
 SCENES_DIR = Path(__file__).parent / "scenes"
 
@@ -61,7 +62,7 @@ class SceneRunner:
     def __init__(self, config, num_turns: int):
         self.config = config
         self.num_turns = num_turns
-        self.checkpoint_dir = ROOT / "runtime" / "state" / config.scene_name
+        self.checkpoint_dir = get_scene_dir(config.scene_name)
         self.done = False
         self._gen = None
         self._start_turn = 1
@@ -288,9 +289,22 @@ async def run_all(
 
 
 def main() -> None:
+    import os
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
     resume = "--resume" in sys.argv
     self_dm = "--self-dm" in sys.argv
+
+    # Resume must reuse the most recent session id rather than mint a new
+    # one. Set the env var BEFORE any code calls current_session_id().
+    if resume and not os.environ.get("DRIFTMOOR_SESSION_ID"):
+        from engine.runtime_paths import find_latest_session_id
+        latest = find_latest_session_id()
+        if latest is None:
+            print("  --resume: no prior session found under state root")
+            sys.exit(1)
+        os.environ["DRIFTMOOR_SESSION_ID"] = latest
+        print(f"  --resume: continuing session {latest}")
+
     scene_filter = None
     if "--scene" in sys.argv:
         idx = sys.argv.index("--scene")

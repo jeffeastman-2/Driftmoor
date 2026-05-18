@@ -14,6 +14,7 @@ from engine.scene_manager import RoleSet
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
 from engine.map_renderer import render_map
+from engine.runtime_paths import get_scene_dir, get_session_dir
 from models.character import PlayerCharacter, NPC, Creature
 from models.condition import (
     CharacterCondition,
@@ -373,7 +374,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
     if num_turns is None:
         num_turns = config.default_turns
 
-    checkpoint_dir = ROOT / "runtime" / "state" / config.scene_name
+    checkpoint_dir = get_scene_dir(config.scene_name)
 
     # Clear previous run
     if checkpoint_dir.exists():
