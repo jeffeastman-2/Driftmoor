@@ -327,7 +327,10 @@ def main() -> None:
         import os
         os.environ["LLM_FORCE_OLLAMA_MODEL"] = sys.argv[idx + 1]
         args = [a for a in args if a != sys.argv[idx + 1]]
-        print(f"  Forcing every LLM -> ollama / {sys.argv[idx + 1]}")
+
+    from engine.runtime_paths import print_startup_banner
+    print_startup_banner()
+
     num_turns = int(args[0]) if args else None
     asyncio.run(run_all(num_turns, resume=resume, scene_filter=scene_filter, self_dm=self_dm))
 

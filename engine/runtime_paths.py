@@ -153,3 +153,22 @@ def find_latest_session_id() -> str | None:
         return None
     candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return candidates[0].name
+
+
+def print_startup_banner() -> None:
+    """Print the active runtime configuration. Useful so users can see at
+    a glance whether env vars from .env.local / .env.ultra took effect.
+    """
+    ollama_host = os.environ.get("OLLAMA_HOST", "").strip() or "http://localhost:11434 (default)"
+    forced = os.environ.get("LLM_FORCE_OLLAMA_MODEL", "").strip()
+    state_root = get_state_root()
+
+    print("Driftmoor configuration:")
+    print(f"  OLLAMA_HOST            = {ollama_host}")
+    if forced:
+        print(f"  LLM_FORCE_OLLAMA_MODEL = {forced}  (every agent forced)")
+    else:
+        print(f"  LLM_FORCE_OLLAMA_MODEL = (unset; using scene-authored providers)")
+    print(f"  DRIFTMOOR_STATE_ROOT   = {state_root}")
+    print(f"  session_id             = {current_session_id()}")
+    print()

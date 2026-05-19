@@ -37,8 +37,10 @@ def main():
             print("--all-ollama requires a MODEL argument (e.g. gemma4:latest)")
             sys.exit(1)
         os.environ["LLM_FORCE_OLLAMA_MODEL"] = argv[i + 1]
-        print(f"  Forcing every LLM -> ollama / {argv[i + 1]}")
         del argv[i:i + 2]
+
+    from engine.runtime_paths import print_startup_banner
+    print_startup_banner()
 
     if not argv:
         print("Usage: python run_scene.py <scene_name> [turns] [--ollama-host URL] [--all-ollama MODEL]")
