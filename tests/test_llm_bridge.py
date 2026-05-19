@@ -10,6 +10,16 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from engine.llm_bridge import make_call_llm, PROVIDER_CONFIGS
 
 
+@pytest.fixture(autouse=True)
+def _clear_force_ollama_env(monkeypatch):
+    """LLM_FORCE_OLLAMA_MODEL redirects every provider call to ollama.
+    Tests in this module exercise the provider routing directly and
+    must run with that env var unset, regardless of the developer's
+    shell (e.g. when .env.ultra has been sourced).
+    """
+    monkeypatch.delenv("LLM_FORCE_OLLAMA_MODEL", raising=False)
+
+
 class TestProviderConfigs:
     def test_has_all_providers(self):
         expected = {"anthropic", "openai", "xai", "gemini", "deepseek", "ollama"}
