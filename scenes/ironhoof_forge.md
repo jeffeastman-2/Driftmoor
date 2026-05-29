@@ -16,8 +16,8 @@
 - **turn_duration:** 10
 
 ## DM
-- **provider:** anthropic
-- **model:** claude-sonnet-4-20250514
+- **provider:** ollama
+- **model:** gemma4:26b
 
 ## Scene Notes
 
@@ -43,8 +43,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
 - **hp:** 13
 - **ac:** 18
-- **provider:** xai
-- **model:** grok-3
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.4
 - **cortisol:** 0.45
 - **norepinephrine:** 0.5
@@ -67,8 +67,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/npcs/darrin/IDENTITY.md
 - **hp:** 16
 - **ac:** 12
-- **provider:** openai
-- **model:** gpt-4o
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.35
 - **cortisol:** 0.55
 - **norepinephrine:** 0.5
@@ -89,8 +89,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/npcs/kara/IDENTITY.md
 - **hp:** 10
 - **ac:** 11
-- **provider:** deepseek
-- **model:** deepseek-chat
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.65
 - **cortisol:** 0.3
 - **norepinephrine:** 0.55

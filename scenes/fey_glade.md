@@ -18,8 +18,8 @@
 - **turn_duration:** 10
 
 ## DM
-- **provider:** anthropic
-- **model:** claude-sonnet-4-20250514
+- **provider:** ollama
+- **model:** gemma4:26b
 
 ## Characters
 
@@ -41,8 +41,8 @@
 - **soul_file:** scenario/creatures/shadowbeast_soul.md
 - **identity_file:** scenario/creatures/shadowbeast_identity.md
 - **faction:** hostile
-- **provider:** deepseek
-- **model:** deepseek-chat
+- **provider:** ollama
+- **model:** gemma4:26b
 - **pronouns:** it/its
 - **weapons:** shadowbeast_claw+4
 - **armor:** natural_armor_shadowbeast

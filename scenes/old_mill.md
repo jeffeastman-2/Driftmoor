@@ -16,8 +16,8 @@
 - **turn_duration:** 10
 
 ## DM
-- **provider:** anthropic
-- **model:** claude-sonnet-4-20250514
+- **provider:** ollama
+- **model:** gemma4:26b
 
 ## Scene Notes
 
@@ -44,8 +44,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/players/lilar/IDENTITY.md
 - **hp:** 10
 - **ac:** 14
-- **provider:** deepseek
-- **model:** deepseek-chat
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.45
 - **cortisol:** 0.4
 - **norepinephrine:** 0.45
@@ -68,8 +68,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/npcs/haversteads/gregan.md
 - **hp:** 14
 - **ac:** 10
-- **provider:** openai
-- **model:** gpt-4o
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.3
 - **cortisol:** 0.6
 - **norepinephrine:** 0.55
@@ -90,8 +90,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/npcs/haversteads/tessa.md
 - **hp:** 6
 - **ac:** 10
-- **provider:** xai
-- **model:** grok-3
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.6
 - **cortisol:** 0.5
 - **norepinephrine:** 0.65

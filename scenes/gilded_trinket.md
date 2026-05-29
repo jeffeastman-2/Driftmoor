@@ -16,8 +16,8 @@
 - **turn_duration:** 10
 
 ## DM
-- **provider:** anthropic
-- **model:** claude-sonnet-4-20250514
+- **provider:** ollama
+- **model:** gemma4:26b
 
 ## Scene Notes
 
@@ -42,8 +42,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
 - **hp:** 9
 - **ac:** 11
-- **provider:** xai
-- **model:** grok-3
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.65
 - **cortisol:** 0.4
 - **norepinephrine:** 0.6
@@ -66,8 +66,8 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/npcs/tavian/IDENTITY.md
 - **hp:** 18
 - **ac:** 13
-- **provider:** openai
-- **model:** gpt-4o
+- **provider:** ollama
+- **model:** gemma4:26b
 - **dopamine:** 0.5
 - **cortisol:** 0.35
 - **norepinephrine:** 0.5
