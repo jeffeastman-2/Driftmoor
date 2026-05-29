@@ -212,6 +212,73 @@ class TestPlayerLeftStub:
         assert len(intent.intent) > 0
 
 
+class TestPlayerLeftTargetInference:
+    def test_infers_target_from_intent_and_perception_items(self):
+        pl = PlayerLeft()
+        ctx = RoleContext(
+            character_id="amara",
+            turn=3,
+            condition_text="",
+            scene_context="",
+            soul="",
+            identity="",
+            perception=(
+                "Items in this zone:\n"
+                "- Snapped torch (~10 ft away)\n"
+                "- Drag marks (~15 ft away) (already examined)"
+            ),
+        )
+        raw = (
+            "**INTENT** Search the area around the snapped torch for clues.\n"
+            "**MOVEMENT** 138, 265\n"
+            "**TARGET** none"
+        )
+        result = pl.parse_response(raw, ctx)
+        assert result.interaction_target == "Snapped torch"
+
+    def test_keeps_explicit_target_when_present(self):
+        pl = PlayerLeft()
+        ctx = RoleContext(
+            character_id="thorgrim",
+            turn=4,
+            condition_text="",
+            scene_context="",
+            soul="",
+            identity="",
+            perception=(
+                "Items in this zone:\n"
+                "- Snapped torch (~10 ft away)\n"
+                "- Drag marks (~15 ft away)"
+            ),
+        )
+        raw = (
+            "**INTENT** Examine the stain and compare it to the drag marks.\n"
+            "**MOVEMENT** none\n"
+            "**TARGET** Drag marks"
+        )
+        result = pl.parse_response(raw, ctx)
+        assert result.interaction_target == "Drag marks"
+
+    def test_no_inference_without_items_block(self):
+        pl = PlayerLeft()
+        ctx = RoleContext(
+            character_id="seraphina",
+            turn=2,
+            condition_text="",
+            scene_context="",
+            soul="",
+            identity="",
+            perception="No other creatures are visible from your current position.",
+        )
+        raw = (
+            "**INTENT** Search the area for clues.\n"
+            "**MOVEMENT** none\n"
+            "**TARGET** none"
+        )
+        result = pl.parse_response(raw, ctx)
+        assert result.interaction_target is None
+
+
 # ---- PlayerRight stub tests ----
 
 class TestPlayerRightStub:

@@ -13,7 +13,7 @@ from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
-from engine.map_renderer import render_map
+from engine.map_renderer import render_map, render_interactive_map_html
 from engine.runtime_paths import get_scene_dir, get_session_dir
 from models.character import PlayerCharacter, NPC, Creature
 from models.condition import (
@@ -331,12 +331,21 @@ def _write_runtime_map(
     when geometry changes — not on every run.
     """
     runtime_map = checkpoint_dir / f"{scene_name}_map.png"
+    runtime_map_html = checkpoint_dir / f"{scene_name}_map.html"
     try:
         render_map(
             geometry_path, runtime_map, snapshot_dir=checkpoint_dir,
             title=f"{scene_name.replace('_', ' ').title()} — character paths",
         )
         print(f"  Written to {runtime_map}")
+
+        render_interactive_map_html(
+            geometry_path,
+            runtime_map_html,
+            snapshot_dir=checkpoint_dir,
+            title=f"{scene_name.replace('_', ' ').title()} — interactive character paths",
+        )
+        print(f"  Written to {runtime_map_html}")
     except Exception as exc:  # noqa: BLE001 — visualization is best-effort
         print(f"  [map] failed: {exc}")
 

@@ -16,6 +16,7 @@ no intermediate CSV.
 """
 from __future__ import annotations
 
+import html
 import json
 import re
 from pathlib import Path
@@ -148,29 +149,45 @@ def parse_geometry(text: str) -> dict:
 # Snapshot loading
 # ---------------------------------------------------------------------------
 
-def load_paths_from_snapshots(snapshot_dir: Path) -> dict[str, list[tuple[float, float]]]:
+TrackPoint = tuple[int, float, float, str]
+
+
+def load_tracks_from_snapshots(snapshot_dir: Path) -> dict[str, list[TrackPoint]]:
     """Walk ``snapshot_dir/day*.json`` in turn order and collect each
-    character's (x, y) trail from ``current_positions``.
+    character's turn-indexed trail as ``(turn, x, y, zone)``.
     """
-    paths: dict[str, list[tuple[float, float]]] = {}
+    tracks: dict[str, list[TrackPoint]] = {}
     files = sorted(snapshot_dir.glob("day*.json"))
-    snapshots = []
+    snapshots: list[tuple[int, dict]] = []
     for fp in files:
         try:
             data = json.loads(fp.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        snapshots.append((data.get("turn", 0), data.get("current_positions") or {}))
+        snapshots.append((int(data.get("turn", 0)), data.get("current_positions") or {}))
+
     snapshots.sort(key=lambda x: x[0])
-    for _, cp in snapshots:
+    for turn, cp in snapshots:
         for cid, pos in cp.items():
             if not isinstance(pos, dict):
                 continue
             x, y = pos.get("x"), pos.get("y")
             if x is None or y is None:
                 continue
-            paths.setdefault(cid, []).append((float(x), float(y)))
-    return paths
+            zone = str(pos.get("zone") or "")
+            tracks.setdefault(cid, []).append((turn, float(x), float(y), zone))
+    return tracks
+
+
+def load_paths_from_snapshots(snapshot_dir: Path) -> dict[str, list[tuple[float, float]]]:
+    """Walk ``snapshot_dir/day*.json`` in turn order and collect each
+    character's (x, y) trail from ``current_positions``.
+    """
+    tracks = load_tracks_from_snapshots(snapshot_dir)
+    return {
+        cid: [(x, y) for (_turn, x, y, _zone) in tps]
+        for cid, tps in tracks.items()
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -418,6 +435,247 @@ def render_map(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=150)
     plt.close(fig)
+
+
+def render_interactive_map_html(
+    geometry_path: Path,
+    output_path: Path,
+    *,
+    snapshot_dir: Path,
+    title: str | None = None,
+    char_colors: dict[str, str] | None = None,
+) -> None:
+    """Render an interactive HTML map with hover tooltips for turn points.
+
+    Each character point includes a tooltip with character id, turn number,
+    coordinates, and zone, so path progression can be inspected with mouse-over.
+    """
+    text = geometry_path.read_text(encoding="utf-8")
+    g = parse_geometry(text)
+    tracks = load_tracks_from_snapshots(snapshot_dir)
+
+    # Prepend turn 0 from GEOMETRY starting positions so motion begins at start.
+    for cid, pts in list(tracks.items()):
+        if not pts:
+            continue
+        base_id = re.sub(r"_\d+$", "", cid)
+        start = (g["starting_positions"].get(cid)
+                 or g["starting_positions"].get(base_id))
+        if start is not None and (start[0], start[1]) != (pts[0][1], pts[0][2]):
+            tracks[cid] = [(0, float(start[0]), float(start[1]), "START")] + pts
+
+    all_pts: list[tuple[float, float]] = []
+    for v in g["zones"].values():
+        all_pts.extend(v)
+    for _name, v in g["impassable"]:
+        all_pts.extend(v)
+    for _name, v in g["boundaries"]:
+        all_pts.extend(v)
+    all_pts.extend(g["landmarks"].values())
+    all_pts.extend((x, y) for (x, y, _label) in g["items"].values())
+    for pts in tracks.values():
+        all_pts.extend((x, y) for (_t, x, y, _z) in pts)
+    if not all_pts:
+        all_pts = [(0.0, 0.0), (100.0, 100.0)]
+
+    min_x = min(p[0] for p in all_pts)
+    max_x = max(p[0] for p in all_pts)
+    min_y = min(p[1] for p in all_pts)
+    max_y = max(p[1] for p in all_pts)
+    margin = 8.0
+
+    view_x = min_x - margin
+    view_y = min_y - margin
+    view_w = max((max_x - min_x) + 2 * margin, 1.0)
+    view_h = max((max_y - min_y) + 2 * margin, 1.0)
+
+    def _fmt_poly(points: list[tuple[float, float]]) -> str:
+        return " ".join(f"{x:.2f},{-y:.2f}" for x, y in points)
+
+    def _flip_y(y: float) -> float:
+        """Flip Y coordinate for SVG rendering (invert the axis)."""
+        return -y
+
+    # Stable character colors
+    char_colors = char_colors or {}
+    used_colors: dict[str, str] = {}
+    palette_pos = 0
+    for cid in sorted(tracks):
+        if cid in char_colors:
+            used_colors[cid] = char_colors[cid]
+        else:
+            used_colors[cid] = _PALETTE[palette_pos % len(_PALETTE)]
+            palette_pos += 1
+
+    # Zone fill colors by z-rank
+    zone_order = sorted(
+        g["zones"].keys(),
+        key=lambda n: (g["zone_z"].get(n, 0.0), n),
+    )
+    unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
+    z_rank = {z: i for i, z in enumerate(unique_z)}
+
+    parts: list[str] = []
+    parts.append(
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        "<title>Driftmoor Interactive Map</title>"
+        "<style>"
+        "body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;"
+        "margin:0;background:#f7f7f5;color:#111;}"
+        ".wrap{padding:12px 14px;}"
+        "h1{font-size:16px;margin:0 0 8px 0;}"
+        "p{margin:0 0 10px 0;font-size:13px;color:#333;}"
+        "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;background:#fff;}"
+        ".zone-label{font-size:5px;font-weight:700;fill:#1f1f1f;opacity:.8;}"
+        ".lm-label{font-size:4.2px;fill:#333;}"
+        ".item-label{font-size:3.8px;fill:#5a4a10;font-style:italic;}"
+        "</style></head><body><div class='wrap'>"
+    )
+    safe_title = html.escape(title or geometry_path.parent.name.replace("_", " ").title())
+    parts.append(f"<h1>{safe_title}</h1>")
+    parts.append("<p>Hover over dots to see turn number, coordinates, and zone.</p>")
+    parts.append(
+        f"<svg viewBox='{view_x:.2f} {_flip_y(view_y + view_h):.2f} {view_w:.2f} {view_h:.2f}' "
+        "preserveAspectRatio='xMidYMid meet'>"
+    )
+    parts.append("<style>")
+    parts.append(".tooltip{position:relative;display:inline-block;}")
+    parts.append(".tooltip .tooltiptext{visibility:hidden;width:120px;background-color:#222;color:#fff;text-align:center;border-radius:4px;padding:5px;position:absolute;z-index:1;bottom:125%;left:50%;margin-left:-60px;opacity:0;transition:opacity 0.3s;font-size:11px;line-height:1.3;white-space:pre-line;}")
+    parts.append(".tooltip:hover .tooltiptext{visibility:visible;opacity:1;}")
+    parts.append("</style>")
+
+    # Zones
+    for zname in zone_order:
+        verts = g["zones"].get(zname)
+        if not verts:
+            continue
+        zval = g["zone_z"].get(zname, 0.0)
+        color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
+        points = _fmt_poly(verts)
+        parts.append(
+            f"<polygon points='{points}' fill='{color}' fill-opacity='{alpha:.3f}' "
+            "stroke='#222' stroke-width='0.6'/>"
+        )
+        cx = sum(x for x, _ in verts) / len(verts)
+        cy = sum(y for _, y in verts) / len(verts)
+        parts.append(
+            f"<text x='{cx:.2f}' y='{_flip_y(cy):.2f}' text-anchor='middle' "
+            f"dominant-baseline='middle' class='zone-label'>{html.escape(zname)}</text>"
+        )
+
+    # Boundaries
+    for bname, verts in g["boundaries"]:
+        if not verts:
+            continue
+        points = _fmt_poly(verts)
+        parts.append(
+            f"<polygon points='{points}' fill='none' stroke='gold' stroke-width='1.1' "
+            "stroke-dasharray='2.5,2.5'>"
+            f"<title>{html.escape(bname)}</title></polygon>"
+        )
+
+    # Impassable
+    for iname, verts in g["impassable"]:
+        if not verts:
+            continue
+        points = _fmt_poly(verts)
+        parts.append(
+            f"<polygon points='{points}' fill='#4a4a4a' fill-opacity='0.65' "
+            "stroke='#2a2a2a' stroke-width='0.6'>"
+            f"<title>{html.escape(iname)}</title></polygon>"
+        )
+
+    # Landmarks
+    for name, (x, y) in g["landmarks"].items():
+        parts.append(
+            f"<circle cx='{x:.2f}' cy='{_flip_y(y):.2f}' r='1.2' fill='#3b3b3b'>"
+            f"<title>{html.escape(name)}</title></circle>"
+        )
+        parts.append(
+            f"<text x='{x + 1.7:.2f}' y='{_flip_y(y) - 1.3:.2f}' class='lm-label'>{html.escape(name)}</text>"
+        )
+
+    # Items
+    for _iid, (x, y, label) in g["items"].items():
+        parts.append(
+            f"<rect x='{x - 1.0:.2f}' y='{_flip_y(y) - 1.0:.2f}' width='2.0' height='2.0' "
+            "fill='#d4a017' stroke='#5a4a10' stroke-width='0.4' transform='rotate(45 "
+            f"{x:.2f} {_flip_y(y):.2f})'>"
+            f"<title>{html.escape(label)}</title></rect>"
+        )
+
+    # Character paths and turn points
+    for cid, pts in tracks.items():
+        if not pts:
+            continue
+        color = used_colors[cid]
+        poly_points = " ".join(f"{x:.2f},{_flip_y(y):.2f}" for (_t, x, y, _z) in pts)
+        if len(pts) > 1:
+            parts.append(
+                f"<polyline points='{poly_points}' fill='none' stroke='{color}' "
+                "stroke-width='0.9' stroke-opacity='0.9'/>"
+            )
+
+        for turn, x, y, zone in pts:
+            title_text = (
+                f"{cid} - turn {turn}\n"
+                f"x={x:.1f}, y={y:.1f}\n"
+                f"zone={zone or '?'}"
+            )
+            parts.append(
+                f"<circle cx='{x:.2f}' cy='{_flip_y(y):.2f}' r='1.4' fill='{color}' "
+                f"stroke='#111' stroke-width='0.35' data-tooltip='{html.escape(title_text)}'>"
+                f"<title>{html.escape(title_text)}</title></circle>"
+            )
+
+        sx, sy = pts[0][1], pts[0][2]
+        ex, ey = pts[-1][1], pts[-1][2]
+        parts.append(
+            f"<rect x='{sx - 1.8:.2f}' y='{_flip_y(sy) - 1.8:.2f}' width='3.6' height='3.6' "
+            f"fill='white' stroke='{color}' stroke-width='0.7'>"
+            f"<title>{html.escape(f'{cid} start')}</title></rect>"
+        )
+        parts.append(
+            f"<path d='M {ex - 1.8:.2f} {_flip_y(ey) - 1.8:.2f} L {ex + 1.8:.2f} {_flip_y(ey) + 1.8:.2f} "
+            f"M {ex + 1.8:.2f} {_flip_y(ey) - 1.8:.2f} L {ex - 1.8:.2f} {_flip_y(ey) + 1.8:.2f}' "
+            "stroke='#111' stroke-width='0.7'>"
+            f"<title>{html.escape(f'{cid} end')}</title></path>"
+        )
+
+    parts.append("</svg></div>")
+    parts.append(
+        "<script>"
+        "document.addEventListener('DOMContentLoaded', function(){"
+        "const circles = document.querySelectorAll('circle[data-tooltip]');"
+        "circles.forEach(c => {"
+        "c.style.cursor = 'pointer';"
+        "c.addEventListener('mouseenter', function(e){"
+        "const txt = e.target.getAttribute('data-tooltip');"
+        "let tooltip = e.target.nextElementSibling;"
+        "if(!tooltip || !tooltip.classList.contains('tooltiptext')) {"
+        "tooltip = document.createElement('div');"
+        "tooltip.className = 'tooltiptext';"
+        "tooltip.style.pointerEvents = 'none';"
+        "e.target.parentNode.insertBefore(tooltip, e.target.nextSibling);"
+        "}"
+        "tooltip.textContent = txt;"
+        "tooltip.style.visibility = 'visible';"
+        "tooltip.style.opacity = '1';"
+        "});"
+        "c.addEventListener('mouseleave', function(e){"
+        "const tooltip = e.target.nextElementSibling;"
+        "if(tooltip) {"
+        "tooltip.style.visibility = 'hidden';"
+        "tooltip.style.opacity = '0';"
+        "}"
+        "});"
+        "});"
+        "});"
+        "</script>"
+    )
+    parts.append("</body></html>")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("".join(parts), encoding="utf-8")
 
 
 def update_place_map(place_path: str | Path) -> Path:

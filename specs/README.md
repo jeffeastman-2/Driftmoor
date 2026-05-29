@@ -19,6 +19,7 @@ expected to conform.
 | [PLACE.md](PLACE.md) | Location description and dynamic state | implemented |
 | [LORE.md](LORE.md) | DM-only deep context | convention only |
 | [WEAPONS_ARMOR.md](WEAPONS_ARMOR.md) | Weapon and armor library tables | implemented |
+| [EXPLORATION.md](EXPLORATION.md) | Party exploration momentum and anti-loop policy | draft |
 
 ## Engine subsystem specs
 

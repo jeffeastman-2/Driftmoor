@@ -77,6 +77,75 @@ class PlayerLeft:
     def __init__(self, call_llm: Optional[CallLLM] = None):
         self._call_llm = call_llm
 
+    @staticmethod
+    def _items_from_perception(perception: str) -> list[str]:
+        """Extract visible item labels from the perception block.
+
+        Expected shape:
+            Items in this zone:
+            - Snapped torch (~10 ft away)
+            - Drag marks (~15 ft away) (already examined)
+        """
+        if not perception:
+            return []
+        marker = "Items in this zone:"
+        idx = perception.find(marker)
+        if idx < 0:
+            return []
+        tail = perception[idx + len(marker):]
+        labels: list[str] = []
+        for raw in tail.splitlines():
+            line = raw.strip()
+            if not line.startswith("- "):
+                continue
+            body = line[2:].strip()
+            label = body.split("(~", 1)[0].strip()
+            if label:
+                labels.append(label)
+        return labels
+
+    @staticmethod
+    def _infer_interaction_target(intent_text: str, perception: str) -> Optional[str]:
+        """Infer item target from intent text + visible items when TARGET is missing."""
+        items = PlayerLeft._items_from_perception(perception)
+        if not items:
+            return None
+        intent_l = (intent_text or "").lower()
+
+        # Strong match: explicit mention of a visible item label.
+        for label in items:
+            if label.lower() in intent_l:
+                return label
+
+        # Soft match: token overlap for phrasing variants.
+        tokens = set(re.findall(r"[a-z]+", intent_l))
+        stop = {
+            "the", "a", "an", "around", "near", "area", "for", "any",
+            "small", "useful", "further", "other", "more", "items",
+            "item", "clues", "clue", "search", "examine", "inspect",
+            "investigate", "look", "scan", "check", "ground", "floor",
+        }
+        tokens = {t for t in tokens if t not in stop}
+        if tokens:
+            best_label: Optional[str] = None
+            best_score = 0
+            for label in items:
+                ltoks = set(re.findall(r"[a-z]+", label.lower()))
+                score = len(tokens & ltoks)
+                if score > best_score:
+                    best_score = score
+                    best_label = label
+            if best_label and best_score > 0:
+                return best_label
+
+        # Fallback: if exactly one item is visible and intent is examine/search-like.
+        if len(items) == 1 and re.search(
+            r"\b(search|examine|inspect|investigate|look|scan|check|sift)\b",
+            intent_l,
+        ):
+            return items[0]
+        return None
+
     def build_system_prompt(self, context: RoleContext) -> str:
         return (
             f"You are the strategic mind of {context.character_id}. "
@@ -163,7 +232,12 @@ class PlayerLeft:
             "action (e.g. 'search the shimmering patch' repeated), you MUST choose "
             "a different action this turn. The repeated action has already yielded "
             "what it can. Move on: explore elsewhere, speak with a companion, "
-            "rest, prepare for what comes next, or leave the area.\n\n"
+            "rest, prepare for what comes next, or leave the area. "
+            "If a local puzzle is still unresolved, keep working the puzzle "
+            "before leaving the zone. "
+            "If you have searched your current chamber and found no new evidence, "
+            "use MOVEMENT to enter a different zone or passage listed under "
+            "Points of interest.\n\n"
             "Respond with exactly these labeled sections "
             "(no markdown fencing):\n\n"
             "**INTENT** — One sentence: what you will do this turn "
@@ -239,8 +313,13 @@ class PlayerLeft:
 
         # Parse interaction target
         interaction = None
-        if target_raw and target_raw.lower() not in ("none", "null", "n/a", ""):
+        target_norm = (target_raw or "").strip().lower().rstrip(".")
+        if target_raw and target_norm not in ("none", "null", "n/a", ""):
             interaction = target_raw
+
+        # If the model omitted TARGET, infer it from visible items in perception.
+        if not interaction:
+            interaction = self._infer_interaction_target(intent, context.perception)
 
         # Fallback: if no sections found, treat whole response as intent
         if not intent:

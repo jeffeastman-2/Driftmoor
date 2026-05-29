@@ -62,6 +62,10 @@ class CharacterSession:
     # character enters that zone. "door_open:<door_id>" = activate when
     # the named door fires its open side effect.
     activation: str = "always"
+    # Python-owned episodic memory used to reinforce continuity in prompts.
+    episodic_memory: list[str] = field(default_factory=list)
+    recent_interactions: list[str] = field(default_factory=list)
+    last_zone_seen: str = ""
 
 
 @dataclass
@@ -125,6 +129,425 @@ def _speed_to_feet(speed_str: str) -> float:
     """
     m = re.search(r'(\d+)', speed_str or "")
     return float(m.group(1)) if m else 30.0
+
+
+def _is_search_like_intent(intent_text: str) -> bool:
+    """Heuristic: intent text is a search/examine style action."""
+    return bool(re.search(
+        r"\b(search|examine|inspect|investigate|look|scan|check|sift)\b",
+        (intent_text or "").lower(),
+    ))
+
+
+def _normalize_target_name(target: Optional[str]) -> str:
+    """Normalize item target text for loop-key comparisons."""
+    if not target:
+        return ""
+    s = target.lower().strip()
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"[^a-z0-9 ]", "", s)
+    return s.strip()
+
+
+def _position_bucket(
+    pos: Optional[tuple[float, float, str]],
+) -> tuple[int, int, str]:
+    """Bucket position into ~5 ft bins for repeat-search detection."""
+    if pos is None:
+        return (0, 0, "")
+    x, y, z = pos
+    return (int(round(x / 5.0)), int(round(y / 5.0)), (z or "").upper())
+
+
+def _choose_novel_item_for_search(
+    *,
+    character_id: str,
+    current_positions: dict[str, tuple[float, float, str]],
+    items: Optional[dict],
+    current_target_norm: str,
+) -> Optional[tuple[str, float, float, str]]:
+    """Pick a same-zone item that is likely to yield new information.
+
+    Preference order: unexamined items first, then nearest by distance.
+    Returns (label, x, y, zone) or None when no candidate is available.
+    """
+    if not items:
+        return None
+    actor_pos = current_positions.get(character_id)
+    if actor_pos is None:
+        return None
+    ax, ay, az = actor_pos
+    actor_zone = (az or "").upper()
+    if not actor_zone:
+        return None
+
+    candidates: list[tuple[int, float, str, float, float, str]] = []
+    for item in items.values():
+        zone = (item.zone or "").upper()
+        if zone != actor_zone or item.position is None:
+            continue
+        label = item.label or item.id.replace("_", " ")
+        if _normalize_target_name(label) == current_target_norm:
+            continue
+        dist = ((item.position.x - ax) ** 2 + (item.position.y - ay) ** 2) ** 0.5
+        unseen_rank = 0 if not item.discovered_by else 1
+        candidates.append((
+            unseen_rank,
+            dist,
+            label,
+            float(item.position.x),
+            float(item.position.y),
+            zone,
+        ))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: (t[0], t[1], t[2]))
+    _, _, label, ix, iy, zone = candidates[0]
+    return label, ix, iy, zone
+
+
+def _all_zone_items_examined(
+    *,
+    character_id: str,
+    current_positions: dict[str, tuple[float, float, str]],
+    items: Optional[dict],
+) -> bool:
+    """Return True when all items in the actor's current zone were examined."""
+    if not items:
+        return False
+    actor_pos = current_positions.get(character_id)
+    if actor_pos is None:
+        return False
+    actor_zone = (actor_pos[2] or "").upper()
+    if not actor_zone:
+        return False
+
+    in_zone = [
+        it for it in items.values()
+        if (it.zone or "").upper() == actor_zone and it.position is not None
+    ]
+    if not in_zone:
+        return False
+    return all(bool(it.discovered_by) for it in in_zone)
+
+
+def _point_to_segment_distance_2d(
+    px: float,
+    py: float,
+    ax: float,
+    ay: float,
+    bx: float,
+    by: float,
+) -> float:
+    """Distance from point (px, py) to segment (ax, ay)-(bx, by)."""
+    dx, dy = bx - ax, by - ay
+    length_sq = dx * dx + dy * dy
+    if length_sq <= 1e-9:
+        return ((px - ax) ** 2 + (py - ay) ** 2) ** 0.5
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / length_sq))
+    qx, qy = ax + t * dx, ay + t * dy
+    return ((px - qx) ** 2 + (py - qy) ** 2) ** 0.5
+
+
+def _polygons_are_adjacent(poly_a, poly_b, tol: float = 0.75) -> bool:
+    """True when two zone polygons share/touch an edge (or near-edge)."""
+    va = list(getattr(poly_a, "vertices", []) or [])
+    vb = list(getattr(poly_b, "vertices", []) or [])
+    if not va or not vb:
+        return False
+
+    for v in va:
+        ax, ay = float(v[0]), float(v[1])
+        for i in range(len(vb)):
+            x1, y1 = float(vb[i][0]), float(vb[i][1])
+            x2, y2 = float(vb[(i + 1) % len(vb)][0]), float(vb[(i + 1) % len(vb)][1])
+            if _point_to_segment_distance_2d(ax, ay, x1, y1, x2, y2) <= tol:
+                return True
+
+    for v in vb:
+        bx, by = float(v[0]), float(v[1])
+        for i in range(len(va)):
+            x1, y1 = float(va[i][0]), float(va[i][1])
+            x2, y2 = float(va[(i + 1) % len(va)][0]), float(va[(i + 1) % len(va)][1])
+            if _point_to_segment_distance_2d(bx, by, x1, y1, x2, y2) <= tol:
+                return True
+
+    return False
+
+
+def _entry_point_inside_zone(
+    *,
+    actor_x: float,
+    actor_y: float,
+    target_poly,
+    inset: float = 3.0,
+) -> tuple[float, float]:
+    """Pick a point just inside target_poly near the actor-facing boundary."""
+    actor_pos = Position(actor_x, actor_y)
+    boundary = target_poly.nearest_point(actor_pos)
+    center = target_poly.centroid()
+
+    vx = center.x - boundary.x
+    vy = center.y - boundary.y
+    mag = (vx * vx + vy * vy) ** 0.5
+    if mag <= 1e-9:
+        return float(center.x), float(center.y)
+
+    step = min(inset, mag * 0.95)
+    ux, uy = vx / mag, vy / mag
+    tx = boundary.x + ux * step
+    ty = boundary.y + uy * step
+    if target_poly.contains(Position(tx, ty)):
+        return float(tx), float(ty)
+
+    # Fallback: walk from boundary toward center until we are inside.
+    for frac in (0.65, 0.8, 1.0):
+        cx = boundary.x + vx * frac
+        cy = boundary.y + vy * frac
+        if target_poly.contains(Position(cx, cy)):
+            return float(cx), float(cy)
+    return float(center.x), float(center.y)
+
+
+def _choose_exploration_waypoint(
+    *,
+    character_id: str,
+    current_positions: dict[str, tuple[float, float, str]],
+    scene_geometry: Optional[SceneGeometry],
+    visited: Optional[set[str]] = None,
+) -> Optional[tuple[str, float, float]]:
+    """Choose a nearby exploration waypoint that pushes movement forward.
+
+    Prefers adjacent zones first (to avoid global jumps), then falls back to
+    any zone if adjacency cannot be determined. Within each set, unvisited
+    zones outrank visited zones. Returned coordinates are nudged just inside
+    the destination zone to reduce seam-clamping on boundary lines.
+    Returns (zone_name, x, y) or None.
+    """
+    if scene_geometry is None:
+        return None
+    actor_pos = current_positions.get(character_id)
+    if actor_pos is None:
+        return None
+    ax, ay, az = actor_pos
+    current_zone = (az or "").upper()
+    seen = {z.upper() for z in (visited or set())}
+
+    zones_by_upper = {
+        name.upper(): polygon for name, polygon in scene_geometry.zones.items()
+    }
+    current_poly = zones_by_upper.get(current_zone)
+
+    candidates: list[tuple[int, float, str, float, float]] = []
+
+    def _add_candidate(zone_upper: str, poly) -> None:
+        if zone_upper == current_zone or zone_upper == "FOREST":
+            return
+        verts = poly.vertices
+        if not verts:
+            return
+        tx, ty = _entry_point_inside_zone(
+            actor_x=ax,
+            actor_y=ay,
+            target_poly=poly,
+            inset=3.0,
+        )
+        dist = ((tx - ax) ** 2 + (ty - ay) ** 2) ** 0.5
+        unseen_rank = 0 if zone_upper not in seen else 1
+        candidates.append((unseen_rank, dist, zone_upper, tx, ty))
+
+    # Prefer adjacent zones first. This prevents jumps to far/hidden branches.
+    if current_poly is not None:
+        for zone_upper, poly in zones_by_upper.items():
+            if _polygons_are_adjacent(current_poly, poly):
+                _add_candidate(zone_upper, poly)
+
+    # Fallback when no adjacent candidates were detected.
+    if not candidates:
+        for zone_upper, poly in zones_by_upper.items():
+            _add_candidate(zone_upper, poly)
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: (t[0], t[1], t[2]))
+    _, _, zone, x, y = candidates[0]
+    return zone, x, y
+
+
+def _waypoint_for_zone(
+    *,
+    character_id: str,
+    current_positions: dict[str, tuple[float, float, str]],
+    scene_geometry: Optional[SceneGeometry],
+    target_zone: str,
+) -> Optional[tuple[float, float]]:
+    """Return a seam-safe movement point inside the requested target zone."""
+    if scene_geometry is None or not target_zone:
+        return None
+    actor_pos = current_positions.get(character_id)
+    if actor_pos is None:
+        return None
+    ax, ay, _ = actor_pos
+
+    zone_upper = target_zone.upper()
+    target_poly = None
+    for zname, poly in scene_geometry.zones.items():
+        if zname.upper() == zone_upper:
+            target_poly = poly
+            break
+    if target_poly is None:
+        return None
+
+    tx, ty = _entry_point_inside_zone(
+        actor_x=ax,
+        actor_y=ay,
+        target_poly=target_poly,
+        inset=3.0,
+    )
+    return tx, ty
+
+
+def _should_block_backtrack(
+    *,
+    current_zone: str,
+    target_zone: str,
+    visited: Optional[set[str]],
+    party_focus_zone: Optional[str],
+) -> bool:
+    """Return True when movement would backtrack away from party focus.
+
+    While a party focus is active, prevent leaving the focus zone for any
+    previously visited zone. Moves to unvisited zones remain allowed.
+    """
+    if not current_zone or not target_zone or not party_focus_zone:
+        return False
+    cz = current_zone.upper()
+    tz = target_zone.upper()
+    focus = party_focus_zone.upper()
+    if cz != focus:
+        return False
+    if tz == focus:
+        return False
+    seen = {z.upper() for z in (visited or set())}
+    return tz in seen
+
+
+def _exploration_redirect_intent(
+    *,
+    zone_name: str,
+    known_zones: Optional[set[str]] = None,
+) -> str:
+    """Build exploration redirect text without leaking unknown zone names.
+
+    If the destination zone has not been visited by the actor yet, keep the
+    directive generic ("move deeper") so hidden geometry labels are not
+    surfaced in-character.
+    """
+    known = {z.upper() for z in (known_zones or set())}
+    if zone_name and zone_name.upper() in known:
+        return f"Move toward {zone_name} and continue exploration there."
+    return "Move deeper through the passage and continue exploration there."
+
+
+def _puzzle_items_in_zone(
+    current_zone: str,
+    items: Optional[dict],
+) -> list:
+    """Return glyph items in the given zone, if any."""
+    if not current_zone or not items:
+        return []
+    from engine.state_resolver import GLYPH_IDS  # local import avoids cycle
+
+    zone = current_zone.upper()
+    return [
+        item for item in items.values()
+        if item.id in GLYPH_IDS and (item.zone or "").upper() == zone
+    ]
+
+
+def _zone_has_unresolved_puzzle(
+    *,
+    current_zone: str,
+    items: Optional[dict],
+    puzzle_state: Optional[dict],
+) -> bool:
+    """Return True when the actor is standing in an unsolved puzzle zone."""
+    if not current_zone or not items or not puzzle_state:
+        return False
+    if puzzle_state.get("door_open", False):
+        return False
+    return bool(_puzzle_items_in_zone(current_zone, items))
+
+
+def _build_puzzle_pressure_block(
+    *,
+    current_zone: str,
+    items: Optional[dict],
+    puzzle_state: Optional[dict],
+) -> str:
+    """Return a context block reminding the actor to keep working a live puzzle."""
+    if not _zone_has_unresolved_puzzle(
+        current_zone=current_zone,
+        items=items,
+        puzzle_state=puzzle_state,
+    ):
+        return ""
+
+    seq = list((puzzle_state or {}).get("glyph_sequence", []))
+    seq_text = " -> ".join(seq) if seq else "not yet started"
+    glyphs = _puzzle_items_in_zone(current_zone, items)
+    glyph_names = ", ".join((it.label or it.id).strip() for it in glyphs)
+    return (
+        "## Unresolved puzzle (keep working this zone before leaving)\n"
+        f"The current zone still contains an unsolved puzzle: {glyph_names}. "
+        f"Current puzzle progress: {seq_text}. "
+        "Stay with the puzzle until it advances, resolves, or clearly proves "
+        "to be a dead end."
+    )
+
+
+def _choose_puzzle_focus_item(
+    *,
+    character_id: str,
+    current_positions: dict[str, tuple[float, float, str]],
+    items: Optional[dict],
+    current_target_norm: str,
+) -> Optional[tuple[str, float, float, str]]:
+    """Prefer a glyph item in the actor's current zone when a puzzle is live."""
+    if not items:
+        return None
+    actor_pos = current_positions.get(character_id)
+    if actor_pos is None:
+        return None
+    ax, ay, az = actor_pos
+    actor_zone = (az or "").upper()
+    if not actor_zone:
+        return None
+
+    candidates: list[tuple[int, float, str, float, float, str]] = []
+    for item in _puzzle_items_in_zone(actor_zone, items):
+        if item.position is None:
+            continue
+        label = item.label or item.id.replace("_", " ")
+        if _normalize_target_name(label) == current_target_norm:
+            continue
+        dist = ((item.position.x - ax) ** 2 + (item.position.y - ay) ** 2) ** 0.5
+        unseen_rank = 0 if not item.discovered_by else 1
+        candidates.append((
+            unseen_rank,
+            dist,
+            label,
+            float(item.position.x),
+            float(item.position.y),
+            actor_zone,
+        ))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: (t[0], t[1], t[2]))
+    _, _, label, ix, iy, zone = candidates[0]
+    return label, ix, iy, zone
 
 
 def _max_attacks(identity_text: str) -> int:
@@ -965,6 +1388,7 @@ def _build_context(
     recent_events: Optional[list[str]] = None,
     visited_zones: Optional[dict[str, set[str]]] = None,
     items: Optional[dict] = None,
+    puzzle_state: Optional[dict] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     # Replace baked-in "Your starting position: x=…" with the live value so
@@ -987,6 +1411,22 @@ def _build_context(
             + "\n".join(f"- {ev}" for ev in recent_events)
         )
         scene = f"{scene}\n\n{events_block}"
+    if cs.episodic_memory:
+        memory_block = (
+            "## What you remember (Python-verified)\n"
+            + "\n".join(f"- {ev}" for ev in cs.episodic_memory[-6:])
+        )
+        scene = f"{scene}\n\n{memory_block}"
+    if cs.recent_interactions:
+        repeat_guard = (
+            "## Anti-repetition guidance\n"
+            "- You recently examined: "
+            + ", ".join(cs.recent_interactions[-5:])
+            + "\n"
+            "- Do not repeat the same target unless genuinely new evidence appears."
+            " If local clues are exhausted, move deeper."
+        )
+        scene = f"{scene}\n\n{repeat_guard}"
     # Maintain visited_zones for this character. The zone the character is
     # currently standing in counts as visited for future turns.
     char_visited: set[str] = set()
@@ -997,6 +1437,16 @@ def _build_context(
     poi = _build_points_of_interest(scene_geometry, my_pos, char_visited)
     if poi:
         scene = f"{scene}\n\n{poi}"
+
+    current_zone = (my_pos[2] if my_pos is not None else "") or ""
+    puzzle_block = _build_puzzle_pressure_block(
+        current_zone=current_zone,
+        items=items,
+        puzzle_state=puzzle_state,
+    )
+    if puzzle_block:
+        scene = f"{scene}\n\n{puzzle_block}"
+
     perception = _build_perception(
         cs.character.id,
         scene_geometry,
@@ -1116,6 +1566,39 @@ def _find_combat_target(
     return min(hostiles, key=dist_to)
 
 
+def _append_memory_note(
+    cs: CharacterSession,
+    note: str,
+    *,
+    max_items: int = 18,
+) -> None:
+    """Append an episodic memory line, avoiding immediate duplicates."""
+    text = (note or "").strip()
+    if not text:
+        return
+    if cs.episodic_memory and cs.episodic_memory[-1] == text:
+        return
+    cs.episodic_memory.append(text)
+    if len(cs.episodic_memory) > max_items:
+        del cs.episodic_memory[:-max_items]
+
+
+def _record_recent_interaction(
+    cs: CharacterSession,
+    target: str | None,
+    *,
+    max_items: int = 8,
+) -> None:
+    """Track recent interaction targets to discourage repeated searching."""
+    norm = _normalize_target_name(target)
+    if not norm:
+        return
+    cs.recent_interactions = [t for t in cs.recent_interactions if t != norm]
+    cs.recent_interactions.append(norm)
+    if len(cs.recent_interactions) > max_items:
+        del cs.recent_interactions[:-max_items]
+
+
 def _checkpoint_filename(turn: int, game_time: Optional[GameTime] = None) -> str:
     """Build checkpoint filename from game time or turn number."""
     if game_time is not None:
@@ -1178,6 +1661,15 @@ def _save_turn(
         "current_positions": {
             char_id: {"x": pos[0], "y": pos[1], "zone": pos[2]}
             for char_id, pos in (current_positions or {}).items()
+        },
+        "memory": {
+            char_id: {
+                "episodic": cs.episodic_memory,
+                "recent_interactions": cs.recent_interactions,
+                "last_zone_seen": cs.last_zone_seen,
+            }
+            for char_id, cs in characters.items()
+            if char_id in active
         },
     }
     path.write_text(json.dumps(data, indent=2, default=str))
@@ -1256,6 +1748,15 @@ def load_resume_state(
     # Restore active_characters set if the checkpoint recorded it
     if "active_characters" in last_data:
         last_active_characters = set(last_data["active_characters"])
+
+    # Restore per-character episodic memory when present.
+    for char_id, mem in last_data.get("memory", {}).items():
+        if char_id not in characters:
+            continue
+        cs = characters[char_id]
+        cs.episodic_memory = list(mem.get("episodic", []))
+        cs.recent_interactions = list(mem.get("recent_interactions", []))
+        cs.last_zone_seen = (mem.get("last_zone_seen") or "").upper()
 
     # Restore positions from last checkpoint (may be absent in older checkpoints)
     checkpoint_positions: dict[str, tuple[float, float, str]] = {}
@@ -1371,6 +1872,10 @@ async def iter_session(
     # by turn_num.
     recent_events: deque[tuple[int, str]] = deque(maxlen=40)
 
+    # Engine-side anti-loop memory keyed per character. Stores recent
+    # search signatures as (kind, target_norm, position_bucket).
+    search_history: dict[str, deque[tuple[str, str, tuple[int, int, str]]]] = {}
+
     # Phase 3a: per-session puzzle bookkeeping (glyph press sequence,
     # secret-door state). Owned here, mutated by state_resolver.process_press.
     from engine.state_resolver import initial_puzzle_state
@@ -1384,6 +1889,14 @@ async def iter_session(
     for _cid, _pos in current_positions.items():
         if _pos and _pos[2]:
             visited_zones.setdefault(_cid, set()).add(_pos[2].upper())
+            if _cid in characters:
+                characters[_cid].last_zone_seen = _pos[2].upper()
+
+    # Party-level forward focus: when one actor successfully advances into a
+    # new zone, lightly pull others there for a short window and suppress
+    # immediate backtracking into already-visited zones.
+    party_focus_zone: Optional[str] = None
+    party_focus_until_turn: int = 0
 
     while True:
         combat_at_start = in_combat
@@ -1418,6 +1931,11 @@ async def iter_session(
             if character_id not in active_characters:
                 continue
 
+            # Expire stale focus at character step granularity.
+            if party_focus_zone and turn_num > party_focus_until_turn:
+                party_focus_zone = None
+                party_focus_until_turn = 0
+
             cs = characters[character_id]
             # Snapshot the active set so we can detect deaths that happen
             # during damage application this turn.
@@ -1446,12 +1964,179 @@ async def iter_session(
                 recent_events=visible_events,
                 visited_zones=visited_zones,
                 items=items,
+                puzzle_state=puzzle_state,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
             # When in combat and the character has structured weapons, bypass
             # DM-Left and use CombatResolver for attack resolution.
             intent, output = await turn_cycle.player_roles(context)
+            loop_guard_notes: list[str] = []
+
+            actor_zone_before = (
+                current_positions.get(character_id, (None, None, ""))[2] or ""
+            ).upper()
+
+            # Party-focus pull: if another character has committed to a forward
+            # zone recently, bias this actor to follow unless a local unresolved
+            # puzzle should keep them in place.
+            if (
+                not in_combat
+                and party_focus_zone
+                and turn_num <= party_focus_until_turn
+            ):
+                focus_zone = party_focus_zone.upper()
+                if actor_zone_before and actor_zone_before != focus_zone:
+                    puzzle_live_here = _zone_has_unresolved_puzzle(
+                        current_zone=actor_zone_before,
+                        items=items,
+                        puzzle_state=puzzle_state,
+                    )
+                    if not puzzle_live_here:
+                        focus_wp = _waypoint_for_zone(
+                            character_id=character_id,
+                            current_positions=current_positions,
+                            scene_geometry=scene_geometry,
+                            target_zone=focus_zone,
+                        )
+                        if focus_wp is not None:
+                            fx, fy = focus_wp
+                            intent.interaction_target = None
+                            intent.movement_target = (fx, fy, 0.0)
+                            intent.intent = _exploration_redirect_intent(
+                                zone_name=focus_zone,
+                                known_zones=visited_zones.get(character_id, set()),
+                            )
+                            loop_guard_notes.append(
+                                f"[PARTY-FOCUS] {character_id}: following active "
+                                f"party focus toward {focus_zone} at "
+                                f"({fx:.1f},{fy:.1f})."
+                            )
+
+                # Anti-backtrack in focus zone: don't leave focus for an
+                # already-visited zone while focus is active.
+                elif actor_zone_before == focus_zone and intent.movement_target is not None and scene_geometry is not None:
+                    tx, ty = float(intent.movement_target[0]), float(intent.movement_target[1])
+                    target_zone = scene_geometry.zone_at(Position(tx, ty)) or ""
+                    puzzle_live_here = _zone_has_unresolved_puzzle(
+                        current_zone=actor_zone_before,
+                        items=items,
+                        puzzle_state=puzzle_state,
+                    )
+                    if (
+                        not puzzle_live_here
+                        and _should_block_backtrack(
+                            current_zone=actor_zone_before,
+                            target_zone=target_zone,
+                            visited=visited_zones.get(character_id, set()),
+                            party_focus_zone=focus_zone,
+                        )
+                    ):
+                        intent.movement_target = None
+                        intent.interaction_target = None
+                        intent.intent = "Continue investigating this area before backtracking."
+                        loop_guard_notes.append(
+                            f"[PARTY-FOCUS] {character_id}: blocked backtrack "
+                            f"from {focus_zone} to visited zone {target_zone.upper()}."
+                        )
+
+            # Engine-side anti-loop guard: if the actor repeats the same
+            # search in the same ~5 ft bucket for 3 consecutive turns,
+            # retarget to a different visible item in-zone.
+            if not in_combat and _is_search_like_intent(intent.intent):
+                bucket = _position_bucket(current_positions.get(character_id))
+                target_norm = _normalize_target_name(intent.interaction_target)
+                hist = search_history.setdefault(character_id, deque(maxlen=3))
+                recent_two = list(hist)[-2:]
+                current_zone = (current_positions.get(character_id, (None, None, ""))[2] or "").upper()
+                puzzle_live = _zone_has_unresolved_puzzle(
+                    current_zone=current_zone,
+                    items=items,
+                    puzzle_state=puzzle_state,
+                )
+                repeated_zone_search = (
+                    len(recent_two) == 2
+                    and all(kind == "search" and pb[2] == bucket[2] for kind, _, pb in recent_two)
+                )
+                repeated = (
+                    len(recent_two) == 2
+                    and all(
+                        kind == "search" and tnorm == target_norm and pb == bucket
+                        for kind, tnorm, pb in recent_two
+                    )
+                )
+                if repeated:
+                    alt = _choose_novel_item_for_search(
+                        character_id=character_id,
+                        current_positions=current_positions,
+                        items=items,
+                        current_target_norm=target_norm,
+                    )
+                    if alt is not None:
+                        label, ix, iy, izone = alt
+                        intent.interaction_target = label
+                        intent.movement_target = (ix, iy, 0.0)
+                        intent.intent = (
+                            f"Examine {label} for new information and then advance."
+                        )
+                        loop_guard_notes.append(
+                            f"[LOOP-GUARD] {character_id}: repeated search loop "
+                            f"detected at {bucket}; retargeted to '{label}' "
+                            f"in {izone}."
+                        )
+                elif repeated_zone_search and puzzle_live:
+                    puzzle_focus = _choose_puzzle_focus_item(
+                        character_id=character_id,
+                        current_positions=current_positions,
+                        items=items,
+                        current_target_norm=target_norm,
+                    )
+                    if puzzle_focus is not None:
+                        label, ix, iy, izone = puzzle_focus
+                        intent.interaction_target = label
+                        intent.movement_target = (ix, iy, 0.0)
+                        intent.intent = (
+                            f"Continue the unresolved puzzle by working on {label}."
+                        )
+                        loop_guard_notes.append(
+                            f"[LOOP-GUARD] {character_id}: unresolved puzzle in "
+                            f"{current_zone}; redirected to puzzle focus '{label}' "
+                            f"in {izone}."
+                        )
+                elif repeated_zone_search:
+                    waypoint = _choose_exploration_waypoint(
+                        character_id=character_id,
+                        current_positions=current_positions,
+                        scene_geometry=scene_geometry,
+                        visited=visited_zones.get(character_id, set()),
+                    )
+                    if waypoint is not None:
+                        w_zone, wx, wy = waypoint
+                        char_known_zones = visited_zones.get(character_id, set())
+                        intent.interaction_target = None
+                        intent.movement_target = (wx, wy, 0.0)
+                        intent.intent = _exploration_redirect_intent(
+                            zone_name=w_zone,
+                            known_zones=char_known_zones,
+                        )
+                        examined_state = _all_zone_items_examined(
+                            character_id=character_id,
+                            current_positions=current_positions,
+                            items=items,
+                        )
+                        loop_guard_notes.append(
+                            f"[LOOP-GUARD] {character_id}: same-zone search churn "
+                            f"detected (all_items_examined={examined_state}); "
+                            f"redirected toward {w_zone} at ({wx:.1f},{wy:.1f})."
+                        )
+                hist.append((
+                    "search",
+                    _normalize_target_name(intent.interaction_target),
+                    bucket,
+                ))
+            else:
+                search_history.pop(character_id, None)
+
             use_resolver = (
                 in_combat
                 and bool(cs.weapons)
@@ -1584,6 +2269,9 @@ async def iter_session(
                 )
                 adjudication = _adjudication
                 attack_log: list[str] = []
+
+            if loop_guard_notes:
+                attack_log.extend(loop_guard_notes)
 
             # Python movement resolution — clamp to speed, snap to zone.
             # Player-Left declares intent.movement_target; Python owns the result.
@@ -1797,6 +2485,41 @@ async def iter_session(
                             if dead_entry not in ledger.permanent_events:
                                 ledger.permanent_events.append(dead_entry)
 
+            # Update per-character visited zones from resolved post-turn
+            # position and promote party focus when a genuinely new zone is
+            # entered. Focus lives for the next two turns.
+            post_pos = current_positions.get(character_id)
+            if post_pos and post_pos[2]:
+                post_zone = post_pos[2].upper()
+                char_seen = visited_zones.setdefault(character_id, set())
+                zone_is_new = post_zone not in char_seen
+                char_seen.add(post_zone)
+                prev_zone = (cs.last_zone_seen or actor_zone_before or "").upper()
+                if prev_zone and prev_zone != post_zone:
+                    _append_memory_note(
+                        cs,
+                        f"Turn {turn_num}: you moved from {prev_zone} to {post_zone}.",
+                    )
+                elif not prev_zone:
+                    _append_memory_note(
+                        cs,
+                        f"Turn {turn_num}: you are in {post_zone}.",
+                    )
+                cs.last_zone_seen = post_zone
+                if (
+                    not in_combat
+                    and actor_zone_before
+                    and post_zone
+                    and post_zone != actor_zone_before
+                    and zone_is_new
+                ):
+                    party_focus_zone = post_zone
+                    party_focus_until_turn = turn_num + 2
+                    loop_guard_notes.append(
+                        f"[PARTY-FOCUS] {character_id}: established party focus "
+                        f"on {post_zone} through turn {party_focus_until_turn}."
+                    )
+
             # Step 4: DM-Right narrates what Python actually resolved.
             # resolution_log tells it which attacks hit, missed, or were blocked.
             # perception constrains narration to the acting character's POV.
@@ -1909,6 +2632,10 @@ async def iter_session(
                         )
                         recent_events.append((turn_num, ev))
                         item_obj.discovered_by.add(character_id)
+                        _append_memory_note(
+                            cs,
+                            f"Turn {turn_num}: you {verb_past} {label} in {actor_zone.upper() or 'this zone'} and learned: {first_sentence}",
+                        )
 
                     # Phase 3a: broadcast door state changes to all
                     # characters via recent_events. The spider in the
@@ -1973,6 +2700,9 @@ async def iter_session(
                 perception=context.perception,
             )
             turn_result.character_results.append(cr)
+
+            if adjudication.approved:
+                _record_recent_interaction(cs, intent.interaction_target)
 
             # Record result in DM ledger (later chars in this turn see it)
             ledger.record(cr, game_time)

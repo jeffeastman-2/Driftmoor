@@ -43,6 +43,18 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 |---------------|-------|------|----------------------|
 | trail_exit    | 321  | 13  | mistwood_hills path  |
 
+## Items
+
+| id                 | x   | y   | label                |
+|--------------------|-----|-----|----------------------|
+| shadowbeast_tracks | 230 | 110 | Shadowbeast tracks   |
+| dense_cover        | 110 | 162 | Dense cover          |
+| fey_flowers        | 175 | 168 | Fey flowers          |
+| fey_herbs          | 168 | 156 | Fey-touched herbs    |
+| clear_spring       | 138 | 172 | Clear spring         |
+| carved_stone       | 136 | 169 | Carved stone         |
+| ground_shimmer     | 162 | 162 | Ground shimmer       |
+
 ## Visibility
 
 Dense Mistwood forest heavily occludes sight-lines. Rules:
