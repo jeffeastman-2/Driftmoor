@@ -18,6 +18,7 @@ import random
 import re
 from dataclasses import dataclass, field
 from typing import Optional
+import re
 
 from engine.player_router import CallLLM, CharacterOutput
 
@@ -408,6 +409,57 @@ class DMRight:
     def __init__(self, call_llm: Optional[CallLLM] = None):
         self._call_llm = call_llm
 
+    @staticmethod
+    def _enforce_acting_pronouns(
+        prose: str,
+        character_id: str,
+        character_pronouns: dict[str, str] | None,
+    ) -> str:
+        """Best-effort guardrail against acting-character misgendering.
+
+        LLM prompts request strict pronoun fidelity, but occasional drift still
+        happens. This post-pass normalizes third-person pronouns to the acting
+        character's configured pronouns.
+        """
+        if not prose or not character_pronouns:
+            return prose
+
+        p = (character_pronouns.get(character_id) or "").strip().lower()
+        if p not in {"she/her", "he/him", "they/them"}:
+            return prose
+
+        if p == "she/her":
+            replacements = {
+                "he": "she",
+                "him": "her",
+                "his": "her",
+                "himself": "herself",
+            }
+        elif p == "he/him":
+            replacements = {
+                "she": "he",
+                "her": "him",
+                "hers": "his",
+                "herself": "himself",
+            }
+        else:  # they/them
+            replacements = {
+                "he": "they",
+                "him": "them",
+                "his": "their",
+                "himself": "themself",
+                "she": "they",
+                "her": "them",
+                "hers": "theirs",
+                "herself": "themself",
+            }
+
+        fixed = prose
+        for src, dst in replacements.items():
+            fixed = re.sub(rf"\b{src}\b", dst, fixed)
+            fixed = re.sub(rf"\b{src.capitalize()}\b", dst.capitalize(), fixed)
+        return fixed
+
     def build_system_prompt(
         self,
         character_pronouns: dict[str, str] | None = None,
@@ -521,12 +573,21 @@ class DMRight:
         )
 
     def parse_response(
-        self, raw: str, character_id: str, turn: int,
+        self,
+        raw: str,
+        character_id: str,
+        turn: int,
+        character_pronouns: dict[str, str] | None = None,
     ) -> Narration:
+        prose = self._enforce_acting_pronouns(
+            raw.strip(),
+            character_id,
+            character_pronouns,
+        )
         return Narration(
             character_id=character_id,
             turn=turn,
-            prose=raw.strip(),
+            prose=prose,
             visible_to=[],
         )
 
@@ -555,5 +616,8 @@ class DMRight:
         )
         raw = await self._call_llm(system, user)
         return self.parse_response(
-            raw, adjudication.character_id, adjudication.turn,
+            raw,
+            adjudication.character_id,
+            adjudication.turn,
+            character_pronouns=character_pronouns,
         )

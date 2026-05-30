@@ -3,6 +3,7 @@
 import json
 import shutil
 import time
+from datetime import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -350,6 +351,32 @@ def _write_runtime_map(
         print(f"  [map] failed: {exc}")
 
 
+def _archive_existing_run(checkpoint_dir: Path) -> Path | None:
+    """Preserve an existing checkpoint directory by moving it aside.
+
+    This avoids deleting prior evidence when a new run is started in the same
+    runtime session directory.
+    """
+    if not checkpoint_dir.exists():
+        return None
+    if not any(checkpoint_dir.iterdir()):
+        checkpoint_dir.rmdir()
+        return None
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archived = checkpoint_dir.with_name(f"{checkpoint_dir.name}__prev_{timestamp}")
+    checkpoint_dir.rename(archived)
+    return archived
+
+
+def _latest_checkpoint(checkpoint_dir: Path) -> Path | None:
+    """Return most recent checkpoint JSON file, if any."""
+    checkpoints = sorted(checkpoint_dir.glob("*.json"))
+    if not checkpoints:
+        return None
+    return checkpoints[-1]
+
+
 def print_turn_result(turn_result):
     print(f"\n{'=' * 70}")
     print(f"  TURN {turn_result.turn}  —  Initiative: {', '.join(turn_result.initiative_order)}")
@@ -385,26 +412,40 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
 
     checkpoint_dir = get_scene_dir(config.scene_name)
 
-    # Clear previous run
-    if checkpoint_dir.exists():
-        shutil.rmtree(checkpoint_dir)
+    # Preserve prior run output instead of deleting it.
+    archived = _archive_existing_run(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{config.title} — {num_turns} turns")
     print(f"Characters: {config.character_summary}")
     print(f"Checkpoints: {checkpoint_dir}\n")
+    if archived is not None:
+        print(f"Archived previous run to: {archived}\n")
 
     start = time.monotonic()
-    result = await run_session(
-        config.characters, config.roles,
-        num_turns=num_turns,
-        game_state_summary=config.game_state_summary,
-        geometry_summary=config.geometry_summary,
-        scene_geometry=config.scene_geometry,
-        items=config.items or None,
-        checkpoint_dir=checkpoint_dir,
-        game_time=config.game_time,
-    )
+    try:
+        result = await run_session(
+            config.characters, config.roles,
+            num_turns=num_turns,
+            game_state_summary=config.game_state_summary,
+            geometry_summary=config.geometry_summary,
+            scene_geometry=config.scene_geometry,
+            items=config.items or None,
+            checkpoint_dir=checkpoint_dir,
+            game_time=config.game_time,
+        )
+    except Exception as exc:
+        elapsed = time.monotonic() - start
+        latest = _latest_checkpoint(checkpoint_dir)
+        print(f"\n{'=' * 70}")
+        print(f"  SESSION FAILED — after {elapsed:.1f}s")
+        print(f"  Error: {type(exc).__name__}: {exc}")
+        if latest is not None:
+            print(f"  Last checkpoint: {latest}")
+        else:
+            print("  No checkpoint was written.")
+        print(f"{'=' * 70}")
+        raise
     elapsed = time.monotonic() - start
 
     for turn_result in result.turns:
@@ -423,22 +464,28 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
 
     scene_name = config.scene_name
     print(f"\nGenerating transcript...")
-    elaborate_session_from_dir(
-        checkpoint_dir,
-        output_path=checkpoint_dir / f"{scene_name}_transcript.txt",
-        title=config.transcript_title,
-    )
-    print(f"  Written to {checkpoint_dir / f'{scene_name}_transcript.txt'}")
+    try:
+        elaborate_session_from_dir(
+            checkpoint_dir,
+            output_path=checkpoint_dir / f"{scene_name}_transcript.txt",
+            title=config.transcript_title,
+        )
+        print(f"  Written to {checkpoint_dir / f'{scene_name}_transcript.txt'}")
+    except Exception as exc:  # noqa: BLE001 - best effort artifact generation
+        print(f"  [transcript] failed: {exc}")
 
     print(f"Generating narrative...")
-    await generate_narrative_from_dir(
-        checkpoint_dir,
-        provider=config.narrative_provider, model=config.narrative_model,
-        title=config.narrative_title,
-        character_pronouns=config.character_pronouns or None,
-        output_path=checkpoint_dir / f"{scene_name}_story.txt",
-    )
-    print(f"  Written to {checkpoint_dir / f'{scene_name}_story.txt'}")
+    try:
+        await generate_narrative_from_dir(
+            checkpoint_dir,
+            provider=config.narrative_provider, model=config.narrative_model,
+            title=config.narrative_title,
+            character_pronouns=config.character_pronouns or None,
+            output_path=checkpoint_dir / f"{scene_name}_story.txt",
+        )
+        print(f"  Written to {checkpoint_dir / f'{scene_name}_story.txt'}")
+    except Exception as exc:  # noqa: BLE001 - best effort artifact generation
+        print(f"  [narrative] failed: {exc}")
 
     if config.geometry_path is not None and config.geometry_path.exists():
         _write_runtime_map(

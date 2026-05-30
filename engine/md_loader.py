@@ -119,6 +119,7 @@ def parse_identity_stats(text: str) -> dict:
         "strength": 10, "dexterity": 10, "constitution": 10,
         "intelligence": 10, "wisdom": 10, "charisma": 10,
         "name": "", "race": "", "class_": "", "level": 1,
+        "gender": "",
         "weapons": "", "armor": "",
         "provider": "", "model": "", "pronouns": "",
     }
@@ -150,10 +151,11 @@ def parse_identity_stats(text: str) -> dict:
     if m:
         stats["name"] = m.group(1).strip()
 
-    # Race, Class/Level
+    # Race, Class/Level, Gender
     for key, pat in [
         ("race",   r"-\s*\*\*Race:\*\*\s*(.+)"),
         ("class_", r"-\s*\*\*Class:\*\*\s*(.+)"),
+        ("gender", r"-\s*\*\*Gender:\*\*\s*(.+)"),
     ]:
         m2 = re.search(pat, text, re.IGNORECASE)
         if m2:
@@ -213,6 +215,17 @@ def parse_identity_stats(text: str) -> dict:
         m = re.search(r"-\s*\*\*Pronouns:\*\*\s*(\S+)", text, re.IGNORECASE)
         if m:
             stats["pronouns"] = m.group(1).strip().lower()
+
+    # Fallback: infer pronouns from explicit Gender when Pronouns is absent.
+    # We only infer from a dedicated Gender field to avoid overreaching.
+    if not stats["pronouns"] and stats["gender"]:
+        g = stats["gender"].strip().lower()
+        if g in {"female", "woman", "girl"}:
+            stats["pronouns"] = "she/her"
+        elif g in {"male", "man", "boy"}:
+            stats["pronouns"] = "he/him"
+        elif g in {"nonbinary", "non-binary", "enby"}:
+            stats["pronouns"] = "they/them"
 
     return stats
 

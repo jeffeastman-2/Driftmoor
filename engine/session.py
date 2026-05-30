@@ -1599,6 +1599,87 @@ def _record_recent_interaction(
         del cs.recent_interactions[:-max_items]
 
 
+def _shared_exam_key(zone: str | None, target: str | None) -> tuple[str, str] | None:
+    """Build a normalized key for party-shared examination state."""
+    z = (zone or "").upper().strip()
+    t = _normalize_target_name(target)
+    if not z or not t:
+        return None
+    return z, t
+
+
+def _serialize_party_examination_state(
+    state: dict[tuple[str, str], dict],
+) -> dict[str, dict]:
+    """Serialize tuple-keyed party examination state for JSON checkpoints."""
+    out: dict[str, dict] = {}
+    for (zone, target), meta in state.items():
+        out[f"{zone}::{target}"] = {
+            "label": str(meta.get("label", "")),
+            "summary": str(meta.get("summary", "")),
+            "by": str(meta.get("by", "")),
+            "last_turn": int(meta.get("last_turn", 0) or 0),
+            "needs_followup": bool(meta.get("needs_followup", False)),
+        }
+    return out
+
+
+def _deserialize_party_examination_state(raw: dict | None) -> dict[tuple[str, str], dict]:
+    """Deserialize checkpointed party examination state."""
+    state: dict[tuple[str, str], dict] = {}
+    if not isinstance(raw, dict):
+        return state
+    for key, meta in raw.items():
+        if not isinstance(key, str) or "::" not in key:
+            continue
+        zone, target = key.split("::", 1)
+        norm = _shared_exam_key(zone, target)
+        if norm is None:
+            continue
+        meta_dict = meta if isinstance(meta, dict) else {}
+        state[norm] = {
+            "label": str(meta_dict.get("label", "")),
+            "summary": str(meta_dict.get("summary", "")),
+            "by": str(meta_dict.get("by", "")),
+            "last_turn": int(meta_dict.get("last_turn", 0) or 0),
+            "needs_followup": bool(meta_dict.get("needs_followup", False)),
+        }
+    return state
+
+
+def _classify_examination_result(
+    *,
+    verb: str,
+    response: str,
+) -> tuple[bool, bool, bool]:
+    """Classify whether a shared examination likely needs follow-up.
+
+    Returns (mark_examined, needs_followup, complete).
+    """
+    text = (response or "").strip().lower()
+    if not text:
+        return False, False, False
+
+    followup_terms = (
+        "glyph", "mechanism", "sequence", "locked", "rune", "sigil",
+        "hairline crack", "door", "switch", "lever", "puzzle",
+    )
+    completion_terms = (
+        "no scraps", "no signs", "no clue", "no traces", "nothing",
+        "none", "undisturbed", "empty", "no obvious", "no fragments",
+    )
+
+    verb_norm = (verb or "").strip().lower()
+    needs_followup = any(t in text for t in followup_terms) or verb_norm.startswith("press")
+    complete = any(t in text for t in completion_terms)
+
+    if needs_followup:
+        return True, True, False
+    if complete:
+        return True, False, True
+    return True, False, False
+
+
 def _checkpoint_filename(turn: int, game_time: Optional[GameTime] = None) -> str:
     """Build checkpoint filename from game time or turn number."""
     if game_time is not None:
@@ -1615,6 +1696,7 @@ def _save_turn(
     in_combat: bool = False,
     active_characters: Optional[set[str]] = None,
     current_positions: Optional[dict] = None,
+    party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -1671,6 +1753,9 @@ def _save_turn(
             for char_id, cs in characters.items()
             if char_id in active
         },
+        "party_examination_state": _serialize_party_examination_state(
+            party_examination_state or {}
+        ),
     }
     path.write_text(json.dumps(data, indent=2, default=str))
     return path
@@ -1683,7 +1768,7 @@ def _save_turn(
 def load_resume_state(
     checkpoint_dir: Path,
     characters: dict[str, CharacterSession],
-) -> tuple[int, int | None, str]:
+) -> tuple[int, int | None, str, set[str] | None, dict[str, tuple[float, float, str]], dict[tuple[str, str], dict]]:
     """Read a checkpoint directory and prepare state for resuming a session.
 
     Patches ``characters`` conditions in-place from the last checkpoint so
@@ -1707,7 +1792,7 @@ def load_resume_state(
         key=lambda p: p.name,
     )
     if not files:
-        return 0, None, "", None, {}
+        return 0, None, "", None, {}, {}
 
     scene_history = ""
     last_turn = 0
@@ -1763,7 +1848,18 @@ def load_resume_state(
     for char_id, pos_dict in last_data.get("current_positions", {}).items():
         checkpoint_positions[char_id] = (pos_dict["x"], pos_dict["y"], pos_dict["zone"])
 
-    return last_turn, last_game_minutes, scene_history, last_active_characters, checkpoint_positions
+    party_examination_state = _deserialize_party_examination_state(
+        last_data.get("party_examination_state")
+    )
+
+    return (
+        last_turn,
+        last_game_minutes,
+        scene_history,
+        last_active_characters,
+        checkpoint_positions,
+        party_examination_state,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1787,6 +1883,7 @@ async def iter_session(
     character_pronouns: dict[str, str] | None = None,
     initial_active_characters: set[str] | None = None,
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
+    initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -1876,6 +1973,13 @@ async def iter_session(
     # search signatures as (kind, target_norm, position_bucket).
     search_history: dict[str, deque[tuple[str, str, tuple[int, int, str]]]] = {}
 
+    # Party-shared memory of what has already been examined in each zone.
+    # Key: (ZONE, normalized target label)
+    # Value: {label, summary, by, last_turn, needs_followup}
+    party_examination_state: dict[tuple[str, str], dict] = dict(
+        initial_party_examination_state or {}
+    )
+
     # Phase 3a: per-session puzzle bookkeeping (glyph press sequence,
     # secret-door state). Owned here, mutated by state_resolver.process_press.
     from engine.state_resolver import initial_puzzle_state
@@ -1937,6 +2041,7 @@ async def iter_session(
                 party_focus_until_turn = 0
 
             cs = characters[character_id]
+            memory_count_before = len(cs.episodic_memory)
             # Snapshot the active set so we can detect deaths that happen
             # during damage application this turn.
             pre_active = set(active_characters)
@@ -1976,6 +2081,51 @@ async def iter_session(
             actor_zone_before = (
                 current_positions.get(character_id, (None, None, ""))[2] or ""
             ).upper()
+
+            # Shared-state guard: if the party already examined this target in
+            # this zone and no follow-up is needed, redirect toward novel info.
+            if (
+                not in_combat
+                and intent.interaction_target
+                and actor_zone_before
+            ):
+                shared_key = _shared_exam_key(actor_zone_before, intent.interaction_target)
+                shared_exam = party_examination_state.get(shared_key) if shared_key else None
+                if shared_exam and not bool(shared_exam.get("needs_followup", False)):
+                    alt = _choose_novel_item_for_search(
+                        character_id=character_id,
+                        current_positions=current_positions,
+                        items=items,
+                        current_target_norm=_normalize_target_name(intent.interaction_target),
+                    )
+                    if alt is not None:
+                        label, ix, iy, izone = alt
+                        intent.interaction_target = label
+                        intent.movement_target = (ix, iy, 0.0)
+                        intent.intent = f"Examine {label} for new information and then advance."
+                        loop_guard_notes.append(
+                            f"[SHARED-EXAM] {character_id}: '{shared_exam.get('label') or intent.interaction_target}' "
+                            f"already examined in {actor_zone_before}; redirected to '{label}' in {izone}."
+                        )
+                    else:
+                        waypoint = _choose_exploration_waypoint(
+                            character_id=character_id,
+                            current_positions=current_positions,
+                            scene_geometry=scene_geometry,
+                            visited=visited_zones.get(character_id, set()),
+                        )
+                        if waypoint is not None:
+                            w_zone, wx, wy = waypoint
+                            intent.interaction_target = None
+                            intent.movement_target = (wx, wy, 0.0)
+                            intent.intent = _exploration_redirect_intent(
+                                zone_name=w_zone,
+                                known_zones=visited_zones.get(character_id, set()),
+                            )
+                            loop_guard_notes.append(
+                                f"[SHARED-EXAM] {character_id}: prior target in {actor_zone_before} "
+                                f"already settled; redirected toward {w_zone}."
+                            )
 
             # Party-focus pull: if another character has committed to a forward
             # zone recently, bias this actor to follow unless a local unresolved
@@ -2637,6 +2787,24 @@ async def iter_session(
                             f"Turn {turn_num}: you {verb_past} {label} in {actor_zone.upper() or 'this zone'} and learned: {first_sentence}",
                         )
 
+                        zone_for_state = (actor_zone or item_obj.zone or "").upper()
+                        shared_key = _shared_exam_key(zone_for_state, label)
+                        if shared_key is not None:
+                            mark_examined, needs_followup, complete = _classify_examination_result(
+                                verb=interaction_obj.verb or "",
+                                response=response,
+                            )
+                            if mark_examined:
+                                prev = party_examination_state.get(shared_key, {})
+                                was_followup = bool(prev.get("needs_followup", False))
+                                party_examination_state[shared_key] = {
+                                    "label": label,
+                                    "summary": first_sentence,
+                                    "by": character_id,
+                                    "last_turn": turn_num,
+                                    "needs_followup": needs_followup or (was_followup and not complete),
+                                }
+
                     # Phase 3a: broadcast door state changes to all
                     # characters via recent_events. The spider in the
                     # Secret Chamber feels the vibration through its web
@@ -2703,6 +2871,26 @@ async def iter_session(
 
             if adjudication.approved:
                 _record_recent_interaction(cs, intent.interaction_target)
+
+            # Guarantee at least one episodic memory trace per acting turn.
+            # Richer notes (zone transition, item discovery, etc.) win; this
+            # fallback records current zone context when no other note landed.
+            if len(cs.episodic_memory) == memory_count_before:
+                zone_now = (
+                    current_positions.get(character_id, (None, None, ""))[2]
+                    or cs.last_zone_seen
+                    or ""
+                ).upper()
+                if zone_now:
+                    _append_memory_note(
+                        cs,
+                        f"Turn {turn_num}: you are in {zone_now}.",
+                    )
+                else:
+                    _append_memory_note(
+                        cs,
+                        f"Turn {turn_num}: you held position.",
+                    )
 
             # Record result in DM ledger (later chars in this turn see it)
             ledger.record(cr, game_time)
@@ -2787,7 +2975,17 @@ async def iter_session(
 
         # Persist checkpoint
         if checkpoint_dir:
-            _save_turn(checkpoint_dir, turn_num, turn_result, characters, game_time, in_combat=in_combat, active_characters=active_characters, current_positions=current_positions)
+            _save_turn(
+                checkpoint_dir,
+                turn_num,
+                turn_result,
+                characters,
+                game_time,
+                in_combat=in_combat,
+                active_characters=active_characters,
+                current_positions=current_positions,
+                party_examination_state=party_examination_state,
+            )
 
         # Advance game clock
         if game_time:

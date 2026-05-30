@@ -4,6 +4,8 @@
 
 - **Name:** Gilthaness of the Long Wood, sometimes Lady Gilth (by those who do not know her well), sometimes simply Gil (by the three living people allowed to use it).
 - **Race:** Wood Elf
+- **Gender:** Female
+- **Pronouns:** she/her
 - **Class:** Rogue (Arcane Trickster)
 - **Level:** 13
 - **Age:** 184
