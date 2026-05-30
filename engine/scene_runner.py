@@ -433,6 +433,7 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
             items=config.items or None,
             checkpoint_dir=checkpoint_dir,
             game_time=config.game_time,
+            character_pronouns=config.character_pronouns or None,
         )
     except Exception as exc:
         elapsed = time.monotonic() - start

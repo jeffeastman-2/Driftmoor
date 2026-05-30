@@ -36,6 +36,11 @@ continuity over several turns.
 - **identity_file:** scenario/people/players/gilthaness/Gilthaness_IDENTITY.md
 - **scene_handle:** the elven magic-user
 - **pronouns:** she/her
+- **player:** telegram
+- **channel:** telegram
+- **host:** ultra
+- **inbox:** ~/messages/from-gilthaness
+- **outbox:** ~/messages/to-gilthaness
 - **hp:** 87
 - **ac:** 17
 - **provider:** ollama

@@ -460,6 +460,50 @@ class DMRight:
             fixed = re.sub(rf"\b{src.capitalize()}\b", dst.capitalize(), fixed)
         return fixed
 
+    @staticmethod
+    def _enforce_character_style(
+        prose: str,
+        character_id: str,
+    ) -> str:
+        """Apply lightweight character-specific style corrections.
+
+        This is intentionally narrow and only fixes recurrent, known drift that
+        is jarring in playtest output.
+        """
+        if not prose:
+            return prose
+
+        if character_id.lower() == "gilthaness":
+            fixed = prose
+            fixed = re.sub(
+                r"letting\s+each\s+heavy\s+footfall\s+strike\s+the\s+floor\s+with\s+a\s+heavy,\s*rhythmic\s+thud",
+                "moving with quiet, measured steps",
+                fixed,
+                flags=re.IGNORECASE,
+            )
+            fixed = re.sub(
+                r"\bheavy\s+footfalls?\b",
+                "measured steps",
+                fixed,
+                flags=re.IGNORECASE,
+            )
+            fixed = re.sub(
+                r"\bfootfalls?\s+strikes?\s+the\s+floor\b",
+                "steps softly across the floor",
+                fixed,
+                flags=re.IGNORECASE,
+            )
+            fixed = re.sub(
+                r"\bheavy,\s*rhythmic\s+thud(?:s)?\b",
+                "soft, measured motion",
+                fixed,
+                flags=re.IGNORECASE,
+            )
+            fixed = re.sub(r"\bthud(?:s|ding)?\b", "soft tap", fixed, flags=re.IGNORECASE)
+            return fixed
+
+        return prose
+
     def build_system_prompt(
         self,
         character_pronouns: dict[str, str] | None = None,
@@ -584,6 +628,7 @@ class DMRight:
             character_id,
             character_pronouns,
         )
+        prose = self._enforce_character_style(prose, character_id)
         return Narration(
             character_id=character_id,
             turn=turn,

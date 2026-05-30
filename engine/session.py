@@ -10,16 +10,22 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
+import base64
 import json
+import platform
 import re
 import random
+import shlex
+import subprocess
+import time
 from collections import deque
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
 from engine.initiative import roll_initiative
-from engine.player_router import RoleContext
+from engine.player_router import RoleContext, ActionIntent, CharacterOutput
 from engine.scene_manager import TurnCycle, TurnResult, RoleSet
 from models.character import Character
 from models.condition import CharacterCondition, render_condition
@@ -66,6 +72,14 @@ class CharacterSession:
     episodic_memory: list[str] = field(default_factory=list)
     recent_interactions: list[str] = field(default_factory=list)
     last_zone_seen: str = ""
+    # Input routing metadata for player-controlled characters.
+    # Current engine behavior remains LLM-driven; transport fields are used by
+    # external bridges (e.g. Telegram) and future turn-router integration.
+    player_transport: str = "llm"  # llm | telegram | whatsapp | file
+    player_host: str = ""  # e.g. "ultra" when inbox/outbox are remote
+    player_channel: str = ""
+    player_inbox: str = ""
+    player_outbox: str = ""
 
 
 @dataclass
@@ -1863,6 +1877,546 @@ def load_resume_state(
 
 
 # ---------------------------------------------------------------------------
+# Human transport helpers (Telegram/file inbox-outbox)
+# ---------------------------------------------------------------------------
+
+_PURGE_DIR_SCRIPT = (
+    "from pathlib import Path\n"
+    "import sys\n"
+    "p = Path(sys.argv[1]).expanduser()\n"
+    "if p.exists() and p.is_dir():\n"
+    "    for f in list(p.iterdir()):\n"
+    "        if f.is_file():\n"
+    "            f.unlink(missing_ok=True)\n"
+)
+
+_WRITE_TEXT_SCRIPT = (
+    "from pathlib import Path\n"
+    "from datetime import datetime\n"
+    "import sys\n"
+    "p = Path(sys.argv[1]).expanduser()\n"
+    "data = sys.stdin.read()\n"
+    "if p.exists() and p.is_dir():\n"
+    "    p.mkdir(parents=True, exist_ok=True)\n"
+    "    stamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')\n"
+    "    (p / f'msg_{stamp}.txt').write_text(data, encoding='utf-8')\n"
+    "else:\n"
+    "    p.parent.mkdir(parents=True, exist_ok=True)\n"
+    "    p.write_text(data, encoding='utf-8')\n"
+)
+
+_POP_TEXT_SCRIPT = (
+    "from pathlib import Path\n"
+    "import sys\n"
+    "cutoff = int(sys.argv[2]) if len(sys.argv) > 2 else 0\n"
+    "p = Path(sys.argv[1]).expanduser()\n"
+    "if p.exists() and p.is_dir():\n"
+    "    files = sorted([f for f in p.iterdir() if f.is_file()], key=lambda f: (f.stat().st_mtime_ns, f.name))\n"
+    "    fresh = []\n"
+    "    for f in files:\n"
+    "        try:\n"
+    "            mtime = f.stat().st_mtime_ns\n"
+    "        except FileNotFoundError:\n"
+    "            continue\n"
+    "        if cutoff and mtime < cutoff:\n"
+    "            f.unlink(missing_ok=True)\n"
+    "        else:\n"
+    "            fresh.append((mtime, f))\n"
+    "    target = None\n"
+    "    if fresh:\n"
+    "        target = fresh[-1][1]\n"
+    "    if target is not None:\n"
+    "        txt = target.read_text(encoding='utf-8')\n"
+    "        target.unlink(missing_ok=True)\n"
+    "        for _, other in fresh[:-1]:\n"
+    "            other.unlink(missing_ok=True)\n"
+    "        print(txt, end='')\n"
+    "elif p.exists() and p.is_file():\n"
+    "    if p.stat().st_mtime_ns >= cutoff:\n"
+    "        txt = p.read_text(encoding='utf-8')\n"
+    "        p.write_text('', encoding='utf-8')\n"
+    "        print(txt, end='')\n"
+    "    elif cutoff:\n"
+    "        p.write_text('', encoding='utf-8')\n"
+)
+
+
+def _run_host_python(
+    *,
+    host: str,
+    script: str,
+    args: list[str],
+    stdin_text: str = "",
+) -> str:
+    """Run a tiny Python snippet locally or over SSH and return stdout."""
+    host_norm = (host or "").strip().lower()
+    node_full = (platform.node() or "").strip().lower()
+    node_short = node_full.split(".")[0] if node_full else ""
+    local_aliases = {"", "localhost", "127.0.0.1", "::1", "local", "self", node_full, node_short}
+
+    is_local = host_norm in local_aliases
+    cmd = ["python3", "-c", script, *args] if is_local else ["ssh", host, "python3", "-c", script, *args]
+    proc = subprocess.run(
+        cmd,
+        input=stdin_text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        scope = f"host '{host}'" if host else "local host"
+        raise RuntimeError(f"Transport command failed on {scope}: {stderr}")
+    return proc.stdout
+
+
+def _is_local_host(host: str) -> bool:
+    host_norm = (host or "").strip().lower()
+    node_full = (platform.node() or "").strip().lower()
+    node_short = node_full.split(".")[0] if node_full else ""
+    local_aliases = {"", "localhost", "127.0.0.1", "::1", "local", "self", node_full, node_short}
+    return host_norm in local_aliases
+
+
+def _run_remote_shell(host: str, shell_script: str, stdin_text: str = "") -> str:
+    """Execute a bash snippet on a remote host over SSH."""
+    proc = subprocess.run(
+        ["ssh", host, "bash", "-lc", shell_script],
+        input=stdin_text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        raise RuntimeError(f"Transport command failed on host '{host}': {stderr}")
+    return proc.stdout
+
+
+def _run_remote_python_stdin(host: str, script: str, args: list[str]) -> str:
+    """Execute Python script on remote host with script passed via stdin."""
+    proc = subprocess.run(
+        ["ssh", host, "python3", "-", *args],
+        input=script,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        raise RuntimeError(f"Transport command failed on host '{host}': {stderr}")
+    return proc.stdout
+
+
+async def _host_purge_dir(host: str, path: str) -> None:
+    """Remove all files in a remote/local directory (for pre-session outbox cleanup)."""
+    expanded_path = str(Path(path).expanduser())
+    if not _is_local_host(host):
+        script = (
+            "from pathlib import Path\n"
+            "import sys\n"
+            "p = Path(sys.argv[1]).expanduser()\n"
+            "if p.exists() and p.is_dir():\n"
+            "    for f in list(p.iterdir()):\n"
+            "        if f.is_file():\n"
+            "            f.unlink(missing_ok=True)\n"
+        )
+        await asyncio.to_thread(
+            _run_remote_python_stdin,
+            host,
+            script,
+            [expanded_path],
+        )
+        return
+    await asyncio.to_thread(
+        _run_host_python,
+        host=host,
+        script=_PURGE_DIR_SCRIPT,
+        args=[expanded_path],
+        stdin_text="",
+    )
+
+
+async def _host_write_text(host: str, path: str, text: str) -> None:
+    expanded_path = str(Path(path).expanduser())
+    if not _is_local_host(host):
+        payload = base64.b64encode(text.encode("utf-8")).decode("ascii")
+        script = (
+            "from pathlib import Path\n"
+            "from datetime import datetime\n"
+            "import base64\n"
+            "import sys\n"
+            "p = Path(sys.argv[1]).expanduser()\n"
+            "data = base64.b64decode(sys.argv[2]).decode('utf-8')\n"
+            "if p.exists() and p.is_dir():\n"
+            "    p.mkdir(parents=True, exist_ok=True)\n"
+            "    stamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')\n"
+            "    (p / f'msg_{stamp}.txt').write_text(data, encoding='utf-8')\n"
+            "else:\n"
+            "    p.parent.mkdir(parents=True, exist_ok=True)\n"
+            "    p.write_text(data, encoding='utf-8')\n"
+        )
+        await asyncio.to_thread(
+            _run_remote_python_stdin,
+            host,
+            script,
+            [expanded_path, payload],
+        )
+        return
+    await asyncio.to_thread(
+        _run_host_python,
+        host=host,
+        script=_WRITE_TEXT_SCRIPT,
+        args=[expanded_path],
+        stdin_text=text,
+    )
+
+
+async def _host_read_text(host: str, path: str, *, min_mtime_ns: int = 0) -> str:
+    expanded_path = str(Path(path).expanduser())
+    if not _is_local_host(host):
+        script = (
+            "from pathlib import Path\n"
+            "import sys\n"
+            "cutoff = int(sys.argv[2]) if len(sys.argv) > 2 else 0\n"
+            "p = Path(sys.argv[1]).expanduser()\n"
+            "if p.exists() and p.is_dir():\n"
+            "    files = sorted([f for f in p.iterdir() if f.is_file()], key=lambda f: (f.stat().st_mtime_ns, f.name))\n"
+            "    fresh = []\n"
+            "    for f in files:\n"
+            "        try:\n"
+            "            mtime = f.stat().st_mtime_ns\n"
+            "        except FileNotFoundError:\n"
+            "            continue\n"
+            "        if cutoff and mtime < cutoff:\n"
+            "            f.unlink(missing_ok=True)\n"
+            "        else:\n"
+            "            fresh.append((mtime, f))\n"
+            "    target = None\n"
+            "    if fresh:\n"
+            "        target = fresh[-1][1]\n"
+            "    if target is not None:\n"
+            "        txt = target.read_text(encoding='utf-8')\n"
+            "        target.unlink(missing_ok=True)\n"
+            "        for _, other in fresh[:-1]:\n"
+            "            other.unlink(missing_ok=True)\n"
+            "        print(txt, end='')\n"
+            "elif p.exists() and p.is_file():\n"
+            "    if p.stat().st_mtime_ns >= cutoff:\n"
+            "        txt = p.read_text(encoding='utf-8')\n"
+            "        p.write_text('', encoding='utf-8')\n"
+            "        print(txt, end='')\n"
+            "    elif cutoff:\n"
+            "        p.write_text('', encoding='utf-8')\n"
+        )
+        return await asyncio.to_thread(
+            _run_remote_python_stdin,
+            host,
+            script,
+            [expanded_path, str(min_mtime_ns)],
+        )
+    return await asyncio.to_thread(
+        _run_host_python,
+        host=host,
+        script=_POP_TEXT_SCRIPT,
+        args=[expanded_path, str(min_mtime_ns)],
+        stdin_text="",
+    )
+
+
+def _render_transport_prompt(
+    *,
+    context: RoleContext,
+    cs: CharacterSession,
+    raw_history: str = "",
+) -> str:
+    """Format the DM situation packet sent to human transport channels."""
+    from engine.runtime_paths import current_session_id
+
+    perception = context.perception.strip() if context.perception else "No other creatures are visible."
+    scene = _compact_scene_for_transport(
+        context.scene_context,
+        turn=context.turn,
+        raw_history=raw_history,
+    )
+    return (
+        f"TURN PROMPT: {context.turn}\n"
+        f"SESSION: {current_session_id()}\n"
+        f"CHARACTER: {context.character_id}\n"
+        f"HANDLE: {cs.scene_handle or context.character_id}\n"
+        f"\n"
+        f"SCENE\n"
+        f"{scene}\n"
+        f"\n"
+        f"PERCEPTION\n"
+        f"{perception}\n"
+        f"\n"
+        f"Reply with your intent for this turn in plain text.\n"
+    )
+
+
+def _compact_scene_for_transport(
+    scene_context: str,
+    *,
+    max_lines: int = 8,
+    max_chars: int = 900,
+    turn: int = 1,
+    raw_history: str = "",
+) -> str:
+    """Return a compact scene block for human transport prompts.
+
+    On turn 1 the full (filtered) scene_context is shown so the player gets
+    the scene intro.  On turn 2+ only the running dialogue/narration log is
+    shown (raw_history), which avoids replaying the entire LLM system prompt
+    and keeps the packet short.
+    """
+    # On turns after the first, use raw_history (the running log) directly.
+    # This avoids replaying the full LLM system prompt (initial_scene text)
+    # which can be 50-100 lines the human player does not need to re-read.
+    if turn > 1 and raw_history.strip():
+        history_lines = [ln.rstrip() for ln in raw_history.splitlines() if ln.strip()]
+        deduped_history: list[str] = []
+        last_norm = ""
+        for ln in history_lines:
+            norm = " ".join(ln.strip().lower().split())
+            if norm == last_norm:
+                continue
+            deduped_history.append(ln)
+            last_norm = norm
+
+        tail = deduped_history[-max_lines:]
+        while tail and len("\n".join(tail)) > max_chars:
+            tail = tail[1:]
+        if tail:
+            return "Recent context:\n" + "\n".join(tail)
+
+    raw = (scene_context or "").strip()
+    if not raw:
+        return "(no scene context available)"
+
+    lines = [ln.rstrip() for ln in raw.splitlines() if ln.strip()]
+    if not lines:
+        return "(no scene context available)"
+
+    # Human transport prompts should not replay engine memory/meta guidance.
+    drop_headers = {
+        "## what you remember",
+        "## anti-repetition guidance",
+        "## recent events",
+        "## points of interest",
+        "## puzzle pressure",
+    }
+    cleaned: list[str] = []
+    skip_block = False
+    for ln in lines:
+        lowered = ln.strip().lower()
+        if lowered.startswith("## "):
+            skip_block = any(lowered.startswith(h) for h in drop_headers)
+            if skip_block:
+                continue
+        if skip_block:
+            continue
+        cleaned.append(ln)
+
+    if not cleaned:
+        cleaned = lines
+
+    # Past turn 1, prefer the dialogue/narration tail over static intro lines.
+    # Separate "intro" lines (second-person scene setup) from "live" lines
+    # (dialogue, narration) so the tail always leads with what changed.
+    if turn > 1:
+        intro_prefixes = (
+            "you arrive",
+            "you are here",
+            "you hear",
+            "you invite",
+        )
+        intro_lines = [
+            ln for ln in cleaned
+            if ln.strip().lower().startswith(intro_prefixes)
+        ]
+        live_lines = [
+            ln for ln in cleaned
+            if not ln.strip().lower().startswith(intro_prefixes)
+        ]
+        # Use live content; if there is none yet (turn 2 with no history),
+        # fall back to intro lines so the prompt is not empty.
+        cleaned = live_lines if live_lines else intro_lines
+
+    tail = cleaned[-max_lines:]
+    while tail and len("\n".join(tail)) > max_chars:
+        tail = tail[1:]
+    return "Recent context:\n" + "\n".join(tail)
+
+
+def _intent_from_transport_text(
+    *,
+    character_id: str,
+    turn: int,
+    text: str,
+) -> ActionIntent:
+    """Convert a human utterance into a minimal ActionIntent."""
+    cleaned = " ".join((text or "").strip().split())
+    if not cleaned:
+        cleaned = "Hold position and observe surroundings."
+    return ActionIntent(
+        character_id=character_id,
+        turn=turn,
+        intent=cleaned,
+        movement_target=None,
+        interaction_target=None,
+    )
+
+
+async def _player_roles_via_transport(
+    *,
+    turn_cycle: TurnCycle,
+    context: RoleContext,
+    cs: CharacterSession,
+    raw_history: str = "",
+) -> tuple[ActionIntent, CharacterOutput]:
+    """Run player roles using transport-backed human input when configured."""
+    transport = (cs.player_transport or "llm").strip().lower()
+    if transport != "telegram":
+        return await turn_cycle.player_roles(context)
+
+    inbox = (cs.player_inbox or "").strip()
+    outbox = (cs.player_outbox or "").strip()
+    if not inbox or not outbox:
+        raise RuntimeError(
+            f"Telegram transport for {context.character_id} requires both inbox and outbox paths."
+        )
+
+    host = (cs.player_host or "").strip()
+    prompt_text = _render_transport_prompt(context=context, cs=cs, raw_history=raw_history)
+    await _host_write_text(host, outbox, prompt_text)
+    # Ignore stale inbox content from before this prompt was sent.
+    accept_after_ns = time.time_ns()
+    _dbg(f"[TRANSPORT] wrote turn {context.turn} prompt for {context.character_id} to {host or 'local'}:{outbox}")
+
+    while True:
+        inbound = (await _host_read_text(host, inbox, min_mtime_ns=accept_after_ns)).strip()
+        if inbound:
+            intent = _intent_from_transport_text(
+                character_id=context.character_id,
+                turn=context.turn,
+                text=inbound,
+            )
+            output = await turn_cycle.player_right_from_intent(context, intent)
+            return intent, output
+        await asyncio.sleep(1.0)
+
+
+def _render_turn_result_packet(
+    *,
+    player_id: str,
+    turn_result: TurnResult,
+    characters: dict[str, CharacterSession],
+) -> str:
+    """Render a concise post-turn update for human transport channels."""
+    from engine.runtime_paths import current_session_id
+
+    lines: list[str] = [
+        f"TURN RESULT: {turn_result.turn}",
+        f"SESSION: {current_session_id()}",
+        f"FOR: {player_id}",
+        "",
+    ]
+
+    for cr in turn_result.character_results:
+        cs = characters.get(cr.character_id)
+        handle = cs.scene_handle if cs and cs.scene_handle else cr.character_id
+
+        if cr.character_id == player_id:
+            lines.append("[you]")
+            lines.append(f"Intent: {cr.intent.intent.strip()}")
+            if cr.narration.prose:
+                lines.append(f"Outcome: {_truncate_for_transport(cr.narration.prose.strip(), 420)}")
+            lines.append("")
+            continue
+
+        lines.append(f"[{handle}]")
+        if cr.output.spoken and cr.output.spoken.strip().lower() not in {"", "(silent)", "(silence)"}:
+            lines.append(f"Spoken: {cr.output.spoken.strip()}")
+        elif cr.narration.prose:
+            lines.append(f"Outcome: {_truncate_for_transport(cr.narration.prose.strip(), 420)}")
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def _truncate_for_transport(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+
+async def _broadcast_turn_results_to_transports(
+    *,
+    turn_result: TurnResult,
+    characters: dict[str, CharacterSession],
+) -> None:
+    """Send post-turn updates to all configured Telegram players."""
+    for char_id, cs in characters.items():
+        if (cs.player_transport or "").strip().lower() != "telegram":
+            continue
+        if not (cs.player_outbox or "").strip():
+            continue
+
+        packet = _render_turn_result_packet(
+            player_id=char_id,
+            turn_result=turn_result,
+            characters=characters,
+        )
+        await _host_write_text(
+            (cs.player_host or "").strip(),
+            (cs.player_outbox or "").strip(),
+            packet,
+        )
+        _dbg(
+            f"[TRANSPORT] wrote turn-result {turn_result.turn} for "
+            f"{char_id} to {(cs.player_host or 'local').strip()}:{(cs.player_outbox or '').strip()}"
+        )
+
+
+def _render_session_complete_packet(
+    *,
+    completed_turns: int,
+) -> str:
+    """Render a compact closeout message for human transport channels."""
+    from engine.runtime_paths import current_session_id
+
+    return (
+        f"SESSION COMPLETE\n"
+        f"SESSION: {current_session_id()}\n"
+        f"TURNS: {completed_turns}\n"
+        f"Status: run finished. Dialogue channel is now closed for this session.\n"
+    )
+
+
+async def _broadcast_session_complete_to_transports(
+    *,
+    completed_turns: int,
+    characters: dict[str, CharacterSession],
+) -> None:
+    """Send a final closeout packet to all configured Telegram players."""
+    packet = _render_session_complete_packet(completed_turns=completed_turns)
+    for char_id, cs in characters.items():
+        if (cs.player_transport or "").strip().lower() != "telegram":
+            continue
+        if not (cs.player_outbox or "").strip():
+            continue
+        await _host_write_text(
+            (cs.player_host or "").strip(),
+            (cs.player_outbox or "").strip(),
+            packet,
+        )
+        _dbg(
+            f"[TRANSPORT] wrote session-complete for "
+            f"{char_id} to {(cs.player_host or 'local').strip()}:{(cs.player_outbox or '').strip()}"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Session runner
 # ---------------------------------------------------------------------------
 
@@ -1900,6 +2454,26 @@ async def iter_session(
     """
     turn_cycle = TurnCycle(character_roles=character_roles)
     scene_history = initial_history
+
+    # Purge inbox and outbox dirs for all Telegram players so stale files from
+    # aborted previous runs don't produce duplicate or out-of-order messages.
+    for _cs in characters.values():
+        if (_cs.player_transport or "").strip().lower() == "telegram":
+            _inbox = (_cs.player_inbox or "").strip()
+            _outbox = (_cs.player_outbox or "").strip()
+            _host = (_cs.player_host or "").strip()
+            if _inbox:
+                try:
+                    await _host_purge_dir(_host, _inbox)
+                    _dbg(f"[TRANSPORT] purged inbox {_host or 'local'}:{_inbox} at session start")
+                except Exception as _e:
+                    _dbg(f"[TRANSPORT] inbox purge failed for {_host or 'local'}:{_inbox}: {_e}")
+            if _outbox:
+                try:
+                    await _host_purge_dir(_host, _outbox)
+                    _dbg(f"[TRANSPORT] purged outbox {_host or 'local'}:{_outbox} at session start")
+                except Exception as _e:
+                    _dbg(f"[TRANSPORT] outbox purge failed for {_host or 'local'}:{_outbox}: {_e}")
 
     # Combat state
     in_combat = False
@@ -2075,7 +2649,12 @@ async def iter_session(
             # Steps 1-3: Player-Left → Player-Right → DM-Left
             # When in combat and the character has structured weapons, bypass
             # DM-Left and use CombatResolver for attack resolution.
-            intent, output = await turn_cycle.player_roles(context)
+            intent, output = await _player_roles_via_transport(
+                turn_cycle=turn_cycle,
+                context=context,
+                cs=cs,
+                raw_history=combined_history,
+            )
             loop_guard_notes: list[str] = []
 
             actor_zone_before = (
@@ -2948,6 +3527,21 @@ async def iter_session(
             if history_entry:
                 within_turn_history += history_entry
 
+        await _broadcast_turn_results_to_transports(
+            turn_result=turn_result,
+            characters=characters,
+        )
+
+        # Small pause so transport result packet is safely delivered before
+        # the next turn's prompt is written.  Only matters when there is at
+        # least one Telegram player; cost is negligible otherwise.
+        _has_transport = any(
+            (cs.player_transport or "").strip().lower() == "telegram"
+            for cs in characters.values()
+        )
+        if _has_transport and turn_num < num_turns:
+            await asyncio.sleep(2.0)
+
         # Apply condition deltas from DMLeft adjudication
         for cr in turn_result.character_results:
             if cr.adjudication.condition_deltas:
@@ -3060,6 +3654,11 @@ async def run_session(
         character_pronouns=character_pronouns,
     ):
         turns.append(turn_result)
+
+    await _broadcast_session_complete_to_transports(
+        completed_turns=len(turns),
+        characters=characters,
+    )
 
     return SessionResult(
         turns=turns,
