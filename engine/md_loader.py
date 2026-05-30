@@ -507,6 +507,32 @@ def _build_player_or_npc(
     )
 
 
+def _normalize_player_transport(player_value: str, channel_value: str) -> str:
+    """Map scene metadata to normalized player transport mode.
+
+    Legacy configs used ``player`` for a human's name (e.g. "Wayne").
+    Unknown values are treated as ``llm`` for backward compatibility.
+    """
+    raw = (player_value or "").strip().lower()
+    channel = (channel_value or "").strip().lower()
+
+    # Prefer explicit channel when present.
+    if channel in {"telegram", "whatsapp", "file", "llm"}:
+        return channel
+
+    if raw in {"telegram", "tg", "bot:telegram", "human:telegram"}:
+        return "telegram"
+    if raw in {"whatsapp", "wa", "bot:whatsapp", "human:whatsapp"}:
+        return "whatsapp"
+    if raw in {"file", "filesystem", "human:file"}:
+        return "file"
+    if raw in {"llm", "agent", "ai", "npc", ""}:
+        return "llm"
+
+    # Legacy: player name (not transport)
+    return "llm"
+
+
 def _build_creature(
     char_id: str,
     cfg: dict[str, str],
@@ -712,6 +738,17 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
 
         # Phase 3b: per-character activation trigger (default "always").
         session.activation = cfg.get("activation", "always").strip() or "always"
+
+        # Player transport metadata: this is routing intent only. Existing
+        # LLM role wiring is unchanged until a transport router is enabled.
+        session.player_transport = _normalize_player_transport(
+            cfg.get("player", ""),
+            cfg.get("channel", ""),
+        )
+        session.player_host = cfg.get("host", "").strip()
+        session.player_channel = cfg.get("channel", "").strip()
+        session.player_inbox = cfg.get("inbox", "").strip()
+        session.player_outbox = cfg.get("outbox", "").strip()
 
         characters[char_id] = session
 

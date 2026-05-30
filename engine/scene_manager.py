@@ -140,6 +140,20 @@ class TurnCycle:
         output = await roles.player_right.generate_action(intent, context)
         return intent, output
 
+    async def player_right_from_intent(
+        self,
+        context: RoleContext,
+        intent: ActionIntent,
+    ) -> CharacterOutput:
+        """Run Player-Right only, using an externally supplied intent.
+
+        This is used for human-input transports (e.g. Telegram) where intent
+        arrives outside Player-Left but must still be rendered into structured
+        character output before DM adjudication.
+        """
+        roles = self._roles_for(context.character_id)
+        return await roles.player_right.generate_action(intent, context)
+
     async def dm_adjudicate(
         self,
         output: CharacterOutput,
