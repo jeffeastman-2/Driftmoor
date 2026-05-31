@@ -15,7 +15,7 @@ Layout::
                 ...
                 <scene_name>_transcript.txt
                 <scene_name>_story.txt
-                <scene_name>_map.png
+                <scene_name>_map.html
 
 ``<session_id>`` is ``YYYY-MM-DDTHHMMSS__<host>__<model-tag>``, where
 ``<model-tag>`` is taken from ``$LLM_FORCE_OLLAMA_MODEL`` if set, else

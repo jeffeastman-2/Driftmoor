@@ -8,7 +8,7 @@ Every scene is given a fresh copy of SESSION_START so clock advances are
 independent.  Edit SESSION_START below to change the session's opening time.
 
 Usage:
-    python run_all.py          # runs all scenes at their default_turns
+    python run_all.py          # runs every scene in scenes/ at its default_turns
     python run_all.py 6        # override default_turns for every scene
 """
 
@@ -22,7 +22,12 @@ from pathlib import Path
 from models.space_time import GameTime
 from engine.scene_runner import print_turn_result, ROOT, _write_runtime_map
 from engine.md_loader import configure_from_md
-from engine.session import iter_session, load_resume_state
+from engine.session import (
+    _broadcast_session_complete_to_transports,
+    _has_telegram_transport,
+    iter_session,
+    load_resume_state,
+)
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
 from engine.runtime_paths import get_scene_dir, get_session_dir
@@ -41,17 +46,6 @@ SESSION_START = GameTime(
     absolute_turn=0,
 )
 
-SCENE_ORDER = [
-    "beacon_church",
-    "broken_lantern",
-    "fey_glade",
-    "gilded_trinket",
-    "ironhoof_forge",
-    "old_mill",
-    "salt_and_iron",
-]
-
-
 # ---------------------------------------------------------------------------
 # Per-scene runner
 # ---------------------------------------------------------------------------
@@ -64,6 +58,7 @@ class SceneRunner:
         self.num_turns = num_turns
         self.checkpoint_dir = get_scene_dir(config.scene_name)
         self.done = False
+        self.completed_turns = 0
         self._gen = None
         self._start_turn = 1
         self._initial_history = ""
@@ -150,6 +145,7 @@ class SceneRunner:
         Scenes without game_time run exactly one turn per call.
         """
         self._start()
+        assert self._gen is not None
         gt = self.config.game_time
         if gt is not None:
             total = start_minutes
@@ -190,7 +186,7 @@ async def run_all(
     available = {p.stem for p in SCENES_DIR.iterdir()
                  if p.is_file() and p.suffix == ".md"}
 
-    scene_order = [scene_filter] if scene_filter else SCENE_ORDER
+    scene_order = [scene_filter] if scene_filter else sorted(available)
     single_scene = scene_filter is not None
 
     runners: list[SceneRunner] = []
@@ -256,6 +252,7 @@ async def run_all(
 
         all_results = await asyncio.gather(*[_run_one(r) for r in active])
         for runner, turn_results in all_results:
+            runner.completed_turns += len(turn_results)
             print(f"\n  ── {runner.config.title} ──")
             for turn_result in turn_results:
                 print_turn_result(turn_result)
@@ -295,6 +292,13 @@ async def run_all(
                 geometry_path=config.geometry_path,
                 scene_name=scene_name,
                 checkpoint_dir=runner.checkpoint_dir,
+            )
+
+    for runner in runners:
+        if _has_telegram_transport(runner.config.characters):
+            await _broadcast_session_complete_to_transports(
+                completed_turns=runner.completed_turns,
+                characters=runner.config.characters,
             )
 
 

@@ -228,12 +228,12 @@ def render_map(
     title: str | None = None,
     char_colors: dict[str, str] | None = None,
 ) -> None:
-    """Render a map PNG.
+    """Render a static map image.
 
     Parameters
     ----------
     geometry_path: scenario GEOMETRY.md
-    output_path: where to write the PNG
+    output_path: where to write the image
     snapshot_dir: if given, plot each character's full path from its
         ``day*.json`` snapshots.  If None, only the GEOMETRY's
         ``Starting Positions`` are plotted.
@@ -441,7 +441,7 @@ def render_interactive_map_html(
     geometry_path: Path,
     output_path: Path,
     *,
-    snapshot_dir: Path,
+    snapshot_dir: Path | None = None,
     title: str | None = None,
     char_colors: dict[str, str] | None = None,
 ) -> None:
@@ -452,7 +452,15 @@ def render_interactive_map_html(
     """
     text = geometry_path.read_text(encoding="utf-8")
     g = parse_geometry(text)
-    tracks = load_tracks_from_snapshots(snapshot_dir)
+    tracks = load_tracks_from_snapshots(snapshot_dir) if snapshot_dir is not None and snapshot_dir.exists() else {}
+
+    if not tracks:
+        # Static map: show starting positions as turn 0 markers so the HTML map
+        # is still useful even when no snapshot directory is available.
+        tracks = {
+            cid: [(0, float(x), float(y), "START")]
+            for cid, (x, y) in g["starting_positions"].items()
+        }
 
     # Prepend turn 0 from GEOMETRY starting positions so motion begins at start.
     for cid, pts in list(tracks.items()):
@@ -679,7 +687,7 @@ def render_interactive_map_html(
 
 
 def update_place_map(place_path: str | Path) -> Path:
-    """Regenerate the static scenario map for a place.
+    """Regenerate the static scenario map for a place as HTML.
 
     Parameters
     ----------
@@ -692,7 +700,7 @@ def update_place_map(place_path: str | Path) -> Path:
 
     Returns
     -------
-    Path to the written PNG (``<place>/<scene>_map.png``).
+    Path to the written HTML file (``<place>/<scene>_map.html``).
 
     Raises
     ------
@@ -729,8 +737,8 @@ def update_place_map(place_path: str | Path) -> Path:
         raise FileNotFoundError(f"No GEOMETRY.md in {p}")
 
     scene_name = p.name
-    output_path = p / f"{scene_name}_map.png"
-    render_map(
+    output_path = p / f"{scene_name}_map.html"
+    render_interactive_map_html(
         geometry_path,
         output_path,
         snapshot_dir=None,

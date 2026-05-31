@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
-from engine.map_renderer import load_tracks_from_snapshots, render_interactive_map_html
+from engine.map_renderer import (
+    load_tracks_from_snapshots,
+    render_interactive_map_html,
+    update_place_map,
+)
 
 
 GEOMETRY = Path("scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md")
@@ -55,4 +60,17 @@ def test_render_interactive_map_html_contains_turn_hover(tmp_path):
     html_text = out_html.read_text(encoding="utf-8")
     assert "turn 3" in html_text
     assert "zone=ENTRY CHAMBER" in html_text
-    assert "Hover character dots" in html_text
+    assert "Hover over dots" in html_text
+
+
+def test_update_place_map_writes_html(tmp_path):
+    place_dir = tmp_path / "echoing_caverns"
+    place_dir.mkdir()
+    geometry_copy = place_dir / "GEOMETRY.md"
+    shutil.copyfile(GEOMETRY, geometry_copy)
+
+    out_html = update_place_map(place_dir)
+
+    assert out_html.name == "echoing_caverns_map.html"
+    assert out_html.exists()
+    assert not any(path.suffix == ".png" for path in place_dir.iterdir())
