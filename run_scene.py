@@ -2,12 +2,13 @@
 """Run any scene by name.
 
 Usage:
-    python run_scene.py <scene_name> [turns] [--ollama-host URL]
+    python run_scene.py <scene_name> [turns] [--resume] [--ollama-host URL]
 
 Examples:
     python run_scene.py fey_glade
     python run_scene.py gilded_trinket 6
     python run_scene.py echoing_caverns --ollama-host http://ultra:11434
+    python run_scene.py elyssa_cottage 4 --resume
 """
 
 import asyncio
@@ -24,6 +25,22 @@ def main():
     )
 
     argv = list(sys.argv[1:])
+    resume = "--resume" in argv
+    if resume:
+        argv = [a for a in argv if a != "--resume"]
+
+    # Resume must reuse an existing session id instead of creating a new one.
+    # If not pinned explicitly, default to the latest available session.
+    if resume and not os.environ.get("DRIFTMOOR_SESSION_ID"):
+        from engine.runtime_paths import find_latest_session_id
+
+        latest = find_latest_session_id()
+        if latest is None:
+            print("--resume: no prior session found under state root")
+            sys.exit(1)
+        os.environ["DRIFTMOOR_SESSION_ID"] = latest
+        print(f"--resume: continuing session {latest}")
+
     if "--ollama-host" in argv:
         i = argv.index("--ollama-host")
         if i + 1 >= len(argv):
@@ -43,7 +60,7 @@ def main():
     print_startup_banner()
 
     if not argv:
-        print("Usage: python run_scene.py <scene_name> [turns] [--ollama-host URL] [--all-ollama MODEL]")
+        print("Usage: python run_scene.py <scene_name> [turns] [--resume] [--ollama-host URL] [--all-ollama MODEL]")
         print(f"Available scenes: {', '.join(available)}")
         sys.exit(1)
 
@@ -59,7 +76,7 @@ def main():
     from engine.md_loader import configure_from_md
     from engine.scene_runner import run_scene
     config = configure_from_md(config_path)
-    asyncio.run(run_scene(config, num_turns))
+    asyncio.run(run_scene(config, num_turns, resume=resume))
 
 
 if __name__ == "__main__":

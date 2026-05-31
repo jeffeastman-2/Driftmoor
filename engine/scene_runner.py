@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from engine.llm_bridge import make_call_llm
-from engine.session import CharacterSession, run_session
+from engine.session import CharacterSession, run_session, load_resume_state
 from engine.dm_agent import DMLeft, DMRight
 from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
@@ -405,16 +405,54 @@ def print_turn_result(turn_result):
         print(f"  {cr.narration.prose}")
 
 
-async def run_scene(config: SceneConfig, num_turns: int | None = None):
+async def run_scene(
+    config: SceneConfig,
+    num_turns: int | None = None,
+    *,
+    resume: bool = False,
+):
     """Run a scene: execute turns, print results, generate transcript + narrative."""
     if num_turns is None:
         num_turns = config.default_turns
 
     checkpoint_dir = get_scene_dir(config.scene_name)
+    start_turn = 1
+    initial_history = ""
+    initial_active_characters: set[str] | None = None
+    initial_positions: dict | None = None
+    initial_party_examination_state: dict | None = None
 
-    # Preserve prior run output instead of deleting it.
-    archived = _archive_existing_run(checkpoint_dir)
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    if resume:
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        (
+            last_turn,
+            last_game_minutes,
+            history,
+            active_chars,
+            checkpoint_positions,
+            party_examination_state,
+        ) = load_resume_state(checkpoint_dir, config.characters)
+        if last_turn == 0:
+            print(f"Resume requested, but no checkpoints found in {checkpoint_dir}; starting fresh.\n")
+        else:
+            print(f"Resuming {config.scene_name} after turn {last_turn}.\n")
+        start_turn = last_turn + 1
+        initial_history = history
+        initial_active_characters = active_chars
+        initial_positions = checkpoint_positions or None
+        initial_party_examination_state = party_examination_state or None
+
+        # Restore wall-clock position for continued play.
+        if config.game_time is not None and last_game_minutes is not None:
+            config.game_time.day = last_game_minutes // (24 * 60)
+            remainder = last_game_minutes % (24 * 60)
+            config.game_time.hour = remainder // 60
+            config.game_time.minute = remainder % 60
+        archived = None
+    else:
+        # Preserve prior run output instead of deleting it.
+        archived = _archive_existing_run(checkpoint_dir)
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{config.title} — {num_turns} turns")
     print(f"Characters: {config.character_summary}")
@@ -434,6 +472,11 @@ async def run_scene(config: SceneConfig, num_turns: int | None = None):
             checkpoint_dir=checkpoint_dir,
             game_time=config.game_time,
             character_pronouns=config.character_pronouns or None,
+            start_turn=start_turn,
+            initial_history=initial_history,
+            initial_active_characters=initial_active_characters,
+            initial_positions=initial_positions,
+            initial_party_examination_state=initial_party_examination_state,
         )
     except Exception as exc:
         elapsed = time.monotonic() - start
