@@ -27,6 +27,10 @@ This is a social test scene with no intended combat. Gilthaness has come to
 Elyssa's cottage to talk about the obelisk disturbances and local reports.
 The objective is to verify stable back-and-forth dialogue and coherent
 continuity over several turns.
+Keep the conversation grounded: prefer counts, distances, dates, visible
+marks, and direct observations over abstract theory. If someone proposes a
+cause, it should be phrased as a hypothesis tied to at least one concrete
+observation.
 
 ## Characters
 
@@ -34,7 +38,7 @@ continuity over several turns.
 - **type:** player
 - **soul_file:** scenario/people/players/gilthaness/Gilthaness_SOUL.md
 - **identity_file:** scenario/people/players/gilthaness/Gilthaness_IDENTITY.md
-- **scene_handle:** the elven magic-user
+- **scene_handle:** The elven magic-user
 - **pronouns:** she/her
 - **player:** telegram
 - **channel:** telegram
@@ -63,7 +67,7 @@ continuity over several turns.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elyssa/SOUL.md
 - **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
-- **scene_handle:** the scholar of Driftmoor
+- **scene_handle:** The scholar of Driftmoor
 - **pronouns:** she/her
 - **hp:** 24
 - **ac:** 12

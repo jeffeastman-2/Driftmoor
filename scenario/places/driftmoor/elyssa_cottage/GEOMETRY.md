@@ -61,6 +61,15 @@ Herb garden on the west side. Ivy on walls.
 
 ---
 
+## Starting Positions
+
+| character  | x  | y  |
+|------------|----|----|
+| gilthaness | 19 | 4  |
+| elyssa     | 16 | 16 |
+
+---
+
 ## Boundaries
 
 ### Laboratory — Restricted Research

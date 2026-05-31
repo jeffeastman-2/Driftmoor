@@ -2269,6 +2269,43 @@ def _intent_from_transport_text(
     )
 
 
+def _split_transport_utterance(text: str) -> tuple[str, str]:
+    """Split human transport text into (spoken, action) components.
+
+    Conventions supported:
+    - ``*...*`` marks nonverbal/action text.
+    - Quoted text (straight or curly quotes) marks spoken dialogue.
+    - Unquoted text is treated as action by default (asterisks optional).
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return "", ""
+
+    action_parts = [m.group(1).strip() for m in re.finditer(r"\*([^*]+)\*", raw) if m.group(1).strip()]
+    without_star = re.sub(r"\*[^*]+\*", " ", raw)
+
+    quoted_parts: list[str] = []
+    for m in re.finditer(r'"([^"]+)"|“([^”]+)”', without_star):
+        q = (m.group(1) or m.group(2) or "").strip()
+        if q:
+            quoted_parts.append(q)
+    without_quotes = re.sub(r'"[^"]+"|“[^”]+”', " ", without_star)
+
+    remainder = " ".join(without_quotes.split()).strip()
+    action = " ".join(action_parts).strip()
+
+    if quoted_parts:
+        spoken = " ".join(quoted_parts).strip()
+        if remainder:
+            action = f"{action} {remainder}".strip() if action else remainder
+        return spoken, action
+
+    # No explicit quotes: treat unstarred remainder as action by default.
+    if remainder:
+        action = f"{action} {remainder}".strip() if action else remainder
+    return "", action
+
+
 async def _player_roles_via_transport(
     *,
     turn_cycle: TurnCycle,
@@ -2304,6 +2341,17 @@ async def _player_roles_via_transport(
                 text=inbound,
             )
             output = await turn_cycle.player_right_from_intent(context, intent)
+            spoken_text, action_text = _split_transport_utterance(inbound)
+            if spoken_text:
+                output.spoken = spoken_text
+            elif output.spoken and output.spoken.strip().lower() not in {"", "(silent)", "(silence)"}:
+                # Respect model-produced speech only when user did not provide any.
+                output.spoken = output.spoken.strip()
+            else:
+                output.spoken = ""
+
+            if action_text:
+                output.action = action_text
             return intent, output
         await asyncio.sleep(1.0)
 

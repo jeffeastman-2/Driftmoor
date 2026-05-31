@@ -13,6 +13,7 @@ from engine.session import (
     SessionResult,
     run_session,
     iter_session,
+    _split_transport_utterance,
     _build_context,
     _save_turn,
     _checkpoint_filename,
@@ -147,6 +148,44 @@ class TestBuildContext:
         # Should not have trailing newlines from empty history
         assert ctx.scene_context.strip() == ctx.scene_context or \
             not ctx.scene_context.endswith("\n\n")
+
+
+# ---------------------------------------------------------------------------
+# Transport utterance parsing
+# ---------------------------------------------------------------------------
+
+class TestTransportUtteranceSplit:
+    def test_quoted_text_is_spoken_unquoted_is_action(self):
+        text = (
+            'I move to the table and look at the charts '
+            '"Are these recent charts? When was this information recorded"'
+        )
+        spoken, action = _split_transport_utterance(text)
+
+        assert spoken == "Are these recent charts? When was this information recorded"
+        assert action == "I move to the table and look at the charts"
+
+    def test_asterisk_action_is_optional(self):
+        text = "*move to the table, scan the chart dates* Are these recent charts?"
+        spoken, action = _split_transport_utterance(text)
+
+        # Unquoted tail remains action by default.
+        assert spoken == ""
+        assert action == "move to the table, scan the chart dates Are these recent charts?"
+
+    def test_quotes_and_asterisk_together(self):
+        text = '"Are these recent charts?" *move to the table and look at the charts*'
+        spoken, action = _split_transport_utterance(text)
+
+        assert spoken == "Are these recent charts?"
+        assert action == "move to the table and look at the charts"
+
+    def test_unquoted_text_defaults_to_action(self):
+        text = "Are these recent charts? When was this information recorded?"
+        spoken, action = _split_transport_utterance(text)
+
+        assert spoken == ""
+        assert action == "Are these recent charts? When was this information recorded?"
 
 
 # ---------------------------------------------------------------------------
@@ -469,7 +508,7 @@ class TestCheckpointing:
         (tmp_path / "turn_0003.json").write_text(json.dumps(checkpoint_data))
 
         characters = {"aeliana": aeliana_session}
-        last_turn, _, _, _, positions = load_resume_state(tmp_path, characters)
+        last_turn, _, _, _, positions, _ = load_resume_state(tmp_path, characters)
 
         assert last_turn == 3
         assert "aeliana" in positions
@@ -502,7 +541,7 @@ class TestCheckpointing:
         )
         characters = {"aeliana": aeliana_session}
         roles = {"aeliana": RoleSet()}
-        _, _, _, _, positions = load_resume_state(tmp_path, characters)
+        _, _, _, _, positions, _ = load_resume_state(tmp_path, characters)
 
         # Confirm iter_session uses checkpoint positions, not game_state_summary positions
         captured: list = []

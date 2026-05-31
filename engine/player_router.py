@@ -228,6 +228,12 @@ class PlayerLeft:
             "conversation — reveal new information, change tactics, "
             "react to what others said, or take a new action. "
             "Do NOT repeat any spoken line word-for-word from a prior turn. "
+            "CRITICAL — GROUNDING: Keep reasoning tied to concrete, observable "
+            "facts. Prefer counts, distances, times, locations, visible marks, "
+            "and direct quotes. If you speculate, frame it as a hypothesis and "
+            "say what observation would support or falsify it. Avoid abstract "
+            "technobabble unless it is anchored to a specific thing you can "
+            "actually point at in the scene. "
             "CRITICAL — STUCK LOOP: If your last two or more turns show the same "
             "action (e.g. 'search the shimmering patch' repeated), you MUST choose "
             "a different action this turn. The repeated action has already yielded "
@@ -248,7 +254,10 @@ class PlayerLeft:
             "do not repeat your current coordinates here. "
             "Choose a destination you intend to reach this turn.\n"
             "**TARGET** — Character or item you interact with "
-            "(or \"none\")."
+            "(or \"none\").\n"
+            "Be specific. Reference your zone and observable targets. If you "
+            "make a causal claim, state it as a hypothesis and attach one "
+            "observable clue to it."
         )
 
     def build_user_prompt(self, context: RoleContext) -> str:
@@ -346,7 +355,6 @@ class PlayerLeft:
         result = self.parse_response(raw, context)
         _dbg(f"[PLAYER-LEFT] {context.character_id} intent: {result.intent!r}")
         return result
-
 
 # ---------------------------------------------------------------------------
 # Player-Right
