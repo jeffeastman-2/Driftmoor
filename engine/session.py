@@ -2140,6 +2140,7 @@ def _render_transport_prompt(
         raw_history=raw_history,
     )
     return (
+        f"PACKET: TURN PROMPT\n"
         f"TURN PROMPT: {context.turn}\n"
         f"SESSION: {current_session_id()}\n"
         f"CHARACTER: {context.character_id}\n"
@@ -2317,6 +2318,7 @@ def _render_turn_result_packet(
     from engine.runtime_paths import current_session_id
 
     lines: list[str] = [
+        "PACKET: TURN RESULT",
         f"TURN RESULT: {turn_result.turn}",
         f"SESSION: {current_session_id()}",
         f"FOR: {player_id}",
@@ -2386,6 +2388,7 @@ def _render_session_complete_packet(
     from engine.runtime_paths import current_session_id
 
     return (
+        f"PACKET: SESSION COMPLETE\n"
         f"SESSION COMPLETE\n"
         f"SESSION: {current_session_id()}\n"
         f"TURNS: {completed_turns}\n"
@@ -2414,6 +2417,16 @@ async def _broadcast_session_complete_to_transports(
             f"[TRANSPORT] wrote session-complete for "
             f"{char_id} to {(cs.player_host or 'local').strip()}:{(cs.player_outbox or '').strip()}"
         )
+
+
+def _has_telegram_transport(characters: dict[str, CharacterSession]) -> bool:
+    return any(
+        (cs.player_transport or "").strip().lower() == "telegram"
+        for cs in characters.values()
+    )
+
+
+TRANSPORT_SETTLE_SECONDS = 3.0
 
 
 # ---------------------------------------------------------------------------
@@ -3535,12 +3548,8 @@ async def iter_session(
         # Small pause so transport result packet is safely delivered before
         # the next turn's prompt is written.  Only matters when there is at
         # least one Telegram player; cost is negligible otherwise.
-        _has_transport = any(
-            (cs.player_transport or "").strip().lower() == "telegram"
-            for cs in characters.values()
-        )
-        if _has_transport and turn_num < num_turns:
-            await asyncio.sleep(2.0)
+        if _has_telegram_transport(characters):
+            await asyncio.sleep(TRANSPORT_SETTLE_SECONDS)
 
         # Apply condition deltas from DMLeft adjudication
         for cr in turn_result.character_results:
@@ -3634,6 +3643,11 @@ async def run_session(
     scene_geometry: Optional[SceneGeometry] = None,
     items: Optional[dict] = None,
     character_pronouns: dict[str, str] | None = None,
+    start_turn: int = 1,
+    initial_history: str = "",
+    initial_active_characters: set[str] | None = None,
+    initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
+    initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
@@ -3649,11 +3663,21 @@ async def run_session(
         checkpoint_dir=checkpoint_dir,
         game_time=game_time,
         rng=rng,
+        start_turn=start_turn,
+        initial_history=initial_history,
         scene_geometry=scene_geometry,
         items=items,
         character_pronouns=character_pronouns,
+        initial_active_characters=initial_active_characters,
+        initial_positions=initial_positions,
+        initial_party_examination_state=initial_party_examination_state,
     ):
         turns.append(turn_result)
+
+    # Give the final TURN RESULT packet time to be consumed before
+    # SESSION COMPLETE is emitted on transport channels.
+    if turns and _has_telegram_transport(characters):
+        await asyncio.sleep(TRANSPORT_SETTLE_SECONDS)
 
     await _broadcast_session_complete_to_transports(
         completed_turns=len(turns),
