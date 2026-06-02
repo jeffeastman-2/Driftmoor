@@ -19,6 +19,8 @@ from engine.session import (
     _checkpoint_filename,
     _resolve_attacks,
     load_resume_state,
+    _has_vicious_mockery_disadvantage,
+    _consume_vicious_mockery_disadvantage,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -27,6 +29,7 @@ from engine.scene_manager import TurnCycle, RoleSet, TurnResult, CharacterTurnRe
 from engine.player_router import PlayerLeft, PlayerRight, RoleContext
 from engine.dm_agent import DMLeft, DMRight
 from engine.initiative import roll_initiative
+from engine.spell_resolver import ActiveSpellEffect, SpellResolver, SpellRuntimeState
 from models.character import PlayerCharacter, Creature
 from models.condition import (
     CharacterCondition,
@@ -35,6 +38,7 @@ from models.condition import (
     render_condition,
 )
 from models.space_time import GameTime
+from models.spellcasting import Spell, SpellcastingProfile
 
 
 # ---------------------------------------------------------------------------
@@ -354,6 +358,64 @@ class TestSceneHistory:
 # ---------------------------------------------------------------------------
 
 class TestCheckpointing:
+    def _make_resume_spellcaster(self) -> CharacterSession:
+        caster = PlayerCharacter(
+            id="tobin",
+            name="Tobin",
+            race="Halfling",
+            character_type="player",
+            character_class="Cleric",
+            level=3,
+            hp=24,
+            current_hp=24,
+            dexterity=10,
+        )
+        caster.spellcasting = SpellcastingProfile(
+            ability="WIS",
+            save_dc=13,
+            attack_bonus=5,
+            cantrips=[Spell(name="Guidance", level=0)],
+            prepared=[Spell(name="Healing Word", level=1), Spell(name="Bless", level=1)],
+            known=[],
+            spell_slots_max={1: 4},
+            spell_slots_used={1: 0},
+        )
+        return CharacterSession(
+            character=caster,
+            condition=CharacterCondition(
+                character_id="tobin",
+                character_name="Tobin",
+                state=NeurochemicalState(),
+            ),
+            soul="",
+            identity="",
+            initial_scene="At the chapel.",
+        )
+
+    def _make_resume_spell_ally(self) -> CharacterSession:
+        ally = PlayerCharacter(
+            id="brenna",
+            name="Brenna",
+            race="Human",
+            character_type="player",
+            character_class="Fighter",
+            level=3,
+            hp=28,
+            current_hp=28,
+            dexterity=8,
+        )
+        return CharacterSession(
+            character=ally,
+            condition=CharacterCondition(
+                character_id="brenna",
+                character_name="Brenna",
+                state=NeurochemicalState(),
+            ),
+            soul="",
+            identity="",
+            initial_scene="At the chapel.",
+        )
+
     def test_saves_turn_json(self, aeliana_session, tmp_path):
         characters = {"aeliana": aeliana_session}
         roles = {"aeliana": RoleSet()}
@@ -508,7 +570,7 @@ class TestCheckpointing:
         (tmp_path / "turn_0003.json").write_text(json.dumps(checkpoint_data))
 
         characters = {"aeliana": aeliana_session}
-        last_turn, _, _, _, positions, _ = load_resume_state(tmp_path, characters)
+        last_turn, _, _, _, positions, _, _ = load_resume_state(tmp_path, characters)
 
         assert last_turn == 3
         assert "aeliana" in positions
@@ -541,7 +603,7 @@ class TestCheckpointing:
         )
         characters = {"aeliana": aeliana_session}
         roles = {"aeliana": RoleSet()}
-        _, _, _, _, positions, _ = load_resume_state(tmp_path, characters)
+        _, _, _, _, positions, _, _ = load_resume_state(tmp_path, characters)
 
         # Confirm iter_session uses checkpoint positions, not game_state_summary positions
         captured: list = []
@@ -557,6 +619,191 @@ class TestCheckpointing:
 
         asyncio.run(_run())
         assert captured  # ran at least one turn — positions were accepted
+
+    def test_resume_keeps_spell_duration_progress(self, tmp_path):
+        tobin = self._make_resume_spellcaster()
+        brenna = self._make_resume_spell_ally()
+        characters = {"tobin": tobin, "brenna": brenna}
+
+        async def cast_guidance_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Cast Guidance on Tobin.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — tobin"
+            )
+
+        roles = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_guidance_llm)),
+            "brenna": RoleSet(),
+        }
+
+        asyncio.run(run_session(characters, roles, num_turns=1, checkpoint_dir=tmp_path, rng=random.Random(31)))
+
+        first_cp = json.loads((tmp_path / "turn_0001.json").read_text())
+        assert first_cp["spell_runtime"]["active_effects"][0]["spell_name"] == "Guidance"
+        assert first_cp["spell_runtime"]["active_effects"][0]["remaining_rounds"] == 9
+
+        (
+            last_turn,
+            _,
+            history,
+            active_chars,
+            positions,
+            party_examination_state,
+            spell_runtime,
+        ) = load_resume_state(tmp_path, characters)
+
+        async def no_spell_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Observe the room.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — none"
+            )
+
+        roles2 = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=no_spell_llm)),
+            "brenna": RoleSet(),
+        }
+
+        asyncio.run(
+            run_session(
+                characters,
+                roles2,
+                num_turns=1,
+                checkpoint_dir=tmp_path,
+                rng=random.Random(32),
+                start_turn=last_turn + 1,
+                initial_history=history,
+                initial_active_characters=active_chars,
+                initial_positions=positions,
+                initial_party_examination_state=party_examination_state,
+                initial_spell_runtime=spell_runtime,
+            )
+        )
+
+        second_cp = json.loads((tmp_path / "turn_0002.json").read_text())
+        assert second_cp["spell_runtime"]["active_effects"][0]["spell_name"] == "Guidance"
+        assert second_cp["spell_runtime"]["active_effects"][0]["remaining_rounds"] == 8
+
+    def test_resume_replaces_prior_concentration_effect(self, tmp_path):
+        tobin = self._make_resume_spellcaster()
+        brenna = self._make_resume_spell_ally()
+        characters = {"tobin": tobin, "brenna": brenna}
+
+        async def cast_guidance_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Cast Guidance on Tobin.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — tobin"
+            )
+
+        roles = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_guidance_llm)),
+            "brenna": RoleSet(),
+        }
+
+        asyncio.run(run_session(characters, roles, num_turns=1, checkpoint_dir=tmp_path, rng=random.Random(41)))
+
+        (
+            last_turn,
+            _,
+            history,
+            active_chars,
+            positions,
+            party_examination_state,
+            spell_runtime,
+        ) = load_resume_state(tmp_path, characters)
+
+        async def cast_bless_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Cast Bless on Brenna.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — brenna"
+            )
+
+        roles2 = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_bless_llm)),
+            "brenna": RoleSet(),
+        }
+
+        resumed = asyncio.run(
+            run_session(
+                characters,
+                roles2,
+                num_turns=1,
+                checkpoint_dir=tmp_path,
+                rng=random.Random(42),
+                start_turn=last_turn + 1,
+                initial_history=history,
+                initial_active_characters=active_chars,
+                initial_positions=positions,
+                initial_party_examination_state=party_examination_state,
+                initial_spell_runtime=spell_runtime,
+            )
+        )
+
+        tobin_cr = next(cr for cr in resumed.turns[0].character_results if cr.character_id == "tobin")
+        assert tobin_cr.adjudication.approved
+        assert "ended effect" in tobin_cr.adjudication.notes.lower()
+        assert "guidance" in tobin_cr.adjudication.notes.lower()
+
+    def test_save_turn_serializes_spell_runtime(self, aeliana_session, tmp_path):
+        characters = {"aeliana": aeliana_session}
+        runtime = SpellRuntimeState(
+            active_effects=[
+                ActiveSpellEffect(
+                    spell_name="Guidance",
+                    caster_id="aeliana",
+                    target_ids=["aeliana"],
+                    remaining_rounds=9,
+                    concentration=True,
+                )
+            ]
+        )
+        runtime.concentration_by_caster["aeliana"] = runtime.active_effects[0]
+
+        turn_result = TurnResult(turn=1, initiative_order=["aeliana"], character_results=[])
+        _save_turn(tmp_path, 1, turn_result, characters, spell_runtime=runtime)
+
+        data = json.loads((tmp_path / "turn_0001.json").read_text())
+        assert "spell_runtime" in data
+        assert data["spell_runtime"]["active_effects"][0]["spell_name"] == "Guidance"
+        assert data["spell_runtime"]["concentration_by_caster"]["aeliana"] == "Guidance"
+
+    def test_load_resume_restores_spell_runtime(self, aeliana_session, tmp_path):
+        checkpoint_data = {
+            "turn": 3,
+            "in_combat": False,
+            "active_characters": ["aeliana"],
+            "game_time": None,
+            "initiative_order": ["aeliana"],
+            "character_results": [],
+            "conditions": {},
+            "hp": {"aeliana": {"current": 10, "max": 12}},
+            "current_positions": {
+                "aeliana": {"x": 202.2, "y": 125.1, "zone": "FOREST"},
+            },
+            "spell_runtime": {
+                "active_effects": [
+                    {
+                        "spell_name": "Bless",
+                        "caster_id": "aeliana",
+                        "target_ids": ["aeliana"],
+                        "remaining_rounds": 6,
+                        "concentration": True,
+                    }
+                ],
+                "concentration_by_caster": {"aeliana": "Bless"},
+            },
+        }
+        (tmp_path / "turn_0003.json").write_text(json.dumps(checkpoint_data))
+
+        characters = {"aeliana": aeliana_session}
+        _, _, _, _, _, _, runtime = load_resume_state(tmp_path, characters)
+
+        assert len(runtime.active_effects) == 1
+        assert runtime.active_effects[0].spell_name == "Bless"
+        assert runtime.concentration_by_caster["aeliana"].spell_name == "Bless"
 
 
 class TestCheckpointFilename:
@@ -962,6 +1209,207 @@ class TestDMLeftCombatPrompt:
         dm = DMLeft()
         prompt = dm.build_system_prompt()
         assert "exits_scene" in prompt
+
+
+class TestSpellSessionIntegration:
+    def _make_spellcaster(self) -> CharacterSession:
+        caster = PlayerCharacter(
+            id="tobin",
+            name="Tobin",
+            race="Half-Elf",
+            character_type="player",
+            character_class="Cleric (Life Domain)",
+            level=3,
+            wisdom=16,
+            hp=24,
+            current_hp=24,
+            dexterity=10,
+        )
+        caster.spellcasting = SpellcastingProfile(
+            ability="WIS",
+            save_dc=13,
+            attack_bonus=5,
+            cantrips=[Spell(name="Guidance", level=0)],
+            prepared=[Spell(name="Healing Word", level=1)],
+            known=[],
+            spell_slots_max={1: 4},
+            spell_slots_used={1: 0},
+        )
+        return CharacterSession(
+            character=caster,
+            condition=CharacterCondition(
+                character_id="tobin",
+                character_name="Tobin",
+                state=NeurochemicalState(),
+            ),
+            soul="",
+            identity="",
+            initial_scene="At the chapel.",
+        )
+
+    def _make_ally(self) -> CharacterSession:
+        ally = PlayerCharacter(
+            id="brenna",
+            name="Brenna",
+            race="Human",
+            character_type="player",
+            character_class="Fighter",
+            level=3,
+            hp=28,
+            current_hp=8,
+            dexterity=8,
+        )
+        return CharacterSession(
+            character=ally,
+            condition=CharacterCondition(
+                character_id="brenna",
+                character_name="Brenna",
+                state=NeurochemicalState(),
+            ),
+            soul="",
+            identity="",
+            initial_scene="At the chapel.",
+        )
+
+    def test_run_session_healing_word_uses_slot_and_heals_target(self):
+        tobin = self._make_spellcaster()
+        brenna = self._make_ally()
+
+        async def cast_heal_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Cast Healing Word on Brenna.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — brenna"
+            )
+
+        roles = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_heal_llm)),
+            "brenna": RoleSet(),
+        }
+        characters = {"tobin": tobin, "brenna": brenna}
+
+        result = asyncio.run(run_session(characters, roles, num_turns=1, rng=random.Random(42)))
+
+        assert len(result.turns) == 1
+        assert brenna.character.current_hp > 8
+        assert tobin.character.spellcasting.spell_slots_used[1] == 1
+        tobin_cr = next(cr for cr in result.turns[0].character_results if cr.character_id == "tobin")
+        assert tobin_cr.adjudication.approved
+        assert "Spell resolved in Python" in tobin_cr.adjudication.notes
+
+    def test_run_session_rejects_unknown_spell(self):
+        tobin = self._make_spellcaster()
+        brenna = self._make_ally()
+
+        async def cast_unknown_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Cast Wish on Brenna.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — brenna"
+            )
+
+        roles = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_unknown_llm)),
+            "brenna": RoleSet(),
+        }
+        characters = {"tobin": tobin, "brenna": brenna}
+
+        result = asyncio.run(run_session(characters, roles, num_turns=1, rng=random.Random(7)))
+
+        tobin_cr = next(cr for cr in result.turns[0].character_results if cr.character_id == "tobin")
+        assert not tobin_cr.adjudication.approved
+        assert "spell" in tobin_cr.adjudication.notes.lower() or "unsupported" in tobin_cr.adjudication.notes.lower()
+        assert tobin.character.spellcasting.spell_slots_used[1] == 0
+
+    def test_run_session_ticks_spell_effects_each_turn(self, monkeypatch):
+        tobin = self._make_spellcaster()
+        brenna = self._make_ally()
+
+        async def cast_heal_llm(_sys: str, _usr: str) -> str:
+            return (
+                "**INTENT** — Cast Healing Word on Brenna.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — brenna"
+            )
+
+        calls: list[int] = []
+
+        original_tick = SpellResolver.tick_effects
+
+        def _spy_tick(self, runtime, *, rounds=1):
+            calls.append(rounds)
+            return original_tick(self, runtime, rounds=rounds)
+
+        monkeypatch.setattr(SpellResolver, "tick_effects", _spy_tick)
+
+        roles = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_heal_llm)),
+            "brenna": RoleSet(),
+        }
+        characters = {"tobin": tobin, "brenna": brenna}
+
+        asyncio.run(run_session(characters, roles, num_turns=2, rng=random.Random(11)))
+
+        assert calls == [1, 1]
+
+    def test_run_session_reports_concentration_replacement(self):
+        tobin = self._make_spellcaster()
+        brenna = self._make_ally()
+        tobin.character.spellcasting.prepared = [
+            Spell(name="Healing Word", level=1),
+            Spell(name="Bless", level=1),
+        ]
+
+        turn_counter = {"n": 0}
+
+        async def cast_concentration_chain_llm(_sys: str, _usr: str) -> str:
+            turn_counter["n"] += 1
+            if turn_counter["n"] == 1:
+                return (
+                    "**INTENT** — Cast Guidance on Tobin.\n"
+                    "**MOVEMENT** — none\n"
+                    "**TARGET** — tobin"
+                )
+            return (
+                "**INTENT** — Cast Bless on Brenna.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — brenna"
+            )
+
+        roles = {
+            "tobin": RoleSet(player_left=PlayerLeft(call_llm=cast_concentration_chain_llm)),
+            "brenna": RoleSet(),
+        }
+        characters = {"tobin": tobin, "brenna": brenna}
+
+        result = asyncio.run(run_session(characters, roles, num_turns=2, rng=random.Random(13)))
+
+        tobin_turns = [
+            cr
+            for tr in result.turns
+            for cr in tr.character_results
+            if cr.character_id == "tobin"
+        ]
+        assert len(tobin_turns) == 2
+        assert "ended effect" in tobin_turns[1].adjudication.notes.lower()
+        assert "guidance" in tobin_turns[1].adjudication.notes.lower()
+
+    def test_vicious_mockery_disadvantage_helper_consumes_once(self):
+        runtime = SpellRuntimeState(
+            active_effects=[
+                ActiveSpellEffect(
+                    spell_name="Vicious Mockery Disadvantage",
+                    caster_id="tobin",
+                    target_ids=["shadowbeast_1"],
+                    remaining_rounds=10,
+                    concentration=False,
+                )
+            ]
+        )
+
+        assert _has_vicious_mockery_disadvantage(runtime, "shadowbeast_1")
+        assert _consume_vicious_mockery_disadvantage(runtime, "shadowbeast_1")
+        assert not _has_vicious_mockery_disadvantage(runtime, "shadowbeast_1")
 
 
 class TestForestLOSEnforcement:

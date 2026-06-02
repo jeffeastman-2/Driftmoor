@@ -27,6 +27,7 @@ from typing import AsyncIterator, Optional
 from engine.initiative import roll_initiative
 from engine.player_router import RoleContext, ActionIntent, CharacterOutput
 from engine.scene_manager import TurnCycle, TurnResult, RoleSet
+from engine.dm_agent import Adjudication
 from models.character import Character
 from models.condition import CharacterCondition, render_condition
 from models.geometry_loader import load_geometry
@@ -35,6 +36,13 @@ from models.space_time import GameTime, Position, SceneGeometry
 
 from engine.debug import _dbg
 from engine.combat_resolver import CombatResolver
+from engine.spell_resolver import (
+    ActiveSpellEffect,
+    SpellCastRequest,
+    SpellResolver,
+    SpellRuntimeState,
+)
+from models.game_state import GameState
 from models.weapon import Weapon, Armor
 
 
@@ -1519,10 +1527,67 @@ _ATTACK_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+_CAST_KEYWORDS = re.compile(r"\b(cast|casts|casting|use\s+spell|spell)\b", re.IGNORECASE)
+
 
 def _intent_is_attack(intent_text: str) -> bool:
     """Return True if the Player-Left intent string describes an attack action."""
     return bool(_ATTACK_KEYWORDS.search(intent_text or ""))
+
+
+def _intent_is_spell(intent_text: str) -> bool:
+    """Return True when intent text appears to describe casting a spell."""
+    return bool(_CAST_KEYWORDS.search(intent_text or ""))
+
+
+def _extract_spell_name_from_intent(intent_text: str, cs: CharacterSession) -> str | None:
+    """Infer the intended spell name by matching known/prepared/cantrip names."""
+    profile = getattr(cs.character, "spellcasting", None)
+    if profile is None:
+        return None
+
+    candidates = [s.name for s in profile.cantrips] + [s.name for s in profile.prepared] + [s.name for s in profile.known]
+    if not candidates:
+        return None
+
+    text = (intent_text or "").lower()
+    for name in candidates:
+        if name and name.lower() in text:
+            return name
+
+    # Fallback: handle patterns like "Cast Healing Word on X".
+    m = re.search(r"\bcast\s+([A-Za-z'\s]+?)(?:\s+on\b|\s+at\b|$)", text)
+    if m:
+        hinted = m.group(1).strip()
+        for name in candidates:
+            if hinted == name.lower():
+                return name
+    return None
+
+
+def _resolve_spell_targets(
+    intent: ActionIntent,
+    *,
+    caster_id: str,
+    characters: dict[str, CharacterSession],
+    active_characters: set[str],
+) -> list[str]:
+    """Resolve interaction target text to active character IDs for spell casting."""
+    target_hint = (intent.interaction_target or "").strip().lower()
+    if not target_hint:
+        return []
+
+    results: list[str] = []
+    for cid in sorted(active_characters):
+        if cid == caster_id or cid not in characters:
+            continue
+        if cid.lower() == target_hint or cid.lower().startswith(target_hint) or target_hint.startswith(cid.lower()):
+            results.append(cid)
+            continue
+        cname = (characters[cid].character.name or "").strip().lower()
+        if cname and (cname == target_hint or cname.startswith(target_hint) or target_hint in cname):
+            results.append(cid)
+    return results
 
 
 def _find_combat_target(
@@ -1661,6 +1726,88 @@ def _deserialize_party_examination_state(raw: dict | None) -> dict[tuple[str, st
     return state
 
 
+def _serialize_spell_runtime_state(runtime: SpellRuntimeState) -> dict:
+    """Serialize mutable spell runtime state for checkpoints."""
+    return {
+        "active_effects": [
+            {
+                "spell_name": effect.spell_name,
+                "caster_id": effect.caster_id,
+                "target_ids": list(effect.target_ids),
+                "remaining_rounds": int(effect.remaining_rounds),
+                "concentration": bool(effect.concentration),
+            }
+            for effect in runtime.active_effects
+        ],
+        "concentration_by_caster": {
+            caster_id: effect.spell_name
+            for caster_id, effect in runtime.concentration_by_caster.items()
+        },
+    }
+
+
+def _deserialize_spell_runtime_state(raw: dict | None) -> SpellRuntimeState:
+    """Deserialize checkpointed spell runtime state."""
+    runtime = SpellRuntimeState()
+    if not isinstance(raw, dict):
+        return runtime
+
+    for item in raw.get("active_effects", []) or []:
+        if not isinstance(item, dict):
+            continue
+        effect = ActiveSpellEffect(
+            spell_name=str(item.get("spell_name", "")),
+            caster_id=str(item.get("caster_id", "")),
+            target_ids=[str(t) for t in (item.get("target_ids") or [])],
+            remaining_rounds=int(item.get("remaining_rounds", 0) or 0),
+            concentration=bool(item.get("concentration", False)),
+        )
+        runtime.active_effects.append(effect)
+
+    for caster_id, spell_name in (raw.get("concentration_by_caster") or {}).items():
+        if not isinstance(caster_id, str) or not isinstance(spell_name, str):
+            continue
+        match = next(
+            (
+                e for e in runtime.active_effects
+                if e.caster_id == caster_id and e.spell_name == spell_name
+            ),
+            None,
+        )
+        if match is not None:
+            runtime.concentration_by_caster[caster_id] = match
+
+    return runtime
+
+
+def _has_vicious_mockery_disadvantage(
+    runtime: SpellRuntimeState,
+    attacker_id: str,
+) -> bool:
+    for effect in runtime.active_effects:
+        if (
+            effect.spell_name == "Vicious Mockery Disadvantage"
+            and attacker_id in effect.target_ids
+            and effect.remaining_rounds > 0
+        ):
+            return True
+    return False
+
+
+def _consume_vicious_mockery_disadvantage(
+    runtime: SpellRuntimeState,
+    attacker_id: str,
+) -> bool:
+    for i, effect in enumerate(runtime.active_effects):
+        if (
+            effect.spell_name == "Vicious Mockery Disadvantage"
+            and attacker_id in effect.target_ids
+        ):
+            runtime.active_effects.pop(i)
+            return True
+    return False
+
+
 def _classify_examination_result(
     *,
     verb: str,
@@ -1711,6 +1858,7 @@ def _save_turn(
     active_characters: Optional[set[str]] = None,
     current_positions: Optional[dict] = None,
     party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
+    spell_runtime: Optional[SpellRuntimeState] = None,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -1770,6 +1918,9 @@ def _save_turn(
         "party_examination_state": _serialize_party_examination_state(
             party_examination_state or {}
         ),
+        "spell_runtime": _serialize_spell_runtime_state(
+            spell_runtime or SpellRuntimeState()
+        ),
     }
     path.write_text(json.dumps(data, indent=2, default=str))
     return path
@@ -1782,7 +1933,15 @@ def _save_turn(
 def load_resume_state(
     checkpoint_dir: Path,
     characters: dict[str, CharacterSession],
-) -> tuple[int, int | None, str, set[str] | None, dict[str, tuple[float, float, str]], dict[tuple[str, str], dict]]:
+) -> tuple[
+    int,
+    int | None,
+    str,
+    set[str] | None,
+    dict[str, tuple[float, float, str]],
+    dict[tuple[str, str], dict],
+    SpellRuntimeState,
+]:
     """Read a checkpoint directory and prepare state for resuming a session.
 
     Patches ``characters`` conditions in-place from the last checkpoint so
@@ -1806,7 +1965,7 @@ def load_resume_state(
         key=lambda p: p.name,
     )
     if not files:
-        return 0, None, "", None, {}, {}
+        return 0, None, "", None, {}, {}, SpellRuntimeState()
 
     scene_history = ""
     last_turn = 0
@@ -1865,6 +2024,7 @@ def load_resume_state(
     party_examination_state = _deserialize_party_examination_state(
         last_data.get("party_examination_state")
     )
+    spell_runtime = _deserialize_spell_runtime_state(last_data.get("spell_runtime"))
 
     return (
         last_turn,
@@ -1873,6 +2033,7 @@ def load_resume_state(
         last_active_characters,
         checkpoint_positions,
         party_examination_state,
+        spell_runtime,
     )
 
 
@@ -2499,6 +2660,7 @@ async def iter_session(
     initial_active_characters: set[str] | None = None,
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
     initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
+    initial_spell_runtime: Optional[SpellRuntimeState] = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -2539,6 +2701,8 @@ async def iter_session(
     # Combat state
     in_combat = False
     pre_combat_duration: int | None = None
+    spell_resolver = SpellResolver(rng=rng)
+    spell_runtime = initial_spell_runtime or SpellRuntimeState()
 
     # Phase 3b: dormancy. Creatures with activation triggers (e.g.
     # zone_entry:Secret Chamber) are excluded from initiative and
@@ -2932,6 +3096,85 @@ async def iter_session(
                 and bool(cs.weapons)
                 and _intent_is_attack(intent.intent)
             )
+            used_spell_resolver = False
+            spell_cast_log: list[str] = []
+            if (
+                not use_resolver
+                and _intent_is_spell(intent.intent)
+                and isinstance(cs.character, Character)
+            ):
+                spell_name = _extract_spell_name_from_intent(intent.intent, cs)
+                if spell_name:
+                    targets = _resolve_spell_targets(
+                        intent,
+                        caster_id=character_id,
+                        characters=characters,
+                        active_characters=active_characters,
+                    )
+                    gs_ref = GameState(characters=[x.character for x in characters.values()])
+                    spell_result = spell_resolver.cast(
+                        gs_ref,
+                        SpellCastRequest(
+                            caster_id=character_id,
+                            spell_name=spell_name,
+                            target_ids=targets,
+                        ),
+                        spell_runtime,
+                    )
+                    if not spell_result.approved:
+                        notes = spell_result.reason
+                    else:
+                        note_parts = [f"Spell resolved in Python: {spell_name}."]
+                        if spell_result.started_effects:
+                            note_parts.append(
+                                "Started effect(s): " + ", ".join(spell_result.started_effects) + "."
+                            )
+                        if spell_result.ended_effects:
+                            note_parts.append(
+                                "Ended effect(s): " + ", ".join(spell_result.ended_effects) + "."
+                            )
+                        notes = " ".join(note_parts)
+                    adjudication = Adjudication(
+                        character_id=character_id,
+                        turn=turn_num,
+                        approved=spell_result.approved,
+                        notes=notes,
+                        hp_damage=dict(spell_result.hp_damage),
+                    )
+                    attack_log = []
+                    if spell_result.approved:
+                        used_spell_resolver = True
+                        for tid, dmg in spell_result.hp_damage.items():
+                            if tid in characters:
+                                tchar = characters[tid].character
+                                if hasattr(tchar, "current_hp") and tchar.current_hp <= 0:
+                                    active_characters.discard(tid)
+                                    current_positions.pop(tid, None)
+                                    attack_log.append(f"[{tid} is dead — reduced to 0 HP]")
+                        for tid, heal in spell_result.hp_heal.items():
+                            attack_log.append(f"[SPELL] {character_id} heals {tid} for {heal} HP")
+                        if spell_result.hp_damage:
+                            attack_log.append(
+                                f"[SPELL] {character_id} casts {spell_name}: "
+                                + ", ".join(f"{tid} takes {dmg}" for tid, dmg in spell_result.hp_damage.items())
+                            )
+                            if "combat_initiated" not in adjudication.spatial_events:
+                                adjudication.spatial_events.append("combat_initiated")
+                    else:
+                        used_spell_resolver = True
+                        spell_cast_log.append(f"[SPELL] {character_id} cast rejected: {spell_result.reason}")
+                        attack_log.extend(spell_cast_log)
+                else:
+                    used_spell_resolver = True
+                    adjudication = Adjudication(
+                        character_id=character_id,
+                        turn=turn_num,
+                        approved=False,
+                        notes="Spell cast rejected: unknown or unavailable spell name.",
+                    )
+                    attack_log = [
+                        f"[SPELL] {character_id} cast rejected: unknown or unavailable spell name"
+                    ]
             if use_resolver:
                 # Find best target: interaction_target hint first, then nearest hostile
                 target_id = _find_combat_target(
@@ -2940,6 +3183,9 @@ async def iter_session(
                 )
                 if target_id and target_id in characters:
                     resolver = CombatResolver()
+                    attack_disadvantage = _has_vicious_mockery_disadvantage(
+                        spell_runtime, character_id
+                    )
                     adjudication, attack_log = resolver.resolve(
                         character_id=character_id,
                         turn=turn_num,
@@ -2951,7 +3197,14 @@ async def iter_session(
                         scene_geometry=scene_geometry,
                         game_time=game_time,
                         intent_text=intent.intent,
+                        attack_disadvantage=attack_disadvantage,
                     )
+                    if attack_disadvantage and _consume_vicious_mockery_disadvantage(
+                        spell_runtime, character_id
+                    ):
+                        attack_log.append(
+                            f"[SPELL] {character_id} consumed Vicious Mockery disadvantage on this attack"
+                        )
                     # Apply movement from resolver — enforce boundary crossing
                     if adjudication.new_position:
                         resolver_origin = current_positions.get(character_id)
@@ -3049,7 +3302,7 @@ async def iter_session(
                     # No valid target — fall through to DM-Left
                     use_resolver = False
 
-            if not use_resolver:
+            if not use_resolver and not used_spell_resolver:
                 _adjudication = await turn_cycle.dm_adjudicate(
                     output=output,
                     game_state_summary=turn_game_state,
@@ -3624,6 +3877,9 @@ async def iter_session(
         # Move current-turn ledger entries into the sliding window
         ledger.flush_turn()
 
+        # Advance scene-level spell effect durations once per completed turn.
+        spell_resolver.tick_effects(spell_runtime, rounds=1)
+
         # Persist checkpoint
         if checkpoint_dir:
             _save_turn(
@@ -3636,6 +3892,7 @@ async def iter_session(
                 active_characters=active_characters,
                 current_positions=current_positions,
                 party_examination_state=party_examination_state,
+                spell_runtime=spell_runtime,
             )
 
         # Advance game clock
@@ -3696,6 +3953,7 @@ async def run_session(
     initial_active_characters: set[str] | None = None,
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
     initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
+    initial_spell_runtime: Optional[SpellRuntimeState] = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
@@ -3719,6 +3977,7 @@ async def run_session(
         initial_active_characters=initial_active_characters,
         initial_positions=initial_positions,
         initial_party_examination_state=initial_party_examination_state,
+        initial_spell_runtime=initial_spell_runtime,
     ):
         turns.append(turn_result)
 

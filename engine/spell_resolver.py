@@ -62,20 +62,44 @@ class _SpellDef:
     duration_rounds: int = 0
     effect: str = "utility"  # utility | damage | heal | stabilize
     dice: str = ""
+    attack_roll: bool = False
+    save_ability: str = ""  # DEX | CON | WIS | INT | CHA | STR
+    save_on_success: str = "none"  # none | half
 
 
 _SPELL_BOOK: dict[str, _SpellDef] = {
     "fire bolt": _SpellDef(name="Fire Bolt", level=0, effect="damage", dice="1d10"),
-    "sacred flame": _SpellDef(name="Sacred Flame", level=0, effect="damage", dice="1d8"),
-    "vicious mockery": _SpellDef(name="Vicious Mockery", level=0, effect="damage", dice="1d4"),
+    "sacred flame": _SpellDef(
+        name="Sacred Flame",
+        level=0,
+        effect="damage",
+        dice="1d8",
+        save_ability="DEX",
+        save_on_success="none",
+    ),
+    "vicious mockery": _SpellDef(
+        name="Vicious Mockery",
+        level=0,
+        effect="damage",
+        dice="1d4",
+        save_ability="WIS",
+        save_on_success="none",
+    ),
     "spare the dying": _SpellDef(name="Spare the Dying", level=0, effect="stabilize"),
     "guidance": _SpellDef(name="Guidance", level=0, concentration=True, duration_rounds=10),
     "light": _SpellDef(name="Light", level=0, duration_rounds=600),
     "healing word": _SpellDef(name="Healing Word", level=1, effect="heal", dice="1d4"),
     "cure wounds": _SpellDef(name="Cure Wounds", level=1, effect="heal", dice="1d8"),
-    "guiding bolt": _SpellDef(name="Guiding Bolt", level=1, effect="damage", dice="4d6"),
+    "guiding bolt": _SpellDef(name="Guiding Bolt", level=1, effect="damage", dice="4d6", attack_roll=True),
     "magic missile": _SpellDef(name="Magic Missile", level=1, effect="damage", dice="3d4+3"),
-    "burning hands": _SpellDef(name="Burning Hands", level=1, effect="damage", dice="3d6"),
+    "burning hands": _SpellDef(
+        name="Burning Hands",
+        level=1,
+        effect="damage",
+        dice="3d6",
+        save_ability="DEX",
+        save_on_success="half",
+    ),
     "bless": _SpellDef(name="Bless", level=1, concentration=True, duration_rounds=10),
     "shield of faith": _SpellDef(name="Shield of Faith", level=1, concentration=True, duration_rounds=100),
     "faerie fire": _SpellDef(name="Faerie Fire", level=1, concentration=True, duration_rounds=10),
@@ -114,6 +138,26 @@ def _ability_mod(caster: PlayerCharacter, profile: SpellcastingProfile) -> int:
         return caster.modifier("wisdom")
     if key == "INT":
         return caster.modifier("intelligence")
+    return 0
+
+
+def _defense_mod(target: object, ability_key: str) -> int:
+    key = (ability_key or "").upper()
+    attr = {
+        "STR": "strength",
+        "DEX": "dexterity",
+        "CON": "constitution",
+        "INT": "intelligence",
+        "WIS": "wisdom",
+        "CHA": "charisma",
+    }.get(key)
+    if not attr:
+        return 0
+    if hasattr(target, "modifier") and hasattr(target, attr):
+        try:
+            return int(target.modifier(attr))
+        except Exception:
+            return 0
     return 0
 
 
@@ -203,14 +247,55 @@ class SpellResolver:
             result.ended_effects.append(old.spell_name)
 
         if spell_def.effect == "damage":
-            dmg = _roll_dice(spell_def.dice, self._rng)
-            # For MVP, apply listed damage independently to each target.
+            if key == "magic missile":
+                target_ids = [
+                    tid for tid in request.target_ids
+                    if game_state.get_character(tid) is not None
+                    and hasattr(game_state.get_character(tid), "current_hp")
+                ]
+                if target_ids:
+                    for i in range(3):
+                        tid = target_ids[i % len(target_ids)]
+                        target = game_state.get_character(tid)
+                        if target is None or not hasattr(target, "current_hp"):
+                            continue
+                        dmg = self._rng.randint(1, 4) + 1
+                        target.current_hp = max(0, target.current_hp - dmg)
+                        result.hp_damage[tid] = result.hp_damage.get(tid, 0) + dmg
+                return result
             for tid in request.target_ids:
                 target = game_state.get_character(tid)
                 if target is None or not hasattr(target, "current_hp"):
                     continue
+                if spell_def.attack_roll:
+                    attack_total = self._rng.randint(1, 20) + int(profile.attack_bonus or 0)
+                    target_ac = int(getattr(target, "ac", 10) or 10)
+                    if attack_total < target_ac:
+                        continue
+                if spell_def.save_ability:
+                    save_total = self._rng.randint(1, 20) + _defense_mod(target, spell_def.save_ability)
+                    save_dc = int(profile.save_dc or 10)
+                    saved = save_total >= save_dc
+                else:
+                    saved = False
+                if saved and spell_def.save_on_success == "none":
+                    continue
+                dmg = _roll_dice(spell_def.dice, self._rng)
+                if saved:
+                    if spell_def.save_on_success == "half":
+                        dmg //= 2
                 target.current_hp = max(0, target.current_hp - dmg)
                 result.hp_damage[tid] = result.hp_damage.get(tid, 0) + dmg
+                if key == "vicious mockery":
+                    rider = ActiveSpellEffect(
+                        spell_name="Vicious Mockery Disadvantage",
+                        caster_id=request.caster_id,
+                        target_ids=[tid],
+                        remaining_rounds=10,
+                        concentration=False,
+                    )
+                    runtime.active_effects.append(rider)
+                    result.started_effects.append(rider.spell_name)
         elif spell_def.effect == "heal":
             amount = _roll_dice(spell_def.dice, self._rng) + _ability_mod(caster_obj, profile)
             amount = max(1, amount)

@@ -185,6 +185,7 @@ class CombatResolver:
         scene_geometry=None,
         game_time=None,
         intent_text: str = "",
+        attack_disadvantage: bool = False,
     ) -> tuple[Adjudication, list[str]]:
         """Resolve one attack action. Returns (Adjudication, log_lines).
 
@@ -228,7 +229,15 @@ class CombatResolver:
             return adj, log
 
         # 3. Roll attack
-        d20 = random.randint(1, 20)
+        if attack_disadvantage:
+            d20_a = random.randint(1, 20)
+            d20_b = random.randint(1, 20)
+            d20 = min(d20_a, d20_b)
+            log.append(
+                f"[ATTACK] disadvantage applied: rolls {d20_a} and {d20_b} -> using {d20}"
+            )
+        else:
+            d20 = random.randint(1, 20)
         total_roll = d20 + weapon.attack_bonus
         ac = getattr(target_char, "ac", 10)
         hit = total_roll >= ac

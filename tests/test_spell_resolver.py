@@ -14,6 +14,19 @@ from models.game_state import GameState
 from models.spellcasting import Spell, SpellcastingProfile
 
 
+class _FixedRng:
+    def __init__(self, rolls: list[int]):
+        self._rolls = iter(rolls)
+
+    def randint(self, low: int, high: int) -> int:
+        try:
+            value = next(self._rolls)
+        except StopIteration as exc:
+            raise AssertionError("Fixed RNG ran out of scripted rolls") from exc
+        assert low <= value <= high, f"Scripted roll {value} out of bounds {low}..{high}"
+        return value
+
+
 def _caster(
     *,
     cid: str,
@@ -284,6 +297,290 @@ class TestSpellResolverCore:
         assert "beast1" in result.hp_damage
         assert "beast2" in result.hp_damage
         assert t1.current_hp < 20 and t2.current_hp < 20
+
+    def test_burning_hands_successful_save_takes_half_damage(self):
+        caster = _caster(
+            cid="varrak",
+            name="Varrak",
+            character_class="Sorcerer",
+            level=1,
+            ability_mod=3,
+            cantrips=["Fire Bolt"],
+            known=["Burning Hands"],
+            prepared=[],
+            slots={1: 2},
+        )
+        target = _target("beast1", hp=20)
+        target.dexterity = 18
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        # save roll 12 + DEX mod 4 = 16 vs DC 13 (success), damage roll 6+6+6 = 18 -> half 9
+        result = SpellResolver(rng=_FixedRng([12, 6, 6, 6])).cast(
+            gs,
+            SpellCastRequest(caster_id="varrak", spell_name="Burning Hands", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 9}
+        assert target.current_hp == 11
+
+    def test_burning_hands_failed_save_takes_full_damage(self):
+        caster = _caster(
+            cid="varrak",
+            name="Varrak",
+            character_class="Sorcerer",
+            level=1,
+            ability_mod=3,
+            cantrips=["Fire Bolt"],
+            known=["Burning Hands"],
+            prepared=[],
+            slots={1: 2},
+        )
+        target = _target("beast1", hp=20)
+        target.dexterity = 18
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        # save roll 5 + DEX mod 4 = 9 vs DC 13 (fail), damage roll 6+6+6 = 18 full
+        result = SpellResolver(rng=_FixedRng([5, 6, 6, 6])).cast(
+            gs,
+            SpellCastRequest(caster_id="varrak", spell_name="Burning Hands", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 18}
+        assert target.current_hp == 2
+
+    def test_guiding_bolt_spell_attack_miss_deals_no_damage(self):
+        caster = _caster(
+            cid="tobin",
+            name="Tobin",
+            character_class="Cleric",
+            level=3,
+            ability_mod=3,
+            cantrips=["Guidance"],
+            known=[],
+            prepared=["Guiding Bolt"],
+            slots={1: 4},
+        )
+        target = _target("beast1", hp=20)
+        target.ac = 18
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        result = SpellResolver(rng=_FixedRng([5])).cast(
+            gs,
+            SpellCastRequest(caster_id="tobin", spell_name="Guiding Bolt", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {}
+        assert target.current_hp == 20
+        assert caster.spellcasting.spell_slots_used[1] == 1
+
+    def test_guiding_bolt_spell_attack_hit_deals_damage(self):
+        caster = _caster(
+            cid="tobin",
+            name="Tobin",
+            character_class="Cleric",
+            level=3,
+            ability_mod=3,
+            cantrips=["Guidance"],
+            known=[],
+            prepared=["Guiding Bolt"],
+            slots={1: 4},
+        )
+        target = _target("beast1", hp=20)
+        target.ac = 14
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        result = SpellResolver(rng=_FixedRng([15, 6, 6, 6, 6])).cast(
+            gs,
+            SpellCastRequest(caster_id="tobin", spell_name="Guiding Bolt", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 24}
+        assert target.current_hp == 0
+
+    def test_sacred_flame_successful_save_deals_no_damage(self):
+        caster = _caster(
+            cid="amara",
+            name="Amara",
+            character_class="Cleric",
+            level=3,
+            ability_mod=3,
+            cantrips=["Sacred Flame"],
+            known=[],
+            prepared=[],
+            slots={1: 4},
+        )
+        target = _target("beast1", hp=20)
+        target.dexterity = 18
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        result = SpellResolver(rng=_FixedRng([10])).cast(
+            gs,
+            SpellCastRequest(caster_id="amara", spell_name="Sacred Flame", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {}
+        assert target.current_hp == 20
+
+    def test_sacred_flame_failed_save_deals_damage(self):
+        caster = _caster(
+            cid="amara",
+            name="Amara",
+            character_class="Cleric",
+            level=3,
+            ability_mod=3,
+            cantrips=["Sacred Flame"],
+            known=[],
+            prepared=[],
+            slots={1: 4},
+        )
+        target = _target("beast1", hp=20)
+        target.dexterity = 18
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        result = SpellResolver(rng=_FixedRng([5, 8])).cast(
+            gs,
+            SpellCastRequest(caster_id="amara", spell_name="Sacred Flame", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 8}
+        assert target.current_hp == 12
+
+    def test_vicious_mockery_failed_save_applies_disadvantage_rider(self):
+        caster = _caster(
+            cid="amara",
+            name="Amara",
+            character_class="Bard",
+            level=3,
+            ability_mod=3,
+            cantrips=["Vicious Mockery"],
+            known=[],
+            prepared=[],
+            slots={1: 2},
+        )
+        target = _target("beast1", hp=20)
+        target.wisdom = 10
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        # Save 5 + 0 < DC 13 (fail), damage roll 4
+        result = SpellResolver(rng=_FixedRng([5, 4])).cast(
+            gs,
+            SpellCastRequest(caster_id="amara", spell_name="Vicious Mockery", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 4}
+        assert "Vicious Mockery Disadvantage" in result.started_effects
+        assert any(
+            e.spell_name == "Vicious Mockery Disadvantage" and "beast1" in e.target_ids
+            for e in runtime.active_effects
+        )
+
+    def test_vicious_mockery_successful_save_applies_no_damage_or_rider(self):
+        caster = _caster(
+            cid="amara",
+            name="Amara",
+            character_class="Bard",
+            level=3,
+            ability_mod=3,
+            cantrips=["Vicious Mockery"],
+            known=[],
+            prepared=[],
+            slots={1: 2},
+        )
+        target = _target("beast1", hp=20)
+        target.wisdom = 18
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        # Save 18 + 4 >= DC 13 (success)
+        result = SpellResolver(rng=_FixedRng([18])).cast(
+            gs,
+            SpellCastRequest(caster_id="amara", spell_name="Vicious Mockery", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {}
+        assert "Vicious Mockery Disadvantage" not in result.started_effects
+        assert not any(e.spell_name == "Vicious Mockery Disadvantage" for e in runtime.active_effects)
+
+    def test_magic_missile_auto_hits_high_ac_target(self):
+        caster = _caster(
+            cid="varrak",
+            name="Varrak",
+            character_class="Sorcerer",
+            level=1,
+            ability_mod=3,
+            cantrips=["Fire Bolt"],
+            known=["Magic Missile"],
+            prepared=[],
+            slots={1: 2},
+        )
+        target = _target("beast1", hp=20)
+        target.ac = 25
+        gs = GameState(characters=[caster, target])
+
+        runtime = SpellRuntimeState()
+        # 3 missiles: (1d4+1) each => 4, 4, 3 total 11
+        result = SpellResolver(rng=_FixedRng([3, 3, 2])).cast(
+            gs,
+            SpellCastRequest(caster_id="varrak", spell_name="Magic Missile", target_ids=["beast1"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 11}
+        assert target.current_hp == 9
+
+    def test_magic_missile_splits_missiles_round_robin_across_targets(self):
+        caster = _caster(
+            cid="varrak",
+            name="Varrak",
+            character_class="Sorcerer",
+            level=1,
+            ability_mod=3,
+            cantrips=["Fire Bolt"],
+            known=["Magic Missile"],
+            prepared=[],
+            slots={1: 2},
+        )
+        t1 = _target("beast1", hp=20)
+        t2 = _target("beast2", hp=20)
+        gs = GameState(characters=[caster, t1, t2])
+
+        runtime = SpellRuntimeState()
+        # Missiles assigned beast1, beast2, beast1 with rolls 4,3,2
+        # Damage: beast1=(5+3)=8, beast2=4
+        result = SpellResolver(rng=_FixedRng([4, 3, 2])).cast(
+            gs,
+            SpellCastRequest(caster_id="varrak", spell_name="Magic Missile", target_ids=["beast1", "beast2"]),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.hp_damage == {"beast1": 8, "beast2": 4}
+        assert t1.current_hp == 12
+        assert t2.current_hp == 16
 
     def test_spare_the_dying_emits_stabilize_event(self):
         caster = _caster(

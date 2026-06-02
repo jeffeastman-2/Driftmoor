@@ -65,6 +65,7 @@ class SceneRunner:
         self._initial_active_characters: set[str] | None = None
         self._checkpoint_positions: dict = {}
         self._party_examination_state: dict = {}
+        self._spell_runtime = None
 
     def init(self):
         """Wipe any previous run files so progress is unambiguous."""
@@ -90,6 +91,7 @@ class SceneRunner:
             active_chars,
             checkpoint_positions,
             party_examination_state,
+            spell_runtime,
         ) = load_resume_state(
             self.checkpoint_dir, self.config.characters
         )
@@ -102,6 +104,7 @@ class SceneRunner:
         self._initial_active_characters = active_chars
         self._checkpoint_positions = checkpoint_positions
         self._party_examination_state = party_examination_state
+        self._spell_runtime = spell_runtime
         return last_game_minutes
 
     @property
@@ -131,6 +134,7 @@ class SceneRunner:
             initial_active_characters=self._initial_active_characters,
             initial_positions=self._checkpoint_positions or None,
             initial_party_examination_state=self._party_examination_state or None,
+            initial_spell_runtime=self._spell_runtime,
         )
 
     async def advance_from_to(self, start_minutes: int, end_minutes: int) -> list:

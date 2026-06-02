@@ -16,6 +16,7 @@ from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
 from engine.map_renderer import render_interactive_map_html
 from engine.runtime_paths import get_scene_dir, get_session_dir
+from engine.spell_resolver import SpellRuntimeState
 from models.character import PlayerCharacter, NPC, Creature
 from models.condition import (
     CharacterCondition,
@@ -414,6 +415,7 @@ async def run_scene(
     initial_active_characters: set[str] | None = None
     initial_positions: dict | None = None
     initial_party_examination_state: dict | None = None
+    initial_spell_runtime: SpellRuntimeState | None = None
 
     if resume:
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -424,6 +426,7 @@ async def run_scene(
             active_chars,
             checkpoint_positions,
             party_examination_state,
+            spell_runtime,
         ) = load_resume_state(checkpoint_dir, config.characters)
         if last_turn == 0:
             print(f"Resume requested, but no checkpoints found in {checkpoint_dir}; starting fresh.\n")
@@ -434,6 +437,7 @@ async def run_scene(
         initial_active_characters = active_chars
         initial_positions = checkpoint_positions or None
         initial_party_examination_state = party_examination_state or None
+        initial_spell_runtime = spell_runtime
 
         # Restore wall-clock position for continued play.
         if config.game_time is not None and last_game_minutes is not None:
@@ -470,6 +474,7 @@ async def run_scene(
             initial_active_characters=initial_active_characters,
             initial_positions=initial_positions,
             initial_party_examination_state=initial_party_examination_state,
+            initial_spell_runtime=initial_spell_runtime,
         )
     except Exception as exc:
         elapsed = time.monotonic() - start
