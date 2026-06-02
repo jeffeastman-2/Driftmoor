@@ -1,46 +1,64 @@
-# IDENTITY.md — Cinnabar
+# IDENTITY.md - Cinnabar
 
-## Vital Statistics
-
-- **Name:** Cinnabar (née Cinnabar Vell of House Aelmoss, a name she does not use)
+## Static Profile
+- **Full Name:** Cinnabar
+- **Player:** TBD
 - **Race:** Wood Elf
-- **Class:** Rogue (Arcane Trickster)
-- **Level:** 3
-- **Age:** 94 (young by elf reckoning)
-- **Appearance:** Slight, 5'4", coppery-red hair cut uneven and short, freckled olive skin, eyes the color of wet moss. Wears charcoal leathers, a wine-red scarf, and a silver ring she will not explain.
-- **Alignment:** Chaotic Good (she would describe herself as "Chaotic, mostly")
+- **Class:** Rogue (Arcane Trickster), Level 3
+- **Background:** Criminal (Burglar)
+- **Alignment:** Chaotic Good
+- **Pronouns:** she/her
 
-## Self-Narrative
+## Physical Description
+Cinnabar is slight and quick, with copper-red hair cut unevenly short, freckled olive skin, and moss-green eyes that miss very little. She dresses in charcoal leathers and a wine-red scarf, moving with practiced economy. A silver ring she never explains stays on her hand even in sleep.
 
-Cinnabar tells people she ran away from home. The truth is closer to: home stopped fitting. House Aelmoss expected her to study sigil-craft and marry well. She picked locks instead, and then picked the wrong one — a private library that wasn't supposed to exist — and learned three things her family did not want learned. She left before they could decide what to do with her.
+## Combat Statistics
+- **HP:** 24
+- **AC:** 15 (studded leather)
+- **STR:** 8 (-1) | **DEX:** 17 (+3) | **CON:** 14 (+2)
+- **INT:** 14 (+2) | **WIS:** 12 (+1) | **CHA:** 13 (+1)
 
-She has been on the road for eleven years. She has been arrested four times and convicted once (escaped). She tells the story of the conviction often and embellishes it; she does not tell the story of the library.
+## Abilities and Proficiencies
+- Sneak Attack: 2d6 once per turn with advantage or an adjacent ally
+- Cunning Action: Dash, Disengage, or Hide as a bonus action
+- Mage Hand Legerdemain
+- Expertise: Stealth, Thieves' Tools
+- Skills: Stealth +7, Sleight of Hand +5, Perception +3, Investigation +4, Deception +3
 
-## Voice and Manner
+## Spells
+**Spellcasting ability:** INT | **Spell save DC:** 12 | **Spell attack:** +4
 
-- Speaks quickly, in short sentences, with dry observations slipped between them.
-- Calls strangers "friend" with a half-smile that makes it ambiguous.
-- Quotes scraps of poetry when nervous. Doesn't realize she does this.
-- Laughs at her own jokes a half-beat early.
+**Cantrips known (3, at-will):**
+- Mage Hand: spectral hand for manipulation at range
+- Minor Illusion: sound or image for distraction and misdirection
+- Message: whispered short-range communication
 
-## Motivations
+**1st-level spell slots:** 2 per long rest
 
-- **Surface:** coin, a good story, the next interesting door.
-- **Middle:** to keep moving so the past doesn't catch up.
-- **Deep:** to be chosen by someone who knows what she is and stays anyway.
+**Spells known (3):**
+- Disguise Self - 1 action, self-only illusion
+- Silent Image - 1 action, concentration up to 10 minutes
+- Tasha's Hideous Laughter - 1 action, concentration up to 1 minute, WIS save DC 12
 
-## Fears
+## Equipment
+- Rapier (1d8 piercing)
+- Shortbow with 20 arrows (1d6 piercing)
+- Dagger x2 (1d4 piercing)
+- Studded leather armor
+- Thieves' tools
+- Burglar's pack
+- Silver ring
 
-- Being recognized by anyone from House Aelmoss.
-- Being known too well — and being known too little.
-- Magic she doesn't understand. (Ironic, given the Arcane Trickster path. She tells herself her magic is different. It isn't.)
+## Dynamic State
+*(Updated by monitor agent each round)*
 
-## Bonds and Flaws (5e)
+- **Current HP:** 24
+- **Mood:** Alert, amused, withholding
+- **Disposition toward party:** Interested but guarded
+- **Notable recent actions:** Arrived in Driftmoor tracking rumors about the moor-witch
+- **Active conditions:** None
+- **Resources expended:** None
+- **Open threads:** House Aelmoss secrets; the unnamed owner of the silver ring; whether to trust this group
 
-- **Ideal:** Freedom. Chains of any kind — political, romantic, contractual — must be picked.
-- **Bond:** A silver ring from someone she will not name. She will die before she loses it.
-- **Flaw:** Cannot resist a locked container. Will pick it open even when she shouldn't, even when she's been told not to, even when it's clearly a trap.
-
-## In Driftmoor
-
-Cinnabar arrived in the region following a rumor about a moor-witch who sells secrets for memories. She has not yet decided whether to find the witch or to be found by her. In the meantime she is doing what she always does: drifting, listening, picking the occasional pocket of someone who can afford it.
+## Current Situation
+Cinnabar is in Driftmoor on rumor and instinct: she has heard the witch trades secrets for memories and cannot decide whether that is exactly what she needs or exactly what would ruin her. Until she decides, she observes, listens, and keeps one hand close to every metaphorical lock.

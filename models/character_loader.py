@@ -94,6 +94,21 @@ def _parse_class_level(value: str | None) -> tuple[str, int]:
     return (value.strip(), 1)
 
 
+def _name_from_identity_title(text: str) -> str:
+    """Extract character name from '# IDENTITY.md — Name' heading when present."""
+    m = re.search(r"^#\s+IDENTITY\.md\s*[—–\-]\s*(.+)", text, re.MULTILINE)
+    return m.group(1).strip() if m else ""
+
+
+def _normalize_name(value: str | None) -> str:
+    """Normalize long-form name fields that may include extra narrative text."""
+    if not value:
+        return ""
+    # Newer sheets sometimes append descriptive prose after the first sentence.
+    primary = value.split(".", 1)[0].strip()
+    return primary or value.strip()
+
+
 # ---------------------------------------------------------------------------
 # High-level parse functions (markdown text → dict)
 # ---------------------------------------------------------------------------
@@ -104,14 +119,20 @@ def parse_player_identity(text: str) -> dict:
     result: dict = {}
 
     # Static profile
-    result["name"] = _extract_field(text, "Full Name") or ""
+    result["name"] = (
+        _normalize_name(_extract_field(text, "Full Name"))
+        or _normalize_name(_extract_field(text, "Name"))
+        or _name_from_identity_title(text)
+    )
     result["player"] = _extract_field(text, "Player") or ""
     result["race"] = _extract_field(text, "Race") or ""
     result["background"] = _extract_field(text, "Background") or ""
     result["alignment"] = _extract_field(text, "Alignment") or ""
 
     cls = _extract_field(text, "Class")
-    result["character_class"], result["level"] = _parse_class_level(cls)
+    result["character_class"], parsed_level = _parse_class_level(cls)
+    explicit_level = _parse_int(_extract_field(text, "Level"))
+    result["level"] = explicit_level or parsed_level
 
     # Physical description
     result["physical_description"] = _extract_section(text, "Physical Description")

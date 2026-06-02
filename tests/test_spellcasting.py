@@ -76,7 +76,7 @@ class TestAmaraLifeCleric:
         prepared_by_name = {s.name: s for s in pc.spellcasting.prepared}
         assert prepared_by_name["Bless"].concentration
         assert prepared_by_name["Shield of Faith"].concentration
-        assert prepared_by_name["Sanctuary"].concentration
+        assert not prepared_by_name["Sanctuary"].concentration
         assert not prepared_by_name["Cure Wounds"].concentration
 
     def test_action_economy_parsed(self, pc):

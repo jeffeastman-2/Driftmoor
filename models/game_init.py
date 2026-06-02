@@ -28,6 +28,12 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "lilar": "old_mill",
     "varrak": "salt_and_iron",
     "amara": "beacon_church",
+    "brenna": "weary_traveler",
+    "cinnabar": "gilded_trinket",
+    "gilthaness": "broken_lantern",
+    "hendricks": "broken_lantern",
+    "pippa": "broken_lantern",
+    "tobin": "beacon_church",
 
     # Named NPCs — at their home locations
     "aldren": "mayors_hall",

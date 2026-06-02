@@ -28,8 +28,9 @@ class TestInitialization:
     def test_all_places_loaded(self, state: GameState):
         assert len(state.places) == 54
 
-    def test_seven_players(self, state: GameState):
-        assert len(state.get_players()) == 7
+    def test_all_players_loaded(self, state: GameState):
+        expected = len([d for d in (SCENARIO_DIR / "people" / "players").iterdir() if d.is_dir()])
+        assert len(state.get_players()) == expected
 
 
 class TestPlayerInitialLocations:

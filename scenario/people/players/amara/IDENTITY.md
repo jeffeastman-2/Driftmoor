@@ -12,7 +12,7 @@
 Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carries herself with quiet purpose. White robes with pale gold trim — the vestments of her order, kept clean but showing travel wear. A polished silver holy symbol of Lathander on a chain at her throat. No visible weapons until you notice the sturdy mace at her belt, well-maintained.
 
 ## Combat Statistics
-- **HP:** 10
+- **HP:** 9
 - **AC:** 16 (chain mail)
 - **STR:** 14 (+2) | **DEX:** 10 | **CON:** 12 (+1)
 - **INT:** 10 | **WIS:** 16 (+3) | **CHA:** 14 (+2)
@@ -39,7 +39,7 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 - Shield of Faith — 1 bonus action, 60 ft, conc. up to 10 min, +2 AC to one ally
 - Healing Word — 1 bonus action, 60 ft, 1d4 + 3 HP
 - Guiding Bolt — 1 action, 120 ft, 4d6 radiant; next attack vs target before end of next turn has advantage
-- Sanctuary — 1 bonus action, 30 ft, conc. up to 1 min, attackers must WIS save or pick another target
+- Sanctuary — 1 bonus action, 30 ft, attackers must WIS save or pick another target
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
@@ -55,7 +55,7 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 ## Dynamic State
 *(Updated by monitor agent each round)*
 
-- **Current HP:** 10
+- **Current HP:** 9
 - **Spell slots used:** None
 - **Mood:** Calm, purposeful
 - **Disposition toward party:** Open, earnest, looking for connection
