@@ -88,6 +88,9 @@ class CharacterSession:
     player_channel: str = ""
     player_inbox: str = ""
     player_outbox: str = ""
+    # Cursor into raw_history lines for transport prompts; used to send only
+    # new statements/actions since this player's last turn.
+    transport_history_cursor: int = 0
 
 
 @dataclass
@@ -2295,10 +2298,11 @@ def _render_transport_prompt(
     from engine.runtime_paths import current_session_id
 
     perception = context.perception.strip() if context.perception else "No other creatures are visible."
-    scene = _compact_scene_for_transport(
-        context.scene_context,
+    scene = _render_transport_scene_delta(
+        scene_context=context.scene_context,
         turn=context.turn,
         raw_history=raw_history,
+        cs=cs,
     )
     return (
         f"PACKET: TURN PROMPT\n"
@@ -2317,11 +2321,49 @@ def _render_transport_prompt(
     )
 
 
+def _history_lines_dedup(raw_history: str) -> list[str]:
+    """Normalize raw history to a de-duplicated line list."""
+    history_lines = [ln.rstrip() for ln in (raw_history or "").splitlines() if ln.strip()]
+    deduped_history: list[str] = []
+    last_norm = ""
+    for ln in history_lines:
+        norm = " ".join(ln.strip().lower().split())
+        if norm == last_norm:
+            continue
+        deduped_history.append(ln)
+        last_norm = norm
+    return deduped_history
+
+
+def _render_transport_scene_delta(
+    *,
+    scene_context: str,
+    turn: int,
+    raw_history: str,
+    cs: CharacterSession,
+) -> str:
+    """Render scene block for transport prompts with per-player delta history."""
+    # Turn 1 keeps compact scene intro. Seed cursor to avoid replaying old
+    # context on turn 2 if raw history already exists (resume/new join).
+    if turn <= 1:
+        cs.transport_history_cursor = len(_history_lines_dedup(raw_history))
+        return _compact_scene_for_transport(scene_context, turn=turn, raw_history=raw_history)
+
+    history_lines = _history_lines_dedup(raw_history)
+    start = max(0, min(cs.transport_history_cursor, len(history_lines)))
+    delta = history_lines[start:]
+    cs.transport_history_cursor = len(history_lines)
+
+    if not delta:
+        return "Recent context (since your last turn):\n(no new statements or actions)"
+    return "Recent context (since your last turn):\n" + "\n".join(delta)
+
+
 def _compact_scene_for_transport(
     scene_context: str,
     *,
-    max_lines: int = 8,
-    max_chars: int = 900,
+    max_lines: int = 24,
+    max_chars: int = 1800,
     turn: int = 1,
     raw_history: str = "",
 ) -> str:
@@ -2540,7 +2582,6 @@ def _render_turn_result_packet(
 
         if cr.character_id == player_id:
             lines.append("[you]")
-            lines.append(f"Intent: {cr.intent.intent.strip()}")
             if cr.narration.prose:
                 lines.append(f"Outcome: {_truncate_for_transport(cr.narration.prose.strip(), 420)}")
             lines.append("")
@@ -3828,6 +3869,7 @@ async def iter_session(
             # Build history entry: dialogue + narration
             history_entry = ""
             spoken = cr.output.spoken or ""
+            action = (cr.output.action or "").strip()
             if spoken.strip() and spoken.strip().lower() not in (
                 "(silent)", "(silence)",
             ):
@@ -3836,6 +3878,10 @@ async def iter_session(
                 history_entry += (
                     f'\n{handle} says: "{spoken.strip()}"'
                 )
+            if action:
+                cs = characters[cr.character_id]
+                handle = cs.scene_handle or cr.character_id
+                history_entry += f"\n{handle} acts: {action}"
             if cr.narration.prose:
                 history_entry += f"\n{cr.narration.prose}"
             if history_entry:
@@ -3860,6 +3906,7 @@ async def iter_session(
                 )
             # Accumulate dialogue + narration for next turn's context
             spoken = cr.output.spoken or ""
+            action = (cr.output.action or "").strip()
             history_entry = ""
             if spoken.strip() and spoken.strip().lower() not in (
                 "(silent)", "(silence)",
@@ -3869,6 +3916,10 @@ async def iter_session(
                 history_entry += (
                     f'\n{handle} says: "{spoken.strip()}"'
                 )
+            if action:
+                cs = characters[cr.character_id]
+                handle = cs.scene_handle or cr.character_id
+                history_entry += f"\n{handle} acts: {action}"
             if cr.narration.prose:
                 history_entry += f"\n{cr.narration.prose}"
             if history_entry:

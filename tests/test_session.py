@@ -18,6 +18,8 @@ from engine.session import (
     _save_turn,
     _checkpoint_filename,
     _resolve_attacks,
+    _render_turn_result_packet,
+    _render_transport_prompt,
     load_resume_state,
     _has_vicious_mockery_disadvantage,
     _consume_vicious_mockery_disadvantage,
@@ -27,7 +29,8 @@ from engine.session import (
 )
 from engine.scene_manager import TurnCycle, RoleSet, TurnResult, CharacterTurnResult
 from engine.player_router import PlayerLeft, PlayerRight, RoleContext
-from engine.dm_agent import DMLeft, DMRight
+from engine.dm_agent import DMLeft, DMRight, Adjudication, Narration
+from engine.player_router import ActionIntent, CharacterOutput
 from engine.initiative import roll_initiative
 from engine.spell_resolver import ActiveSpellEffect, SpellResolver, SpellRuntimeState
 from models.character import PlayerCharacter, Creature
@@ -190,6 +193,87 @@ class TestTransportUtteranceSplit:
 
         assert spoken == ""
         assert action == "Are these recent charts? When was this information recorded?"
+
+
+class TestTransportPromptAndPacketFormatting:
+    def _make_transport_session(self, cid: str = "gilthaness") -> CharacterSession:
+        pc = PlayerCharacter(
+            id=cid,
+            name="Gilthaness",
+            race="Elf",
+            character_type="player",
+            character_class="Rogue",
+            hp=12,
+            current_hp=12,
+            dexterity=16,
+        )
+        return CharacterSession(
+            character=pc,
+            condition=CharacterCondition(
+                character_id=cid,
+                character_name="Gilthaness",
+                state=NeurochemicalState(),
+            ),
+            soul="",
+            identity="",
+            initial_scene="You stand in Elyssa's cottage.",
+            scene_handle="Gil",
+            player_transport="telegram",
+        )
+
+    def test_turn_result_packet_omits_self_intent(self):
+        cs = self._make_transport_session("gilthaness")
+        cr = CharacterTurnResult(
+            character_id="gilthaness",
+            turn=1,
+            intent=ActionIntent(character_id="gilthaness", turn=1, intent="Inspect the map table."),
+            output=CharacterOutput(character_id="gilthaness", turn=1, action="Inspects the table."),
+            adjudication=Adjudication(character_id="gilthaness", turn=1, approved=True),
+            narration=Narration(character_id="gilthaness", turn=1, prose="Gilthaness studies the old charts."),
+        )
+        tr = TurnResult(turn=1, initiative_order=["gilthaness"], character_results=[cr])
+
+        packet = _render_turn_result_packet(
+            player_id="gilthaness",
+            turn_result=tr,
+            characters={"gilthaness": cs},
+        )
+
+        assert "[you]" in packet
+        assert "Intent:" not in packet
+        assert "Outcome:" in packet
+
+    def test_transport_prompt_uses_delta_since_last_turn_without_truncation(self):
+        cs = self._make_transport_session("gilthaness")
+        ctx = RoleContext(
+            character_id="gilthaness",
+            turn=2,
+            condition_text="steady",
+            scene_context="You stand in Elyssa's cottage.",
+            soul="",
+            identity="",
+            perception="No other creatures are visible.",
+        )
+
+        lines = [f"line {i}" for i in range(1, 31)]
+        raw_history = "\n".join(lines)
+        cs.transport_history_cursor = 0
+
+        packet = _render_transport_prompt(context=ctx, cs=cs, raw_history=raw_history)
+        # No truncation: all 30 lines should be present in delta context.
+        assert "line 1" in packet
+        assert "line 30" in packet
+
+        # Next turn with same history should have no redundant replay.
+        ctx.turn = 3
+        packet2 = _render_transport_prompt(context=ctx, cs=cs, raw_history=raw_history)
+        assert "(no new statements or actions)" in packet2
+
+        # Add new activity and ensure only new lines appear.
+        raw_history2 = raw_history + "\nline 31\nline 32"
+        packet3 = _render_transport_prompt(context=ctx, cs=cs, raw_history=raw_history2)
+        assert "line 31" in packet3 and "line 32" in packet3
+        assert "line 1" not in packet3
 
 
 # ---------------------------------------------------------------------------
