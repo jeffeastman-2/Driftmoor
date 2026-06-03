@@ -12,6 +12,8 @@ build/
 !.env.example
 .venv/
 venv/
+**/.venv/
+**/venv/
 
 # Runtime state (session data, logs, serialized state)
 runtime/
