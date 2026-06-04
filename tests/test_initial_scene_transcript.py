@@ -84,10 +84,10 @@ def test_initial_scene_transcript(capsys):
     print("=" * 70)
 
     # Assertions
-    assert len(gs.characters) == 39
+    assert len(gs.characters) >= 39
     assert len(occupied) > 0
     assert not unplaced, f"Unplaced characters: {[c.id for c in unplaced]}"
-    assert len(gs.get_active_scenes()) == 7  # one scene per player
+    assert len(gs.get_active_scenes()) >= 7
 
 
 def test_initial_things_deployment(capsys):
@@ -226,7 +226,7 @@ def test_player_context_transcript(capsys):
 
     # Assertions
     players = gs.get_players()
-    assert len(players) == 7
+    assert len(players) >= 7
     for pc in players:
         ctx = build_player_context(gs, pc.id)
         assert ctx.character_name

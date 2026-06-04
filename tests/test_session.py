@@ -194,6 +194,19 @@ class TestTransportUtteranceSplit:
         assert spoken == ""
         assert action == "Are these recent charts? When was this information recorded?"
 
+    def test_multiple_action_spoken_pairs_preserve_all_content(self):
+        text = (
+            'I look at her data. "I see the energy surges you describe." '
+            'I point to the shard glowing slowly. "Are the fragments the ones here in your study?"'
+        )
+        spoken, action = _split_transport_utterance(text)
+
+        assert spoken == (
+            "I see the energy surges you describe. "
+            "Are the fragments the ones here in your study?"
+        )
+        assert action == "I look at her data. I point to the shard glowing slowly."
+
 
 class TestTransportPromptAndPacketFormatting:
     def _make_transport_session(self, cid: str = "gilthaness") -> CharacterSession:
@@ -227,7 +240,12 @@ class TestTransportPromptAndPacketFormatting:
             character_id="gilthaness",
             turn=1,
             intent=ActionIntent(character_id="gilthaness", turn=1, intent="Inspect the map table."),
-            output=CharacterOutput(character_id="gilthaness", turn=1, action="Inspects the table."),
+            output=CharacterOutput(
+                character_id="gilthaness",
+                turn=1,
+                spoken="Can you explain this marker?",
+                action="Leans over the table and points to the shard.",
+            ),
             adjudication=Adjudication(character_id="gilthaness", turn=1, approved=True),
             narration=Narration(character_id="gilthaness", turn=1, prose="Gilthaness studies the old charts."),
         )
@@ -241,6 +259,8 @@ class TestTransportPromptAndPacketFormatting:
 
         assert "[you]" in packet
         assert "Intent:" not in packet
+        assert "Spoken: Can you explain this marker?" in packet
+        assert "Action: Leans over the table and points to the shard." in packet
         assert "Outcome:" in packet
 
     def test_transport_prompt_uses_delta_since_last_turn_without_truncation(self):

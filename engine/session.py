@@ -2582,6 +2582,12 @@ def _render_turn_result_packet(
 
         if cr.character_id == player_id:
             lines.append("[you]")
+            spoken = (cr.output.spoken or "").strip()
+            action = (cr.output.action or "").strip()
+            if spoken and spoken.lower() not in {"(silent)", "(silence)"}:
+                lines.append(f"Spoken: {spoken}")
+            if action:
+                lines.append(f"Action: {action}")
             if cr.narration.prose:
                 lines.append(f"Outcome: {_truncate_for_transport(cr.narration.prose.strip(), 420)}")
             lines.append("")
