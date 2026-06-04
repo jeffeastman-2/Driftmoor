@@ -5,6 +5,25 @@
 - **Race:** Human, Female, age 20
 - **Location:** Ironhoof Forge stables
 
+## Combat Statistics
+- **HP:** 10
+- **AC:** 11
+
+## Neurochemical Baseline
+- **dopamine:** 0.65
+- **cortisol:** 0.3
+- **norepinephrine:** 0.55
+- **endorphins:** 0.6
+- **serotonin:** 0.55
+- **acetylcholine:** 0.65
+- **oxytocin:** 0.5
+- **dopamine_baseline:** 0.6
+- **dopamine_volatility:** 0.9
+- **cortisol_baseline:** 0.25
+- **cortisol_volatility:** 0.7
+- **oxytocin_baseline:** 0.45
+- **oxytocin_volatility:** 0.6
+
 ## Physical Description
 Lithe, red-haired, freckled. Confident posture. Usually smells of hay and horses and wears dirt-streaked clothes with complete comfort. Moves quickly and efficiently around the stables.
 

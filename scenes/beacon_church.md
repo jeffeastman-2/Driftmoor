@@ -42,69 +42,22 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/amara/SOUL.md
 - **identity_file:** scenario/people/players/amara/IDENTITY.md
-- **hp:** 10
-- **ac:** 16
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.5
-- **cortisol:** 0.35
-- **norepinephrine:** 0.4
-- **endorphins:** 0.5
-- **serotonin:** 0.65
-- **acetylcholine:** 0.55
-- **oxytocin:** 0.55
-- **dopamine_baseline:** 0.5
-- **dopamine_volatility:** 0.5
-- **cortisol_baseline:** 0.3
-- **cortisol_volatility:** 0.5
-- **serotonin_baseline:** 0.65
-- **serotonin_volatility:** 0.3
-- **oxytocin_baseline:** 0.5
-- **oxytocin_volatility:** 0.5
 
 ### elden
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elden/SOUL.md
 - **identity_file:** scenario/people/npcs/elden/IDENTITY.md
-- **hp:** 8
-- **ac:** 10
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.35
-- **cortisol:** 0.45
-- **norepinephrine:** 0.35
-- **endorphins:** 0.3
-- **serotonin:** 0.55
-- **acetylcholine:** 0.5
-- **oxytocin:** 0.5
-- **dopamine_baseline:** 0.35
-- **dopamine_volatility:** 0.3
-- **cortisol_baseline:** 0.4
-- **cortisol_volatility:** 0.4
-- **serotonin_baseline:** 0.55
-- **serotonin_volatility:** 0.3
 
 ### mira
 - **type:** npc
 - **soul_file:** scenario/people/npcs/mira/SOUL.md
 - **identity_file:** scenario/people/npcs/mira/IDENTITY.md
-- **hp:** 6
-- **ac:** 10
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.45
-- **cortisol:** 0.45
-- **norepinephrine:** 0.55
-- **endorphins:** 0.4
-- **serotonin:** 0.5
-- **acetylcholine:** 0.65
-- **oxytocin:** 0.45
-- **dopamine_baseline:** 0.45
-- **dopamine_volatility:** 0.6
-- **cortisol_baseline:** 0.35
-- **cortisol_volatility:** 0.7
-- **acetylcholine_baseline:** 0.6
-- **acetylcholine_volatility:** 0.5
 
 ## Scene Introductions
 

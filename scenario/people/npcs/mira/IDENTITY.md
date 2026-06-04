@@ -5,6 +5,25 @@
 - **Race:** Human, Female, age 19
 - **Location:** The Beacon, small rise above village
 
+## Combat Statistics
+- **HP:** 6
+- **AC:** 10
+
+## Neurochemical Baseline
+- **dopamine:** 0.45
+- **cortisol:** 0.45
+- **norepinephrine:** 0.55
+- **endorphins:** 0.4
+- **serotonin:** 0.5
+- **acetylcholine:** 0.65
+- **oxytocin:** 0.45
+- **dopamine_baseline:** 0.45
+- **dopamine_volatility:** 0.6
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.7
+- **acetylcholine_baseline:** 0.6
+- **acetylcholine_volatility:** 0.5
+
 ## Physical Description
 Short and stout. Long red hair in braids. Freckles. Plain grey smocks, always clean and practical. Moves efficiently — she keeps the church and the priest running and does not waste motion.
 

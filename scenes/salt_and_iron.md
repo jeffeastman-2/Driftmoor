@@ -42,47 +42,15 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/varrak/SOUL.md
 - **identity_file:** scenario/people/players/varrak/IDENTITY.md
-- **hp:** 8
-- **ac:** 13
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.55
-- **cortisol:** 0.4
-- **norepinephrine:** 0.5
-- **endorphins:** 0.35
-- **serotonin:** 0.4
-- **acetylcholine:** 0.7
-- **oxytocin:** 0.15
-- **dopamine_baseline:** 0.5
-- **dopamine_volatility:** 0.6
-- **cortisol_baseline:** 0.35
-- **cortisol_volatility:** 0.5
-- **acetylcholine_baseline:** 0.65
-- **acetylcholine_volatility:** 0.4
-- **oxytocin_baseline:** 0.1
-- **oxytocin_volatility:** 0.2
 
 ### jorgen
 - **type:** npc
 - **soul_file:** scenario/people/npcs/jorgen/SOUL.md
 - **identity_file:** scenario/people/npcs/jorgen/IDENTITY.md
-- **hp:** 16
-- **ac:** 11
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.4
-- **cortisol:** 0.45
-- **norepinephrine:** 0.45
-- **endorphins:** 0.35
-- **serotonin:** 0.5
-- **acetylcholine:** 0.55
-- **oxytocin:** 0.25
-- **dopamine_baseline:** 0.4
-- **dopamine_volatility:** 0.3
-- **cortisol_baseline:** 0.4
-- **cortisol_volatility:** 0.5
-- **serotonin_baseline:** 0.5
-- **serotonin_volatility:** 0.3
 
 ## Scene Introductions
 

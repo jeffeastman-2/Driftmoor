@@ -51,6 +51,23 @@ Weathered face, marks of a life in service. Broad-shouldered, sturdy. Graying br
 - Explorer's pack
 - Healer's kit (stabilize without a roll)
 
+## Neurochemical Baseline
+- **dopamine:** 0.45
+- **cortisol:** 0.4
+- **norepinephrine:** 0.45
+- **endorphins:** 0.4
+- **serotonin:** 0.6
+- **acetylcholine:** 0.55
+- **oxytocin:** 0.55
+- **dopamine_baseline:** 0.45
+- **dopamine_volatility:** 0.4
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.5
+- **serotonin_baseline:** 0.6
+- **serotonin_volatility:** 0.3
+- **oxytocin_baseline:** 0.5
+- **oxytocin_volatility:** 0.5
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

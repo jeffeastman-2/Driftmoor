@@ -40,47 +40,15 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/seraphina/SOUL.md
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
-- **hp:** 9
-- **ac:** 11
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.65
-- **cortisol:** 0.4
-- **norepinephrine:** 0.6
-- **endorphins:** 0.5
-- **serotonin:** 0.45
-- **acetylcholine:** 0.75
-- **oxytocin:** 0.25
-- **dopamine_baseline:** 0.55
-- **dopamine_volatility:** 0.9
-- **cortisol_baseline:** 0.4
-- **cortisol_volatility:** 0.8
-- **acetylcholine_baseline:** 0.65
-- **acetylcholine_volatility:** 0.7
-- **oxytocin_baseline:** 0.2
-- **oxytocin_volatility:** 0.4
 
 ### tavian
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tavian/SOUL.md
 - **identity_file:** scenario/people/npcs/tavian/IDENTITY.md
-- **hp:** 18
-- **ac:** 13
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.5
-- **cortisol:** 0.35
-- **norepinephrine:** 0.5
-- **endorphins:** 0.55
-- **serotonin:** 0.6
-- **acetylcholine:** 0.7
-- **oxytocin:** 0.3
-- **dopamine_baseline:** 0.5
-- **dopamine_volatility:** 0.5
-- **cortisol_baseline:** 0.3
-- **cortisol_volatility:** 0.6
-- **serotonin_baseline:** 0.6
-- **serotonin_volatility:** 0.4
 
 ## Scene Introductions
 

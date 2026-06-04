@@ -5,6 +5,25 @@
 - **Race:** Human, Male, age 62
 - **Location:** The Beacon, small rise overlooking village
 
+## Combat Statistics
+- **HP:** 8
+- **AC:** 10
+
+## Neurochemical Baseline
+- **dopamine:** 0.35
+- **cortisol:** 0.45
+- **norepinephrine:** 0.35
+- **endorphins:** 0.3
+- **serotonin:** 0.55
+- **acetylcholine:** 0.5
+- **oxytocin:** 0.5
+- **dopamine_baseline:** 0.35
+- **dopamine_volatility:** 0.3
+- **cortisol_baseline:** 0.4
+- **cortisol_volatility:** 0.4
+- **serotonin_baseline:** 0.55
+- **serotonin_volatility:** 0.3
+
 ## Physical Description
 Frail, long white beard, kind blue eyes. Simple robes, patched but clean. Carries a polished oak staff to aid walking. Moves slowly but with dignity. At night the church lantern is lit — recently flickering with strange dark light.
 

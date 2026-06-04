@@ -30,6 +30,26 @@ Short but commanding. Fiery red beard braided and tucked into his belt. Steel-gr
 - Dagger (1d4 piercing)
 - Light crossbow + 20 bolts (1d8 piercing, range 80/320)
 
+## Neurochemical Baseline
+- **dopamine:** 0.4
+- **cortisol:** 0.45
+- **norepinephrine:** 0.5
+- **endorphins:** 0.35
+- **serotonin:** 0.4
+- **acetylcholine:** 0.6
+- **oxytocin:** 0.2
+- **dopamine_baseline:** 0.4
+- **dopamine_volatility:** 0.4
+- **cortisol_baseline:** 0.45
+- **cortisol_volatility:** 0.5
+- **serotonin_baseline:** 0.45
+- **serotonin_volatility:** 0.3
+- **oxytocin_baseline:** 0.15
+- **oxytocin_volatility:** 0.3
+
+## Runtime Defaults
+- **scene_handle:** the dwarf fighter
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

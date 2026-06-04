@@ -3,7 +3,30 @@
 ## Static Profile
 - **Role:** Scholar, historian, quest giver
 - **Race:** High Elf, Female
+- **Pronouns:** she/her
 - **Location:** Stone cottage, outskirts of Driftmoor, low hill above Greywater River
+
+## Combat Statistics
+- **HP:** 24
+- **AC:** 12
+
+## Neurochemical Baseline
+- **dopamine:** 0.42
+- **cortisol:** 0.44
+- **norepinephrine:** 0.54
+- **endorphins:** 0.40
+- **serotonin:** 0.52
+- **acetylcholine:** 0.72
+- **oxytocin:** 0.36
+- **dopamine_baseline:** 0.40
+- **dopamine_volatility:** 0.25
+- **cortisol_baseline:** 0.42
+- **cortisol_volatility:** 0.35
+- **acetylcholine_baseline:** 0.70
+- **acetylcholine_volatility:** 0.25
+
+## Runtime Defaults
+- **scene_handle:** The scholar of Driftmoor
 
 ## Physical Description
 Tall, elegant. Silver hair in a loose braid. Piercing blue eyes. Simple practical robes often stained with ink or dust. Hands always slightly smudged. Sign by door reads "E. Moonglow – Researcher" in Elvish script.

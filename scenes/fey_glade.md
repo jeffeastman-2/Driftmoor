@@ -27,13 +27,11 @@
 - **type:** player
 - **soul_file:** scenario/people/players/aeliana/SOUL.md
 - **identity_file:** scenario/people/players/aeliana/IDENTITY.md
-- **scene_handle:** the elf ranger
 
 ### fennel
 - **type:** player
 - **soul_file:** scenario/people/npcs/fennel/SOUL.md
 - **identity_file:** scenario/people/npcs/fennel/IDENTITY.md
-- **scene_handle:** the young gatherer
 
 ### shadowbeast_1
 - **type:** creature

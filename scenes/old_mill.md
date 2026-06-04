@@ -42,69 +42,22 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/lilar/SOUL.md
 - **identity_file:** scenario/people/players/lilar/IDENTITY.md
-- **hp:** 10
-- **ac:** 14
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.45
-- **cortisol:** 0.4
-- **norepinephrine:** 0.45
-- **endorphins:** 0.4
-- **serotonin:** 0.6
-- **acetylcholine:** 0.55
-- **oxytocin:** 0.55
-- **dopamine_baseline:** 0.45
-- **dopamine_volatility:** 0.4
-- **cortisol_baseline:** 0.35
-- **cortisol_volatility:** 0.5
-- **serotonin_baseline:** 0.6
-- **serotonin_volatility:** 0.3
-- **oxytocin_baseline:** 0.5
-- **oxytocin_volatility:** 0.5
 
 ### gregan
 - **type:** npc
 - **soul_file:** scenario/people/npcs/haversteads/gregan.md
 - **identity_file:** scenario/people/npcs/haversteads/gregan.md
-- **hp:** 14
-- **ac:** 10
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.3
-- **cortisol:** 0.6
-- **norepinephrine:** 0.55
-- **endorphins:** 0.25
-- **serotonin:** 0.4
-- **acetylcholine:** 0.5
-- **oxytocin:** 0.45
-- **dopamine_baseline:** 0.35
-- **dopamine_volatility:** 0.3
-- **cortisol_baseline:** 0.5
-- **cortisol_volatility:** 0.6
-- **oxytocin_baseline:** 0.4
-- **oxytocin_volatility:** 0.4
 
 ### tessa
 - **type:** npc
 - **soul_file:** scenario/people/npcs/haversteads/tessa.md
 - **identity_file:** scenario/people/npcs/haversteads/tessa.md
-- **hp:** 6
-- **ac:** 10
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.6
-- **cortisol:** 0.5
-- **norepinephrine:** 0.65
-- **endorphins:** 0.55
-- **serotonin:** 0.45
-- **acetylcholine:** 0.7
-- **oxytocin:** 0.4
-- **dopamine_baseline:** 0.55
-- **dopamine_volatility:** 0.9
-- **cortisol_baseline:** 0.35
-- **cortisol_volatility:** 0.8
-- **acetylcholine_baseline:** 0.65
-- **acetylcholine_volatility:** 0.7
 
 ## Scene Introductions
 

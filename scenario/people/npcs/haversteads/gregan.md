@@ -27,3 +27,22 @@ Broad-shouldered, weathered, graying hair and thick beard, usually dusted with f
 2. Tessa missing near the obelisk — family will pay or barter for her return
 3. Sabotage symbols on the beams — wants answers
 4. Shadowbeast attack on a grain-delivery farmer — needs protection
+
+## Combat Statistics
+- **HP:** 14
+- **AC:** 10
+
+## Neurochemical Baseline
+- **dopamine:** 0.3
+- **cortisol:** 0.6
+- **norepinephrine:** 0.55
+- **endorphins:** 0.25
+- **serotonin:** 0.4
+- **acetylcholine:** 0.5
+- **oxytocin:** 0.45
+- **dopamine_baseline:** 0.35
+- **dopamine_volatility:** 0.3
+- **cortisol_baseline:** 0.5
+- **cortisol_volatility:** 0.6
+- **oxytocin_baseline:** 0.4
+- **oxytocin_volatility:** 0.4

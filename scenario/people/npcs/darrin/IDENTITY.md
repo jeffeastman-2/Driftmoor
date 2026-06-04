@@ -5,6 +5,25 @@
 - **Race:** Human, Male, age 48
 - **Location:** Ironhoof Forge, outskirts near road into town
 
+## Combat Statistics
+- **HP:** 16
+- **AC:** 12
+
+## Neurochemical Baseline
+- **dopamine:** 0.35
+- **cortisol:** 0.55
+- **norepinephrine:** 0.5
+- **endorphins:** 0.3
+- **serotonin:** 0.5
+- **acetylcholine:** 0.55
+- **oxytocin:** 0.45
+- **dopamine_baseline:** 0.35
+- **dopamine_volatility:** 0.3
+- **cortisol_baseline:** 0.4
+- **cortisol_volatility:** 0.6
+- **oxytocin_baseline:** 0.4
+- **oxytocin_volatility:** 0.4
+
 ## Physical Description
 Burly, thick black beard streaked with gray. Broad shoulders. Hands calloused from decades at the anvil. Usually found at the forge or moving between it and the stables. The forge is visible from the road — large anvil, roaring fire.
 

@@ -50,6 +50,23 @@ Tall and imposing, scales the deep crimson of cooling iron. Amber eyes with vert
 - Leather satchel with collected obelisk notes and fragment sketches
 - Two daggers (1d4 piercing)
 
+## Neurochemical Baseline
+- **dopamine:** 0.55
+- **cortisol:** 0.4
+- **norepinephrine:** 0.5
+- **endorphins:** 0.35
+- **serotonin:** 0.4
+- **acetylcholine:** 0.7
+- **oxytocin:** 0.15
+- **dopamine_baseline:** 0.5
+- **dopamine_volatility:** 0.6
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.5
+- **acetylcholine_baseline:** 0.65
+- **acetylcholine_volatility:** 0.4
+- **oxytocin_baseline:** 0.1
+- **oxytocin_volatility:** 0.2
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

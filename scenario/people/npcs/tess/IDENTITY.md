@@ -5,6 +5,25 @@
 - **Race:** Human, Female, age 42
 - **Location:** The Broken Lantern, village center
 
+## Combat Statistics
+- **HP:** 14
+- **AC:** 11
+
+## Neurochemical Baseline
+- **dopamine:** 0.45
+- **cortisol:** 0.4
+- **norepinephrine:** 0.5
+- **endorphins:** 0.4
+- **serotonin:** 0.55
+- **acetylcholine:** 0.7
+- **oxytocin:** 0.3
+- **dopamine_baseline:** 0.45
+- **dopamine_volatility:** 0.4
+- **cortisol_baseline:** 0.35
+- **cortisol_volatility:** 0.5
+- **acetylcholine_baseline:** 0.65
+- **acetylcholine_volatility:** 0.3
+
 ## Physical Description
 Sturdy build. Short-cropped black hair streaked with gray. Permanent smirk. Arms strong from years of hauling barrels and breaking up fights. Usually found behind the bar or moving through the main room with the awareness of someone who has worked in dangerous places.
 

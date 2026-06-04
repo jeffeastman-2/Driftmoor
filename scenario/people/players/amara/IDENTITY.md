@@ -12,10 +12,30 @@
 Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carries herself with quiet purpose. White robes with pale gold trim — the vestments of her order, kept clean but showing travel wear. A polished silver holy symbol of Lathander on a chain at her throat. No visible weapons until you notice the sturdy mace at her belt, well-maintained.
 
 ## Combat Statistics
-- **HP:** 9
+- **HP:** 10
 - **AC:** 16 (chain mail)
 - **STR:** 14 (+2) | **DEX:** 10 | **CON:** 12 (+1)
 - **INT:** 10 | **WIS:** 16 (+3) | **CHA:** 14 (+2)
+
+## Neurochemical Baseline
+- **dopamine:** 0.5
+- **cortisol:** 0.35
+- **norepinephrine:** 0.4
+- **endorphins:** 0.5
+- **serotonin:** 0.65
+- **acetylcholine:** 0.55
+- **oxytocin:** 0.55
+- **dopamine_baseline:** 0.5
+- **dopamine_volatility:** 0.5
+- **cortisol_baseline:** 0.3
+- **cortisol_volatility:** 0.5
+- **serotonin_baseline:** 0.65
+- **serotonin_volatility:** 0.3
+- **oxytocin_baseline:** 0.5
+- **oxytocin_volatility:** 0.5
+
+## Runtime Defaults
+- **scene_handle:** the Lathander cleric
 
 ## Abilities and Proficiencies
 - Disciple of Life: healing spells restore additional 2 + spell level HP

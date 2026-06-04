@@ -37,55 +37,21 @@ observation.
 ### gilthaness
 - **type:** player
 - **soul_file:** scenario/people/players/gilthaness/Gilthaness_SOUL.md
-- **identity_file:** scenario/people/players/gilthaness/Gilthaness_IDENTITY.md
-- **scene_handle:** The elven magic-user
-- **pronouns:** she/her
+- **identity_file:** scenario/people/players/gilthaness/IDENTITY.md
 - **player:** telegram
 - **channel:** telegram
 - **host:** ultra
 - **inbox:** ~/messages/from-gilthaness
 - **outbox:** ~/messages/to-gilthaness
-- **hp:** 87
-- **ac:** 17
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.58
-- **cortisol:** 0.30
-- **norepinephrine:** 0.45
-- **endorphins:** 0.55
-- **serotonin:** 0.71
-- **acetylcholine:** 0.86
-- **oxytocin:** 0.62
-- **dopamine_baseline:** 0.58
-- **dopamine_volatility:** 0.35
-- **cortisol_baseline:** 0.30
-- **cortisol_volatility:** 0.30
-- **serotonin_baseline:** 0.70
-- **serotonin_volatility:** 0.20
 
 ### elyssa
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elyssa/SOUL.md
 - **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
-- **scene_handle:** The scholar of Driftmoor
-- **pronouns:** she/her
-- **hp:** 24
-- **ac:** 12
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.42
-- **cortisol:** 0.44
-- **norepinephrine:** 0.54
-- **endorphins:** 0.40
-- **serotonin:** 0.52
-- **acetylcholine:** 0.72
-- **oxytocin:** 0.36
-- **dopamine_baseline:** 0.40
-- **dopamine_volatility:** 0.25
-- **cortisol_baseline:** 0.42
-- **cortisol_volatility:** 0.35
-- **acetylcholine_baseline:** 0.70
-- **acetylcholine_volatility:** 0.25
 
 ## Scene Introductions
 

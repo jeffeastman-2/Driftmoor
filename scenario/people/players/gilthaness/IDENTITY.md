@@ -18,6 +18,24 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - **STR:** 10 (+0) | **DEX:** 20 (+5) | **CON:** 14 (+2)
 - **INT:** 16 (+3) | **WIS:** 14 (+2) | **CHA:** 12 (+1)
 
+## Neurochemical Baseline
+- **dopamine:** 0.58
+- **cortisol:** 0.30
+- **norepinephrine:** 0.45
+- **endorphins:** 0.55
+- **serotonin:** 0.71
+- **acetylcholine:** 0.86
+- **oxytocin:** 0.62
+- **dopamine_baseline:** 0.58
+- **dopamine_volatility:** 0.35
+- **cortisol_baseline:** 0.30
+- **cortisol_volatility:** 0.30
+- **serotonin_baseline:** 0.70
+- **serotonin_volatility:** 0.20
+
+## Runtime Defaults
+- **scene_handle:** The elven magic-user
+
 ## Abilities and Proficiencies
 - Sneak Attack: 7d6 once per turn with advantage or an adjacent ally
 - Cunning Action

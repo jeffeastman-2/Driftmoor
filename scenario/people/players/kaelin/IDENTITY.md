@@ -48,6 +48,23 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 - Lute (irreplaceable)
 - Musician's pack
 
+## Neurochemical Baseline
+- **dopamine:** 0.7
+- **cortisol:** 0.35
+- **norepinephrine:** 0.45
+- **endorphins:** 0.65
+- **serotonin:** 0.5
+- **acetylcholine:** 0.6
+- **oxytocin:** 0.4
+- **dopamine_baseline:** 0.65
+- **dopamine_volatility:** 0.9
+- **cortisol_baseline:** 0.3
+- **cortisol_volatility:** 0.7
+- **endorphins_baseline:** 0.6
+- **endorphins_volatility:** 0.8
+- **oxytocin_baseline:** 0.35
+- **oxytocin_volatility:** 0.6
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

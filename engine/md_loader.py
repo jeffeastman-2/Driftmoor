@@ -122,6 +122,9 @@ def parse_identity_stats(text: str) -> dict:
         "gender": "",
         "weapons": "", "armor": "",
         "provider": "", "model": "", "pronouns": "",
+        "player_transport": "", "channel": "", "host": "",
+        "inbox": "", "outbox": "", "scene_handle": "",
+        "activation": "",
     }
     # Add neurochemical defaults
     for _dim in _NEUROCHEMICALS:
@@ -193,6 +196,26 @@ def parse_identity_stats(text: str) -> dict:
             if m:
                 stats[key] = m.group(1).strip()
 
+    # Runtime / Transport defaults for human-channel routing.
+    runtime_m = re.search(
+        r"^##\s+(?:Runtime(?:\s+Defaults)?|Transport(?:\s+Defaults)?)\s*\n(.*?)(?=^##|\Z)",
+        text, re.MULTILINE | re.DOTALL | re.IGNORECASE,
+    )
+    if runtime_m:
+        block = runtime_m.group(1)
+        for key in (
+            "player_transport",
+            "channel",
+            "host",
+            "inbox",
+            "outbox",
+            "scene_handle",
+            "activation",
+        ):
+            m = re.search(rf"-\s*\*\*{key}:\*\*\s*(.+)", block, re.IGNORECASE)
+            if m:
+                stats[key] = m.group(1).strip()
+
     # Neurochemical Baseline section
     neuro_m = re.search(
         r"^##\s+Neurochemical Baseline\s*\n(.*?)(?=^##|\Z)",
@@ -228,6 +251,34 @@ def parse_identity_stats(text: str) -> dict:
             stats["pronouns"] = "they/them"
 
     return stats
+
+
+def _merge_identity_defaults(cfg: dict[str, str], id_stats: dict) -> None:
+    """Fill missing scene config keys from identity-derived defaults.
+
+    Scene config remains authoritative; this only fills absent values.
+    """
+    for field in (
+        "weapons",
+        "armor",
+        "provider",
+        "model",
+        "pronouns",
+        "player_transport",
+        "channel",
+        "host",
+        "inbox",
+        "outbox",
+        "scene_handle",
+        "activation",
+    ):
+        if not cfg.get(field) and id_stats.get(field):
+            cfg[field] = str(id_stats[field])
+
+    # Backward-compat: scene config currently stores transport mode in
+    # the "player" key. If missing, map identity player_transport onto it.
+    if not cfg.get("player") and id_stats.get("player_transport"):
+        cfg["player"] = str(id_stats["player_transport"])
 
 
 # ---------------------------------------------------------------------------
@@ -704,9 +755,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         # For player/NPC characters, pre-fill missing cfg fields from IDENTITY.md
         if cfg.get("type") != "creature" and cfg.get("identity_file"):
             id_stats = parse_identity_stats(_load(ROOT / cfg["identity_file"]))
-            for field in ("weapons", "armor", "provider", "model", "pronouns"):
-                if not cfg.get(field) and id_stats.get(field):
-                    cfg[field] = id_stats[field]
+            _merge_identity_defaults(cfg, id_stats)
             for dim in _NEUROCHEMICALS:
                 for suffix in ("", "_baseline", "_volatility"):
                     key = f"{dim}{suffix}"

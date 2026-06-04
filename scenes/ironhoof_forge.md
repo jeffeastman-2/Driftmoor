@@ -41,69 +41,22 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/thorgrim/SOUL.md
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
-- **hp:** 13
-- **ac:** 18
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.4
-- **cortisol:** 0.45
-- **norepinephrine:** 0.5
-- **endorphins:** 0.35
-- **serotonin:** 0.4
-- **acetylcholine:** 0.6
-- **oxytocin:** 0.2
-- **dopamine_baseline:** 0.4
-- **dopamine_volatility:** 0.4
-- **cortisol_baseline:** 0.45
-- **cortisol_volatility:** 0.5
-- **serotonin_baseline:** 0.45
-- **serotonin_volatility:** 0.3
-- **oxytocin_baseline:** 0.15
-- **oxytocin_volatility:** 0.3
 
 ### darrin
 - **type:** npc
 - **soul_file:** scenario/people/npcs/darrin/SOUL.md
 - **identity_file:** scenario/people/npcs/darrin/IDENTITY.md
-- **hp:** 16
-- **ac:** 12
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.35
-- **cortisol:** 0.55
-- **norepinephrine:** 0.5
-- **endorphins:** 0.3
-- **serotonin:** 0.5
-- **acetylcholine:** 0.55
-- **oxytocin:** 0.45
-- **dopamine_baseline:** 0.35
-- **dopamine_volatility:** 0.3
-- **cortisol_baseline:** 0.4
-- **cortisol_volatility:** 0.6
-- **oxytocin_baseline:** 0.4
-- **oxytocin_volatility:** 0.4
 
 ### kara
 - **type:** npc
 - **soul_file:** scenario/people/npcs/kara/SOUL.md
 - **identity_file:** scenario/people/npcs/kara/IDENTITY.md
-- **hp:** 10
-- **ac:** 11
 - **provider:** ollama
 - **model:** gemma4:26b
-- **dopamine:** 0.65
-- **cortisol:** 0.3
-- **norepinephrine:** 0.55
-- **endorphins:** 0.6
-- **serotonin:** 0.55
-- **acetylcholine:** 0.65
-- **oxytocin:** 0.5
-- **dopamine_baseline:** 0.6
-- **dopamine_volatility:** 0.9
-- **cortisol_baseline:** 0.25
-- **cortisol_volatility:** 0.7
-- **oxytocin_baseline:** 0.45
-- **oxytocin_volatility:** 0.6
 
 ## Scene Introductions
 

@@ -32,6 +32,26 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes. Dusky 
 - Disguise kit
 - Crescent moon pendant (personal, not for trade)
 
+## Neurochemical Baseline
+- **dopamine:** 0.65
+- **cortisol:** 0.4
+- **norepinephrine:** 0.6
+- **endorphins:** 0.5
+- **serotonin:** 0.45
+- **acetylcholine:** 0.75
+- **oxytocin:** 0.25
+- **dopamine_baseline:** 0.55
+- **dopamine_volatility:** 0.9
+- **cortisol_baseline:** 0.4
+- **cortisol_volatility:** 0.8
+- **acetylcholine_baseline:** 0.65
+- **acetylcholine_volatility:** 0.7
+- **oxytocin_baseline:** 0.2
+- **oxytocin_volatility:** 0.4
+
+## Runtime Defaults
+- **scene_handle:** the half-elf rogue
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

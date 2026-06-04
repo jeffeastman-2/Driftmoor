@@ -5,6 +5,25 @@
 - **Race:** Half-Dragon (Bronze), Male, age 39
 - **Location:** The Gilded Trinket, Driftmoor
 
+## Combat Statistics
+- **HP:** 18
+- **AC:** 13
+
+## Neurochemical Baseline
+- **dopamine:** 0.5
+- **cortisol:** 0.35
+- **norepinephrine:** 0.5
+- **endorphins:** 0.55
+- **serotonin:** 0.6
+- **acetylcholine:** 0.7
+- **oxytocin:** 0.3
+- **dopamine_baseline:** 0.5
+- **dopamine_volatility:** 0.5
+- **cortisol_baseline:** 0.3
+- **cortisol_volatility:** 0.6
+- **serotonin_baseline:** 0.6
+- **serotonin_volatility:** 0.4
+
 ## Physical Description
 Tall and lean. Bronze scales shimmer faintly in the dim lamp light. Piercing green eyes that weigh everything. Sharp clawed hands equally adept at counting coins and fending off thieves. Simple well-worn clothes. Tarnished medallion around his neck — will not sell, will not explain.
 

@@ -5,6 +5,25 @@
 - **Race:** Human, Male, age 48
 - **Location:** Salt & Iron, village center near square
 
+## Combat Statistics
+- **HP:** 16
+- **AC:** 11
+
+## Neurochemical Baseline
+- **dopamine:** 0.4
+- **cortisol:** 0.45
+- **norepinephrine:** 0.45
+- **endorphins:** 0.35
+- **serotonin:** 0.5
+- **acetylcholine:** 0.55
+- **oxytocin:** 0.25
+- **dopamine_baseline:** 0.4
+- **dopamine_volatility:** 0.3
+- **cortisol_baseline:** 0.4
+- **cortisol_volatility:** 0.5
+- **serotonin_baseline:** 0.5
+- **serotonin_volatility:** 0.3
+
 ## Physical Description
 Broad-shouldered, thick salt-and-pepper beard, perpetual scowl. Simple tunic and apron streaked with soot and oil from handling tools. Sharp brown eyes that miss nothing. Usually found behind the long central counter.
 
