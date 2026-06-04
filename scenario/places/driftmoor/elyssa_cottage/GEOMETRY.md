@@ -65,7 +65,7 @@ Herb garden on the west side. Ivy on walls.
 
 | character  | x  | y  |
 |------------|----|----|
-| gilthaness | 19 | 4  |
+| hendricks  | 19 | 4  |
 | elyssa     | 16 | 16 |
 
 ---

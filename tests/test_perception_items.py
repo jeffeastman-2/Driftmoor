@@ -89,11 +89,13 @@ class TestPerceptionWithItems:
         # Actual dist = sqrt(36 + 729) ≈ 27.7 → rounded to 25 or 30.
         assert dist in (25, 30)
 
-    def test_no_geometry_returns_empty(self, items):
-        # Without geometry, perception falls back to empty string regardless.
+    def test_no_geometry_falls_back_to_copresent(self, items):
+        # Without geometry, perception should still expose other active
+        # participants as co-present so social scenes do not become mute.
         positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
         perception = _build_perception(
-            "thorgrim", None, positions, set(),
+            "thorgrim", None, positions, {"thorgrim", "aeliana"},
             items=items,
         )
-        assert perception == ""
+        assert "aeliana" in perception
+        assert "co-present" in perception

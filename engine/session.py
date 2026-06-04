@@ -1177,7 +1177,10 @@ def _build_perception(
 
     Uses SceneGeometry.can_see() (which enforces LOS and zone visibility rules)
     to determine which other active characters are currently visible.
-    Returns "" when no geometry is available (falls back to no constraint).
+
+    If geometry/positions are unavailable, falls back to a coarse "co-present"
+    list of other active characters so social scenes without full geometry do
+    not collapse into artificial solitude.
 
     Other creatures are referred to by their ``scene_handle`` (e.g. "the
     elf ranger") rather than their internal character_id, because the
@@ -1189,13 +1192,34 @@ def _build_perception(
     visibility for items separated from the character by sub-zone walls).
     """
     import math
+
+    def _co_present_lines() -> str:
+        lines: list[str] = []
+        for other_id in sorted(active_characters):
+            if other_id == character_id:
+                continue
+            label = other_id
+            faction_tag = ""
+            if characters is not None:
+                cs_other = characters.get(other_id)
+                if cs_other is not None:
+                    if cs_other.scene_handle:
+                        label = cs_other.scene_handle
+                    fac = getattr(cs_other.character, "faction", "neutral")
+                    if fac == "hostile":
+                        faction_tag = "HOSTILE, "
+                    elif fac == "party":
+                        faction_tag = "ally, "
+            lines.append(f"- {label} ({faction_tag}co-present)")
+        return "\n".join(lines)
+
     if scene_geometry is None:
-        _dbg(f"[PERCEPTION] {character_id}: no scene_geometry — skipping LOS")
-        return ""
+        _dbg(f"[PERCEPTION] {character_id}: no scene_geometry — using co-present fallback")
+        return _co_present_lines()
     my_pos = current_positions.get(character_id)
     if my_pos is None:
-        _dbg(f"[PERCEPTION] {character_id}: no position — skipping LOS")
-        return ""
+        _dbg(f"[PERCEPTION] {character_id}: no position — using co-present fallback")
+        return _co_present_lines()
 
     _dbg(f"[PERCEPTION] {character_id} at {my_pos}")
     lines: list[str] = []

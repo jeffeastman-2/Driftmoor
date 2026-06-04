@@ -67,6 +67,27 @@ building is timber with a sloping roof and ivy on the east wall.
 | to_upper_floor    | 58 | 55 | places/driftmoor/broken_lantern/upper_floor |
 | kitchen_back_door | 81 | 55 | places/driftmoor               |
 
+## Items
+
+| id                 | x   | y   | label                      |
+|--------------------|-----|-----|----------------------------|
+| broken_lantern_sign| 39  | -3  | Broken lantern sign        |
+| bar_stools         | 60  | 18  | Bar stools                 |
+| service_bell       | 63  | 22  | Service bell               |
+| room_key_ring      | 64  | 23  | Room key ring              |
+| ale_tankards       | 66  | 24  | Ale tankards               |
+| tip_bowl           | 17  | 27  | Tip bowl                   |
+| lute_case          | 14  | 25  | Lute case                  |
+| dice_cup           | 10  | 33  | Dice cup                   |
+| ledger_book        | 13  | 51  | Ledger book                |
+| sealed_letter      | 12  | 52  | Sealed letter              |
+| spare_blanket      | 30  | 56  | Spare blanket              |
+| crate_saltfish     | 34  | 58  | Crate of saltfish          |
+| kitchen_knife      | 67  | 53  | Kitchen knife              |
+| stew_pot           | 71  | 57  | Stew pot                   |
+| coal_scuttle       | 72  | 41  | Coal scuttle               |
+| candle_stub_bundle | 22  | 48  | Bundle of candle stubs     |
+
 ---
 
 ## Boundaries
@@ -85,4 +106,8 @@ building is timber with a sloping roof and ivy on the east wall.
 | character | x    | y    | zone      |
 |-----------|------|------|-----------|
 | kaelin    | 16  | 26  | BOOTHS    |
-| tess      | 65 | 26  | BAR       |
+| cinnabar  | 20  | 22  | BOOTHS    |
+| tess      | 65  | 26  | BAR       |
+| wilfred   | 56  | 20  | BAR       |
+| bran      | 14  | 52  | MEETING_ROOM |
+| marda     | 11  | 52  | MEETING_ROOM |

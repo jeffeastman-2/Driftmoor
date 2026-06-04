@@ -238,7 +238,7 @@ def render_map(
         ``day*.json`` snapshots.  If None, only the GEOMETRY's
         ``Starting Positions`` are plotted.
     title: figure title
-    char_colors: optional override mapping character_id → color
+    char_colors: optional override mapping character_id -> color
     """
     text = geometry_path.read_text(encoding="utf-8")
     g = parse_geometry(text)
@@ -246,10 +246,7 @@ def render_map(
     if snapshot_dir is not None and snapshot_dir.exists():
         paths = load_paths_from_snapshots(snapshot_dir)
         plot_paths = True
-        # Prepend GEOMETRY starting positions so the path shows the
-        # turn-0 → turn-1 motion. Snapshots only record post-turn state,
-        # so without this the first turn's movement would be invisible.
-        # Match by id, with shadowbeast → shadowbeast_1 stripping suffix.
+        # Prepend GEOMETRY starts so turn-0 -> turn-1 movement is visible.
         for cid, pts in list(paths.items()):
             if not pts:
                 continue
@@ -259,121 +256,136 @@ def render_map(
             if start is not None and (start[0], start[1]) != pts[0]:
                 paths[cid] = [start] + pts
     else:
-        # Static map: render starting positions as single-point paths.
         paths = {cid: [xy] for cid, xy in g["starting_positions"].items()}
         plot_paths = False
 
     fig, ax = plt.subplots(figsize=(11, 11))
 
-    # Zones — render in ascending render_z so background zones draw first
-    # and chambers/POIs overlay them.
     zone_order = sorted(
         g["zones"].keys(),
         key=lambda n: (g["zone_z"].get(n, 0.0), n),
     )
-    # Build a z-rank → palette mapping based on the unique render_z values
-    # in this map. Same z always gets the same color across all zones.
     unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
     z_rank = {z: i for i, z in enumerate(unique_z)}
 
-    # Compute the union bbox of all zones, used to detect "background"
-    # zones (those that fill ~the whole scene). Their labels are noisy
-    # since they overlap everything else.
-    all_pts = [p for n in zone_order for p in g["zones"].get(n, ())]
-    if all_pts:
-        ux0 = min(p[0] for p in all_pts); ux1 = max(p[0] for p in all_pts)
-        uy0 = min(p[1] for p in all_pts); uy1 = max(p[1] for p in all_pts)
+    zone_pts = [p for n in zone_order for p in g["zones"].get(n, ())]
+    if zone_pts:
+        ux0 = min(p[0] for p in zone_pts)
+        ux1 = max(p[0] for p in zone_pts)
+        uy0 = min(p[1] for p in zone_pts)
+        uy1 = max(p[1] for p in zone_pts)
         union_area = max((ux1 - ux0) * (uy1 - uy0), 1.0)
     else:
         union_area = 1.0
 
-    # Split impassable into background (covers ~the whole scene, e.g.
-    # 'Solid Rock' under a cavern) and foreground (walls, rubble, pools).
-    # Background impassable is drawn BEFORE zones so chambers overlay it;
-    # foreground is drawn AFTER zones as obstacles.
     bg_impassable: list[tuple[str, list[tuple[float, float]]]] = []
     fg_impassable: list[tuple[str, list[tuple[float, float]]]] = []
-    for name, v in g["impassable"]:
-        if not v:
+    for name, verts in g["impassable"]:
+        if not verts:
             continue
-        x0 = min(p[0] for p in v); x1 = max(p[0] for p in v)
-        y0 = min(p[1] for p in v); y1 = max(p[1] for p in v)
+        x0 = min(p[0] for p in verts)
+        x1 = max(p[0] for p in verts)
+        y0 = min(p[1] for p in verts)
+        y1 = max(p[1] for p in verts)
         if (x1 - x0) * (y1 - y0) / union_area >= 0.80:
-            bg_impassable.append((name, v))
+            bg_impassable.append((name, verts))
         else:
-            fg_impassable.append((name, v))
+            fg_impassable.append((name, verts))
 
-    # Background impassable (drawn under zones) — lighter grey so the
-    # foreground walls/pools/rubble layered on top of zones read as darker.
-    for name, v in bg_impassable:
+    for _name, verts in bg_impassable:
         ax.add_patch(patches.Polygon(
-            v, closed=True, facecolor="#b8b8b8", alpha=0.85,
-            edgecolor="#7a7a7a", linewidth=1.0,
+            verts,
+            closed=True,
+            facecolor="#b8b8b8",
+            alpha=0.85,
+            edgecolor="#7a7a7a",
+            linewidth=1.0,
         ))
 
     pending_zone_labels: list[tuple[float, float, str]] = []
     for zname in zone_order:
-        v = g["zones"].get(zname)
-        if not v:
+        verts = g["zones"].get(zname)
+        if not verts:
             continue
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
         ax.add_patch(patches.Polygon(
-            v, closed=True, facecolor=color, alpha=alpha,
-            edgecolor="black", linewidth=0.8,
+            verts,
+            closed=True,
+            facecolor=color,
+            alpha=alpha,
+            edgecolor="black",
+            linewidth=0.8,
         ))
-        # Skip label for background zones (bbox covers >=80% of all zones).
-        x0 = min(p[0] for p in v); x1 = max(p[0] for p in v)
-        y0 = min(p[1] for p in v); y1 = max(p[1] for p in v)
-        bbox_area = (x1 - x0) * (y1 - y0)
-        if bbox_area / union_area < 0.80:
-            cx = sum(p[0] for p in v) / len(v)
-            cy = sum(p[1] for p in v) / len(v)
+        x0 = min(p[0] for p in verts)
+        x1 = max(p[0] for p in verts)
+        y0 = min(p[1] for p in verts)
+        y1 = max(p[1] for p in verts)
+        if ((x1 - x0) * (y1 - y0)) / union_area < 0.80:
+            cx = sum(p[0] for p in verts) / len(verts)
+            cy = sum(p[1] for p in verts) / len(verts)
             pending_zone_labels.append((cx, cy, zname))
 
-    # Boundaries
-    for name, v in g["boundaries"]:
-        if v:
+    for name, verts in g["boundaries"]:
+        if verts:
             ax.add_patch(patches.Polygon(
-                v, closed=True, fill=False,
-                edgecolor="gold", linewidth=2.0, linestyle="--",
+                verts,
+                closed=True,
+                fill=False,
+                edgecolor="gold",
+                linewidth=2.0,
+                linestyle="--",
                 label=name,
             ))
 
-    # Foreground impassable (walls, pools, rubble) — drawn over zones.
-    for name, v in fg_impassable:
+    fit_pts: list[tuple[float, float]] = []
+    for verts in g["zones"].values():
+        fit_pts.extend(verts)
+    for _name, verts in g["impassable"]:
+        fit_pts.extend(verts)
+    for _name, verts in g["boundaries"]:
+        fit_pts.extend(verts)
+    fit_pts.extend(g["landmarks"].values())
+    fit_pts.extend((x, y) for (x, y, _label) in g["items"].values())
+    for pts in paths.values():
+        fit_pts.extend(pts)
+
+    if fit_pts:
+        xs = [p[0] for p in fit_pts]
+        ys = [p[1] for p in fit_pts]
+        margin = 8
+        ax.set_xlim(min(xs) - margin, max(xs) + margin)
+        ax.set_ylim(min(ys) - margin, max(ys) + margin)
+        span = max((max(xs) - min(xs)), (max(ys) - min(ys)), 1.0)
+    else:
+        span = 100.0
+    label_scale = max(0.60, min(1.0, span / 180.0))
+
+    for name, verts in fg_impassable:
         ax.add_patch(patches.Polygon(
-            v, closed=True, facecolor="#4a4a4a", alpha=0.75,
-            edgecolor="#2a2a2a", linewidth=1.0,
+            verts,
+            closed=True,
+            facecolor="#4a4a4a",
+            alpha=0.75,
+            edgecolor="#2a2a2a",
+            linewidth=1.0,
         ))
-        cx = sum(p[0] for p in v) / len(v)
-        cy = sum(p[1] for p in v) / len(v)
+        cx = sum(p[0] for p in verts) / len(verts)
+        cy = sum(p[1] for p in verts) / len(verts)
         ax.text(cx, cy, name, ha="center", va="center",
-                fontsize=8, fontstyle="italic",
+                fontsize=8 * label_scale, fontstyle="italic",
                 color="white", alpha=0.9)
 
-    # Zone labels — drawn last so they're never covered by overlays.
     for cx, cy, zname in pending_zone_labels:
         ax.text(cx, cy, zname, ha="center", va="center",
-                fontsize=10, fontweight="bold", color="black", alpha=0.75)
+                fontsize=10 * label_scale, fontweight="bold",
+                color="black", alpha=0.75)
 
-    # Landmarks
     for name, (x, y) in g["landmarks"].items():
-        ax.plot(x, y, marker="^" if "oak" in name else "*",
-                markersize=10, color="#3b3b3b")
+        ax.plot(x, y, marker="^" if "oak" in name else "*", markersize=10, color="#3b3b3b")
         ax.annotate(name, (x, y), textcoords="offset points",
-                    xytext=(6, 4), fontsize=8, color="#333")
+                    xytext=(6, 4), fontsize=8 * label_scale, color="#333")
 
-    # Items — small diamonds, distinct from landmark stars.
-    for iid, (x, y, label) in g["items"].items():
-        ax.plot(x, y, marker="D", markersize=6,
-                markerfacecolor="#d4a017", markeredgecolor="#5a4a10",
-                markeredgewidth=0.8, zorder=6)
-        ax.annotate(label, (x, y), textcoords="offset points",
-                    xytext=(6, -8), fontsize=7, color="#5a4a10",
-                    fontstyle="italic")
-
-    # Characters — path or single dot
     char_colors = char_colors or {}
     palette_pos = 0
     used_colors: dict[str, str] = {}
@@ -383,6 +395,7 @@ def render_map(
         else:
             used_colors[cid] = _PALETTE[palette_pos % len(_PALETTE)]
             palette_pos += 1
+
     for cid, pts in paths.items():
         if not pts:
             continue
@@ -405,24 +418,14 @@ def render_map(
                     markerfacecolor=color, markeredgecolor="black",
                     markeredgewidth=1.2, zorder=7, label=cid)
 
-    # Auto-fit
-    all_pts: list[tuple[float, float]] = []
-    for v in g["zones"].values():
-        all_pts.extend(v)
-    for _name, v in g["impassable"]:
-        all_pts.extend(v)
-    for _name, v in g["boundaries"]:
-        all_pts.extend(v)
-    all_pts.extend(g["landmarks"].values())
-    all_pts.extend((x, y) for (x, y, _label) in g["items"].values())
-    for pts in paths.values():
-        all_pts.extend(pts)
-    if all_pts:
-        xs = [p[0] for p in all_pts]
-        ys = [p[1] for p in all_pts]
-        margin = 8
-        ax.set_xlim(min(xs) - margin, max(xs) + margin)
-        ax.set_ylim(min(ys) - margin, max(ys) + margin)
+    # Draw items last so they remain visible over paths/markers.
+    for _iid, (x, y, label) in g["items"].items():
+        ax.plot(x, y, marker="D", markersize=7,
+                markerfacecolor="#f0bf2f", markeredgecolor="#5a4a10",
+                markeredgewidth=1.0, zorder=8)
+        ax.annotate(label, (x, y), textcoords="offset points",
+                    xytext=(5, -8), fontsize=7 * label_scale, color="#5a4a10",
+                    fontstyle="italic")
 
     ax.set_aspect("equal")
     ax.set_xlabel("x (ft)")
@@ -497,6 +500,13 @@ def render_interactive_map_html(
     view_w = max((max_x - min_x) + 2 * margin, 1.0)
     view_h = max((max_y - min_y) + 2 * margin, 1.0)
 
+    # SVG font sizes are in viewBox units; tune by map extent so compact
+    # indoor maps don't get oversized labels.
+    label_base = max(0.85, min(1.9, max(view_w, view_h) / 90.0))
+    zone_label_size = round(label_base * 1.10, 2)
+    landmark_label_size = round(label_base * 0.85, 2)
+    item_label_size = round(label_base * 0.78, 2)
+
     def _fmt_poly(points: list[tuple[float, float]]) -> str:
         return " ".join(f"{x:.2f},{-y:.2f}" for x, y in points)
 
@@ -534,9 +544,9 @@ def render_interactive_map_html(
         "h1{font-size:16px;margin:0 0 8px 0;}"
         "p{margin:0 0 10px 0;font-size:13px;color:#333;}"
         "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;background:#fff;}"
-        ".zone-label{font-size:5px;font-weight:700;fill:#1f1f1f;opacity:.8;}"
-        ".lm-label{font-size:4.2px;fill:#333;}"
-        ".item-label{font-size:3.8px;fill:#5a4a10;font-style:italic;}"
+        f".zone-label{{font-size:{zone_label_size}px;font-weight:700;fill:#1f1f1f;opacity:.8;}}"
+        f".lm-label{{font-size:{landmark_label_size}px;fill:#333;}}"
+        f".item-label{{font-size:{item_label_size}px;fill:#5a4a10;font-style:italic;}}"
         "</style></head><body><div class='wrap'>"
     )
     safe_title = html.escape(title or geometry_path.parent.name.replace("_", " ").title())
@@ -603,15 +613,6 @@ def render_interactive_map_html(
             f"<text x='{x + 1.7:.2f}' y='{_flip_y(y) - 1.3:.2f}' class='lm-label'>{html.escape(name)}</text>"
         )
 
-    # Items
-    for _iid, (x, y, label) in g["items"].items():
-        parts.append(
-            f"<rect x='{x - 1.0:.2f}' y='{_flip_y(y) - 1.0:.2f}' width='2.0' height='2.0' "
-            "fill='#d4a017' stroke='#5a4a10' stroke-width='0.4' transform='rotate(45 "
-            f"{x:.2f} {_flip_y(y):.2f})'>"
-            f"<title>{html.escape(label)}</title></rect>"
-        )
-
     # Character paths and turn points
     for cid, pts in tracks.items():
         if not pts:
@@ -648,6 +649,18 @@ def render_interactive_map_html(
             f"M {ex + 1.8:.2f} {_flip_y(ey) - 1.8:.2f} L {ex - 1.8:.2f} {_flip_y(ey) + 1.8:.2f}' "
             "stroke='#111' stroke-width='0.7'>"
             f"<title>{html.escape(f'{cid} end')}</title></path>"
+        )
+
+    # Draw items after character overlays so item presence is always visible.
+    for _iid, (x, y, label) in g["items"].items():
+        parts.append(
+            f"<rect x='{x - 1.1:.2f}' y='{_flip_y(y) - 1.1:.2f}' width='2.2' height='2.2' "
+            "fill='#f0bf2f' stroke='#5a4a10' stroke-width='0.45' transform='rotate(45 "
+            f"{x:.2f} {_flip_y(y):.2f})'>"
+            f"<title>{html.escape(label)}</title></rect>"
+        )
+        parts.append(
+            f"<text x='{x + 1.4:.2f}' y='{_flip_y(y) - 1.2:.2f}' class='item-label'>{html.escape(label)}</text>"
         )
 
     parts.append("</svg></div>")

@@ -250,6 +250,62 @@ class TestPlayerRightLLM:
         result = asyncio.run(PlayerRight().generate_action(intent, ctx))
         assert "advance" in result.action
 
+    def test_social_opener_repairs_silent_spoken(self):
+        ctx = RoleContext(
+            character_id="kaelin",
+            turn=1,
+            condition_text="dopamine: 0.70, cortisol: 0.35",
+            scene_context="Evening in the tavern.",
+            soul="You are Kaelin.",
+            identity="Bard",
+            perception="- Tess (ally, MAIN_ROOM, ~10 ft away)",
+            in_combat=False,
+        )
+        intent = ActionIntent(character_id="kaelin", turn=1, intent="Search the room")
+        calls = []
+
+        async def mock_llm(system, user):
+            calls.append((system, user))
+            if len(calls) == 1:
+                return (
+                    "**INTERNAL**\nWatching the room.\n\n"
+                    "**BODY LANGUAGE**\nStill.\n\n"
+                    "**SPOKEN**\n\n\n"
+                    "**ACTION**\nSearch the room."
+                )
+            return "Evening. Anything I should know tonight?"
+
+        result = asyncio.run(PlayerRight(call_llm=mock_llm).generate_action(intent, ctx))
+        assert len(calls) == 2
+        assert "Evening" in result.spoken
+
+    def test_hostile_perception_does_not_force_social_opener(self):
+        ctx = RoleContext(
+            character_id="aeliana",
+            turn=1,
+            condition_text="dopamine: 0.80, cortisol: 0.30",
+            scene_context="Threat in view.",
+            soul="You are Aeliana.",
+            identity="Ranger",
+            perception="- shadowbeast (HOSTILE, CLEARING, ~20 ft away)",
+            in_combat=False,
+        )
+        intent = ActionIntent(character_id="aeliana", turn=1, intent="Attack the shadowbeast")
+        calls = []
+
+        async def mock_llm(system, user):
+            calls.append((system, user))
+            return (
+                "**INTERNAL**\nDanger.\n\n"
+                "**BODY LANGUAGE**\nBow raised.\n\n"
+                "**SPOKEN**\n\n\n"
+                "**ACTION**\nAttack the shadowbeast."
+            )
+
+        result = asyncio.run(PlayerRight(call_llm=mock_llm).generate_action(intent, ctx))
+        assert len(calls) == 1
+        assert result.spoken == ""
+
 
 # =========================================================================
 # DMLeft

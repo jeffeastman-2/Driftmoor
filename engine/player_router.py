@@ -371,6 +371,82 @@ class PlayerRight:
     def __init__(self, call_llm: Optional[CallLLM] = None):
         self._call_llm = call_llm
 
+    @staticmethod
+    def _is_silent_spoken(spoken: str) -> bool:
+        s = (spoken or "").strip().lower()
+        return s in {"", "(silent)", "(silence)", "(no dialogue)"}
+
+    @staticmethod
+    def _has_non_hostile_perceivable_person(perception: str) -> bool:
+        """Return True when perception lists at least one non-hostile character.
+
+        Perception format comes from session._build_perception(), where character
+        lines are bullets and item bullets begin under "Items in this zone:".
+        """
+        if not perception:
+            return False
+        for raw in perception.splitlines():
+            line = raw.strip()
+            if not line:
+                continue
+            if line.lower().startswith("items in this zone"):
+                break
+            if not line.startswith("- "):
+                continue
+            if "hostile" in line.lower():
+                continue
+            return True
+        return False
+
+    def _requires_social_opener(self, context: RoleContext) -> bool:
+        if context.in_combat or context.turn > 2:
+            return False
+        return self._has_non_hostile_perceivable_person(context.perception)
+
+    @staticmethod
+    def _fallback_social_line(intent: ActionIntent) -> str:
+        intent_l = (intent.intent or "").lower()
+        if "help" in intent_l:
+            return "Let me give you a hand with that."
+        if "search" in intent_l or "look" in intent_l or "scan" in intent_l:
+            return "Evening. Anything I should know before I start looking around?"
+        if "music" in intent_l or "lute" in intent_l or "perform" in intent_l:
+            return "Evening, friends. Any requests while I warm up?"
+        if "drink" in intent_l or "bar" in intent_l:
+            return "Evening. What is fresh tonight?"
+        return "Evening."
+
+    async def _repair_social_spoken(
+        self,
+        intent: ActionIntent,
+        context: RoleContext,
+    ) -> str:
+        """Ask the model for one short spoken line to break social silence."""
+        if self._call_llm is None:
+            return self._fallback_social_line(intent)
+
+        system = (
+            f"{context.soul}\n\n"
+            f"{context.identity}\n\n"
+            f"You are {context.character_id}. Provide exactly one in-character spoken "
+            "line to open or maintain polite social contact this turn. "
+            "No narration, no labels, no markdown, no quotes around section headers. "
+            "One line only, max 18 words."
+        )
+        user = (
+            f"# Turn {context.turn}\n\n"
+            f"## Intended action\n{intent.intent}\n\n"
+            f"## What you can currently perceive\n{context.perception}\n"
+        )
+        raw = (await self._call_llm(system, user)).strip()
+        # Be tolerant if the model returns a labeled format anyway.
+        m = re.search(r"\*\*SPOKEN\*\*\s*(?:—|:)?\s*(.*?)(?=\*\*|\Z)", raw, re.DOTALL | re.IGNORECASE)
+        line = (m.group(1).strip() if m else raw.splitlines()[0].strip()) if raw else ""
+        line = line.strip().strip('"').strip("'")
+        if self._is_silent_spoken(line):
+            return self._fallback_social_line(intent)
+        return line
+
     def build_system_prompt(self, context: RoleContext) -> str:
         return (
             f"{context.soul}\n\n"
@@ -386,6 +462,12 @@ class PlayerRight:
             "CRITICAL: Check ## Scene for your previous SPOKEN lines. "
             "Do NOT repeat any line verbatim. Each turn, say something new "
             "— react to what just happened, reveal new information, or stay silent.\n\n"
+            "CRITICAL — SOCIAL ETIQUETTE: In non-combat scenes, if at least one "
+            "other person is currently perceivable, break the ice early. "
+            "By turn 1-2, include at least one short spoken line (greeting, "
+            "question, acknowledgment, or service talk) unless there is a clear "
+            "in-world reason to stay quiet (stealth, active danger, deliberate "
+            "refusal, or no one perceivable).\n\n"
             "**ACTION** — What you do this turn (50-100 words). "
             "Be specific. Reference your zone and observable targets.\n\n"
             "CRITICAL — PERCEPTION: '## What you can currently perceive' "
@@ -426,12 +508,21 @@ class PlayerRight:
                 "No other creatures are visible, audible, or otherwise "
                 "detectable from your current position."
             )
+        social_block = ""
+        if context.turn <= 2 and context.perception and not context.in_combat:
+            social_block = (
+                "\n\n## Social cue\n"
+                "If any perceivable person is non-hostile, break the ice with a "
+                "brief spoken line this turn unless stealth or immediate danger "
+                "makes speech unreasonable."
+            )
         return (
             f"# Turn {context.turn}\n\n"
             f"## Your intended action\n{intent.intent}\n\n"
             f"## Condition\n{context.condition_text}\n\n"
             f"## Scene\n{context.scene_context}"
             f"{perception_block}"
+            f"{social_block}"
         )
 
     def parse_response(self, raw: str, context: RoleContext) -> CharacterOutput:
@@ -464,4 +555,7 @@ class PlayerRight:
         system = self.build_system_prompt(context)
         user = self.build_user_prompt(intent, context)
         raw = await self._call_llm(system, user)
-        return self.parse_response(raw, context)
+        out = self.parse_response(raw, context)
+        if self._requires_social_opener(context) and self._is_silent_spoken(out.spoken):
+            out.spoken = await self._repair_social_spoken(intent, context)
+        return out
