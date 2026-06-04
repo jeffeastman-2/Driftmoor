@@ -35,6 +35,11 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 
 ## Runtime Defaults
 - **scene_handle:** The elven magic-user
+- **player_transport:** telegram
+- **channel:** telegram
+- **host:** ultra
+- **inbox:** ~/messages/from-gilthaness
+- **outbox:** ~/messages/to-gilthaness
 
 ## Abilities and Proficiencies
 - Sneak Attack: 7d6 once per turn with advantage or an adjacent ally

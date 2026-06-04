@@ -4,8 +4,8 @@
 - **scene_name:** elyssa_cottage
 - **title:** ELYSSA COTTAGE
 - **narrative_title:** Elyssa Cottage Conversation Test
-- **transcript_title:** ELYSSA COTTAGE - Gilthaness, Elyssa
-- **character_summary:** Gilthaness and Elyssa in Elyssa's cottage
+- **transcript_title:** ELYSSA COTTAGE - Hendricks, Elyssa
+- **character_summary:** Hendricks and Elyssa in Elyssa's cottage
 - **default_turns:** 4
 - **geometry_file:** scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md
 - **place_file:** scenario/places/driftmoor/elyssa_cottage/PLACE.md
@@ -23,7 +23,7 @@
 
 ## Scene Notes
 
-This is a social test scene with no intended combat. Gilthaness has come to
+This is a social test scene with no intended combat. Hendricks has come to
 Elyssa's cottage to talk about the obelisk disturbances and local reports.
 The objective is to verify stable back-and-forth dialogue and coherent
 continuity over several turns.
@@ -34,43 +34,34 @@ observation.
 
 ## Characters
 
-### gilthaness
+### hendricks
 - **type:** player
-- **soul_file:** scenario/people/players/gilthaness/Gilthaness_SOUL.md
-- **identity_file:** scenario/people/players/gilthaness/IDENTITY.md
-- **player:** telegram
-- **channel:** telegram
-- **host:** ultra
-- **inbox:** ~/messages/from-gilthaness
-- **outbox:** ~/messages/to-gilthaness
-- **provider:** ollama
-- **model:** gemma4:26b
+- **soul_file:** scenario/people/players/hendricks/SOUL.md
+- **identity_file:** scenario/people/players/hendricks/IDENTITY.md
 
 ### elyssa
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elyssa/SOUL.md
 - **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ## Scene Introductions
 
-### gilthaness
-You arrive at Elyssa Moonglow's cottage just before dusk. The air smells faintly
-of rosemary and cold stone. You have heard enough about the obelisk and the
-mounting disturbances to decide that this scholar is worth your time. The door
-is open, a lamp lit, and stacks of notes are visible from the threshold.
+### hendricks
+You arrive at Elyssa Moonglow's cottage just before dusk, coat still damp with
+mist from the road in. Through the open door you see map tables, pinned notes,
+and a scholar who has not slept enough but has not stopped working either.
 
-You are here to talk, assess what Elyssa knows, and judge whether her warnings
-are precise, exaggerated, or dangerously understated.
+You came to test claims against evidence. If Elyssa's reports are grounded,
+you need the details. If they are not, you need to know that before anyone
+starts making plans around bad assumptions.
 
 ### elyssa
 You hear measured footsteps on the front path and look up from a spread of
-annotated maps. A seasoned wood-elf traveler stands at your door: poised,
+annotated maps. A serious traveler stands at your door: poised,
 alert, and clearly not here by accident. You have enough problems that you do
 not turn away capable minds.
 
-You invite Gilthaness in and prepare to compare notes on the obelisk, the
+You invite Hendricks in and prepare to compare notes on the obelisk, the
 shadows, and what Driftmoor is not yet admitting out loud.
 
 ## Game State Sections

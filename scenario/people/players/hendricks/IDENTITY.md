@@ -51,6 +51,10 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 - Mended blue robes
 - Leather notebook with Ilse's last letters
 
+## Engine
+- **provider:** ollama
+- **model:** gemma4:26b
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

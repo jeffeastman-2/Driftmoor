@@ -4,8 +4,8 @@
 - **scene_name:** echoing_caverns
 - **title:** ECHOING CAVERNS
 - **narrative_title:** The Echoing Caverns
-- **transcript_title:** ECHOING CAVERNS — Seraphina, Thorgrim, Amara
-- **character_summary:** Seraphina, Thorgrim, Amara
+- **transcript_title:** ECHOING CAVERNS — Seraphina, Thorgrim, Amara, Gilthaness
+- **character_summary:** Seraphina, Thorgrim, Amara, Gilthaness
 - **default_turns:** 8
 - **geometry_file:** scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md
 - **place_file:** scenario/places/obelisk_reach/echoing_caverns/PLACE.md
@@ -97,6 +97,11 @@ characters know, in-fiction, the following caver's wisdom:
 - **provider:** ollama
 - **model:** gemma4:26b
 
+### gilthaness
+- **type:** player
+- **soul_file:** scenario/people/players/gilthaness/SOUL.md
+- **identity_file:** scenario/people/players/gilthaness/IDENTITY.md
+
 ### giant_spider
 - **type:** creature
 - **creature_file:** scenario/creatures/giant_spider.md
@@ -153,6 +158,17 @@ Elden gave you the chalk himself, pressed into your palm at the trailhead with a
 
 His charge was plain: bring back what can still be brought back, even if it is
 only bones. If this chamber has no answer, the answer lies farther in.
+
+### gilthaness
+The cave air carries old damp stone, cold iron, and the faint metallic edge of
+spent magic. You have walked ruin-sites before, but this place feels tuned to a
+frequency just above hearing, as if the rock itself remembers a spell half-cast
+and never resolved. Seraphina is already reading the chamber walls; Thorgrim is
+setting the group's tempo; Amara's torch holds a fragile island of order in the
+dark.
+
+You are here because old wounds in Driftmoor have started speaking again, and
+you are done ignoring voices that carry this kind of resonance.
 
 ### giant_spider
 Stillness. Eight feet braced against cold stone above. The web-strands hum faint with the small things that live in the dark — but no warmth, no heavy tread, not for a long time. The chamber-mouth has been silent. The hairline in the far stone has not parted. You wait. You have waited longer than this. The webs hold. The vault below is cold and unmoving. Should warmth come — should the wall part and feet enter — drop. Bite the soft thing first. Wrap what does not die fast.

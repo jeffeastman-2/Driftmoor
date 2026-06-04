@@ -65,6 +65,10 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 - **oxytocin_baseline:** 0.35
 - **oxytocin_volatility:** 0.6
 
+## Engine
+- **provider:** ollama
+- **model:** gemma4:26b
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 
