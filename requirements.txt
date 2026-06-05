@@ -1,6 +1,8 @@
 anthropic
 openai
 ollama
+aiohttp
+matplotlib
 pyyaml
 python-dotenv
 pytest
