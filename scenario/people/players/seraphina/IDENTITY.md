@@ -50,7 +50,7 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes. Dusky 
 - **oxytocin_volatility:** 0.4
 
 ## Runtime Defaults
-- **scene_handle:** the half-elf rogue
+- **scene_handle:** Seraphina, the half-elf rogue
 
 ## Dynamic State
 *(Updated by monitor agent each round)*

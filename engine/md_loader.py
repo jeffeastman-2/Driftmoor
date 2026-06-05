@@ -696,8 +696,8 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
 
     # ── DM ──────────────────────────────────────────────────────────────────
     dm_meta     = _parse_meta(_extract_section(text, "DM"))
-    dm_provider = dm_meta.get("provider", "anthropic")
-    dm_model    = dm_meta.get("model", "claude-sonnet-4-20250514")
+    dm_provider = dm_meta.get("provider", "ollama")
+    dm_model    = dm_meta.get("model", "gemma4:26b")
     dm_delay    = float(dm_meta.get("call_delay", 2.0))
     dm_llm      = make_call_llm(dm_provider, dm_model, call_delay=dm_delay)
 
@@ -804,8 +804,8 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         if cfg.get("pronouns"):
             character_pronouns[char_id] = cfg["pronouns"]
 
-        provider   = cfg.get("provider", "anthropic")
-        model      = cfg.get("model", "claude-sonnet-4-20250514")
+        provider   = cfg.get("provider", "ollama")
+        model      = cfg.get("model", "gemma4:26b")
         player_llm = make_call_llm(provider, model)
         char_dm_llm = player_llm if self_dm else dm_llm
         roles[char_id] = RoleSet(

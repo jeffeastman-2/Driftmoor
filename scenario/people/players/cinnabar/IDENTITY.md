@@ -60,6 +60,9 @@ Cinnabar is slight and quick, with copper-red hair cut unevenly short, freckled 
 - **Resources expended:** None
 - **Open threads:** House Aelmoss secrets; the unnamed owner of the silver ring; whether to trust this group
 
+## Runtime Defaults
+- **scene_handle:** Cinnabar, the wood elf rogue
+
 ## Engine
 - **provider:** ollama
 - **model:** gemma4:26b

@@ -34,7 +34,7 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - **serotonin_volatility:** 0.20
 
 ## Runtime Defaults
-- **scene_handle:** The elven magic-user
+- **scene_handle:** Gil, the elven magic-user
 - **player_transport:** telegram
 - **channel:** telegram
 - **host:** ultra

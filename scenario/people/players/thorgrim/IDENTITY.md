@@ -48,7 +48,7 @@ Short but commanding. Fiery red beard braided and tucked into his belt. Steel-gr
 - **oxytocin_volatility:** 0.3
 
 ## Runtime Defaults
-- **scene_handle:** the dwarf fighter
+- **scene_handle:** Thorgrim, the dwarf fighter
 
 ## Dynamic State
 *(Updated by monitor agent each round)*

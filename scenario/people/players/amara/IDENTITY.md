@@ -35,7 +35,7 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 - **oxytocin_volatility:** 0.5
 
 ## Runtime Defaults
-- **scene_handle:** the Lathander cleric
+- **scene_handle:** Amara, the Lathander cleric
 
 ## Abilities and Proficiencies
 - Disciple of Life: healing spells restore additional 2 + spell level HP

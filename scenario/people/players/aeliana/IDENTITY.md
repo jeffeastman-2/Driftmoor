@@ -40,12 +40,12 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 - **armor:** leather_armor
 
 ## Engine
-- **provider:** xai
-- **model:** grok-3
+- **provider:** ollama
+- **model:** gemma4:26b
 - **pronouns:** she/her
 
 ## Runtime Defaults
-- **scene_handle:** the elf ranger
+- **scene_handle:** Aeliana, the elf ranger
 
 ## Neurochemical Baseline
 - **dopamine:** 0.85
