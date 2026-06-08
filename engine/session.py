@@ -22,7 +22,7 @@ import time
 from collections import deque
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, Optional, TYPE_CHECKING
 
 from engine.initiative import roll_initiative
 from engine.player_router import RoleContext, ActionIntent, CharacterOutput
@@ -44,6 +44,9 @@ from engine.spell_resolver import (
 )
 from models.game_state import GameState
 from models.weapon import Weapon, Armor
+
+if TYPE_CHECKING:
+    from engine.puzzles import PuzzleRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -478,16 +481,18 @@ def _exploration_redirect_intent(
 def _puzzle_items_in_zone(
     current_zone: str,
     items: Optional[dict],
+    puzzles: Optional["PuzzleRegistry"],
 ) -> list:
-    """Return glyph items in the given zone, if any."""
-    if not current_zone or not items:
+    """Return puzzle-input items located in the given zone, if any."""
+    if not current_zone or not items or not puzzles:
         return []
-    from engine.state_resolver import GLYPH_IDS  # local import avoids cycle
-
+    target_ids = puzzles.target_ids
+    if not target_ids:
+        return []
     zone = current_zone.upper()
     return [
         item for item in items.values()
-        if item.id in GLYPH_IDS and (item.zone or "").upper() == zone
+        if item.id in target_ids and (item.zone or "").upper() == zone
     ]
 
 
@@ -495,34 +500,41 @@ def _zone_has_unresolved_puzzle(
     *,
     current_zone: str,
     items: Optional[dict],
-    puzzle_state: Optional[dict],
+    puzzles: Optional["PuzzleRegistry"],
 ) -> bool:
-    """Return True when the actor is standing in an unsolved puzzle zone."""
-    if not current_zone or not items or not puzzle_state:
+    """Return True when the actor stands in a zone with an unsolved puzzle."""
+    if not current_zone or not items or not puzzles:
         return False
-    if puzzle_state.get("door_open", False):
-        return False
-    return bool(_puzzle_items_in_zone(current_zone, items))
+    for item in _puzzle_items_in_zone(current_zone, items, puzzles):
+        puzzle = puzzles.puzzle_for_item(item.id)
+        if puzzle is not None and not puzzle.solved:
+            return True
+    return False
 
 
 def _build_puzzle_pressure_block(
     *,
     current_zone: str,
     items: Optional[dict],
-    puzzle_state: Optional[dict],
+    puzzles: Optional["PuzzleRegistry"],
 ) -> str:
     """Return a context block reminding the actor to keep working a live puzzle."""
     if not _zone_has_unresolved_puzzle(
         current_zone=current_zone,
         items=items,
-        puzzle_state=puzzle_state,
+        puzzles=puzzles,
     ):
         return ""
 
-    seq = list((puzzle_state or {}).get("glyph_sequence", []))
-    seq_text = " -> ".join(seq) if seq else "not yet started"
-    glyphs = _puzzle_items_in_zone(current_zone, items)
-    glyph_names = ", ".join((it.label or it.id).strip() for it in glyphs)
+    zone_items = _puzzle_items_in_zone(current_zone, items, puzzles)
+    glyph_names = ", ".join((it.label or it.id).strip() for it in zone_items)
+    # Report progress from the (single) live puzzle covering this zone.
+    seq_text = "not yet started"
+    for it in zone_items:
+        puzzle = puzzles.puzzle_for_item(it.id) if puzzles else None
+        if puzzle is not None and not puzzle.solved:
+            seq_text = puzzle.progress_summary()
+            break
     return (
         "## Unresolved puzzle (keep working this zone before leaving)\n"
         f"The current zone still contains an unsolved puzzle: {glyph_names}. "
@@ -537,9 +549,10 @@ def _choose_puzzle_focus_item(
     character_id: str,
     current_positions: dict[str, tuple[float, float, str]],
     items: Optional[dict],
+    puzzles: Optional["PuzzleRegistry"],
     current_target_norm: str,
 ) -> Optional[tuple[str, float, float, str]]:
-    """Prefer a glyph item in the actor's current zone when a puzzle is live."""
+    """Prefer a puzzle-input item in the actor's current zone when live."""
     if not items:
         return None
     actor_pos = current_positions.get(character_id)
@@ -551,7 +564,7 @@ def _choose_puzzle_focus_item(
         return None
 
     candidates: list[tuple[int, float, str, float, float, str]] = []
-    for item in _puzzle_items_in_zone(actor_zone, items):
+    for item in _puzzle_items_in_zone(actor_zone, items, puzzles):
         if item.position is None:
             continue
         label = item.label or item.id.replace("_", " ")
@@ -573,6 +586,222 @@ def _choose_puzzle_focus_item(
     candidates.sort(key=lambda t: (t[0], t[1], t[2]))
     _, _, label, ix, iy, zone = candidates[0]
     return label, ix, iy, zone
+
+
+def _broadcast_effects(
+    side_effects: list[dict],
+    recent_events,
+    turn_num: int,
+    game_time: Optional[GameTime],
+) -> None:
+    """Append any authored ``broadcast`` text from puzzle effects.
+
+    The broadcast text lives with the puzzle definition (CONTENTS.md), not in
+    the loop, so other characters perceive world consequences (e.g. a creature
+    feeling a door grind open) without scene-specific code here.
+    """
+    for effect in side_effects or []:
+        text = (effect.get("broadcast") or "").strip()
+        if not text:
+            continue
+        ts = (
+            f"{game_time.hour}:{game_time.minute:02d}"
+            if game_time else f"t{turn_num}"
+        )
+        recent_events.append((turn_num, f"{ts} | {text}"))
+
+
+def _first_sentence(text: str) -> str:
+    """Return the first sentence of ``text``, ensuring trailing punctuation."""
+    head = (text or "").split(". ", 1)[0].strip()
+    if head and not head.endswith("."):
+        head += "."
+    return head
+
+
+async def _run_puzzle_exchange(
+    *,
+    first_item,
+    puzzle,
+    puzzles: "PuzzleRegistry",
+    interactive: bool,
+    turn_cycle: TurnCycle,
+    cs: CharacterSession,
+    context: RoleContext,
+    output: CharacterOutput,
+    character_id: str,
+    turn_num: int,
+    game_time: Optional[GameTime],
+    items: dict,
+    actor_zone: str,
+    characters: dict[str, CharacterSession],
+    attack_log: list[str],
+    recent_events,
+) -> list[dict]:
+    """Drive a puzzle's state machine for one actor and return its effects.
+
+    Outside combat (``interactive=True``) this runs the atomic *focused
+    exchange*: the actor presses one input, the puzzle returns a terse
+    response plus a "what do you do next?" prompt, and the same actor is
+    re-prompted for the next press — all within this single turn, with the
+    rest of the world frozen. The exchange ends the moment the puzzle solves,
+    resets, or the actor does anything other than press the next input
+    (any incorrect response exits). In combat (``interactive=False``) a
+    single press resolves with no re-prompt.
+
+    The actor's ``output.action`` is rewritten to describe the *whole*
+    sequence actually performed (not just the opening press), so the turn's
+    narration and the post-turn RESULT packet reflect what really happened —
+    including the final solve — rather than only the first press.
+
+    All press logging (attack_log, recent_events, episodic memory, discovery)
+    is handled here so the caller's generic interaction bookkeeping does not
+    double-count puzzle presses. Returns the accumulated side effects (door
+    open/close) so the caller can broadcast them and feed activation checks.
+    """
+    import dataclasses
+
+    from engine.verb_resolver import (
+        _detect_verb,
+        infer_interaction_target,
+        resolve_item_interaction,
+    )
+
+    handle = (
+        characters[character_id].scene_handle
+        or characters[character_id].character.name
+        or character_id
+    )
+    zone_label = actor_zone.upper() or "this zone"
+
+    def _ts() -> str:
+        return (
+            f"{game_time.hour}:{game_time.minute:02d}"
+            if game_time else f"t{turn_num}"
+        )
+
+    side_effects_all: list[dict] = []
+    pressed_labels: list[str] = []
+    solved = False
+    current_item = first_item
+    # Each correct press can advance the sequence by one; bound the loop a
+    # little beyond the solution length as a safety net.
+    max_steps = len(puzzle.target_ids) + 2
+
+    for _ in range(max_steps):
+        label = current_item.label or current_item.id
+        result = puzzles.press(current_item.id)
+        response = (result.response or "").strip()
+
+        current_item.discovered_by.add(character_id)
+        side_effects_all.extend(result.side_effects)
+        pressed_labels.append(label)
+        solved = result.solved
+
+        if response:
+            attack_log.append(
+                f"[PUZZLE] {character_id} pressed {label}: {response}"
+            )
+            head = _first_sentence(response)
+            recent_events.append((turn_num, (
+                f"{_ts()} | {handle} pressed {label} — {head}"
+            )))
+            _append_memory_note(
+                cs,
+                f"Turn {turn_num}: you pressed {label} in {zone_label} "
+                f"and learned: {head}",
+            )
+
+        # Real-time per-press feedback to human transport channels: each press
+        # (step, solve, reset, or reverse) emits its own result message so the
+        # player sees the mechanism respond as it happens. Crucially this is
+        # the only place the terminal solve/reset/reverse response surfaces,
+        # since those end the exchange with no follow-up prompt.
+        if interactive:
+            await _emit_puzzle_press_result(
+                cs=cs,
+                character_id=character_id,
+                turn_num=turn_num,
+                label=label,
+                response=response,
+                solved=result.solved,
+            )
+
+        # End conditions: solved, reset, reversed, or non-interactive mode.
+        if not result.awaiting_input or not interactive:
+            break
+
+        # Focused re-prompt: ask the SAME actor what they do next. The press
+        # response was just emitted as its own message, so the prompt carries
+        # only the question — no need to restate the feedback here.
+        feedback = (
+            "## You are mid-sequence at a mechanism (act now)\n"
+            f"{result.follow_up_prompt}"
+        )
+        focused = dataclasses.replace(
+            context,
+            scene_context=f"{context.scene_context}\n\n{feedback}",
+        )
+        next_intent, _ = await _player_roles_via_transport(
+            turn_cycle=turn_cycle,
+            context=focused,
+            cs=cs,
+        )
+
+        next_target = next_intent.interaction_target or infer_interaction_target(
+            next_intent.intent or "", items, actor_zone
+        )
+        next_resolved = (
+            resolve_item_interaction(
+                intent_text=next_intent.intent or "",
+                interaction_target=next_target,
+                items=items,
+                character_zone=actor_zone,
+            )
+            if next_target else None
+        )
+        next_item = next_resolved[0] if next_resolved else None
+
+        # Anything other than pressing the next input to THIS puzzle ends the
+        # exchange and abandons the in-progress sequence (no penalty).
+        if (
+            next_item is None
+            or puzzles.puzzle_for_item(next_item.id) is not puzzle
+            or _detect_verb(next_intent.intent or "") != "press"
+        ):
+            puzzle.abandon()
+            attack_log.append(
+                f"[PUZZLE] {character_id} stepped away from the sequence "
+                f"before completing it; the mechanism resets."
+            )
+            break
+
+        current_item = next_item
+
+    # Rewrite the actor's action so narration and the RESULT packet describe
+    # the full sequence performed, not just the opening press.
+    if pressed_labels:
+        output.action = _describe_press_sequence(pressed_labels, solved=solved)
+
+    return side_effects_all
+
+
+def _describe_press_sequence(labels: list[str], *, solved: bool) -> str:
+    """Humanize the presses performed in a focused puzzle exchange.
+
+    Produces an authoritative ``output.action`` line so the turn's narration
+    and the post-turn RESULT packet reflect every press, ending with whether
+    the sequence completed.
+    """
+    if not labels:
+        return ""
+    if len(labels) == 1:
+        action = f"Presses {labels[0]}"
+    else:
+        action = "Presses " + ", ".join(labels[:-1]) + f", then {labels[-1]}, in sequence"
+    if solved:
+        action += ", completing the sequence"
+    return action + "."
 
 
 def _max_attacks(identity_text: str) -> int:
@@ -1354,8 +1583,16 @@ def _build_points_of_interest(
         if lm_zones and not (lm_zones & visible_zones):
             continue
         dist = ((pos.x - px) ** 2 + (pos.y - py) ** 2) ** 0.5
+        # Mark seam landmarks that open onto a zone the actor has not yet
+        # entered, so the player can tell which way leads onward.
+        onward = ""
+        new_zones = lm_zones - visible_zones
+        if new_zones:
+            onward = " — leads onward to " + ", ".join(
+                z.title() for z in sorted(new_zones)
+            )
         lines.append(
-            f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away)"
+            f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away){onward}"
         )
 
     # Zone centers (helpful when the goal is "move into the GLADE") —
@@ -1375,7 +1612,212 @@ def _build_points_of_interest(
 
     if not lines:
         return ""
-    return "## Points of interest (use these coordinates in MOVEMENT)\n" + "\n".join(lines)
+    here = current_zone.title() if current_zone else "an unmarked area"
+    header = (
+        f"## Where you are and where you can go\n"
+        f"You are in the {here}. The landmarks below are the only places you "
+        f"can currently see or reach; use their coordinates in MOVEMENT to "
+        f"travel. Entries marked \"leads onward\" open into a new area.\n"
+    )
+    return header + "\n".join(lines)
+
+
+# Words that signal the actor intends to relocate this turn.
+_MOVE_CUE_WORDS = {
+    "move", "moves", "moving", "go", "goes", "going", "head", "heads",
+    "heading", "walk", "walks", "walking", "advance", "advances",
+    "advancing", "approach", "approaches", "approaching", "enter",
+    "enters", "entering", "cross", "crosses", "crossing", "proceed",
+    "proceeds", "proceeding", "step", "steps", "stepping", "travel",
+    "travels", "traveling", "travelling", "toward", "towards", "into",
+    "descend", "descends", "descending", "climb", "climbs", "climbing",
+    "make", "follow", "follows", "following",
+}
+
+# Generic location nouns that, on their own, do not identify a destination.
+_DESTINATION_GENERIC = {
+    "chamber", "passage", "zone", "center", "centre", "mouth", "descent",
+    "squeeze", "threshold", "opening", "rubble", "arch", "crack", "tunnel",
+    "cavern", "area", "the", "a", "an",
+}
+
+
+def _dest_tokens(s: str) -> set[str]:
+    """Word tokens for destination matching (keeps ordinals like 'first')."""
+    return {tok for tok in re.split(r"[^a-z0-9]+", s.lower()) if tok}
+
+
+def _point_inside_zone_near_gateway(
+    scene_geometry: "SceneGeometry",
+    *,
+    gateway: tuple[float, float],
+    approach_from: tuple[float, float],
+    dest_zone: str,
+    center_of,
+) -> Optional[tuple[float, float]]:
+    """Return a point just inside ``dest_zone`` past a seam ``gateway``.
+
+    A gateway landmark sits on the seam between two zones, so ``zone_at``
+    resolves it to whichever side wins the point-in-polygon test (usually
+    the zone the actor is leaving). To actually cross, we step a short
+    distance past the gateway *continuing the actor's approach direction*
+    (gateway minus approach point). That direction reliably points through
+    the threshold regardless of where the destination zone's centroid lies,
+    avoiding the sideways drift the centroid heuristic caused. We probe a
+    few small step sizes and return the first that lands inside the target
+    zone. Falls back to a step toward the centroid, then None.
+    """
+    gx, gy = gateway
+    polygon = scene_geometry.zones.get(dest_zone)
+    if polygon is None:
+        for k, p in scene_geometry.zones.items():
+            if k.upper() == dest_zone.upper():
+                polygon = p
+                break
+    if polygon is None:
+        return None
+
+    def _inside(x: float, y: float) -> bool:
+        z = scene_geometry.zone_at(Position(x, y))
+        return bool(z) and z.upper() == dest_zone.upper()
+
+    # Primary direction: keep walking the way the actor was already heading.
+    dirs: list[tuple[float, float]] = []
+    ax, ay = approach_from
+    fx, fy = gx - ax, gy - ay
+    flen = (fx * fx + fy * fy) ** 0.5
+    if flen > 1e-6:
+        dirs.append((fx / flen, fy / flen))
+    # Fallback direction: toward the destination centroid.
+    center = center_of(dest_zone)
+    if center is not None:
+        cx, cy = center[0] - gx, center[1] - gy
+        clen = (cx * cx + cy * cy) ** 0.5
+        if clen > 1e-6:
+            dirs.append((cx / clen, cy / clen))
+
+    for ux, uy in dirs:
+        for step in (1.0, 2.0, 3.0, 5.0):
+            nx, ny = gx + ux * step, gy + uy * step
+            if _inside(nx, ny):
+                return (nx, ny)
+    return None
+
+
+def _infer_movement_destination(
+    intent_text: str,
+    scene_geometry: Optional[SceneGeometry],
+    my_pos: Optional[tuple[float, float, str]],
+    visited_zones: Optional[set[str]] = None,
+) -> Optional[tuple[float, float, str]]:
+    """Resolve a named destination in ``intent_text`` to coordinates.
+
+    Player-Left sometimes names where it is going in the free-text INTENT
+    (e.g. "Move to the first passage") but leaves MOVEMENT empty, so the
+    structured ``movement_target`` is None and the actor never moves. This
+    backfills the coordinate by matching the intent text against the same
+    landmarks and zone centers the actor can see in "Points of interest".
+
+    Matching requires a movement cue word AND a shared *discriminating*
+    token (an ordinal/name word like "first" or "echo", not a generic noun
+    like "chamber"), so an ambiguous phrase resolves to nothing rather than
+    an arbitrary pick. Landmarks win over zone centers; ties yield None.
+    Distance is clamped to walking speed downstream, so this only sets a
+    direction of travel — it never teleports.
+    """
+    if scene_geometry is None or my_pos is None:
+        return None
+    words = _dest_tokens(intent_text)
+    if not words or not (words & _MOVE_CUE_WORDS):
+        return None
+
+    px, py = my_pos[0], my_pos[1]
+    current_zone = (my_pos[2] or "").upper()
+    visible_zones: set[str] = set(visited_zones or set())
+    if current_zone:
+        visible_zones.add(current_zone)
+
+    def _best(candidates: list[tuple[str, float, float, str]]):
+        best = None
+        best_score = 0
+        tied = False
+        for name, cx, cy, zone in candidates:
+            cand = _dest_tokens(name)
+            discriminating = cand - _DESTINATION_GENERIC
+            shared = words & discriminating
+            if not shared:
+                continue
+            score = len(shared)
+            if score > best_score:
+                best_score, best, tied = score, (name, cx, cy, zone), False
+            elif score == best_score:
+                tied = True
+        return None if (best is None or tied) else best
+
+    def _zone_center(zname: str) -> Optional[tuple[float, float]]:
+        polygon = scene_geometry.zones.get(zname)
+        if polygon is None:
+            # zones dict may be keyed case-sensitively; match upper().
+            for k, p in scene_geometry.zones.items():
+                if k.upper() == zname.upper():
+                    polygon = p
+                    break
+        if polygon is None or not polygon.vertices:
+            return None
+        verts = polygon.vertices
+        return (
+            sum(v[0] for v in verts) / len(verts),
+            sum(v[1] for v in verts) / len(verts),
+        )
+
+    # Landmarks first (filtered to the same visibility as Points of interest).
+    lm_candidates: list[tuple[str, float, float, str]] = []
+    lm_zone_map: dict[str, set[str]] = {}
+    for name, pos in scene_geometry.landmarks.items():
+        lm_zones = _zones_for_point(pos, scene_geometry.zones)
+        if lm_zones and not (lm_zones & visible_zones):
+            continue
+        display = name.replace("_", " ")
+        lm_candidates.append((display, pos.x, pos.y, ""))
+        lm_zone_map[display] = lm_zones
+    hit = _best(lm_candidates)
+    if hit is not None:
+        name, hx, hy, _ = hit
+        # If this landmark is a gateway onto a zone the actor has not yet
+        # entered, the landmark itself usually sits on the seam, which
+        # ``zone_at`` resolves to the *current* zone. Push the target just
+        # across the threshold into the onward zone so arriving actually
+        # changes zones instead of stalling at the mouth.
+        onward_zones = sorted((lm_zone_map.get(name, set()) - visible_zones))
+        if onward_zones:
+            crossed = _point_inside_zone_near_gateway(
+                scene_geometry,
+                gateway=(hx, hy),
+                approach_from=(px, py),
+                dest_zone=onward_zones[0],
+                center_of=_zone_center,
+            )
+            if crossed is not None:
+                hx, hy = crossed
+        return (hx, hy, "")
+
+    # Fall back to visible zone centers.
+    zone_candidates: list[tuple[str, float, float, str]] = []
+    for zname, polygon in scene_geometry.zones.items():
+        if zname.upper() not in visible_zones:
+            continue
+        verts = polygon.vertices
+        if not verts:
+            continue
+        cx = sum(v[0] for v in verts) / len(verts)
+        cy = sum(v[1] for v in verts) / len(verts)
+        zone_candidates.append((zname, cx, cy, zname))
+    zhit = _best(zone_candidates)
+    if zhit is None:
+        return None
+    _, zx, zy, zzone = zhit
+    return (zx, zy, zzone)
+
 
 
 def _events_from_cr(
@@ -1437,7 +1879,7 @@ def _build_context(
     recent_events: Optional[list[str]] = None,
     visited_zones: Optional[dict[str, set[str]]] = None,
     items: Optional[dict] = None,
-    puzzle_state: Optional[dict] = None,
+    puzzles: Optional["PuzzleRegistry"] = None,
 ) -> RoleContext:
     """Build a RoleContext from session state."""
     # Replace baked-in "Your starting position: x=…" with the live value so
@@ -1491,7 +1933,7 @@ def _build_context(
     puzzle_block = _build_puzzle_pressure_block(
         current_zone=current_zone,
         items=items,
-        puzzle_state=puzzle_state,
+        puzzles=puzzles,
     )
     if puzzle_block:
         scene = f"{scene}\n\n{puzzle_block}"
@@ -1560,6 +2002,100 @@ _CAST_KEYWORDS = re.compile(r"\b(cast|casts|casting|use\s+spell|spell)\b", re.IG
 def _intent_is_attack(intent_text: str) -> bool:
     """Return True if the Player-Left intent string describes an attack action."""
     return bool(_ATTACK_KEYWORDS.search(intent_text or ""))
+
+
+def _resolve_teleport_destination(
+    intent_text: str,
+    scene_geometry: Optional[SceneGeometry],
+    items: Optional[dict] = None,
+) -> Optional[tuple[float, float, str]]:
+    """Resolve a named zone, landmark, or item anywhere in the scene for Teleport.
+
+    Unlike :func:`_infer_movement_destination`, Teleport can reach any place
+    the caster can name (not just adjacent/visible ones) and lands exactly on
+    the destination with no speed clamp. Resolution order is zones (the caster
+    teleports into a region, landing at its centroid, which is reliably inside
+    the polygon), then named landmarks, then named scene items/features (e.g.
+    "the trigger glyphs") which land on the feature's own position.
+    Matching needs a shared *discriminating* token (an ordinal/name word like
+    "echo" or "glyph", not a generic noun like "chamber"); ambiguous ties
+    resolve to None rather than an arbitrary pick — except that several items
+    sharing the same discriminating name *and* the same zone (the three
+    trigger glyphs) are treated as one destination.
+    """
+    if scene_geometry is None:
+        return None
+    words = _dest_tokens(intent_text)
+    if not words:
+        return None
+
+    def _best(candidates: list[tuple[str, float, float, str]]):
+        best = None
+        best_score = 0
+        tied = False
+        for name, cx, cy, zone in candidates:
+            discriminating = _dest_tokens(name) - _DESTINATION_GENERIC
+            shared = words & discriminating
+            if not shared:
+                continue
+            score = len(shared)
+            if score > best_score:
+                best_score, best, tied = score, (cx, cy, zone), False
+            elif score == best_score:
+                tied = True
+        return None if (best is None or tied) else best
+
+    # Zones first — teleport targets a region; centroid lands inside it.
+    zone_candidates: list[tuple[str, float, float, str]] = []
+    for zname, polygon in scene_geometry.zones.items():
+        verts = polygon.vertices
+        if not verts:
+            continue
+        cx = sum(v[0] for v in verts) / len(verts)
+        cy = sum(v[1] for v in verts) / len(verts)
+        zone_candidates.append((zname, cx, cy, zname.upper()))
+    zhit = _best(zone_candidates)
+    if zhit is not None:
+        return zhit
+
+    # Next, a named landmark, snapping to its containing zone label.
+    lm_candidates: list[tuple[str, float, float, str]] = []
+    for name, pos in scene_geometry.landmarks.items():
+        zone = scene_geometry.zone_at(pos) or ""
+        lm_candidates.append((name.replace("_", " "), pos.x, pos.y, zone.upper()))
+    lmhit = _best(lm_candidates)
+    if lmhit is not None:
+        return lmhit
+
+    # Finally, a named scene item/feature (e.g. "the trigger glyphs"). Several
+    # items sharing both the discriminating name and a single zone count as one
+    # destination; we land on the first such item's position.
+    if not items:
+        return None
+    best_score = 0
+    best_matches: list[tuple[float, float, str]] = []
+    for item in items.values():
+        pos = getattr(item, "position", None)
+        if pos is None:
+            continue
+        label = item.label or item.id.replace("_", " ")
+        discriminating = _dest_tokens(label) - _DESTINATION_GENERIC
+        shared = words & discriminating
+        if not shared:
+            continue
+        score = len(shared)
+        zone = (item.zone or scene_geometry.zone_at(pos) or "").upper()
+        if score > best_score:
+            best_score = score
+            best_matches = [(float(pos.x), float(pos.y), zone)]
+        elif score == best_score:
+            best_matches.append((float(pos.x), float(pos.y), zone))
+    if not best_matches:
+        return None
+    zones = {z for _, _, z in best_matches}
+    if len(zones) != 1:
+        return None  # ambiguous: matching items span multiple zones
+    return best_matches[0]
 
 
 def _intent_is_spell(intent_text: str) -> bool:
@@ -2321,28 +2857,69 @@ def _render_transport_prompt(
     """Format the DM situation packet sent to human transport channels."""
     from engine.runtime_paths import current_session_id
 
-    perception = context.perception.strip() if context.perception else "No other creatures are visible."
-    scene = _render_transport_scene_delta(
-        scene_context=context.scene_context,
-        turn=context.turn,
-        raw_history=raw_history,
-        cs=cs,
-    )
-    return (
+    header = (
         f"PACKET: TURN PROMPT\n"
         f"TURN PROMPT: {context.turn}\n"
         f"SESSION: {current_session_id()}\n"
         f"CHARACTER: {context.character_id}\n"
         f"HANDLE: {cs.scene_handle or context.character_id}\n"
-        f"\n"
-        f"SCENE\n"
-        f"{scene}\n"
-        f"\n"
-        f"PERCEPTION\n"
-        f"{perception}\n"
-        f"\n"
-        f"Reply with your intent for this turn in plain text.\n"
     )
+
+    # A focused puzzle exchange appends a "## You are mid-sequence at a
+    # mechanism" block to scene_context between presses. While the actor is
+    # mid-sequence the only thing that matters is the mechanism's response to
+    # their last press plus the "what do you do next?" prompt — the standing
+    # scene, position, and perception were already shown on the turn's first
+    # prompt and would only bury the live feedback. So when that block is
+    # present we render a minimal, focused packet and nothing else.
+    mechanism_block = _extract_scene_section(
+        context.scene_context, "## You are mid-sequence at a mechanism"
+    )
+    if mechanism_block:
+        mech_lines = [
+            ln for ln in mechanism_block.splitlines()
+            if not ln.strip().lower().startswith("## ")
+        ]
+        mechanism_section = "\n".join(mech_lines).strip()
+        parts = [header, f"MECHANISM (act now)\n{mechanism_section}"]
+        parts.append(
+            "Reply with your next action in plain text, and put what you say in quotes."
+        )
+        return "\n\n".join(parts) + "\n"
+
+    perception = context.perception.strip() if context.perception else "No other creatures are visible."
+    delta = _render_transport_scene_delta(
+        scene_context=context.scene_context,
+        turn=context.turn,
+        raw_history=raw_history,
+        cs=cs,
+    )
+    recent_section = _strip_recent_prefix(delta)
+    zone_brief, current_position = _orientation_for_transport(context.scene_context)
+    scene_intro = _scene_intro_for_transport(context.scene_context, raw_history)
+
+    # Section order for human channels:
+    #   SCENE            — description of the current zone
+    #   RECENT CONTEXT   — what changed since last turn (omitted if empty)
+    #   CURRENT POSITION — where you are and where you can travel
+    #   PERCEPTION       — who/what you can see
+    # On turn 1 SCENE is the full scene intro; later turns use the brief
+    # zone line. Actions by earlier-initiative characters this turn appear
+    # under RECENT CONTEXT, never folded into SCENE.
+    if context.turn <= 1:
+        scene_section = scene_intro or zone_brief or "(no scene description available)"
+    else:
+        scene_section = zone_brief or scene_intro or "(your surroundings are unchanged)"
+
+    parts = [header]
+    parts.append(f"SCENE\n{scene_section}")
+    if recent_section.strip():
+        parts.append(f"RECENT CONTEXT\n{recent_section}")
+    if current_position.strip():
+        parts.append(f"CURRENT POSITION\n{current_position}")
+    parts.append(f"PERCEPTION\n{perception}")
+    parts.append("Reply with your intent for this turn in plain text, and put what you say in quotes.")
+    return "\n\n".join(parts) + "\n"
 
 
 def _history_lines_dedup(raw_history: str) -> list[str]:
@@ -2359,6 +2936,121 @@ def _history_lines_dedup(raw_history: str) -> list[str]:
     return deduped_history
 
 
+def _extract_scene_section(scene_context: str, heading: str) -> str:
+    """Return the block of ``scene_context`` under a markdown ``## heading``.
+
+    Matches case-insensitively. The block runs from the heading line up to
+    (but not including) the next ``## `` heading or end of text. Returns ""
+    if the heading is not present.
+    """
+    raw = (scene_context or "")
+    lines = raw.splitlines()
+    target = heading.strip().lower()
+    out: list[str] = []
+    capturing = False
+    for ln in lines:
+        lowered = ln.strip().lower()
+        if lowered.startswith("## "):
+            if capturing:
+                break
+            capturing = lowered.startswith(target)
+            if capturing:
+                out.append(ln.rstrip())
+            continue
+        if capturing and ln.strip():
+            out.append(ln.rstrip())
+    return "\n".join(out).strip()
+
+
+def _strip_recent_prefix(text: str) -> str:
+    """Drop a leading ``Recent context...`` label line from a delta block."""
+    lines = (text or "").splitlines()
+    if lines and lines[0].strip().lower().startswith("recent context"):
+        return "\n".join(lines[1:]).strip()
+    return (text or "").strip()
+
+
+def _scene_intro_for_transport(scene_context: str, raw_history: str) -> str:
+    """Extract the static scene-intro prose from ``scene_context``.
+
+    ``scene_context`` is assembled as ``initial_scene`` + running history +
+    a series of ``## ...`` engine sections (memory, events, orientation,
+    puzzle pressure). For the human SCENE block we want only the intro
+    narrative, so we drop any line that also appears in ``raw_history`` and
+    everything from the first ``## `` heading onward.
+    """
+    hist: set[str] = set()
+    for ln in (raw_history or "").splitlines():
+        s = ln.strip()
+        if s:
+            hist.add(" ".join(s.lower().split()))
+    out: list[str] = []
+    for ln in (scene_context or "").splitlines():
+        s = ln.strip()
+        if s.startswith("## "):
+            break  # sections live at the tail; intro is everything before
+        if not s:
+            continue
+        if " ".join(s.lower().split()) in hist:
+            continue
+        out.append(ln.rstrip())
+    # Cap the intro so a long opening narration does not flood the packet.
+    out = out[:24]
+    while out and len("\n".join(out)) > 1800:
+        out = out[:-1]
+    return "\n".join(out).strip()
+
+
+def _orientation_for_transport(scene_context: str) -> tuple[str, str]:
+    """Split the orientation block into (zone_brief, current_position).
+
+    ``zone_brief`` is the lead sentence naming the current zone (rendered
+    under SCENE). ``current_position`` is the movement guidance plus the
+    landmark list (rendered under CURRENT POSITION). For human channels the
+    landmark coordinates are dropped and names are humanized, since the
+    player travels by naming a destination rather than typing coordinates.
+    """
+    block = _extract_scene_section(scene_context, "## Where you are and where you can go")
+    if not block:
+        return "", ""
+    lines = [ln for ln in block.splitlines() if not ln.strip().lower().startswith("## ")]
+    zone_brief = ""
+    intro_rest = ""
+    list_lines: list[str] = []
+    for ln in lines:
+        s = ln.strip()
+        if not s:
+            continue
+        if s.startswith("- "):
+            # Strip "x=.., y=.." coordinates and humanize the landmark name.
+            t = re.sub(
+                r"^(\s*-\s+)(.+?):\s*x=-?\d+(?:\.\d+)?,\s*y=-?\d+(?:\.\d+)?\s*",
+                lambda m: m.group(1) + m.group(2).replace("_", " ") + " ",
+                ln,
+            )
+            list_lines.append(t.rstrip())
+        elif not zone_brief:
+            head, sep, rest = s.partition(". ")
+            if sep:
+                zone_brief = head.strip() + "."
+                intro_rest = rest.strip()
+            else:
+                zone_brief = s
+    intro_rest = intro_rest.replace(
+        "use their coordinates in MOVEMENT to travel",
+        "use their names to travel",
+    )
+    cp_parts: list[str] = []
+    # Repeat the zone line so CURRENT POSITION is self-contained — the
+    # player should not have to scroll back to SCENE to recall where they are.
+    if zone_brief:
+        cp_parts.append(zone_brief)
+    if intro_rest:
+        cp_parts.append(intro_rest)
+    cp_parts.extend(list_lines)
+    return zone_brief, "\n".join(cp_parts).strip()
+
+
 def _render_transport_scene_delta(
     *,
     scene_context: str,
@@ -2366,115 +3058,22 @@ def _render_transport_scene_delta(
     raw_history: str,
     cs: CharacterSession,
 ) -> str:
-    """Render scene block for transport prompts with per-player delta history."""
-    # Turn 1 keeps compact scene intro. Seed cursor to avoid replaying old
-    # context on turn 2 if raw history already exists (resume/new join).
-    if turn <= 1:
-        cs.transport_history_cursor = len(_history_lines_dedup(raw_history))
-        return _compact_scene_for_transport(scene_context, turn=turn, raw_history=raw_history)
+    """Render the running-history delta for transport prompts.
 
+    Returns only the dialogue/narration lines this player has not yet seen
+    (everything past their per-player cursor). On turn 1 the cursor starts
+    at 0, so actions taken by earlier-initiative characters this turn are
+    surfaced as recent context rather than swallowed. Returns "" when there
+    is nothing new.
+    """
     history_lines = _history_lines_dedup(raw_history)
     start = max(0, min(cs.transport_history_cursor, len(history_lines)))
     delta = history_lines[start:]
     cs.transport_history_cursor = len(history_lines)
 
     if not delta:
-        return "Recent context (since your last turn):\n(no new statements or actions)"
+        return ""
     return "Recent context (since your last turn):\n" + "\n".join(delta)
-
-
-def _compact_scene_for_transport(
-    scene_context: str,
-    *,
-    max_lines: int = 24,
-    max_chars: int = 1800,
-    turn: int = 1,
-    raw_history: str = "",
-) -> str:
-    """Return a compact scene block for human transport prompts.
-
-    On turn 1 the full (filtered) scene_context is shown so the player gets
-    the scene intro.  On turn 2+ only the running dialogue/narration log is
-    shown (raw_history), which avoids replaying the entire LLM system prompt
-    and keeps the packet short.
-    """
-    # On turns after the first, use raw_history (the running log) directly.
-    # This avoids replaying the full LLM system prompt (initial_scene text)
-    # which can be 50-100 lines the human player does not need to re-read.
-    if turn > 1 and raw_history.strip():
-        history_lines = [ln.rstrip() for ln in raw_history.splitlines() if ln.strip()]
-        deduped_history: list[str] = []
-        last_norm = ""
-        for ln in history_lines:
-            norm = " ".join(ln.strip().lower().split())
-            if norm == last_norm:
-                continue
-            deduped_history.append(ln)
-            last_norm = norm
-
-        tail = deduped_history[-max_lines:]
-        while tail and len("\n".join(tail)) > max_chars:
-            tail = tail[1:]
-        if tail:
-            return "Recent context:\n" + "\n".join(tail)
-
-    raw = (scene_context or "").strip()
-    if not raw:
-        return "(no scene context available)"
-
-    lines = [ln.rstrip() for ln in raw.splitlines() if ln.strip()]
-    if not lines:
-        return "(no scene context available)"
-
-    # Human transport prompts should not replay engine memory/meta guidance.
-    drop_headers = {
-        "## what you remember",
-        "## anti-repetition guidance",
-        "## recent events",
-        "## points of interest",
-        "## puzzle pressure",
-    }
-    cleaned: list[str] = []
-    skip_block = False
-    for ln in lines:
-        lowered = ln.strip().lower()
-        if lowered.startswith("## "):
-            skip_block = any(lowered.startswith(h) for h in drop_headers)
-            if skip_block:
-                continue
-        if skip_block:
-            continue
-        cleaned.append(ln)
-
-    if not cleaned:
-        cleaned = lines
-
-    # Past turn 1, prefer the dialogue/narration tail over static intro lines.
-    # Separate "intro" lines (second-person scene setup) from "live" lines
-    # (dialogue, narration) so the tail always leads with what changed.
-    if turn > 1:
-        intro_prefixes = (
-            "you arrive",
-            "you are here",
-            "you hear",
-            "you invite",
-        )
-        intro_lines = [
-            ln for ln in cleaned
-            if ln.strip().lower().startswith(intro_prefixes)
-        ]
-        live_lines = [
-            ln for ln in cleaned
-            if not ln.strip().lower().startswith(intro_prefixes)
-        ]
-        # Use live content; if there is none yet (turn 2 with no history),
-        # fall back to intro lines so the prompt is not empty.
-        cleaned = live_lines if live_lines else intro_lines
-
-    tail = cleaned[-max_lines:]
-    while tail and len("\n".join(tail)) > max_chars:
-        tail = tail[1:]
-    return "Recent context:\n" + "\n".join(tail)
 
 
 def _intent_from_transport_text(
@@ -2569,13 +3168,9 @@ async def _player_roles_via_transport(
             )
             output = await turn_cycle.player_right_from_intent(context, intent)
             spoken_text, action_text = _split_transport_utterance(inbound)
-            if spoken_text:
-                output.spoken = spoken_text
-            elif output.spoken and output.spoken.strip().lower() not in {"", "(silent)", "(silence)"}:
-                # Respect model-produced speech only when user did not provide any.
-                output.spoken = output.spoken.strip()
-            else:
-                output.spoken = ""
+            # The human player's words are authoritative: only speak what they
+            # actually quoted. Never let the model invent dialogue for a human.
+            output.spoken = spoken_text or ""
 
             if action_text:
                 output.action = action_text
@@ -2588,9 +3183,20 @@ def _render_turn_result_packet(
     player_id: str,
     turn_result: TurnResult,
     characters: dict[str, CharacterSession],
+    current_positions: Optional[dict[str, tuple[float, float, str]]] = None,
 ) -> str:
     """Render a concise post-turn update for human transport channels."""
     from engine.runtime_paths import current_session_id
+
+    positions = current_positions or {}
+
+    def _location_line(char_id: str) -> Optional[str]:
+        pos = positions.get(char_id)
+        if not pos:
+            return None
+        _x, _y, zone = pos
+        zone_label = (zone or "").strip() or "unknown area"
+        return f"Location: {zone_label}"
 
     lines: list[str] = [
         "PACKET: TURN RESULT",
@@ -2606,6 +3212,9 @@ def _render_turn_result_packet(
 
         if cr.character_id == player_id:
             lines.append("[you]")
+            loc = _location_line(cr.character_id)
+            if loc:
+                lines.append(loc)
             spoken = (cr.output.spoken or "").strip()
             action = (cr.output.action or "").strip()
             if spoken and spoken.lower() not in {"(silent)", "(silence)"}:
@@ -2618,6 +3227,9 @@ def _render_turn_result_packet(
             continue
 
         lines.append(f"[{handle}]")
+        loc = _location_line(cr.character_id)
+        if loc:
+            lines.append(loc)
         if cr.output.spoken and cr.output.spoken.strip().lower() not in {"", "(silent)", "(silence)"}:
             lines.append(f"Spoken: {cr.output.spoken.strip()}")
         elif cr.narration.prose:
@@ -2636,6 +3248,7 @@ async def _broadcast_turn_results_to_transports(
     *,
     turn_result: TurnResult,
     characters: dict[str, CharacterSession],
+    current_positions: Optional[dict[str, tuple[float, float, str]]] = None,
 ) -> None:
     """Send post-turn updates to all configured Telegram players."""
     for char_id, cs in characters.items():
@@ -2648,6 +3261,7 @@ async def _broadcast_turn_results_to_transports(
             player_id=char_id,
             turn_result=turn_result,
             characters=characters,
+            current_positions=current_positions,
         )
         await _host_write_text(
             (cs.player_host or "").strip(),
@@ -2658,6 +3272,68 @@ async def _broadcast_turn_results_to_transports(
             f"[TRANSPORT] wrote turn-result {turn_result.turn} for "
             f"{char_id} to {(cs.player_host or 'local').strip()}:{(cs.player_outbox or '').strip()}"
         )
+
+
+def _render_puzzle_press_packet(
+    *,
+    character_id: str,
+    turn_num: int,
+    label: str,
+    response: str,
+    solved: bool,
+) -> str:
+    """Render a single puzzle press's outcome for human transport channels."""
+    from engine.runtime_paths import current_session_id
+
+    lines = [
+        "PACKET: MECHANISM RESULT",
+        f"TURN: {turn_num}",
+        f"SESSION: {current_session_id()}",
+        f"FOR: {character_id}",
+        "",
+        f"You pressed {label}.",
+        response.strip(),
+    ]
+    if solved:
+        lines.append("")
+        lines.append("The sequence is complete.")
+    return "\n".join(lines).strip() + "\n"
+
+
+async def _emit_puzzle_press_result(
+    *,
+    cs: CharacterSession,
+    character_id: str,
+    turn_num: int,
+    label: str,
+    response: str,
+    solved: bool,
+) -> None:
+    """Emit one puzzle press's outcome to a human transport channel.
+
+    Gives real-time, per-press feedback during a focused puzzle exchange so a
+    transport player sees the mechanism respond to each press as it happens —
+    including the terminal solve/reset/reverse press, which ends the exchange
+    with no follow-up prompt and would otherwise never be surfaced. No-op for
+    non-transport (LLM) actors and when there is nothing to report.
+    """
+    if (cs.player_transport or "").strip().lower() != "telegram":
+        return
+    outbox = (cs.player_outbox or "").strip()
+    if not outbox or not (response or "").strip():
+        return
+    packet = _render_puzzle_press_packet(
+        character_id=character_id,
+        turn_num=turn_num,
+        label=label,
+        response=response,
+        solved=solved,
+    )
+    await _host_write_text((cs.player_host or "").strip(), outbox, packet)
+    _dbg(
+        f"[TRANSPORT] wrote mechanism-result turn {turn_num} press {label!r} "
+        f"for {character_id}"
+    )
 
 
 def _render_session_complete_packet(
@@ -2727,6 +3403,7 @@ async def iter_session(
     initial_history: str = "",
     scene_geometry: Optional[SceneGeometry] = None,
     items: Optional[dict] = None,
+    puzzles: Optional["PuzzleRegistry"] = None,
     character_pronouns: dict[str, str] | None = None,
     initial_active_characters: set[str] | None = None,
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
@@ -2850,10 +3527,11 @@ async def iter_session(
         initial_party_examination_state or {}
     )
 
-    # Phase 3a: per-session puzzle bookkeeping (glyph press sequence,
-    # secret-door state). Owned here, mutated by state_resolver.process_press.
-    from engine.state_resolver import initial_puzzle_state
-    puzzle_state: dict = initial_puzzle_state()
+    # Per-session puzzles. Each puzzle owns its own state machine; the loop
+    # only delegates presses to the registry and applies the results. An
+    # empty registry (no authored puzzles) is a harmless no-op.
+    from engine.puzzles import PuzzleRegistry
+    puzzle_registry: PuzzleRegistry = puzzles if puzzles is not None else PuzzleRegistry()
 
     # Per-character visited-zone tracking. A character is aware of named
     # landmarks/zone-centers only in zones they have entered. Seed with each
@@ -2939,7 +3617,7 @@ async def iter_session(
                 recent_events=visible_events,
                 visited_zones=visited_zones,
                 items=items,
-                puzzle_state=puzzle_state,
+                puzzles=puzzle_registry,
             )
 
             # Steps 1-3: Player-Left → Player-Right → DM-Left
@@ -3015,7 +3693,7 @@ async def iter_session(
                     puzzle_live_here = _zone_has_unresolved_puzzle(
                         current_zone=actor_zone_before,
                         items=items,
-                        puzzle_state=puzzle_state,
+                        puzzles=puzzle_registry,
                     )
                     if not puzzle_live_here:
                         focus_wp = _waypoint_for_zone(
@@ -3046,7 +3724,7 @@ async def iter_session(
                     puzzle_live_here = _zone_has_unresolved_puzzle(
                         current_zone=actor_zone_before,
                         items=items,
-                        puzzle_state=puzzle_state,
+                        puzzles=puzzle_registry,
                     )
                     if (
                         not puzzle_live_here
@@ -3077,7 +3755,7 @@ async def iter_session(
                 puzzle_live = _zone_has_unresolved_puzzle(
                     current_zone=current_zone,
                     items=items,
-                    puzzle_state=puzzle_state,
+                    puzzles=puzzle_registry,
                 )
                 repeated_zone_search = (
                     len(recent_two) == 2
@@ -3114,6 +3792,7 @@ async def iter_session(
                         character_id=character_id,
                         current_positions=current_positions,
                         items=items,
+                        puzzles=puzzle_registry,
                         current_target_norm=target_norm,
                     )
                     if puzzle_focus is not None:
@@ -3215,6 +3894,45 @@ async def iter_session(
                     attack_log = []
                     if spell_result.approved:
                         used_spell_resolver = True
+                        # Teleport: relocate the caster to a named zone/landmark/feature.
+                        # The resolver consumed the slot and emitted "teleport";
+                        # the session owns geometry/positions so it applies the move.
+                        if "teleport" in spell_result.events:
+                            dest = _resolve_teleport_destination(
+                                intent.intent, scene_geometry, items
+                            )
+                            if dest is not None:
+                                origin = current_positions.get(character_id)
+                                tx, ty = float(dest[0]), float(dest[1])
+                                tzone = (
+                                    scene_geometry.zone_at(Position(tx, ty))
+                                    if scene_geometry else dest[2]
+                                ) or dest[2]
+                                new_pos = (tx, ty, tzone.upper())
+                                current_positions[character_id] = new_pos
+                                adjudication.new_position = new_pos
+                                if visited_zones is not None and tzone:
+                                    visited_zones.setdefault(
+                                        character_id, set()
+                                    ).add(tzone.upper())
+                                if origin is not None:
+                                    ox, oy, oz = origin
+                                    attack_log.append(
+                                        f"[TELEPORT] {character_id}: "
+                                        f"({ox:.1f},{oy:.1f},{oz}) → "
+                                        f"({tx:.1f},{ty:.1f},{new_pos[2]})"
+                                    )
+                                else:
+                                    attack_log.append(
+                                        f"[TELEPORT] {character_id}: → "
+                                        f"({tx:.1f},{ty:.1f},{new_pos[2]})"
+                                    )
+                            else:
+                                attack_log.append(
+                                    f"[TELEPORT] {character_id}: no recognizable "
+                                    f"destination in intent '{intent.intent}'; "
+                                    f"spell fizzles."
+                                )
                         for tid, dmg in spell_result.hp_damage.items():
                             if tid in characters:
                                 tchar = characters[tid].character
@@ -3393,6 +4111,63 @@ async def iter_session(
             # the destination — its MOVEMENT TARGET is ignored here.
             # Skipped when CombatResolver already applied movement.
             player_target = intent.movement_target  # (x, y, z) or None
+
+            # The model sometimes names its destination only in the free-text
+            # INTENT ("Move to the first passage") and leaves MOVEMENT empty,
+            # so movement_target is None and the actor never relocates.
+            # Backfill the coordinate from a named landmark/zone in the intent
+            # text. Distance is clamped to speed downstream, so this only sets
+            # a direction of travel.
+            if (
+                not use_resolver
+                and adjudication.approved
+                and player_target is None
+                and intent.intent
+                and scene_geometry is not None
+            ):
+                _move_zone = current_positions.get(
+                    character_id, ("", "", "")
+                )[2]
+                _dest = _infer_movement_destination(
+                    intent.intent,
+                    scene_geometry,
+                    current_positions.get(character_id),
+                    visited_zones.get(character_id, set()) if visited_zones else set(),
+                )
+                if _dest is not None:
+                    player_target = _dest
+                    intent.movement_target = _dest
+                    attack_log.append(
+                        f"[INFER-MOVE] {character_id}: derived movement "
+                        f"target ({_dest[0]:.1f},{_dest[1]:.1f}) from intent "
+                        f"text '{intent.intent}'."
+                    )
+
+            # The model sometimes describes an interaction in the free-text
+            # intent (e.g. "I press the top glyph") but leaves the structured
+            # interaction_target empty. Backfill it from the intent text when
+            # a verb + in-zone item can be identified, so both the auto-move
+            # and interaction-resolution gates below fire correctly.
+            if (
+                not use_resolver
+                and adjudication.approved
+                and items
+                and not intent.interaction_target
+                and intent.intent
+            ):
+                from engine.verb_resolver import infer_interaction_target
+                _infer_zone = current_positions.get(
+                    character_id, ("", "", "")
+                )[2]
+                _inferred_target = infer_interaction_target(
+                    intent.intent, items, _infer_zone
+                )
+                if _inferred_target:
+                    intent.interaction_target = _inferred_target
+                    attack_log.append(
+                        f"[INFER-TARGET] {character_id}: derived interaction "
+                        f"target '{_inferred_target}' from intent text."
+                    )
 
             # Phase 3b.1: if the actor declared an interaction_target whose
             # item lives in their current zone, auto-route movement to that
@@ -3705,95 +4480,94 @@ async def iter_session(
                     label = item_obj.label or item_obj.id
                     verb_canonical = interaction_obj.verb.lower().split()[0] if interaction_obj.verb else ""
 
-                    # Phase 3a: state-mutating verbs route through the
-                    # state resolver, which OVERRIDES the response so the
-                    # glyph sequence + door state machine drives the truth.
+                    # State-mutating presses on a puzzle input route through
+                    # the puzzle's own state machine (see engine.puzzles).
+                    # The puzzle owns its responses, progress, and effects;
+                    # the loop only delegates and broadcasts the result.
                     side_effects: list[dict] = []
-                    if verb_canonical == "press":
-                        from engine.state_resolver import process_press
-                        response, side_effects = process_press(
-                            item_obj, items, puzzle_state,
+                    puzzle = (
+                        puzzle_registry.puzzle_for_item(item_obj.id)
+                        if verb_canonical == "press" else None
+                    )
+
+                    if puzzle is not None:
+                        # Atomic focused exchange outside combat; a single
+                        # press (no re-prompt) while in combat.
+                        side_effects = await _run_puzzle_exchange(
+                            first_item=item_obj,
+                            puzzle=puzzle,
+                            puzzles=puzzle_registry,
+                            interactive=not in_combat,
+                            turn_cycle=turn_cycle,
+                            cs=cs,
+                            context=context,
+                            output=output,
+                            character_id=character_id,
+                            turn_num=turn_num,
+                            game_time=game_time,
+                            items=items,
+                            actor_zone=actor_zone,
+                            characters=characters,
+                            attack_log=attack_log,
+                            recent_events=recent_events,
                         )
-                        response = (response or "").strip()
                     else:
                         response = (interaction_obj.response or "").strip()
 
-                    if response:
-                        attack_log.append(
-                            f"[ITEM-INTERACTION] {character_id} {interaction_obj.verb} "
-                            f"{label}: {response}"
-                        )
-                        ts = (
-                            f"{game_time.hour}:{game_time.minute:02d}"
-                            if game_time else f"t{turn_num}"
-                        )
-                        # First sentence keeps the recent-events bullet tight.
-                        first_sentence = response.split(". ", 1)[0].strip()
-                        if first_sentence and not first_sentence.endswith("."):
-                            first_sentence += "."
-                        handle = (
-                            characters[character_id].scene_handle
-                            or characters[character_id].character.name
-                            or character_id
-                        )
-                        # Verb past tense for the event line; "press" reads
-                        # naturally as "pressed", others use "examined" by
-                        # convention from Phase 2b.
-                        verb_past = "pressed" if verb_canonical == "press" else "examined"
-                        ev = (
-                            f"{ts} | {handle} {verb_past} {label} — "
-                            f"{first_sentence}"
-                        )
-                        recent_events.append((turn_num, ev))
-                        item_obj.discovered_by.add(character_id)
-                        _append_memory_note(
-                            cs,
-                            f"Turn {turn_num}: you {verb_past} {label} in {actor_zone.upper() or 'this zone'} and learned: {first_sentence}",
-                        )
-
-                        zone_for_state = (actor_zone or item_obj.zone or "").upper()
-                        shared_key = _shared_exam_key(zone_for_state, label)
-                        if shared_key is not None:
-                            mark_examined, needs_followup, complete = _classify_examination_result(
-                                verb=interaction_obj.verb or "",
-                                response=response,
+                        if response:
+                            attack_log.append(
+                                f"[ITEM-INTERACTION] {character_id} {interaction_obj.verb} "
+                                f"{label}: {response}"
                             )
-                            if mark_examined:
-                                prev = party_examination_state.get(shared_key, {})
-                                was_followup = bool(prev.get("needs_followup", False))
-                                party_examination_state[shared_key] = {
-                                    "label": label,
-                                    "summary": first_sentence,
-                                    "by": character_id,
-                                    "last_turn": turn_num,
-                                    "needs_followup": needs_followup or (was_followup and not complete),
-                                }
+                            ts = (
+                                f"{game_time.hour}:{game_time.minute:02d}"
+                                if game_time else f"t{turn_num}"
+                            )
+                            # First sentence keeps the recent-events bullet tight.
+                            first_sentence = response.split(". ", 1)[0].strip()
+                            if first_sentence and not first_sentence.endswith("."):
+                                first_sentence += "."
+                            handle = (
+                                characters[character_id].scene_handle
+                                or characters[character_id].character.name
+                                or character_id
+                            )
+                            verb_past = "examined"
+                            ev = (
+                                f"{ts} | {handle} {verb_past} {label} — "
+                                f"{first_sentence}"
+                            )
+                            recent_events.append((turn_num, ev))
+                            item_obj.discovered_by.add(character_id)
+                            _append_memory_note(
+                                cs,
+                                f"Turn {turn_num}: you {verb_past} {label} in {actor_zone.upper() or 'this zone'} and learned: {first_sentence}",
+                            )
 
-                    # Phase 3a: broadcast door state changes to all
-                    # characters via recent_events. The spider in the
-                    # Secret Chamber feels the vibration through its web
-                    # and the LLM can react accordingly on its next turn.
-                    for effect in side_effects:
-                        ts = (
-                            f"{game_time.hour}:{game_time.minute:02d}"
-                            if game_time else f"t{turn_num}"
-                        )
-                        if effect.get("type") == "door_open":
-                            recent_events.append((turn_num, (
-                                f"{ts} | The hairline crack in the west "
-                                f"wall of the Echo Chamber grinds open "
-                                f"into a passable hewn opening. Stone "
-                                f"vibrations carry through the surrounding "
-                                f"rock — anything attuned to the rock or "
-                                f"resting on a web in the Secret Chamber "
-                                f"feels them clearly."
-                            )))
-                        elif effect.get("type") == "door_close":
-                            recent_events.append((turn_num, (
-                                f"{ts} | The hewn opening in the west "
-                                f"wall of the Echo Chamber grinds shut "
-                                f"to a hairline crack again."
-                            )))
+                            zone_for_state = (actor_zone or item_obj.zone or "").upper()
+                            shared_key = _shared_exam_key(zone_for_state, label)
+                            if shared_key is not None:
+                                mark_examined, needs_followup, complete = _classify_examination_result(
+                                    verb=interaction_obj.verb or "",
+                                    response=response,
+                                )
+                                if mark_examined:
+                                    prev = party_examination_state.get(shared_key, {})
+                                    was_followup = bool(prev.get("needs_followup", False))
+                                    party_examination_state[shared_key] = {
+                                        "label": label,
+                                        "summary": first_sentence,
+                                        "by": character_id,
+                                        "last_turn": turn_num,
+                                        "needs_followup": needs_followup or (was_followup and not complete),
+                                    }
+
+                    # Broadcast any world-affecting effects (e.g. a door
+                    # grinding open) to other characters. The broadcast text
+                    # is authored with the puzzle, not hard-coded here.
+                    _broadcast_effects(
+                        side_effects, recent_events, turn_num, game_time,
+                    )
 
             # Phase 3b: re-evaluate activation triggers now that movement
             # and door state may have changed. Promotes dormant creatures
@@ -3920,6 +4694,7 @@ async def iter_session(
         await _broadcast_turn_results_to_transports(
             turn_result=turn_result,
             characters=characters,
+            current_positions=current_positions,
         )
 
         # Small pause so transport result packet is safely delivered before
@@ -4028,6 +4803,7 @@ async def run_session(
     rng: Optional[random.Random] = None,
     scene_geometry: Optional[SceneGeometry] = None,
     items: Optional[dict] = None,
+    puzzles: Optional["PuzzleRegistry"] = None,
     character_pronouns: dict[str, str] | None = None,
     start_turn: int = 1,
     initial_history: str = "",
@@ -4054,6 +4830,7 @@ async def run_session(
         initial_history=initial_history,
         scene_geometry=scene_geometry,
         items=items,
+        puzzles=puzzles,
         character_pronouns=character_pronouns,
         initial_active_characters=initial_active_characters,
         initial_positions=initial_positions,

@@ -115,4 +115,5 @@ chambers decades ago.
 | thorgrim    | 138 | 295 | Entry Chamber |
 | amara       | 120 | 305 | Entry Chamber |
 | seraphina   | 155 | 285 | Entry Chamber |
+| gilthaness  | 145 | 300 | Entry Chamber |
 | giant_spider | 64 | 195 | Secret Chamber |

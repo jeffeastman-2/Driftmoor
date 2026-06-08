@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from engine.llm_bridge import make_call_llm
 from engine.session import CharacterSession, run_session, load_resume_state
@@ -13,6 +14,9 @@ from engine.dm_agent import DMLeft, DMRight
 from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
 from engine.transcript import elaborate_session_from_dir
+
+if TYPE_CHECKING:
+    from engine.puzzles import PuzzleRegistry
 from engine.narrator import generate_narrative_from_dir
 from engine.map_renderer import render_interactive_map_html
 from engine.runtime_paths import get_scene_dir, get_session_dir
@@ -69,6 +73,7 @@ class SceneConfig:
     scene_geometry: SceneGeometry | None = None
     geometry_path: Path | None = None
     items: dict = field(default_factory=dict)  # {item_id: models.item.Item}
+    puzzles: "PuzzleRegistry | None" = None  # engine.puzzles.PuzzleRegistry
     default_turns: int = 4
     game_time: GameTime | None = None
     dm_provider: str = "anthropic"
@@ -466,6 +471,7 @@ async def run_scene(
             geometry_summary=config.geometry_summary,
             scene_geometry=config.scene_geometry,
             items=config.items or None,
+            puzzles=config.puzzles,
             checkpoint_dir=checkpoint_dir,
             game_time=config.game_time,
             character_pronouns=config.character_pronouns or None,

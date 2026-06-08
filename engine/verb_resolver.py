@@ -60,6 +60,53 @@ def _normalize_target(s: str) -> str:
     return t
 
 
+# Tokens too generic to disambiguate one item from another.
+_MATCH_STOPWORDS = {
+    "the", "a", "an", "this", "that", "these", "those", "i", "my", "it",
+    "its", "to", "toward", "towards", "on", "at", "of", "and", "in", "into",
+    "with", "then", "finally", "first", "again", "press", "pressing", "push",
+    "examine", "search", "look", "inspect", "study", "read",
+}
+
+
+def _tokens(s: str) -> set[str]:
+    """Alphanumeric word tokens, lower-cased, minus generic stopwords."""
+    return {
+        tok
+        for tok in re.split(r"[^a-z0-9]+", s.lower())
+        if tok and tok not in _MATCH_STOPWORDS
+    }
+
+
+def _token_match(
+    target: str, candidates: list[Item]
+) -> Optional[Item]:
+    """Resolve ``target`` to a candidate by shared word tokens.
+
+    Scores each candidate by the number of distinct tokens it shares with
+    ``target`` (drawing on both its id and label). Returns the candidate
+    only when there is a single strict winner, so an ambiguous phrase like
+    "the glyph" (which matches every glyph equally) yields ``None`` instead
+    of an arbitrary pick.
+    """
+    want = _tokens(target)
+    if not want:
+        return None
+    best_item: Optional[Item] = None
+    best_score = 0
+    tied = False
+    for it in candidates:
+        cand_tokens = _tokens(it.id) | (_tokens(it.label) if it.label else set())
+        score = len(want & cand_tokens)
+        if score > best_score:
+            best_score, best_item, tied = score, it, False
+        elif score == best_score and score > 0:
+            tied = True
+    if best_score == 0 or tied:
+        return None
+    return best_item
+
+
 def _match_item(
     target: str, items: dict[str, Item], zone: Optional[str]
 ) -> Optional[Item]:
@@ -97,7 +144,10 @@ def _match_item(
     for it in candidates:
         if it.id.lower() in t:
             return it
-    return None
+    # Final fallback: token-overlap match with a unique winner. Handles
+    # positional phrases like "the top glyph" that the substring checks
+    # miss because the authored label is "Trigger glyph (top)".
+    return _token_match(target, candidates)
 
 
 def _pick_by_condition(
@@ -166,6 +216,31 @@ def resolve_item_interaction(
             )
         return None
     return item, _pick_by_condition(matches, item.state)
+
+
+def infer_interaction_target(
+    intent_text: str,
+    items: Optional[dict[str, Item]],
+    character_zone: Optional[str],
+) -> Optional[str]:
+    """Derive an interaction target from free-text intent.
+
+    The LLM sometimes describes an action (e.g. "I press the top glyph")
+    without populating the structured ``interaction_target`` field. When
+    the intent text contains an interaction verb *and* names an item in
+    the actor's current zone, return that item's label (or id) so the
+    caller can backfill ``interaction_target``. Returns ``None`` when no
+    verb is present (a bare mention is not an interaction) or no item
+    matches unambiguously.
+    """
+    if not intent_text or not items:
+        return None
+    if _detect_verb(intent_text) is None:
+        return None
+    item = _match_item(intent_text, items, character_zone)
+    if item is None:
+        return None
+    return item.label or item.id
 
 
 def _find_by_verb(item: Item, verb: str) -> list[Interaction]:

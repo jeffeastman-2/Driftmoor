@@ -20,9 +20,12 @@ from engine.session import (
     _resolve_attacks,
     _render_turn_result_packet,
     _render_transport_prompt,
+    _render_puzzle_press_packet,
+    _describe_press_sequence,
     load_resume_state,
     _has_vicious_mockery_disadvantage,
     _consume_vicious_mockery_disadvantage,
+    _resolve_teleport_destination,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -284,16 +287,97 @@ class TestTransportPromptAndPacketFormatting:
         assert "line 1" in packet
         assert "line 30" in packet
 
-        # Next turn with same history should have no redundant replay.
+        # Next turn with same history should have no redundant replay. With
+        # nothing new, the RECENT CONTEXT section is omitted entirely.
         ctx.turn = 3
         packet2 = _render_transport_prompt(context=ctx, cs=cs, raw_history=raw_history)
-        assert "(no new statements or actions)" in packet2
+        assert "RECENT CONTEXT" not in packet2
 
         # Add new activity and ensure only new lines appear.
         raw_history2 = raw_history + "\nline 31\nline 32"
         packet3 = _render_transport_prompt(context=ctx, cs=cs, raw_history=raw_history2)
         assert "line 31" in packet3 and "line 32" in packet3
         assert "line 1" not in packet3
+
+    def test_transport_prompt_surfaces_mid_sequence_mechanism_feedback(self):
+        cs = self._make_transport_session("gilthaness")
+        scene_context = (
+            "You stand in the Echo Chamber.\n\n"
+            "## You are mid-sequence at a mechanism (act now)\n"
+            "You just pressed Trigger glyph (top). A faint dry click sounds in the "
+            "stone beneath your fingertip.\n\n"
+            "A mechanism is clearly responding to your touch. What do you do next?"
+        )
+        ctx = RoleContext(
+            character_id="gilthaness",
+            turn=6,
+            condition_text="steady",
+            scene_context=scene_context,
+            soul="",
+            identity="",
+            perception="No other creatures are visible.",
+        )
+
+        packet = _render_transport_prompt(context=ctx, cs=cs, raw_history="")
+        assert "MECHANISM (act now)" in packet
+        assert "You just pressed Trigger glyph (top)" in packet
+        assert "A faint dry click sounds" in packet
+        assert "What do you do next?" in packet
+        # Mid-sequence the packet is focused: no standing scene dump.
+        assert "SCENE" not in packet
+        assert "CURRENT POSITION" not in packet
+        assert "PERCEPTION" not in packet
+        assert "RECENT CONTEXT" not in packet
+
+    def test_puzzle_press_packet_reports_each_press(self):
+        packet = _render_puzzle_press_packet(
+            character_id="gilthaness",
+            turn_num=6,
+            label="Trigger glyph (top)",
+            response="A faint dry click sounds in the stone beneath your fingertip.",
+            solved=False,
+        )
+        assert "PACKET: MECHANISM RESULT" in packet
+        assert "TURN: 6" in packet
+        assert "FOR: gilthaness" in packet
+        assert "You pressed Trigger glyph (top)." in packet
+        assert "A faint dry click sounds" in packet
+        assert "The sequence is complete." not in packet
+
+    def test_puzzle_press_packet_marks_solve(self):
+        packet = _render_puzzle_press_packet(
+            character_id="gilthaness",
+            turn_num=6,
+            label="Trigger glyph (middle)",
+            response="Stone grinds against stone as the hairline crack widens into a passable opening.",
+            solved=True,
+        )
+        assert "You pressed Trigger glyph (middle)." in packet
+        assert "the hairline crack widens" in packet
+        assert "The sequence is complete." in packet
+
+    def test_describe_press_sequence_single(self):
+        action = _describe_press_sequence(["Trigger glyph (top)"], solved=False)
+        assert action == "Presses Trigger glyph (top)."
+
+    def test_describe_press_sequence_multi_solved(self):
+        action = _describe_press_sequence(
+            ["Trigger glyph (top)", "Trigger glyph (bottom)", "Trigger glyph (middle)"],
+            solved=True,
+        )
+        assert action == (
+            "Presses Trigger glyph (top), Trigger glyph (bottom), then "
+            "Trigger glyph (middle), in sequence, completing the sequence."
+        )
+
+    def test_describe_press_sequence_multi_unsolved(self):
+        action = _describe_press_sequence(
+            ["Trigger glyph (top)", "Trigger glyph (bottom)"],
+            solved=False,
+        )
+        assert action == (
+            "Presses Trigger glyph (top), then Trigger glyph (bottom), in sequence."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1598,3 +1682,56 @@ class TestForestLOSEnforcement:
 
         # With +99 to hit it always hits — damage should be applied
         assert "shadowbeast_1" in hp_damage, f"Attack within 30ft should land: {log}"
+
+
+class TestResolveTeleportDestination:
+    """Teleport can reach any named zone/landmark in the scene and lands inside it."""
+
+    ECHO_GEO = Path(__file__).parent.parent / "scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md"
+
+    @pytest.fixture
+    def geo(self):
+        from models.geometry_loader import load_geometry
+        return load_geometry(self.ECHO_GEO)
+
+    def test_named_zone_resolves_to_point_inside_that_zone(self, geo):
+        from models.space_time import Position
+
+        dest = _resolve_teleport_destination("I cast Teleport to the echo chamber", geo)
+        assert dest is not None
+        x, y, label = dest
+        assert label == "ECHO CHAMBER"
+        assert geo.zone_at(Position(x, y)) == "Echo Chamber"
+
+    def test_distinct_zone_name_resolves_independently(self, geo):
+        from models.space_time import Position
+
+        dest = _resolve_teleport_destination("Teleport to the secret chamber", geo)
+        assert dest is not None
+        x, y, label = dest
+        assert label == "SECRET CHAMBER"
+        assert geo.zone_at(Position(x, y)) == "Secret Chamber"
+
+    def test_vague_intent_returns_none(self, geo):
+        assert _resolve_teleport_destination("Teleport somewhere vague", geo) is None
+
+    def test_no_geometry_returns_none(self):
+        assert _resolve_teleport_destination("Teleport to the echo chamber", None) is None
+
+    def test_named_item_feature_resolves_to_its_position(self, geo):
+        from models.contents_loader import load_contents_with_geometry
+        from models.space_time import Position
+
+        base = Path(__file__).parent.parent / "scenario/places/obelisk_reach/echoing_caverns"
+        items = load_contents_with_geometry(
+            base / "CONTENTS.md", base / "GEOMETRY.md", scene_geometry=geo
+        )
+        dest = _resolve_teleport_destination(
+            "I cast a Teleport spell to move to the trigger glyphs", geo, items
+        )
+        assert dest is not None
+        x, y, label = dest
+        assert label == "ECHO CHAMBER"
+        assert geo.zone_at(Position(x, y)) == "Echo Chamber"
+
+

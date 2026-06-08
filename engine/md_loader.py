@@ -739,6 +739,26 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
                     f"[md_loader] WARNING: failed to load {contents_path}: {e}",
                     file=sys.stderr,
                 )
+    # ── Puzzles ───────────────────────────────────────────────────────────────
+    # The optional ``## Puzzles`` block of the same CONTENTS.md. Each puzzle
+    # owns its own state machine (see engine.puzzles); the loader only turns
+    # authored specs into live puzzle objects. Best-effort, like items.
+    from engine.puzzles import PuzzleRegistry
+    puzzle_registry: PuzzleRegistry = PuzzleRegistry()
+    if geo_path is not None:
+        contents_path = geo_path.parent / "CONTENTS.md"
+        if contents_path.exists():
+            from models.contents_loader import load_puzzles
+            from engine.puzzles import build_registry
+            try:
+                puzzle_registry = build_registry(load_puzzles(contents_path))
+            except Exception as e:  # pragma: no cover - logged for diagnostics
+                import sys
+                print(
+                    f"[md_loader] WARNING: failed to load puzzles from "
+                    f"{contents_path}: {e}",
+                    file=sys.stderr,
+                )
     # ── Weapon / Armor libraries ──────────────────────────────────────────────
     weapons_path = ROOT / "scenario" / "things" / "WEAPONS.md"
     armor_path   = ROOT / "scenario" / "things" / "ARMOR.md"
@@ -847,6 +867,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         scene_geometry=scene_geometry,
         geometry_path=geo_path,
         items=items,
+        puzzles=puzzle_registry,
         default_turns=default_turns,
         game_time=game_time,
         dm_provider=dm_provider,

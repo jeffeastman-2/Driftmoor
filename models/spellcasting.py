@@ -148,13 +148,13 @@ def _split_bullet_groups(text: str) -> list[tuple[str, list[str]]]:
 
 def _parse_spell_bullet(bullet: str, level: int) -> Spell:
     """Parse one ``- Name: ...`` or ``- Name *(domain)* — ...`` bullet."""
-    # Name: text up to the first ":", " — ", or " *(" (domain tag).
-    m = re.match(r"\s*([^:*—]+?)(?=\s*\*\(|\s*[—:])", bullet)
+    # Name: text up to the first ":", " — ", " - ", or " *(" (domain tag).
+    m = re.match(r"\s*(.+?)(?=\s*\*\(|\s*[—:]|\s+-\s+|$)", bullet)
     if m:
         name = m.group(1).strip()
     else:
         # Fallback: split on the first delimiter we find.
-        name = re.split(r"[:—]", bullet, maxsplit=1)[0].strip()
+        name = re.split(r"\s+-\s+|[:—]", bullet, maxsplit=1)[0].strip()
 
     save_m = _SAVE_RE.search(bullet)
     action_m = _ACTION_RE.search(bullet)

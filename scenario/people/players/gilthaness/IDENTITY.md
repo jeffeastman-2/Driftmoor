@@ -4,7 +4,7 @@
 - **Full Name:** Gilthaness of the Long Wood
 - **Player:** TBD
 - **Race:** Wood Elf
-- **Class:** Rogue (Arcane Trickster), Level 13
+- **Class:** Wizard (School of Illusion), Level 13
 - **Background:** Spy
 - **Alignment:** Chaotic Good
 - **Pronouns:** she/her
@@ -42,36 +42,46 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - **outbox:** ~/messages/to-gilthaness
 
 ## Abilities and Proficiencies
-- Sneak Attack: 7d6 once per turn with advantage or an adjacent ally
-- Cunning Action
-- Uncanny Dodge
-- Evasion
-- Reliable Talent
-- Mage Hand Legerdemain
-- Skills: Stealth +15, Perception +12, Sleight of Hand +15, Insight +12, Deception +11, Investigation +13
+- Arcane Recovery (recover spell slots on a short rest)
+- School of Illusion: Improved Minor Illusion, Malleable Illusions, Illusory Self
+- Spell Mastery (cast a chosen 1st- and 2nd-level spell at will)
+- Ritual Casting
+- Skills (Spy background, still razor-sharp): Stealth +12, Perception +12, Sleight of Hand +12, Insight +12, Deception +11, Investigation +13, Arcana +13
 
 ## Spells
 **Spellcasting ability:** INT | **Spell save DC:** 16 | **Spell attack:** +8
 
-**Cantrips known (3, at-will):**
+**Cantrips known (5, at-will):**
 - Mage Hand
 - Minor Illusion
 - Message
+- Prestidigitation
+- Fire Bolt
 
 **1st-level spell slots:** 4 per long rest
 **2nd-level spell slots:** 3 per long rest
-**3rd-level spell slots:** 2 per long rest
+**3rd-level spell slots:** 3 per long rest
+**4th-level spell slots:** 3 per long rest
+**5th-level spell slots:** 2 per long rest
+**6th-level spell slots:** 1 per long rest
+**7th-level spell slots:** 1 per long rest
 
-**Spells known (9):**
+**Spells known (spellbook):**
 - Disguise Self - 1 action
-- Silent Image - 1 action, concentration up to 10 minutes
+- Shield - 1 reaction
 - Charm Person - 1 action
+- Silent Image - 1 action, concentration up to 10 minutes
 - Mirror Image - 1 action
 - Invisibility - 1 action, concentration up to 1 hour
 - Suggestion - 1 action, concentration up to 8 hours
+- Counterspell - 1 reaction
 - Major Image - 1 action, concentration up to 10 minutes
 - Hypnotic Pattern - 1 action, concentration up to 1 minute
-- Counterspell - 1 reaction
+- Dimension Door - 1 action
+- Greater Invisibility - 1 action, concentration up to 1 minute
+- Wall of Force - 1 action, concentration up to 10 minutes
+- Mislead - 1 action, concentration up to 1 hour
+- Teleport - 1 action
 
 ## Equipment
 - Rapier (1d8 piercing)

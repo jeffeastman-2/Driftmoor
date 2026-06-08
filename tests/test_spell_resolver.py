@@ -635,3 +635,50 @@ class TestSpellResolverCore:
         expired = resolver.tick_effects(runtime, rounds=10)
         assert "Guidance" in expired
         assert "tobin" not in runtime.concentration_by_caster
+
+
+class TestTeleport:
+    def _wizard(self) -> PlayerCharacter:
+        return _caster(
+            cid="gilthaness",
+            name="Gilthaness",
+            character_class="Wizard",
+            level=13,
+            ability_mod=3,
+            cantrips=["Fire Bolt"],
+            known=["Teleport"],
+            prepared=[],
+            slots={1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1},
+        )
+
+    def test_teleport_consumes_seventh_level_slot_and_emits_event(self):
+        caster = self._wizard()
+        gs = GameState(characters=[caster])
+
+        runtime = SpellRuntimeState()
+        result = SpellResolver(rng=random.Random(1)).cast(
+            gs,
+            SpellCastRequest(caster_id="gilthaness", spell_name="Teleport"),
+            runtime,
+        )
+
+        assert result.approved
+        assert result.slot_level_used == 7
+        assert "teleport" in result.events
+        assert caster.spellcasting.spell_slots_used[7] == 1
+
+    def test_teleport_rejected_without_available_slot(self):
+        caster = self._wizard()
+        caster.spellcasting.spell_slots_used[7] = 1
+        gs = GameState(characters=[caster])
+
+        runtime = SpellRuntimeState()
+        result = SpellResolver(rng=random.Random(1)).cast(
+            gs,
+            SpellCastRequest(caster_id="gilthaness", spell_name="Teleport"),
+            runtime,
+        )
+
+        assert not result.approved
+        assert caster.spellcasting.spell_slots_used[7] == 1
+

@@ -143,6 +143,13 @@ Source of truth is the spell book in engine/spell_resolver.py.
 - Duration: 1 round
 - DM note: Tracked as active effect; reactive timing and AC bonus behavior are not yet enforced.
 
+### Teleport
+- Engine type: teleport
+- Dice: none
+- Concentration: no
+- Duration: instantaneous
+- DM note: 7th-level slot is consumed by the resolver; the actual relocation is applied by the session, which owns scene geometry and position state. The caster lands at a named zone (centroid) or landmark in the current scene; mishap/associated-object range tables are not modeled.
+
 ## Session And Resume Semantics
 
 - Active spell effects and concentration owner map are checkpointed.

@@ -105,6 +105,7 @@ _SPELL_BOOK: dict[str, _SpellDef] = {
     "faerie fire": _SpellDef(name="Faerie Fire", level=1, concentration=True, duration_rounds=10),
     "sanctuary": _SpellDef(name="Sanctuary", level=1, duration_rounds=10),
     "shield": _SpellDef(name="Shield", level=1, duration_rounds=1),
+    "teleport": _SpellDef(name="Teleport", level=7, effect="teleport"),
 }
 
 
@@ -307,7 +308,10 @@ class SpellResolver:
                 result.hp_heal[tid] = result.hp_heal.get(tid, 0) + amount
         elif spell_def.effect == "stabilize":
             result.events.append("stabilize_attempt")
-
+        elif spell_def.effect == "teleport":
+            # Slot is consumed here; the actual relocation is applied by the
+            # session, which owns scene geometry and position state.
+            result.events.append("teleport")
         if spell_def.concentration or spell_def.duration_rounds > 0:
             effect = ActiveSpellEffect(
                 spell_name=spell_def.name,

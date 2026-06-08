@@ -247,3 +247,29 @@ class TestValidator:
 
     def test_above_level_one_unchecked(self):
         assert validate_spellcasting(self._profile(0, 0), "Cleric", 2) == []
+
+
+class TestSpacedHyphenSuffixStripped:
+    """Spellbook bullets like '- Teleport - 1 action' keep only the name."""
+
+    SECTION = (
+        "## Spells\n"
+        "**Spellcasting ability:** INT | **Spell save DC:** 16 | "
+        "**Spell attack:** +8\n\n"
+        "**Spells known (spellbook):**\n"
+        "- Disguise Self - 1 action\n"
+        "- Silent Image - 1 action, concentration up to 10 minutes\n"
+        "- Teleport - 1 action\n"
+    )
+
+    def test_names_have_no_casting_time_suffix(self):
+        profile = parse_spellcasting(self.SECTION)
+        assert profile is not None
+        names = _spell_names(profile.known)
+        assert names == {"Disguise Self", "Silent Image", "Teleport"}
+
+    def test_concentration_still_flagged(self):
+        profile = parse_spellcasting(self.SECTION)
+        si = next(s for s in profile.known if s.name == "Silent Image")
+        assert si.concentration
+

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 from models.item import Interaction, Item
+from models.puzzle import PuzzleEffect, PuzzleSpec
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +277,95 @@ def _parse_interactions(text: str) -> list[Interaction]:
 
 
 # ---------------------------------------------------------------------------
+# Puzzle parsing
+# ---------------------------------------------------------------------------
+
+
+# Matches the ``*Type: <kind>*`` line in a puzzle block.
+_PUZZLE_TYPE_RE = re.compile(r"\*Type:\s*([A-Za-z_]+)\s*\*", re.IGNORECASE)
+
+
+def _spec_from_interactions(
+    puzzle_id: str,
+    kind: str,
+    interactions: list[Interaction],
+) -> PuzzleSpec:
+    """Map parsed bullet interactions into a :class:`PuzzleSpec`.
+
+    Recognised bullet verbs (case-insensitive):
+      - ``solution``  → comma/space separated ordered item ids
+      - ``step``      → response for one correct, non-final press (repeatable)
+      - ``solve``     → final-press response; ``(condition)`` names the effect
+      - ``reset``     → out-of-order press response
+      - ``reverse``   → press-while-solved response; ``(condition)`` is effect
+      - ``broadcast`` → world-event text; ``(condition)`` names the effect it
+                        attaches to (matched against solve/reverse effects)
+      - ``prompt``    → focused-exchange follow-up question
+    """
+    spec = PuzzleSpec(id=puzzle_id, kind=kind or "sequence")
+    broadcasts: list[tuple[str, str]] = []  # (effect_type, text)
+
+    for inter in interactions:
+        verb = inter.verb.strip().lower()
+        cond = (inter.condition or "").strip()
+        resp = (inter.response or "").strip()
+
+        if verb == "solution":
+            spec.solution = [
+                tok for tok in re.split(r"[,\s]+", resp) if tok
+            ]
+        elif verb == "step":
+            spec.step_responses.append(resp)
+        elif verb == "solve":
+            spec.solve_response = resp
+            if cond:
+                spec.solve_effects.append(PuzzleEffect(type=cond))
+        elif verb == "reset":
+            spec.reset_response = resp
+        elif verb == "reverse":
+            spec.reverse_response = resp
+            if cond:
+                spec.reverse_effects.append(PuzzleEffect(type=cond))
+        elif verb == "broadcast":
+            if cond:
+                broadcasts.append((cond, resp))
+        elif verb == "prompt":
+            if resp:
+                spec.prompt = resp
+
+    # Attach broadcast text to the matching effect by type.
+    for effect_type, text in broadcasts:
+        for effect in (*spec.solve_effects, *spec.reverse_effects):
+            if effect.type == effect_type:
+                effect.broadcast = text
+                break
+
+    return spec
+
+
+def parse_puzzles(text: str) -> dict[str, PuzzleSpec]:
+    """Parse the optional ``## Puzzles`` section into ``{id: PuzzleSpec}``.
+
+    Returns an empty dict when the section is absent. Each ``### <puzzle_id>``
+    block declares a ``*Type: <kind>*`` line and a set of bullets parsed by
+    the same machinery as item interactions.
+    """
+    section = _extract_section(text, "Puzzles")
+    if not section:
+        return {}
+
+    specs: dict[str, PuzzleSpec] = {}
+    for puzzle_id, body in _split_item_blocks(section):
+        kind = "sequence"
+        m = _PUZZLE_TYPE_RE.search(body)
+        if m:
+            kind = m.group(1).lower()
+        interactions = _parse_interactions(body)
+        specs[puzzle_id] = _spec_from_interactions(puzzle_id, kind, interactions)
+    return specs
+
+
+# ---------------------------------------------------------------------------
 # Top-level parse
 # ---------------------------------------------------------------------------
 
@@ -334,6 +424,7 @@ def parse_contents_md(text: str) -> dict:
 
     return {
         "items": items,
+        "puzzles": parse_puzzles(text),
         "creatures_section": _extract_section(text, "Creatures"),
         "zones_section": _extract_section(text, "Zone Descriptions"),
         "landmarks_section": _extract_section(text, "Landmarks"),
@@ -355,6 +446,15 @@ def load_contents(path: Path) -> dict[str, Item]:
     text = Path(path).read_text(encoding="utf-8")
     parsed = parse_contents_md(text)
     return parsed["items"]
+
+
+def load_puzzles(path: Path) -> dict[str, PuzzleSpec]:
+    """Load the ``## Puzzles`` section of a CONTENTS.md, if any.
+
+    Returns ``{puzzle_id: PuzzleSpec}`` (empty when the file has no puzzles).
+    """
+    text = Path(path).read_text(encoding="utf-8")
+    return parse_puzzles(text)
 
 
 def _parse_geometry_items_table(geometry_text: str) -> dict[str, dict]:

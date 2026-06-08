@@ -411,6 +411,44 @@ beyond the collapsed tunnel.)*
 
 ---
 
+## Puzzles
+
+### west_wall_glyph_sequence
+*Type: sequence*
+
+The three trigger glyphs on the west wall of the Echo Chamber
+(`trigger_glyph_top`, `trigger_glyph_middle`, `trigger_glyph_bottom`) form a
+single ordered lock. Pressing them in the order **top → bottom → middle**
+widens the hairline crack into a passable hewn opening; pressing any glyph
+again once it is open snaps it shut. Any out-of-order press settles the
+mechanism back to its starting silence.
+
+- **solution** → trigger_glyph_top, trigger_glyph_bottom, trigger_glyph_middle
+- **step** → A faint dry click sounds in the stone beneath your fingertip —
+  as though something deep in the wall has shifted, and is now listening.
+- **step** → A heavier grinding click answers from within the rock, closer
+  to the surface this time, like a bolt drawing back a fraction. The wall is
+  responding to you.
+- **solve** (door_open) → Stone grinds against stone as the hairline crack
+  widens into a passable hewn opening in the west wall of the Echo Chamber.
+  Cool, dry air sighs out from the dark beyond. Vibration carries through the
+  surrounding rock.
+- **broadcast** (door_open) → The hairline crack in the west wall of the Echo
+  Chamber grinds open into a passable hewn opening. Stone vibrations carry
+  through the surrounding rock — anything attuned to the rock or resting on a
+  web in the Secret Chamber feels them clearly.
+- **reset** → A flat, dead click — and then nothing. Whatever you set in
+  motion goes slack and settles back into silence; the sequence is lost.
+- **reverse** (door_close) → The crack snaps shut to a hairline again. Any
+  character standing in the squeeze when this happens is shoved firmly to one
+  side or the other (no damage, but no longer in the doorway). The west wall
+  is once again unbroken stone.
+- **broadcast** (door_close) → The hewn opening in the west wall of the Echo
+  Chamber grinds shut to a hairline crack again.
+- **prompt** → A mechanism is clearly responding to your touch. What do you do next?
+
+---
+
 ## Notes for DM
 - The Echoing Caverns should feel like the campaign's first major dungeon.
 - The unrecovered remains are Father Elden's personal quest — restoring them

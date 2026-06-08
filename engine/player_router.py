@@ -243,7 +243,7 @@ class PlayerLeft:
             "before leaving the zone. "
             "If you have searched your current chamber and found no new evidence, "
             "use MOVEMENT to enter a different zone or passage listed under "
-            "Points of interest.\n\n"
+            "\"Where you are and where you can go\".\n\n"
             "Respond with exactly these labeled sections "
             "(no markdown fencing):\n\n"
             "**INTENT** — One sentence: what you will do this turn "
@@ -298,7 +298,13 @@ class PlayerLeft:
 
     def parse_response(self, raw: str, context: RoleContext) -> ActionIntent:
         def _extract(text: str, section: str) -> str:
-            pattern = rf"\*\*{section}\*\*\s*(?:—|:|--)?\s*(.*?)(?=\*\*|\Z)"
+            # Stop the capture at the next bold section header, a blank line,
+            # or end of text. The blank-line boundary matters: the model often
+            # writes a short field value followed by a blank line and an
+            # explanatory paragraph (with no bold marker). Without it, that
+            # whole paragraph is slurped into MOVEMENT/TARGET, corrupting the
+            # structured fields the engine relies on.
+            pattern = rf"\*\*{section}\*\*\s*(?:—|:|--)?\s*(.*?)(?=\n\s*\n|\*\*|\Z)"
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
