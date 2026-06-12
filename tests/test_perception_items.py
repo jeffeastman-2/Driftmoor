@@ -127,6 +127,21 @@ class TestPerceptionWithItems:
         assert "Mace +1" in perception
         assert "Burial vault" in perception
 
+    def test_held_item_not_listed_as_loose(self, geometry, items):
+        # Once carried, the mace is in someone's pack and must not surface
+        # as a loose scene item, even when the observer is right on top of it.
+        mace = next(
+            it for it in items.values()
+            if (it.label or "").lower().startswith("mace")
+        )
+        mace.holder = "thorgrim"
+        positions = {"thorgrim": (64.0, 195.0, "SECRET CHAMBER")}
+        perception = _build_perception(
+            "thorgrim", geometry, positions, set(),
+            items=items,
+        )
+        assert "Mace +1" not in perception
+
     def test_no_items_dict_omits_subblock(self, geometry):
         positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
         perception = _build_perception(

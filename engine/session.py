@@ -47,6 +47,7 @@ from models.weapon import Weapon, Armor
 
 if TYPE_CHECKING:
     from engine.puzzles import PuzzleRegistry
+    from models.item import Item
 
 
 # ---------------------------------------------------------------------------
@@ -1579,6 +1580,10 @@ def _build_perception(
         for item in items.values():
             if item.position is None:
                 continue
+            # Carried items are in someone's pack, not lying loose in the
+            # scene — they must not surface as perceivable scene items.
+            if item.holder is not None:
+                continue
             item_pt = item.position
             dist = math.hypot(item_pt.x - my_pos[0], item_pt.y - my_pos[1])
             currently_visible = (
@@ -2266,6 +2271,258 @@ def _resolve_spell_targets(
     return results
 
 
+# Words too generic to identify a specific party member.
+_RECIPIENT_STOPWORDS = {
+    "the", "a", "an", "to", "give", "given", "hand", "handed", "over", "off",
+    "pass", "passes", "offer", "offers", "my", "his", "her", "their", "our",
+    "this", "that", "it", "him", "them", "sir", "lady", "lord", "master",
+    "mister", "miss", "and", "of", "with", "for", "i", "me", "you", "she",
+    "he", "they", "we", "us", "drop", "take", "pick", "up", "down",
+}
+
+
+def _character_descriptor_tokens(cs: "CharacterSession") -> set[str]:
+    """Build the set of tokens that may name/describe a character.
+
+    Draws on id, name, race, class/role and scene handle so a recipient
+    hint like "the cleric" or "Amara" or "the dwarf" resolves to the right
+    party member. Generic stopwords are filtered out.
+    """
+    char = cs.character
+    parts: list[str] = [
+        char.id or "",
+        char.name or "",
+        char.race or "",
+        getattr(char, "character_class", "") or "",
+        getattr(char, "role", "") or "",
+        cs.scene_handle or "",
+    ]
+    blob = " ".join(parts).lower()
+    return {
+        tok
+        for tok in re.split(r"[^a-z0-9]+", blob)
+        if tok and tok not in _RECIPIENT_STOPWORDS and len(tok) > 1
+    }
+
+
+def _resolve_recipient_character(
+    intent_text: str,
+    *,
+    actor_id: str,
+    characters: dict[str, "CharacterSession"],
+    active_characters: set[str],
+) -> Optional[str]:
+    """Resolve a give/hand recipient from free-text intent to a character id.
+
+    Scores each active character (other than the actor) by how many of its
+    descriptor tokens — name, race, class/role, scene handle, id — appear in
+    the intent text. Returns the id only when a single character is the
+    strict best match; ambiguous or no match yields ``None`` so the caller
+    narrates without transferring (no false hand-offs).
+    """
+    want = {
+        tok
+        for tok in re.split(r"[^a-z0-9]+", (intent_text or "").lower())
+        if tok and tok not in _RECIPIENT_STOPWORDS and len(tok) > 1
+    }
+    if not want:
+        return None
+    best_id: Optional[str] = None
+    best_score = 0
+    tied = False
+    for cid in sorted(active_characters):
+        if cid == actor_id or cid not in characters:
+            continue
+        score = len(want & _character_descriptor_tokens(characters[cid]))
+        if score > best_score:
+            best_score, best_id, tied = score, cid, False
+        elif score == best_score and score > 0:
+            tied = True
+    if best_score == 0 or tied:
+        return None
+    return best_id
+
+
+def _apply_item_transfer(
+    item: "Item",
+    new_holder: Optional[str],
+    *,
+    characters: dict[str, "CharacterSession"],
+    target_pos: Optional[tuple[float, float, str]] = None,
+) -> None:
+    """Move ``item`` to ``new_holder`` (or drop it when ``new_holder`` is None).
+
+    Maintains both sides of ownership: the previous holder's inventory loses
+    the id, the new holder's inventory gains it, and ``item.holder`` is set.
+    When ``target_pos`` is given the item's position/zone are synced to it so
+    a dropped or handed item sits where it should.
+    """
+    from models.space_time import Position
+
+    old = item.holder
+    if old and old in characters:
+        inv = characters[old].character.inventory
+        if item.id in inv:
+            inv.remove(item.id)
+
+    item.holder = new_holder
+
+    if new_holder and new_holder in characters:
+        inv = characters[new_holder].character.inventory
+        if item.id not in inv:
+            inv.append(item.id)
+
+    if target_pos is not None:
+        x, y, zone = target_pos
+        item.position = Position(float(x), float(y))
+        if zone:
+            item.zone = zone
+
+
+def _char_handle(cs: "CharacterSession", fallback: str) -> str:
+    """Display name for a character: scene handle, then name, then id."""
+    return cs.scene_handle or cs.character.name or fallback
+
+
+def _handle_item_transfer(
+    *,
+    transfer_verb: str,
+    item_obj: "Item",
+    label: str,
+    character_id: str,
+    characters: dict[str, "CharacterSession"],
+    active_characters: set[str],
+    current_positions: dict,
+    intent_text: str,
+    actor_zone: str,
+    turn_num: int,
+    game_time: Optional[GameTime],
+    attack_log: list,
+    recent_events: list,
+    cs: "CharacterSession",
+    authored_response: Optional[str],
+) -> None:
+    """Apply a take/drop/give possession change and log the outcome.
+
+    Mutates ``item_obj.holder`` and the relevant character inventories via
+    :func:`_apply_item_transfer`, appends a ``[ITEM-TRANSFER]`` line to the
+    resolution log (so the narrator reflects what actually happened), and
+    records a recent-events bullet and the actor's memory note. ``give``
+    only transfers on a single unambiguous recipient match; otherwise it
+    narrates without moving the item.
+    """
+    ts = (
+        f"{game_time.hour}:{game_time.minute:02d}"
+        if game_time else f"t{turn_num}"
+    )
+    actor_handle = _char_handle(characters[character_id], character_id)
+    actor_pos = current_positions.get(character_id, (0.0, 0.0, actor_zone))
+
+    def _emit(log_line: str, event_text: str, memory_text: Optional[str]) -> None:
+        attack_log.append(log_line)
+        recent_events.append((turn_num, f"{ts} | {event_text}"))
+        if memory_text:
+            _append_memory_note(cs, f"Turn {turn_num}: {memory_text}")
+
+    if transfer_verb == "take":
+        if item_obj.holder == character_id:
+            _emit(
+                f"[ITEM-TRANSFER] {character_id} already carries {label}; "
+                f"no change. Do not narrate a fresh pickup.",
+                f"{actor_handle} is already carrying the {label}.",
+                None,
+            )
+            return
+        if item_obj.holder and item_obj.holder != character_id:
+            holder_handle = _char_handle(
+                characters.get(item_obj.holder, characters[character_id]),
+                item_obj.holder,
+            ) if item_obj.holder in characters else item_obj.holder
+            _emit(
+                f"[ITEM-TRANSFER] {character_id} cannot take {label}: it is "
+                f"held by {item_obj.holder}. Narrate that {holder_handle} has "
+                f"it, not a successful pickup.",
+                f"{actor_handle} reaches for the {label}, but {holder_handle} "
+                f"is holding it.",
+                None,
+            )
+            return
+        _apply_item_transfer(
+            item_obj, character_id, characters=characters, target_pos=actor_pos
+        )
+        item_obj.discovered_by.add(character_id)
+        flavor = authored_response or f"{actor_handle} picks up the {label}."
+        _emit(
+            f"[ITEM-TRANSFER] {character_id} takes {label} (now carried by "
+            f"{character_id}): {flavor}",
+            f"{actor_handle} picks up the {label}.",
+            f"you picked up {label} and are now carrying it.",
+        )
+        return
+
+    if transfer_verb == "drop":
+        if item_obj.holder != character_id:
+            _emit(
+                f"[ITEM-TRANSFER] {character_id} is not carrying {label}; "
+                f"nothing to drop. Do not narrate a drop.",
+                f"{actor_handle} is not carrying the {label}.",
+                None,
+            )
+            return
+        _apply_item_transfer(
+            item_obj, None, characters=characters, target_pos=actor_pos
+        )
+        flavor = authored_response or f"{actor_handle} sets down the {label}."
+        _emit(
+            f"[ITEM-TRANSFER] {character_id} drops {label} in "
+            f"{actor_zone.upper() or 'this zone'}: {flavor}",
+            f"{actor_handle} sets the {label} down.",
+            f"you set down {label} in {actor_zone.upper() or 'this zone'}.",
+        )
+        return
+
+    # give / hand over
+    if item_obj.holder and item_obj.holder != character_id:
+        _emit(
+            f"[ITEM-TRANSFER] {character_id} cannot give {label}: it is held "
+            f"by {item_obj.holder}, not by them. Do not narrate a hand-off.",
+            f"{actor_handle} does not have the {label} to give.",
+            None,
+        )
+        return
+    recipient = _resolve_recipient_character(
+        intent_text,
+        actor_id=character_id,
+        characters=characters,
+        active_characters=active_characters,
+    )
+    if recipient is None:
+        _emit(
+            f"[ITEM-TRANSFER] {character_id} tried to give {label} but the "
+            f"recipient is unclear or absent; no transfer. Narrate the offer "
+            f"without anyone receiving it.",
+            f"{actor_handle} offers the {label}, but it is unclear who is "
+            f"meant to take it.",
+            None,
+        )
+        return
+    recipient_handle = _char_handle(characters[recipient], recipient)
+    recipient_pos = current_positions.get(recipient, actor_pos)
+    _apply_item_transfer(
+        item_obj, recipient, characters=characters, target_pos=recipient_pos
+    )
+    item_obj.discovered_by.add(recipient)
+    flavor = authored_response or (
+        f"{actor_handle} hands the {label} to {recipient_handle}."
+    )
+    _emit(
+        f"[ITEM-TRANSFER] {character_id} gives {label} to {recipient} (now "
+        f"carried by {recipient}): {flavor}",
+        f"{actor_handle} hands the {label} to {recipient_handle}.",
+        f"you handed {label} to {recipient_handle}.",
+    )
+
+
 def _find_combat_target(
     intent,
     attacker_id: str,
@@ -2524,6 +2781,29 @@ def _checkpoint_filename(turn: int, game_time: Optional[GameTime] = None) -> str
     return f"turn_{turn:04d}.json"
 
 
+def _serialize_item_ownership(items: dict) -> dict:
+    """Serialize ownership of every currently-held item for checkpoints.
+
+    Only items with a ``holder`` are recorded (loose scene items are
+    reconstructed from scene contents on load). Each entry keeps the
+    holder plus the item's position/zone so a resumed session places the
+    item exactly where it was carried/handed.
+    """
+    out: dict = {}
+    for iid, it in (items or {}).items():
+        holder = getattr(it, "holder", None)
+        if not holder:
+            continue
+        pos = getattr(it, "position", None)
+        out[iid] = {
+            "holder": str(holder),
+            "x": float(pos.x) if pos is not None else None,
+            "y": float(pos.y) if pos is not None else None,
+            "zone": getattr(it, "zone", None),
+        }
+    return out
+
+
 def _save_turn(
     checkpoint_dir: Path,
     turn: int,
@@ -2535,6 +2815,7 @@ def _save_turn(
     current_positions: Optional[dict] = None,
     party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
     spell_runtime: Optional[SpellRuntimeState] = None,
+    items: Optional[dict] = None,
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -2597,6 +2878,7 @@ def _save_turn(
         "spell_runtime": _serialize_spell_runtime_state(
             spell_runtime or SpellRuntimeState()
         ),
+        "item_ownership": _serialize_item_ownership(items or {}),
     }
     path.write_text(json.dumps(data, indent=2, default=str))
     return path
@@ -2711,6 +2993,51 @@ def load_resume_state(
         party_examination_state,
         spell_runtime,
     )
+
+
+def restore_item_ownership(
+    checkpoint_dir: Path,
+    items: dict | None,
+    characters: dict[str, CharacterSession],
+) -> None:
+    """Re-apply held-item ownership from the last checkpoint, in place.
+
+    Reads ``item_ownership`` from the most recent checkpoint and sets each
+    item's ``holder``, restores its carried position/zone, and rebuilds the
+    holding character's ``inventory``. Loose items are untouched. Safe to
+    call when there are no checkpoints or no items (no-op).
+    """
+    if not items:
+        return
+    files = sorted(
+        (p for p in checkpoint_dir.glob("*.json") if not p.stem.endswith("transcript")),
+        key=lambda p: p.name,
+    )
+    if not files:
+        return
+    from models.space_time import Position
+
+    last_data = json.loads(files[-1].read_text(encoding="utf-8"))
+    ownership = last_data.get("item_ownership") or {}
+    if not isinstance(ownership, dict):
+        return
+    for iid, meta in ownership.items():
+        it = items.get(iid)
+        if it is None or not isinstance(meta, dict):
+            continue
+        holder = meta.get("holder")
+        if not holder:
+            continue
+        it.holder = str(holder)
+        x, y = meta.get("x"), meta.get("y")
+        if x is not None and y is not None:
+            it.position = Position(float(x), float(y))
+        if meta.get("zone"):
+            it.zone = meta["zone"]
+        if holder in characters:
+            inv = characters[holder].character.inventory
+            if iid not in inv:
+                inv.append(iid)
 
 
 # ---------------------------------------------------------------------------
@@ -4541,7 +4868,11 @@ async def iter_session(
                 and items
                 and intent.interaction_target
             ):
-                from engine.verb_resolver import resolve_item_interaction
+                from engine.verb_resolver import (
+                    detect_transfer_verb,
+                    authored_transfer_response,
+                    resolve_item_interaction,
+                )
                 actor_zone = current_positions.get(character_id, ("", "", ""))[2]
                 # Geometry-rendered zones come uppercase; items carry the
                 # canonical-cased zone from CONTENTS.md. Match case-insensitive.
@@ -4593,87 +4924,114 @@ async def iter_session(
                     label = item_obj.label or item_obj.id
                     verb_canonical = interaction_obj.verb.lower().split()[0] if interaction_obj.verb else ""
 
-                    # State-mutating presses on a puzzle input route through
-                    # the puzzle's own state machine (see engine.puzzles).
-                    # The puzzle owns its responses, progress, and effects;
-                    # the loop only delegates and broadcasts the result.
+                    # Possession changes (take / drop / give) are detected
+                    # straight from the intent text so they fire even when the
+                    # item authored no matching interaction. They mutate
+                    # ownership directly and bypass the examine/puzzle paths.
+                    transfer_verb = detect_transfer_verb(intent.intent or "")
                     side_effects: list[dict] = []
-                    puzzle = (
-                        puzzle_registry.puzzle_for_item(item_obj.id)
-                        if verb_canonical == "press" else None
-                    )
 
-                    if puzzle is not None:
-                        # Atomic focused exchange outside combat; a single
-                        # press (no re-prompt) while in combat.
-                        side_effects = await _run_puzzle_exchange(
-                            first_item=item_obj,
-                            puzzle=puzzle,
-                            puzzles=puzzle_registry,
-                            interactive=not in_combat,
-                            turn_cycle=turn_cycle,
-                            cs=cs,
-                            context=context,
-                            output=output,
+                    if transfer_verb is not None:
+                        _handle_item_transfer(
+                            transfer_verb=transfer_verb,
+                            item_obj=item_obj,
+                            label=label,
                             character_id=character_id,
+                            characters=characters,
+                            active_characters=active_characters,
+                            current_positions=current_positions,
+                            intent_text=intent.intent or "",
+                            actor_zone=actor_zone,
                             turn_num=turn_num,
                             game_time=game_time,
-                            items=items,
-                            actor_zone=actor_zone,
-                            characters=characters,
                             attack_log=attack_log,
                             recent_events=recent_events,
+                            cs=cs,
+                            authored_response=authored_transfer_response(
+                                item_obj, transfer_verb
+                            ),
                         )
                     else:
-                        response = (interaction_obj.response or "").strip()
+                        # State-mutating presses on a puzzle input route through
+                        # the puzzle's own state machine (see engine.puzzles).
+                        # The puzzle owns its responses, progress, and effects;
+                        # the loop only delegates and broadcasts the result.
+                        puzzle = (
+                            puzzle_registry.puzzle_for_item(item_obj.id)
+                            if verb_canonical == "press" else None
+                        )
 
-                        if response:
-                            attack_log.append(
-                                f"[ITEM-INTERACTION] {character_id} {interaction_obj.verb} "
-                                f"{label}: {response}"
+                        if puzzle is not None:
+                            # Atomic focused exchange outside combat; a single
+                            # press (no re-prompt) while in combat.
+                            side_effects = await _run_puzzle_exchange(
+                                first_item=item_obj,
+                                puzzle=puzzle,
+                                puzzles=puzzle_registry,
+                                interactive=not in_combat,
+                                turn_cycle=turn_cycle,
+                                cs=cs,
+                                context=context,
+                                output=output,
+                                character_id=character_id,
+                                turn_num=turn_num,
+                                game_time=game_time,
+                                items=items,
+                                actor_zone=actor_zone,
+                                characters=characters,
+                                attack_log=attack_log,
+                                recent_events=recent_events,
                             )
-                            ts = (
-                                f"{game_time.hour}:{game_time.minute:02d}"
-                                if game_time else f"t{turn_num}"
-                            )
-                            # First sentence keeps the recent-events bullet tight.
-                            first_sentence = response.split(". ", 1)[0].strip()
-                            if first_sentence and not first_sentence.endswith("."):
-                                first_sentence += "."
-                            handle = (
-                                characters[character_id].scene_handle
-                                or characters[character_id].character.name
-                                or character_id
-                            )
-                            verb_past = "examined"
-                            ev = (
-                                f"{ts} | {handle} {verb_past} {label} — "
-                                f"{first_sentence}"
-                            )
-                            recent_events.append((turn_num, ev))
-                            item_obj.discovered_by.add(character_id)
-                            _append_memory_note(
-                                cs,
-                                f"Turn {turn_num}: you {verb_past} {label} in {actor_zone.upper() or 'this zone'} and learned: {first_sentence}",
-                            )
+                        else:
+                            response = (interaction_obj.response or "").strip()
 
-                            zone_for_state = (actor_zone or item_obj.zone or "").upper()
-                            shared_key = _shared_exam_key(zone_for_state, label)
-                            if shared_key is not None:
-                                mark_examined, needs_followup, complete = _classify_examination_result(
-                                    verb=interaction_obj.verb or "",
-                                    response=response,
+                            if response:
+                                attack_log.append(
+                                    f"[ITEM-INTERACTION] {character_id} {interaction_obj.verb} "
+                                    f"{label}: {response}"
                                 )
-                                if mark_examined:
-                                    prev = party_examination_state.get(shared_key, {})
-                                    was_followup = bool(prev.get("needs_followup", False))
-                                    party_examination_state[shared_key] = {
-                                        "label": label,
-                                        "summary": first_sentence,
-                                        "by": character_id,
-                                        "last_turn": turn_num,
-                                        "needs_followup": needs_followup or (was_followup and not complete),
-                                    }
+                                ts = (
+                                    f"{game_time.hour}:{game_time.minute:02d}"
+                                    if game_time else f"t{turn_num}"
+                                )
+                                # First sentence keeps the recent-events bullet tight.
+                                first_sentence = response.split(". ", 1)[0].strip()
+                                if first_sentence and not first_sentence.endswith("."):
+                                    first_sentence += "."
+                                handle = (
+                                    characters[character_id].scene_handle
+                                    or characters[character_id].character.name
+                                    or character_id
+                                )
+                                verb_past = "examined"
+                                ev = (
+                                    f"{ts} | {handle} {verb_past} {label} — "
+                                    f"{first_sentence}"
+                                )
+                                recent_events.append((turn_num, ev))
+                                item_obj.discovered_by.add(character_id)
+                                _append_memory_note(
+                                    cs,
+                                    f"Turn {turn_num}: you {verb_past} {label} in {actor_zone.upper() or 'this zone'} and learned: {first_sentence}",
+                                )
+
+                                zone_for_state = (actor_zone or item_obj.zone or "").upper()
+                                shared_key = _shared_exam_key(zone_for_state, label)
+                                if shared_key is not None:
+                                    mark_examined, needs_followup, complete = _classify_examination_result(
+                                        verb=interaction_obj.verb or "",
+                                        response=response,
+                                    )
+                                    if mark_examined:
+                                        prev = party_examination_state.get(shared_key, {})
+                                        was_followup = bool(prev.get("needs_followup", False))
+                                        party_examination_state[shared_key] = {
+                                            "label": label,
+                                            "summary": first_sentence,
+                                            "by": character_id,
+                                            "last_turn": turn_num,
+                                            "needs_followup": needs_followup or (was_followup and not complete),
+                                        }
 
                     # Broadcast any world-affecting effects (e.g. a door
                     # grinding open) to other characters. The broadcast text
@@ -4862,8 +5220,8 @@ async def iter_session(
                 current_positions=current_positions,
                 party_examination_state=party_examination_state,
                 spell_runtime=spell_runtime,
+                items=items,
             )
-
         # Advance game clock
         if game_time:
             game_time.advance(1)

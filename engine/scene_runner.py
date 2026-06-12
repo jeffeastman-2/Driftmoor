@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from engine.llm_bridge import make_call_llm
-from engine.session import CharacterSession, run_session, load_resume_state
+from engine.session import CharacterSession, run_session, load_resume_state, restore_item_ownership
 from engine.dm_agent import DMLeft, DMRight
 from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
@@ -437,6 +437,7 @@ async def run_scene(
             print(f"Resume requested, but no checkpoints found in {checkpoint_dir}; starting fresh.\n")
         else:
             print(f"Resuming {config.scene_name} after turn {last_turn}.\n")
+        restore_item_ownership(checkpoint_dir, config.items, config.characters)
         start_turn = last_turn + 1
         initial_history = history
         initial_active_characters = active_chars

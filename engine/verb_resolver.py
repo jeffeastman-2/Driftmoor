@@ -33,6 +33,52 @@ _VERB_LEXICON: list[tuple[str, list[str]]] = [
 ]
 
 
+# Item-ownership verbs. Kept separate from ``_VERB_LEXICON`` so the
+# examine-class resolver (and its examine fallback) is undisturbed; the
+# session loop detects these to mutate possession state directly. Order
+# matters: ``give`` before ``take``/``drop`` so "give" wins outright, and
+# multi-word phrases are matched longest-first within each canonical group.
+_TRANSFER_LEXICON: list[tuple[str, list[str]]] = [
+    ("give", ["give", "hand over", "hand to", "hand", "pass to", "pass", "offer", "hand off"]),
+    ("drop", ["drop", "put down", "set down", "lay down", "discard", "leave behind", "leave"]),
+    ("take", ["take", "pick up", "pickup", "grab", "lift", "collect", "pocket", "retrieve", "snatch"]),
+]
+
+
+def detect_transfer_verb(intent_text: str) -> Optional[str]:
+    """Return the ownership verb (``take``/``drop``/``give``) in the text.
+
+    Independent of ``_detect_verb`` so possession changes are recognised
+    even when an item authored no take/drop/give interaction. Multi-word
+    phrases match longest-first; canonical groups are tried in list order
+    so "give"/"drop" outrank "take".
+    """
+    if not intent_text:
+        return None
+    text = intent_text.lower()
+    for canonical, phrases in _TRANSFER_LEXICON:
+        for phrase in sorted(phrases, key=len, reverse=True):
+            pattern = r"\b" + re.escape(phrase) + r"\b"
+            if re.search(pattern, text):
+                return canonical
+    return None
+
+
+def authored_transfer_response(item: Item, verb: str) -> Optional[str]:
+    """Return the DM-authored response for ``verb`` on ``item``, if any.
+
+    Lets a possession change surface authored flavor (e.g. the mace's
+    "lifts cleanly" line) when present, while the session loop still owns
+    the actual state mutation. Returns ``None`` when the item authored no
+    matching interaction.
+    """
+    matches = _find_by_verb(item, verb)
+    if matches:
+        return (matches[0].response or "").strip() or None
+    return None
+
+
+
 def _detect_verb(intent_text: str) -> Optional[str]:
     """Return the canonical verb present in ``intent_text``, or None.
 

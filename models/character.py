@@ -22,6 +22,9 @@ class Character:
     mood: str = ""
     disposition: str = ""
     faction: str = "neutral"  # "party", "hostile", "neutral"
+    # Item ids currently carried by this character. Kept in sync with each
+    # held ``Item.holder`` (see engine.session transfer helpers).
+    inventory: list[str] = field(default_factory=list)
 
 
 @dataclass

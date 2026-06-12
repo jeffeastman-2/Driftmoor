@@ -27,6 +27,7 @@ from engine.session import (
     _has_telegram_transport,
     iter_session,
     load_resume_state,
+    restore_item_ownership,
 )
 from engine.transcript import elaborate_session_from_dir
 from engine.narrator import generate_narrative_from_dir
@@ -99,6 +100,9 @@ class SceneRunner:
             print(f"  {self.config.scene_name}: no checkpoints found — starting fresh")
         else:
             print(f"  {self.config.scene_name}: resuming after turn {last_turn}")
+        restore_item_ownership(
+            self.checkpoint_dir, self.config.items, self.config.characters
+        )
         self._start_turn = last_turn + 1
         self._initial_history = history
         self._initial_active_characters = active_chars
