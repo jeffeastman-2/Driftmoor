@@ -185,6 +185,30 @@ def parse_geometry_md(text: str) -> dict:
             visibility[(from_zone, to_zone)] = max_range
     result["visibility"] = visibility
 
+    # --- Ambient Visibility (light-limited sight range) ---
+    ambient_section = _extract_section(text, "Ambient Visibility")
+    ambient_default: Optional[float] = None
+    zone_visibility: dict[str, float] = {}
+    if ambient_section:
+        meta = _parse_metadata(ambient_section)
+        default_raw = meta.get("default", "")
+        if default_raw:
+            try:
+                ambient_default = float(default_raw)
+            except ValueError:
+                ambient_default = None
+        for row in _parse_table_rows(ambient_section):
+            if len(row) >= 2:
+                zone = row[0].strip().upper()
+                if zone in ("ZONE", "NAME"):
+                    continue
+                try:
+                    zone_visibility[zone] = float(row[1].strip())
+                except ValueError:
+                    continue
+    result["ambient_visibility_ft"] = ambient_default
+    result["zone_visibility_ft"] = zone_visibility
+
     return result
 
 
@@ -255,8 +279,9 @@ def load_geometry(path: Path) -> SceneGeometry:
         visibility_rules=data.get("visibility", {}),
         starting_positions=data.get("starting_positions", {}),
         boundaries=data.get("boundaries", []),
+        ambient_visibility_ft=data.get("ambient_visibility_ft"),
+        zone_visibility_ft=data.get("zone_visibility_ft", {}),
     )
-
 
 def load_geometry_full(path: Path) -> tuple[
     SceneGeometry, list[MagicalBoundary], dict[str, Position]

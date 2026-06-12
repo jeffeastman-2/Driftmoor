@@ -82,24 +82,32 @@ class PlayerLeft:
         """Extract visible item labels from the perception block.
 
         Expected shape:
-            Items in this zone:
+            Items in view:
             - Snapped torch (~10 ft away)
-            - Drag marks (~15 ft away) (already examined)
+            - Drag marks (Entry Chamber, ~15 ft away) (already examined)
+            - Mace +1 (~45 ft away) (remembered)
         """
         if not perception:
             return []
-        marker = "Items in this zone:"
-        idx = perception.find(marker)
+        # Accept the current "Items in view:" header and the legacy
+        # "Items in this zone:" header (older transcripts / fixtures).
+        idx = perception.find("Items in view:")
+        marker_len = len("Items in view:")
+        if idx < 0:
+            idx = perception.find("Items in this zone:")
+            marker_len = len("Items in this zone:")
         if idx < 0:
             return []
-        tail = perception[idx + len(marker):]
+        tail = perception[idx + marker_len:]
         labels: list[str] = []
         for raw in tail.splitlines():
             line = raw.strip()
             if not line.startswith("- "):
                 continue
             body = line[2:].strip()
-            label = body.split("(~", 1)[0].strip()
+            # Strip the first parenthetical group, which holds the optional
+            # zone prefix and distance, e.g. "(Entry Chamber, ~15 ft away)".
+            label = body.split(" (", 1)[0].strip()
             if label:
                 labels.append(label)
         return labels
@@ -387,7 +395,7 @@ class PlayerRight:
         """Return True when perception lists at least one non-hostile character.
 
         Perception format comes from session._build_perception(), where character
-        lines are bullets and item bullets begin under "Items in this zone:".
+        lines are bullets and item bullets begin under "Items in view:".
         """
         if not perception:
             return False
@@ -395,7 +403,10 @@ class PlayerRight:
             line = raw.strip()
             if not line:
                 continue
-            if line.lower().startswith("items in this zone"):
+            lower = line.lower()
+            if lower.startswith("items in view") or lower.startswith(
+                "items in this zone"
+            ):
                 break
             if not line.startswith("- "):
                 continue

@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from models.item import Interaction, Item
+from models.item import SIZE_KEYWORDS_FT, Interaction, Item
 from models.puzzle import PuzzleEffect, PuzzleSpec
 
 
@@ -64,6 +64,26 @@ _INTERACTIONS_OPENER_RE = re.compile(
     re.MULTILINE,
 )
 
+# Optional ``*Size:* <keyword|N ft>`` line declaring the item's largest
+# physical dimension. Drives the apparent-size perception model.
+_SIZE_LINE_RE = re.compile(
+    r"^\s*\*Size:\*\s*(.+?)\s*$",
+    re.MULTILINE,
+)
+
+# Opener of the optional apparent-size appearance block.
+_APPEARANCE_OPENER_RE = re.compile(
+    r"^\s*\*Appearance by distance:\*\s*$",
+    re.MULTILINE,
+)
+
+# An appearance bullet: ``- **<band>** → <description>`` where band is one of
+# near / intermediate / far / distant. The arrow may be ``→`` or ``->``.
+_APPEARANCE_BULLET_RE = re.compile(
+    r"^\s*-\s*\*\*\s*(near|intermediate|far|distant)\s*\*\*\s*(?:→|->)\s*(.+?)\s*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+
 # Italicized parenthetical "*(...)*" — used to find the properties line.
 # Allows either a whole-line form or a trailing-of-paragraph form. Captures
 # the inner text of the parenthetical (without the surrounding ``*(`` and ``)*``).
@@ -101,6 +121,54 @@ def _split_prose_and_interactions(body: str) -> tuple[str, str]:
     prose = body[: m.start()].rstrip()
     interactions = body[m.end():].strip()
     return prose, interactions
+
+
+def _extract_size(body: str) -> tuple[str, float]:
+    """Pull an optional ``*Size:* <keyword|N ft>`` line out of an item body.
+
+    Returns ``(body_without_line, size_ft)``. ``size_ft`` is ``0.0`` when no
+    size line is present (the engine then treats the item as a default medium
+    object). Accepts D&D size keywords (tiny/small/medium/large/huge/
+    gargantuan) or an explicit measurement like ``6 ft``.
+    """
+    m = _SIZE_LINE_RE.search(body)
+    if not m:
+        return body, 0.0
+    raw = m.group(1).strip().lower()
+    size_ft = 0.0
+    num = re.match(r"(\d+(?:\.\d+)?)\s*(?:ft|feet|')?", raw)
+    if num:
+        size_ft = float(num.group(1))
+    else:
+        for keyword, value in SIZE_KEYWORDS_FT.items():
+            if keyword in raw:
+                size_ft = value
+                break
+    new_body = body[: m.start()] + body[m.end():]
+    return new_body, size_ft
+
+
+def _extract_appearance_bands(body: str) -> tuple[str, dict[str, str]]:
+    """Pull the optional ``*Appearance by distance:*`` block out of an item body.
+
+    Returns ``(body_without_block, bands)`` where ``bands`` maps each named
+    band (``near`` / ``intermediate`` / ``far`` / ``distant``) to its authored
+    description. The block — opener plus its bullets — is removed from the
+    returned body. Empty dict when no block is present.
+    """
+    m = _APPEARANCE_OPENER_RE.search(body)
+    if not m:
+        return body, {}
+    # The block ends at the Interactions opener if present, else end of body.
+    inter = _INTERACTIONS_OPENER_RE.search(body, m.end())
+    block_end = inter.start() if inter else len(body)
+    block = body[m.end():block_end]
+    bands: dict[str, str] = {}
+    for bm in _APPEARANCE_BULLET_RE.finditer(block):
+        bands[bm.group(1).strip().lower()] = bm.group(2).strip()
+    # Remove only the opener + its bullets, preserving any later content.
+    new_body = body[: m.start()] + body[block_end:]
+    return new_body, bands
 
 
 def _parse_properties(prose: str) -> tuple[str, dict]:
@@ -385,6 +453,8 @@ def parse_contents_md(text: str) -> dict:
     items: dict[str, Item] = {}
 
     for item_id, body in _split_item_blocks(items_section):
+        body, size_ft = _extract_size(body)
+        body, appearance_bands = _extract_appearance_bands(body)
         prose, interactions_text = _split_prose_and_interactions(body)
         prose_clean, props = _parse_properties(prose)
 
@@ -397,6 +467,8 @@ def parse_contents_md(text: str) -> dict:
             quest_item_for=props["quest_item_for"],
             extra_facts=list(props["extra_facts"]),
             interactions_ref=props["interactions_ref"],
+            size_ft=size_ft,
+            appearance_bands=appearance_bands,
         )
 
         for inter in _parse_interactions(interactions_text):

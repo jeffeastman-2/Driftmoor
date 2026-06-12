@@ -130,6 +130,59 @@ class TestDescription:
 
 
 # ---------------------------------------------------------------------------
+# Size and apparent-size appearance bands
+# ---------------------------------------------------------------------------
+
+
+class TestAppearanceBands:
+
+    @pytest.fixture(scope="class")
+    def items(self):
+        return load_contents(CONTENTS_PATH)
+
+    def test_size_keyword_parsed(self, items):
+        # small → 2.5 ft, large → 10 ft.
+        assert items["snapped_torch"].size_ft == 2.5
+        assert items["obelisk_fragment"].size_ft == 10.0
+        assert items["drag_marks"].size_ft == 10.0
+
+    def test_named_bands_parsed(self, items):
+        bands = items["snapped_torch"].appearance_bands
+        assert set(bands) == {"intermediate", "far", "distant"}
+        assert "pale" in bands["far"]
+
+    def test_obelisk_bands_parsed(self, items):
+        bands = items["obelisk_fragment"].appearance_bands
+        assert "intermediate" in bands
+        assert "far" in bands
+
+    def test_size_and_band_block_stripped_from_description(self, items):
+        desc = items["snapped_torch"].description
+        assert "Size:" not in desc
+        assert "Appearance by distance" not in desc
+        assert "pale length of wood" not in desc
+
+    def test_band_block_does_not_leak_into_interactions(self, items):
+        # The authored band text must not be misread as an interaction.
+        item = items["snapped_torch"]
+        for inter in item.interactions:
+            assert "pale length of wood" not in inter.response
+
+    def test_unsized_item_defaults_to_zero(self):
+        # An item authored with no *Size:* line reports 0.0 (the engine then
+        # treats it as a default medium object).
+        md = (
+            "## Items\n\n"
+            "### plain_item\n"
+            "A nondescript thing with no declared size.\n"
+        )
+        parsed = parse_contents_md(md)
+        item = parsed["items"]["plain_item"]
+        assert item.size_ft == 0.0
+        assert item.appearance_bands == {}
+
+
+# ---------------------------------------------------------------------------
 # Interactions
 # ---------------------------------------------------------------------------
 

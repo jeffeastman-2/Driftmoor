@@ -194,6 +194,14 @@ class SceneGeometry:
     connections: dict[str, Position] = field(default_factory=dict)
     # zone-pair → max visible range in ft; missing pair = unlimited
     visibility_rules: dict[tuple[str, str], float] = field(default_factory=dict)
+    # Ambient (light-limited) sight range in ft. None = unlimited (e.g. a lit
+    # or open-air scene). Set for dark scenes (caverns) where, absent another
+    # light source, a creature only sees a short distance. Darkvision extends
+    # this; mist/occlusion (visibility_rules) does not yield to it.
+    ambient_visibility_ft: Optional[float] = None
+    # Per-zone ambient override (zone name → range ft). Wins over the scene
+    # default for an observer standing in that zone.
+    zone_visibility_ft: dict[str, float] = field(default_factory=dict)
     # character_id → starting Position parsed from GEOMETRY.md
     starting_positions: dict[str, Position] = field(default_factory=dict)
     # magical and physical boundaries
@@ -213,6 +221,22 @@ class SceneGeometry:
             if polygon.contains(point):
                 return name
         return None
+
+    def ambient_sight_range(self, zone: Optional[str]) -> Optional[float]:
+        """Ambient (light-limited) sight range in ft for an observer in ``zone``.
+
+        Resolution: a per-zone override (``zone_visibility_ft``) wins over the
+        scene default (``ambient_visibility_ft``). ``None`` means unlimited —
+        no light-based cap applies (e.g. an open-air or lit scene). This is the
+        ambient/light component only; mist and occlusion are handled separately
+        by ``visibility_rules`` in ``can_see`` and are not affected by senses.
+        """
+        if zone:
+            z = zone.upper()
+            for name, rng in self.zone_visibility_ft.items():
+                if name.upper() == z:
+                    return rng
+        return self.ambient_visibility_ft
 
     def nearest_landmark(self, point: Position) -> tuple[str, Position]:
         """Return (name, position) of the nearest landmark."""

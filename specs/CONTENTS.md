@@ -207,6 +207,61 @@ Examples:
 A properties parenthetical is OPTIONAL. If absent, the item defaults
 to: not pickup-able, no special verbs, descriptive flavor only.
 
+### Size and Appearance by distance
+
+Two OPTIONAL, related lines/blocks control how an item is perceived at a
+distance. They model perspective the way 3-D graphics do: an object's
+**apparent size** is roughly `physical_size / distance`, so a small item
+(a dropped torch) becomes unidentifiable far sooner than a large one (a
+head-high obelisk).
+
+A `*Size:*` line declares the item's largest physical dimension, either as
+a D&D size keyword or an explicit measurement:
+
+```
+*Size:* large
+*Size:* 6 ft
+```
+
+| keyword      | ~largest dimension |
+|--------------|--------------------|
+| `tiny`       | 1 ft               |
+| `small`      | 2.5 ft             |
+| `medium`     | 5 ft (default)     |
+| `large`      | 10 ft              |
+| `huge`       | 15 ft              |
+| `gargantuan` | 25 ft              |
+
+If no `*Size:*` line is present the item is treated as a medium (5 ft)
+object.
+
+The engine buckets the apparent size into four bands — `near`,
+`intermediate`, `far`, `distant` — and, below the smallest band, the item
+is too small to make out at all (omitted from perception). An optional
+`*Appearance by distance:*` block supplies authored descriptions for the
+vaguer bands:
+
+```
+*Appearance by distance:*
+- **intermediate** → a short, pale length of wood lying on the stone
+- **far** → a slim pale streak low on the cavern floor
+- **distant** → a faint pale fleck against the dark floor
+```
+
+Resolution per band:
+
+- `near` / `intermediate` → the item is **identified** (its label is shown),
+  unless an authored description for that band overrides it.
+- `far` / `distant` → an authored description is shown if present; otherwise
+  a generic "an indistinct shape, too far to make out".
+- below `distant` → the item is too small to perceive and is omitted.
+
+Once any character in the party has examined the item, its identity is known
+and the distance banding no longer applies (it is always recalled by label).
+
+Both the `*Size:*` line and the `*Appearance by distance:*` block sit between
+the prose/properties and the Interactions block. Both are OPTIONAL.
+
 ### Interactions block
 
 Opens with the exact literal line:

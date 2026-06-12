@@ -682,6 +682,7 @@ async def _run_puzzle_exchange(
 
     side_effects_all: list[dict] = []
     pressed_labels: list[str] = []
+    press_detail_lines: list[str] = []
     solved = False
     current_item = first_item
     # Each correct press can advance the sequence by one; bound the loop a
@@ -699,7 +700,10 @@ async def _run_puzzle_exchange(
         solved = result.solved
 
         if response:
-            attack_log.append(
+            # Detail lines are buffered (not appended to attack_log yet) so the
+            # ordered-sequence summary can lead the puzzle block in the
+            # narrator's authoritative resolution log.
+            press_detail_lines.append(
                 f"[PUZZLE] {character_id} pressed {label}: {response}"
             )
             head = _first_sentence(response)
@@ -770,7 +774,7 @@ async def _run_puzzle_exchange(
             or _detect_verb(next_intent.intent or "") != "press"
         ):
             puzzle.abandon()
-            attack_log.append(
+            press_detail_lines.append(
                 f"[PUZZLE] {character_id} stepped away from the sequence "
                 f"before completing it; the mechanism resets."
             )
@@ -782,6 +786,22 @@ async def _run_puzzle_exchange(
     # the full sequence performed, not just the opening press.
     if pressed_labels:
         output.action = _describe_press_sequence(pressed_labels, solved=solved)
+        # Lead the narrator's authoritative resolution log with one ordered
+        # summary line so its prose describes the whole sequence rather than
+        # anchoring on the opening press; the per-press detail lines follow for
+        # color. (The narrator is told to narrate the resolution log over the
+        # intent.)
+        if len(pressed_labels) > 1:
+            ordered = " → ".join(pressed_labels)
+            tail = (
+                "; the sequence completed."
+                if solved
+                else "; the sequence did not complete."
+            )
+            attack_log.append(
+                f"[PUZZLE] {character_id} pressed, in order: {ordered}{tail}"
+            )
+    attack_log.extend(press_detail_lines)
 
     return side_effects_all
 
@@ -1394,6 +1414,7 @@ class DMLedger:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _build_perception(
     character_id: str,
     scene_geometry: Optional[SceneGeometry],
@@ -1404,8 +1425,13 @@ def _build_perception(
 ) -> str:
     """Return a preformatted perception block for what character_id can see.
 
-    Uses SceneGeometry.can_see() (which enforces LOS and zone visibility rules)
-    to determine which other active characters are currently visible.
+    Perception is gated by the acting character's effective sight range —
+    the scene's ambient (light-limited) range for the zone they stand in
+    (``SceneGeometry.ambient_sight_range``), extended by their darkvision.
+    Mist and occlusion (``visibility_rules`` via ``can_see``) and line of
+    sight still apply on top and are *not* pierced by darkvision. Creatures
+    beyond visual range but within a non-visual sense (blindsight,
+    tremorsense, keen hearing/smell) are surfaced as "sensed, not seen".
 
     If geometry/positions are unavailable, falls back to a coarse "co-present"
     list of other active characters so social scenes without full geometry do
@@ -1415,12 +1441,18 @@ def _build_perception(
     elf ranger") rather than their internal character_id, because the
     acting character has not necessarily been introduced to them by name.
 
-    When ``items`` is provided, items in the same zone as the acting
-    character are appended under an ``Items in this zone:`` sub-header.
-    Same-zone items are presumed visible (Phase 5 will add LOS-aware item
-    visibility for items separated from the character by sub-zone walls).
+    When ``items`` is provided, items the acting character can currently
+    perceive are appended under an ``Items in view:`` sub-header. An item is
+    perceivable when it is within sight range *and* has line of sight, which
+    lets a character at a zone seam perceive nearby items in an adjoining
+    zone. Items past half the sight range are visible but too far to identify
+    — their line collapses to a vague placeholder. Items previously examined
+    by anyone in the party (``discovered_by`` non-empty) have a known
+    identity and location and are always recalled — tagged ``(remembered)`` —
+    even when beyond sight.
     """
     import math
+    from models.senses import resolve_senses
 
     def _co_present_lines() -> str:
         lines: list[str] = []
@@ -1451,61 +1483,142 @@ def _build_perception(
         return _co_present_lines()
 
     _dbg(f"[PERCEPTION] {character_id} at {my_pos}")
+
+    # Resolve the acting character's effective sight range for the zone they
+    # stand in: ambient (light) range extended by darkvision. None ambient =
+    # unlimited (open-air / lit scene). Non-visual senses give a separate
+    # detection range used for "sensed, not seen" creatures.
+    my_pos_pt = Position(my_pos[0], my_pos[1])
+    my_zone_name = my_pos[2] or scene_geometry.zone_at(my_pos_pt)
+    obs_senses = resolve_senses()
+    if characters is not None:
+        cs_me = characters.get(character_id)
+        if cs_me is not None:
+            ch_me = cs_me.character
+            obs_senses = resolve_senses(
+                race=getattr(ch_me, "race", "") or "",
+                senses=getattr(ch_me, "senses", None),
+                features=getattr(ch_me, "features", None),
+            )
+    ambient = scene_geometry.ambient_sight_range(my_zone_name)
+    if ambient is None:
+        visual_ft = math.inf
+    else:
+        visual_ft = max(ambient, obs_senses.darkvision_ft)
+    nonvisual_ft = obs_senses.nonvisual_range_ft
+    _dbg(
+        f"[PERCEPTION]   sight: ambient={ambient} darkvision="
+        f"{obs_senses.darkvision_ft} visual={visual_ft} nonvisual={nonvisual_ft}"
+    )
+
     lines: list[str] = []
     for other_id, other_pos in current_positions.items():
         if other_id == character_id or other_id not in active_characters:
             continue
         a = Position(my_pos[0], my_pos[1])
         b = Position(other_pos[0], other_pos[1])
-        visible = scene_geometry.can_see(a, b)
+        in_los = scene_geometry.can_see(a, b)
         zone_a = scene_geometry.zone_at(a) or "?"
         zone_b = scene_geometry.zone_at(b) or "?"
         dist = math.hypot(b.x - a.x, b.y - a.y)
-        _dbg(f"[PERCEPTION]   {other_id} at {other_pos}: {zone_a}->{zone_b} dist={dist:.1f} visible={visible}")
-        if visible:
-            dist_rounded = round(dist / 5) * 5
-            zone = other_pos[2] or zone_b
-            label = other_id
-            faction_tag = ""
-            if characters is not None:
-                cs_other = characters.get(other_id)
-                if cs_other is not None:
-                    if cs_other.scene_handle:
-                        label = cs_other.scene_handle
-                    fac = getattr(cs_other.character, "faction", "neutral")
-                    if fac == "hostile":
-                        faction_tag = "HOSTILE, "
-                    elif fac == "party":
-                        faction_tag = "ally, "
+        sees = in_los and dist <= visual_ft
+        sensed = (not sees) and nonvisual_ft > 0 and dist <= nonvisual_ft
+        _dbg(
+            f"[PERCEPTION]   {other_id} at {other_pos}: {zone_a}->{zone_b} "
+            f"dist={dist:.1f} los={in_los} sees={sees} sensed={sensed}"
+        )
+        if not (sees or sensed):
+            continue
+        dist_rounded = round(dist / 5) * 5
+        zone = other_pos[2] or zone_b
+        label = other_id
+        faction_tag = ""
+        if characters is not None:
+            cs_other = characters.get(other_id)
+            if cs_other is not None:
+                if cs_other.scene_handle:
+                    label = cs_other.scene_handle
+                fac = getattr(cs_other.character, "faction", "neutral")
+                if fac == "hostile":
+                    faction_tag = "HOSTILE, "
+                elif fac == "party":
+                    faction_tag = "ally, "
+        if sees:
             lines.append(
                 f"- {label} ({faction_tag}{zone}, ~{dist_rounded:.0f} ft away)"
+            )
+        else:
+            manner = "by vibration" if obs_senses.tremorsense_ft >= dist else "by sound/scent"
+            lines.append(
+                f"- {label} ({faction_tag}{zone}, ~{dist_rounded:.0f} ft away "
+                f"— sensed {manner}, not seen)"
             )
 
     result = "\n".join(lines) if lines else ""
 
     # ------------------------------------------------------------------
-    # Items in the character's current zone.
+    # Items the character can perceive.
+    #
+    # An item is currently visible when it is within the observer's sight
+    # range AND in line of sight (can_see ray-traces across zone seams, so a
+    # character standing at a boundary perceives nearby items in the
+    # adjoining zone). Items previously examined by anyone in the party have
+    # a known location and are recalled regardless of distance or sight.
     # ------------------------------------------------------------------
     if items:
-        my_zone = (my_pos[2] or scene_geometry.zone_at(Position(my_pos[0], my_pos[1])) or "").upper()
+        from models.item import apparent_size_band
+
+        my_zone = (my_zone_name or "").upper()
+        # Identifiability falls off with distance like perspective: an item's
+        # apparent size (≈ size / distance) selects a perception band. Within
+        # near/intermediate it is identified (or shown its authored band text);
+        # at far/distant it reads as a vague shape (authored or generic); below
+        # the smallest band it is too small to make out and is omitted. Items
+        # examined or remembered by the party keep their identity regardless.
         item_lines: list[str] = []
         for item in items.values():
-            iz = (item.zone or "").upper()
-            if not iz or iz != my_zone:
-                continue
             if item.position is None:
                 continue
-            dx = item.position.x - my_pos[0]
-            dy = item.position.y - my_pos[1]
-            dist = math.hypot(dx, dy)
+            item_pt = item.position
+            dist = math.hypot(item_pt.x - my_pos[0], item_pt.y - my_pos[1])
+            currently_visible = (
+                dist <= visual_ft
+                and scene_geometry.can_see(my_pos_pt, item_pt)
+            )
+            examined = bool(item.discovered_by)
+            if not (currently_visible or examined):
+                continue
             dist_rounded = round(dist / 5) * 5
             label = item.label or item.id.replace("_", " ")
-            # Phase 3b.1: tag items already examined by anyone in the
-            # party so the LLM stops looping on the same Search action.
-            tag = " (already examined)" if item.discovered_by else ""
-            item_lines.append(f"- {label} (~{dist_rounded:.0f} ft away){tag}")
+            item_zone = item.zone or ""
+            zone_prefix = (
+                f"{item_zone}, " if item_zone.upper() != my_zone else ""
+            )
+            if examined:
+                # Known to the party — identity is established.
+                tag = " (already examined)" if currently_visible else " (remembered)"
+                item_lines.append(
+                    f"- {label} ({zone_prefix}~{dist_rounded:.0f} ft away){tag}"
+                )
+                continue
+            band = apparent_size_band(item.size_ft, dist)
+            if band is None:
+                # Too small/far to make out at all — omit it.
+                continue
+            authored = item.appearance_bands.get(band)
+            if authored:
+                shown = authored
+            elif band in ("near", "intermediate"):
+                # Close enough (for its size) to identify by sight.
+                shown = label
+            else:
+                # Far/distant and unauthored — only a vague shape registers.
+                shown = "An indistinct shape, too far to make out"
+            item_lines.append(
+                f"- {shown} ({zone_prefix}~{dist_rounded:.0f} ft away)"
+            )
         if item_lines:
-            items_block = "Items in this zone:\n" + "\n".join(item_lines)
+            items_block = "Items in view:\n" + "\n".join(item_lines)
             result = f"{result}\n\n{items_block}" if result else items_block
 
     _dbg(f"[PERCEPTION]   result: {repr(result)}")

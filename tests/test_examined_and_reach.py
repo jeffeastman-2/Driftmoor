@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -14,6 +15,14 @@ from models.geometry_loader import load_geometry
 
 CONTENTS = Path("scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md")
 GEOMETRY = Path("scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md")
+
+
+def _dwarf_observer(cid):
+    """Minimal characters dict for an observer with darkvision (Dwarf)."""
+    char = SimpleNamespace(
+        race="Mountain Dwarf", senses=[], features=[], faction="party",
+    )
+    return {cid: SimpleNamespace(character=char, scene_handle="")}
 
 
 @pytest.fixture
@@ -31,7 +40,8 @@ class TestExaminedTag:
     def test_unexamined_has_no_tag(self, geometry, items):
         positions = {"t": (138.0, 295.0, "ENTRY CHAMBER")}
         perception = _build_perception(
-            "t", geometry, positions, set(), items=items,
+            "t", geometry, positions, set(),
+            characters=_dwarf_observer("t"), items=items,
         )
         assert "(already examined)" not in perception
 
@@ -40,17 +50,19 @@ class TestExaminedTag:
         items["drag_marks"].discovered_by.add("seraphina")
         positions = {"t": (138.0, 295.0, "ENTRY CHAMBER")}
         perception = _build_perception(
-            "t", geometry, positions, set(), items=items,
+            "t", geometry, positions, set(),
+            characters=_dwarf_observer("t"), items=items,
         )
         # Find the drag-marks line and confirm it carries the tag while
-        # an unexamined item (Snapped torch) does not.
+        # an unexamined item (the snapped torch, shown by its far-band text)
+        # does not.
         drag_line = next(
             line for line in perception.splitlines()
             if "Drag marks" in line
         )
         torch_line = next(
             line for line in perception.splitlines()
-            if "Snapped torch" in line
+            if "pale streak" in line
         )
         assert "(already examined)" in drag_line
         assert "(already examined)" not in torch_line

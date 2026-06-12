@@ -200,6 +200,12 @@ An iron bracket fixed to the wall just inside the entrance. Rust-pitted and
 ancient. Whatever torch it once held is long gone. The bracket is too corroded
 to reuse. *(Not pickup-able; flavor.)*
 
+*Size:* small
+*Appearance by distance:*
+- **intermediate** → a rusted iron bracket fixed to the entrance wall
+- **far** → a small dark fixture on the wall near the cave mouth
+- **distant** → a dark nub on the entrance wall
+
 ### wall_scratches
 Tally marks scratched into the rock near the entrance with the point of
 something hard — a knife, perhaps, or a piece of obelisk shard. The strokes
@@ -207,12 +213,22 @@ are weathered and uneven, but the count is legible: nineteen vertical marks,
 crossed by a slanting twentieth that trails off as though the hand making it
 faltered. *(Not pickup-able; flavor.)*
 
+*Size:* tiny
+*Appearance by distance:*
+- **intermediate** → faint scratch-marks worked into the rock near the entrance
+
 ### snapped_torch
 A wooden torch, snapped clean across the middle, lying on the floor near the
 mouth of the First Passage. The pitch-soaked head is intact but never lit; the
 fracture is fresh-looking against the weathered wood, though the wax that
 should have been soft has gone hard with age. Whoever broke it did so in a
 hurry — perhaps in a fall, perhaps as the torch was wrenched from their hand.
+
+*Size:* small
+*Appearance by distance:*
+- **intermediate** → a short, pale length of wood lying on the stone
+- **far** → a slim pale streak low on the cavern floor
+- **distant** → a faint pale fleck against the dark floor
 
 *Interactions (DM ground truth):*
 - **examine** → A close look shows the break is across the grain, consistent
@@ -232,6 +248,12 @@ into porous rock and dried for a long time. The shape is wrong for a clean
 wound: it is a smear, not a pool, drawn out into a tapering streak that
 points south, into the passage. Something bled here, and then was moved.
 
+*Size:* medium
+*Appearance by distance:*
+- **intermediate** → a dark stain spread across the floor near the south wall
+- **far** → a dark patch low on the cavern floor
+- **distant** → a shadow on the stone near the south wall
+
 *Interactions (DM ground truth):*
 - **examine** → The streak is several feet long and unmistakably directional.
   The wider end is near where the bleeder fell or was struck; the tapering
@@ -247,6 +269,12 @@ wall. The buckles are tarnished green, the leather gone hard and brittle.
 The flap has come open and the contents are partly visible: a coil of
 mildewed rope, a tin cup, a small wax-sealed packet that has not yet rotted
 through.
+
+*Size:* small
+*Appearance by distance:*
+- **intermediate** → a low, hunched bundle slumped against the west wall, half under fallen rock
+- **far** → a dark heap at the base of the west wall
+- **distant** → a low shadow at the foot of the west wall
 
 *Interactions (DM ground truth):*
 - **examine without disturbing** → The pack is the kind a journeyman carries
@@ -269,6 +297,12 @@ of the First Passage. The scrapes are shallow but unmistakable against the
 weathered stone — the kind of marks left by something heavy being hauled
 across rock. They end at the passage threshold.
 
+*Size:* large
+*Appearance by distance:*
+- **intermediate** → twin scrapes scored across the stone floor
+- **far** → faint parallel lines on the floor toward the passage
+- **distant** → pale streaks on the cavern floor
+
 *Interactions (DM ground truth):*
 - **examine** → The marks pair with the bloodstain: a body dragged south,
   into the passage. The length of the trail (six paces) suggests the drag
@@ -289,6 +323,12 @@ where the message actually *says* something. Nobody in the party can read it;
 neither can anyone else currently in Driftmoor. Elyssa would pay handsomely for a
 careful rubbing. *(Not pickup-able; rubbings can be made with parchment and
 charcoal — 30 minutes per panel.)*
+
+*Size:* huge
+*Appearance by distance:*
+- **intermediate** → walls densely covered in angular carved script
+- **far** → walls textured with row upon row of carving
+- **distant** → faintly patterned walls, too far to read
 
 *Interactions (DM ground truth):*
 - **read / decipher** → Nobody in the party can read this script; neither
@@ -313,6 +353,12 @@ ordinary means. This is the source of the caverns' wrongness; while it
 remains here, the shadowbeasts will keep coming. *(Not pickup-able as-is;
 significant ritual or magic required to contain or remove.)*
 
+*Size:* large
+*Appearance by distance:*
+- **intermediate** → a broad, table-sized slab of black stone jutting from the floor
+- **far** → a dark mass low in the chamber, darker than the stone around it
+- **distant** → a patch of deeper darkness near the chamber floor
+
 ### trigger_glyph_top
 A small angular glyph cut shallow into the west wall of the Echo Chamber,
 just to the right of a hairline crack in the stone. It is one of three —
@@ -320,6 +366,10 @@ arranged top, middle, bottom in a vertical line, each about a hand's breadth
 apart. The glyphs are weathered but distinct, and unlike the dense carvings
 on the opposite wall they are spaced for a hand to find them by touch alone.
 They sit at chest height for an average human. *(Not pickup-able; pressable.)*
+
+*Size:* tiny
+*Appearance by distance:*
+- **intermediate** → a small mark cut into the west wall beside a crack
 
 *Interactions (DM ground truth):*
 - **examine / search** → A character searching this section of wall finds
@@ -341,11 +391,15 @@ The middle of three glyphs on the west wall of the Echo Chamber, between
 the others — only its position in the unlock sequence differs.
 *(Not pickup-able; pressable. See `trigger_glyph_top` for interactions.)*
 
+*Size:* tiny
+
 ### trigger_glyph_bottom
 The lowest of three glyphs on the west wall of the Echo Chamber, beneath
 `trigger_glyph_middle`. Functionally identical to the others — only its
 position in the unlock sequence differs.
 *(Not pickup-able; pressable. See `trigger_glyph_top` for interactions.)*
+
+*Size:* tiny
 
 ### secret_burial_vault
 A single stone burial vault stands in the center of the Secret Chamber. It
@@ -354,6 +408,12 @@ are no inscriptions and no markings. The stone is the same dark material as
 the obelisk fragment, though here it does not hum. An old weapon rests on
 top of the lid, exactly centered. *(Not pickup-able; the vault is too heavy
 to move and the lid is too heavy for the party to lift by ordinary means.)*
+
+*Size:* large
+*Appearance by distance:*
+- **intermediate** → a plain stone sarcophagus at the center of the chamber
+- **far** → a low rectangular block of dark stone in the chamber
+- **distant** → a dark mass at the center of the chamber
 
 *Interactions (DM ground truth):*
 - **examine / search** → The lid is plain, joinless, and seamlessly fitted
@@ -375,6 +435,11 @@ training, the haft hums faintly when gripped: the weapon is enchanted.
 *(Pickup-able; +1 mace, 1d6+1 bludgeoning, light, no special properties
 beyond the enhancement bonus.)*
 
+*Size:* small
+*Appearance by distance:*
+- **intermediate** → a banded mace lying atop the vault
+- **far** → a slim dark object resting on the stone lid
+
 *Interactions (DM ground truth):*
 - **examine** → A weapon-trained character (Thorgrim, Amara) recognizes
   the balance and faint hum as enchantment within a moment of handling.
@@ -391,6 +456,12 @@ matters to Elden more than any other reward this place could offer. The bones
 themselves should be wrapped before being carried; they are fragile.
 *(Pickup-able with care; quest item for Father Elden.)*
 
+*Size:* medium
+*Appearance by distance:*
+- **intermediate** → a tangle of bones and rotted gear on the chamber floor
+- **far** → pale shapes heaped on the floor
+- **distant** → a low pale scatter on the stone
+
 ### holy_symbol_pelor
 A small disc of tarnished silver hung on a rotted leather thong, fallen from
 between the ribs of one of the skeletons. The sun-rayed face of Pelor is
@@ -398,6 +469,10 @@ still clearly worked into the metal beneath the tarnish. This was Sera's —
 Father Elden's cleric companion, who in his telling went into the dark first
 and never came out. Polished, it would still focus a divine spell.
 *(Pickup-able; functional holy symbol; significant to Father Elden.)*
+
+*Size:* tiny
+*Appearance by distance:*
+- **intermediate** → a small glint of tarnished metal among the bones
 
 ### parchment_fragment
 A scrap of oiled parchment, brittle but largely intact, folded once and
@@ -408,6 +483,10 @@ are marked that do not appear from this side; one, leading off the Pool
 Cavern, is annotated in a cramped hand with a single word: *deeper*.
 *(Pickup-able; reveals additional map detail; suggests unexplored chambers
 beyond the collapsed tunnel.)*
+
+*Size:* tiny
+*Appearance by distance:*
+- **intermediate** → a folded scrap of pale parchment beside the remains
 
 ---
 

@@ -88,6 +88,16 @@ chambers decades ago.
 
 ---
 
+## Ambient Visibility
+
+Unlit caverns. Without another light source a creature sees only as far as
+its torch throws (or as far as its darkvision reaches). Mist plays no part
+here — sight is purely light-limited, so darkvision extends it fully.
+
+- **default:** 25
+
+---
+
 ## Connections
 
 | name              | x    | y     | destination                              |
