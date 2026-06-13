@@ -81,14 +81,25 @@ def _norm(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
 
 
+def property_dim(field: str, value: str) -> str:
+    """The namespaced one-hot dim name for a property value, or "" if blank.
+
+    ``property_dim("race", "High Elf") -> "race_high_elf"``. The single source
+    of truth for this mapping — the lexicon builder and the scene adapter both
+    call it so a query word and the entity it should match land on the SAME
+    dim.
+    """
+    token = _norm(value)
+    return f"{field}_{token}" if token else ""
+
+
 def _namespaced(field: str, values: Iterable[str]) -> list[str]:
-    """``field`` + normalized value, skipping blanks. ``("race", ["High Elf"])
-    -> ["race_high_elf"]``."""
+    """``field`` + normalized value for each, skipping blanks."""
     out = []
     for v in values:
-        token = _norm(v)
-        if token:
-            out.append(f"{field}_{token}")
+        dim = property_dim(field, v)
+        if dim:
+            out.append(dim)
     return out
 
 
