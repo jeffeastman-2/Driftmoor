@@ -158,6 +158,6 @@ def register_driftmoor_dimensions(characters: Iterable = ()) -> int:
     after more characters load only adds the new values. Returns the new
     total dimension count.
     """
-    from engraf.An_N_Space_Model.vector_dimensions import register_dimensions
+    from engine.latn import register_dimensions
 
     return register_dimensions(driftmoor_rpg_dimensions(characters), semantic=True)

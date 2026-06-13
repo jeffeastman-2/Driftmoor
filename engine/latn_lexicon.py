@@ -66,9 +66,10 @@ _FACTION_SYNONYMS: list[tuple[str, list[str]]] = [
 
 
 def _vf(pos: str, **dims):
-    # Local import so importing this module doesn't require Engraf until a
-    # lexicon is actually built.
-    from engraf.lexer.vector_space import vector_from_features
+    # Local import so importing this module doesn't require the parser until a
+    # lexicon is actually built. Routed through engine.latn (the single LATN
+    # import surface) so phase 3's engraf->latn move is a one-file change.
+    from engine.latn import vector_from_features
     return vector_from_features(pos, **dims)
 
 
@@ -153,8 +154,7 @@ def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (), pla
     """
     register_driftmoor_dimensions(characters)
 
-    from engraf.An_N_Space_Model.vocabulary import FUNCTION_WORDS
-    from engraf.lexer.lexicon import Lexicon
+    from engine.latn import FUNCTION_WORDS, Lexicon
 
     base = dict(FUNCTION_WORDS)
     rpg = _build_rpg_layer()
