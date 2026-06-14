@@ -300,15 +300,29 @@ nothing "replaces" the LLM because the human took its job.
 **Resolved design question — multiple actions per turn:** conjunctive
 intents parse as a `ConjunctionPhrase` whose `.phrases` is a list of
 `VerbPhrase`s, so "pick up the mace and hand it to Amara" yields two
-resolvable actions (with "it" resolving via the adapter's pronoun method).
-Add a new list-returning API:
+resolvable actions. Implemented as `engine.latn_resolver.resolve_actions(...)
+-> list[ResolvedAction]`, with `resolve_item_interaction` as the drop-in
+first-result wrapper (shallow fallback) so the existing turn loop works
+unchanged until `session.py` is ready to sequence and narrate multi-action
+turns (a session-loop design task: ordering, partial failure, per-action
+narration).
 
-- `resolve_item_interactions(...) -> list[(canonical_verb, Item, Interaction)]`
-
-and keep `resolve_item_interaction` as a thin first-element wrapper so the
-existing turn loop works unchanged until `session.py` is ready to sequence
-and narrate multi-action turns (a session-loop design task, not a parser
-one: ordering, partial failure, and per-action narration).
+**Open TODO — cross-clause pronoun anaphora (LATN-core):** the "it" in "pick
+up the mace and give **it** to Amara" can't resolve at parse time — it's
+grounded eagerly at L2 against parse-time recency, which can't see an
+antecedent created/referenced by an earlier clause of the *same* sentence.
+**This is a LATN-core problem, not Driftmoor-specific** — native Engraf has
+it too: `execute_layer4("create a box and move it to [1,2,3]")` on an empty
+scene yields **0 VPs** ("it" doesn't ground, the `move` VP fails
+`EngrafVPPolicy`, the parse is dropped), whereas "move it" with the box
+pre-existing grounds fine. Agreed model: **a pronoun is *always* a deferred
+grounding promise**, forced by the executor against the recency at force-time
+(seeded with scene/turn referents, extended per clause) — uniform across
+single-clause and conjunction. Root fix belongs in Engraf
+(`resolve_pronoun` / L2 grounding); the executor (Engraf's interpreter,
+Driftmoor's `resolve_actions`) supplies the running recency and forces the
+promise. TODO marked in `engine/latn_resolver.py`; needs an Engraf-side
+breadcrumb near `resolve_pronoun` too.
 
 ### Phase 2b — Human player front end (`HumanPlayerLeft`)
 
