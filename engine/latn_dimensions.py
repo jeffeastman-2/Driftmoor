@@ -103,20 +103,32 @@ def _namespaced(field: str, values: Iterable[str]) -> list[str]:
     return out
 
 
+def character_view(c):
+    """Return the object carrying character fields (race/class/role/name).
+
+    Accepts either a flat ``Character`` or a ``CharacterSession`` (which wraps
+    the Character as ``.character``), so callers can pass the session's native
+    ``CharacterSession`` to both the dim/lexicon builders and the adapter.
+    """
+    return getattr(c, "character", None) or c
+
+
 def derive_character_property_dims(characters: Iterable) -> list[str]:
     """Distinct namespaced race/class/role dims across ``characters``.
 
-    Characters are duck-typed: any object exposing ``race`` and optionally
-    ``character_class`` / ``role``. Returns a sorted, de-duplicated list like
-    ``["class_cleric", "race_dwarf", "role_smith"]``.
+    Characters are duck-typed: a ``Character`` or a ``CharacterSession``
+    exposing ``race`` and optionally ``character_class`` / ``role``. Returns a
+    sorted, de-duplicated list like ``["class_cleric", "race_dwarf",
+    "role_smith"]``.
     """
     races: set[str] = set()
     classes: set[str] = set()
     roles: set[str] = set()
     for c in characters:
-        race = getattr(c, "race", "") or ""
-        char_class = getattr(c, "character_class", "") or ""
-        role = getattr(c, "role", "") or ""
+        base = character_view(c)
+        race = getattr(base, "race", "") or ""
+        char_class = getattr(base, "character_class", "") or ""
+        role = getattr(base, "role", "") or ""
         if race:
             races.add(race)
         if char_class:

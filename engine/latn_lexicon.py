@@ -36,6 +36,7 @@ from typing import Iterable
 
 from engine.latn_dimensions import (
     FACTION_VALUES,
+    character_view,
     property_dim,
     register_driftmoor_dimensions,
 )
@@ -132,12 +133,15 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable) 
     # property dims (added last so they win over any plain-noun homograph from
     # a label, e.g. a "cleric" mentioned in some item's text).
     for c in characters:
-        name = getattr(c, "name", "") or ""
+        base = character_view(c)
+        name = getattr(base, "name", "") or ""
         _add_noun_text(layer, name, pos="proper_noun")
-        handle = getattr(c, "scene_handle", "") or ""
+        # scene_handle lives on the CharacterSession wrapper (how others see a
+        # character before names are exchanged), falling back to the base.
+        handle = getattr(c, "scene_handle", "") or getattr(base, "scene_handle", "") or ""
         _add_noun_text(layer, handle)
         for field, attr in (("race", "race"), ("class", "character_class"), ("role", "role")):
-            value = getattr(c, attr, "") or ""
+            value = getattr(base, attr, "") or ""
             dim = property_dim(field, value)
             if dim:
                 # Dual "noun adj": a descriptor can head an NP ("the dwarf") or
