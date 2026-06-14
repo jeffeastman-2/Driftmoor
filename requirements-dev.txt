@@ -1,0 +1,13 @@
+# Driftmoor development dependencies.
+#
+# The LATN natural-language parser lives in the sibling Engraf repo and is
+# consumed as an editable dependency. From an activated Driftmoor venv:
+#
+#     pip install -r requirements-dev.txt
+#
+# This assumes the Engraf repo is checked out next to Driftmoor at ../Engraf.
+# The LATN core is numpy-only; Engraf's CAD/visualizer (vpython) and Layer-6
+# (torch) extras are NOT pulled in. Phase 3 of the integration will replace
+# this with a standalone `latn` package — at which point only engine/latn.py
+# (the LATN import facade) and this line change.
+-e ../Engraf

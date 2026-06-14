@@ -140,10 +140,13 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable) 
             value = getattr(c, attr, "") or ""
             dim = property_dim(field, value)
             if dim:
+                # Dual "noun adj": a descriptor can head an NP ("the dwarf") or
+                # modify one ("the dwarf cleric"), so the NP parser can use it
+                # either way and the NP vector accumulates the property dim.
                 for w in _words(value):
-                    layer[w] = _vf("noun", **{dim: 1.0})
+                    layer[w] = _vf("noun adj", **{dim: 1.0})
                 if 2 <= len(_words(value)) <= 3:
-                    layer[_phrase(value)] = _vf("noun", **{dim: 1.0})
+                    layer[_phrase(value)] = _vf("noun adj", **{dim: 1.0})
     return layer
 
 
