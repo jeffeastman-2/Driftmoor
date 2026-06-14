@@ -4622,7 +4622,9 @@ async def iter_session(
                 and items
                 and intent.interaction_target
             ):
-                from engine.verb_resolver import resolve_item_interaction
+                # LATN-first (flag-gated by DRIFTMOOR_LATN_RESOLVER, default
+                # off -> shallow verb_resolver), with shallow fallback baked in.
+                from engine.latn_integration import resolve_item_interaction
                 _actor_zone = current_positions.get(
                     character_id, ("", "", "")
                 )[2]
@@ -4630,6 +4632,7 @@ async def iter_session(
                     intent_text=intent.intent or "",
                     interaction_target=intent.interaction_target,
                     items=items,
+                    characters=characters,
                     character_zone=_actor_zone,
                 )
                 if _resolved is not None:
