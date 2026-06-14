@@ -31,7 +31,7 @@ from engine.dm_agent import Adjudication
 from models.character import Character
 from models.condition import CharacterCondition, render_condition
 from models.geometry_loader import load_geometry
-from models.space_time import GameTime, Position, SceneGeometry
+from models.space_time import GameTime, Polygon, Position, SceneGeometry
 
 
 from engine.debug import _dbg
