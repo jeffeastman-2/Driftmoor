@@ -168,14 +168,9 @@ def _is_search_like_intent(intent_text: str) -> bool:
     ))
 
 
-def _normalize_target_name(target: Optional[str]) -> str:
-    """Normalize item target text for loop-key comparisons."""
-    if not target:
-        return ""
-    s = target.lower().strip()
-    s = re.sub(r"\s+", " ", s)
-    s = re.sub(r"[^a-z0-9 ]", "", s)
-    return s.strip()
+# Generic text helpers live in engine.text_util (extracted); re-exported so
+# the many turn-loop call sites use them unqualified.
+from engine.text_util import _normalize_target_name  # noqa: E402
 
 
 def _position_bucket(
