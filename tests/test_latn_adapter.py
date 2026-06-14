@@ -14,8 +14,7 @@ from models.character import PlayerCharacter
 from models.item import Item
 from engine.latn_adapter import DriftmoorSceneAdapter
 from engine.latn_lexicon import build_driftmoor_lexicon
-from engine.latn import LATNLayerExecutor, use_lexicon, vector_from_features
-from engraf.pos.noun_phrase import NounPhrase
+from engine.latn import LATNLayerExecutor, use_lexicon
 
 
 def _pc(cid, name, race, cls):
@@ -69,19 +68,29 @@ def test_items_match_by_label_string_and_zone():
     assert "banded_mace" in _best(lex, adapter, ex, "the mace")  # substring
 
 
-def test_adapter_name_matches_proper_noun_np():
-    # The NP-grammar gap (bare proper nouns don't yet form NPs) is upstream in
-    # Engraf; the adapter's name matching itself is correct when handed a
-    # proper-noun NP. Verify that directly.
+def test_name_grounds_through_the_full_parser():
+    # Engraf's NP ATN now accepts a bare proper noun as an NP head, so a name
+    # grounds end-to-end (lexicon -> parse -> adapter), no hand-built NP.
     lex, adapter, ex = _scene()
-    np = NounPhrase("amara")
-    np.noun = "amara"
-    tok = vector_from_features("proper_noun")
-    tok.word = "amara"
-    np.consumed_tokens = [tok]
-    np.vector = vector_from_features("proper_noun")
-    ranked = adapter.resolve_noun_phrase(np)
-    assert ranked and ranked[0][1].entity_id == "amara"
+    assert _best(lex, adapter, ex, "Amara") == {"amara": pytest.approx(1.0)}
+
+
+def test_recipient_and_object_ground_in_transfer():
+    # The transfer case uses the VP structure at layer 4 (vp.noun_phrase =
+    # object, vp.prepositions[].noun_phrase = recipient) with PermissiveVPPolicy
+    # active so the non-CAD verb survives Layer-4 grounding.
+    from engine.latn import use_vp_policy, PermissiveVPPolicy
+    lex, adapter, ex = _scene()
+    with use_lexicon(lex), use_vp_policy(PermissiveVPPolicy()):
+        r = ex.execute_layer4("give the mace to Amara")
+    grounded = set()
+    for vp in r.verb_phrases:
+        for np in [vp.noun_phrase, *[p.noun_phrase for p in vp.prepositions]]:
+            if np:
+                for _, ent in adapter.resolve_noun_phrase(np):
+                    grounded.add(ent.entity_id)
+    assert "amara" in grounded
+    assert "banded_mace" in grounded
 
 
 def test_pronoun_they_returns_all_entities():
