@@ -49,9 +49,10 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("attack", ["attack", "strike", "hit", "swing", "swing at", "slash",
                 "stab", "shoot", "fire", "fire at", "loose", "lunge", "lunge at"]),
     ("cast", ["cast", "invoke", "channel"]),
-    ("move", ["move", "go", "walk", "approach", "advance", "step", "head"]),
+    ("move", ["move", "go", "walk", "approach", "advance", "step", "head",
+              "enter", "follow", "continue", "proceed", "return", "climb"]),
     ("dash", ["dash", "sprint", "rush", "run"]),
-    ("disengage", ["disengage", "withdraw", "retreat", "fall back"]),
+    ("disengage", ["disengage", "withdraw", "retreat", "fall back", "flee", "escape"]),
     ("dodge", ["dodge", "evade"]),
     ("help", ["help", "aid", "assist"]),
     ("ready", ["ready", "prepare"]),
@@ -117,17 +118,33 @@ def _build_rpg_layer() -> dict:
     return layer
 
 
-def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable) -> dict:
+def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
+                       zones: Iterable = ()) -> dict:
     layer: dict = {}
 
-    # Item labels (and ids as fallback) -> nouns + their component words.
+    # Item labels (and ids as fallback) -> nouns + their component words. Also
+    # pull every distance/lighting appearance-band description so an entity is
+    # referrable by however it currently looks ("a low shadow" for a far
+    # creature), per the layered-description model. (Distance-FILTERING of which
+    # description is valid now is the perception-fed adapter's job, not the
+    # lexicon's — the lexicon just makes them all tokenizable.)
     for it in items:
         label = getattr(it, "label", "") or getattr(it, "id", "") or ""
         _add_noun_text(layer, label)
+        bands = getattr(it, "appearance_bands", None) or {}
+        if isinstance(bands, dict):
+            for desc in bands.values():
+                _add_noun_text(layer, desc or "")
 
     # Place names -> nouns.
     for pl in places:
         _add_noun_text(layer, getattr(pl, "name", "") or "")
+
+    # Zone / landmark names (from scene geometry) -> nouns + component words,
+    # so "the rocky passage" / "echo chamber" tokenize. Grounding a zone NP to
+    # a movement target (and visibility-filtering) is the adapter's job.
+    for zname in zones:
+        _add_noun_text(layer, zname or "")
 
     # Characters: names as proper nouns, then descriptor words carrying their
     # property dims (added last so they win over any plain-noun homograph from
@@ -154,10 +171,14 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable) 
     return layer
 
 
-def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (), places: Iterable = ()):
+def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
+                            places: Iterable = (), zones: Iterable = ()):
     """Build the layered Driftmoor lexicon. Registers the RPG dims first
     (idempotent), then returns an Engraf ``Lexicon`` over a ChainMap of
     world > rpg > function-base (Engraf's shared FUNCTION_WORDS).
+
+    ``zones`` is the scene's zone/landmark names (e.g. scene_geometry.zones)
+    so movement targets like "the rocky passage" tokenize.
     """
     register_driftmoor_dimensions(characters)
 
@@ -165,7 +186,7 @@ def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (), pla
 
     base = dict(FUNCTION_WORDS)
     rpg = _build_rpg_layer()
-    world = _build_world_layer(characters, items, places)
+    world = _build_world_layer(characters, items, places, zones)
     # ChainMap lookup is first-wins; we want function/action backbone to take
     # precedence over world content homographs, so order base, rpg, world.
     return Lexicon(ChainMap(base, rpg, world))

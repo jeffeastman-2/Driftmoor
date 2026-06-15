@@ -91,7 +91,11 @@ def _latn_outcome(text, lexicon, adapter):
 def run(scene_md: Path, state_dir: Path, show: int = 25) -> Counter:
     cfg = configure_from_md(scene_md)
     items, characters = cfg.items, cfg.characters
-    lexicon = build_driftmoor_lexicon(list(characters.values()), list(items.values()))
+    geo = getattr(cfg, "scene_geometry", None)
+    zones = list(getattr(geo, "zones", {}) or {}) if geo is not None else []
+    lexicon = build_driftmoor_lexicon(
+        list(characters.values()), list(items.values()), zones=zones,
+    )
 
     # A character is "human" when it isn't LLM-driven (typed via a transport).
     human_ids = {
