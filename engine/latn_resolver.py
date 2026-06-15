@@ -126,20 +126,28 @@ def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedActio
         use_lexicon,
         use_vp_policy,
         PermissiveVPPolicy,
+        use_sp_policy,
+        PermissiveSPPolicy,
     )
 
-    from engraf.lexer.latn_layer_executor import extract_verb_phrases
-
     executor = LATNLayerExecutor(adapter)
-    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()):
-        result = executor.execute_layer4(intent_text or "")
+    # Parse at Layer 5 (full sentences) so a human's "I give the mace to Amara"
+    # yields an SP with a subject + a complete predicate VP, not just a loose
+    # VP fragment. PermissiveSPPolicy keeps any hypothesis that formed an SP
+    # (the SP analog of PermissiveVPPolicy) so L5 recall matches L4 while adding
+    # sentence structure. The subject (sp.subject) is the actor; we ignore it
+    # for now — the acting character is known from turn context — and revisit
+    # when party-directed commands ("Thorgrim, take the torch") need it.
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
 
-    # Use the single best parse, not VPs flattened across every hypothesis
-    # (which double-counts). hypotheses are confidence-ordered.
-    if not result.hypotheses:
-        return []
-    verb_phrases = extract_verb_phrases(result.hypotheses[0])
-
+    # Each sentence phrase's predicate is a full VP (a conjunction predicate
+    # flattens to several). PP-attachment ambiguity yields variant SPs for the
+    # same clause — e.g. "I give the mace to Amara" produces one SP with the
+    # "to"-PP on the subject and one with it on the predicate — so we dedup on
+    # (verb, object) and PREFER the variant that grounded a recipient.
+    #
     # TODO(pronoun-anaphora): cross-clause pronouns — "pick up the mace AND
     # give IT to Amara". "it" is grounded eagerly at L2 against parse-time
     # recency, which can't see an antecedent created/referenced by an earlier
@@ -149,24 +157,54 @@ def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedActio
     # is dropped). Agreed model: a pronoun is ALWAYS a deferred *grounding
     # promise*, forced by the executor against the recency at force-time
     # (seeded with scene/turn referents, extended per clause). Root fix lives
-    # in Engraf (resolve_pronoun / L2); this loop is the force-point/executor
-    # on the Driftmoor side. Until then a pronoun object yields item=None.
+    # in Engraf (resolve_pronoun / L2). Until then a pronoun object yields
+    # item=None.
+    merged: "dict[tuple, ResolvedAction]" = {}
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        for vp in _predicate_vps(sp):
+            verb = _canonical_verb(vp)
+            if verb is None:
+                continue
+            item, ambiguous = _resolve_object(vp, adapter)
+            recipient = _resolve_recipient(vp, adapter) if verb in _TRANSFER_VERBS else None
+            key = (verb, item.id if item is not None else None)
+            prev = merged.get(key)
+            if prev is None:
+                merged[key] = ResolvedAction(verb, item, None, recipient, ambiguous)
+            else:
+                # Same clause seen via another PP-attachment variant: keep the
+                # recipient if this variant found one, and don't let a variant
+                # without grounding override a grounded one.
+                if prev.recipient_id is None and recipient is not None:
+                    prev.recipient_id = recipient
+                prev.ambiguous = prev.ambiguous and ambiguous
+
     actions: List[ResolvedAction] = []
-    for vp in verb_phrases:
-        verb = _canonical_verb(vp)
-        if verb is None:
-            continue
-        item, ambiguous = _resolve_object(vp, adapter)
-        recipient = _resolve_recipient(vp, adapter) if verb in _TRANSFER_VERBS else None
-        interaction = None
-        if item is not None and verb in _INTERACTION_VERBS:
-            interaction = _interaction_for(item, verb)
-        elif item is not None and verb in _TRANSFER_VERBS:
-            resp = authored_transfer_response(item, verb)
+    for action in merged.values():
+        if action.item is not None and action.verb in _INTERACTION_VERBS:
+            action.interaction = _interaction_for(action.item, action.verb)
+        elif action.item is not None and action.verb in _TRANSFER_VERBS:
+            resp = authored_transfer_response(action.item, action.verb)
             if resp:
-                interaction = Interaction(verb=verb, aliases=[], condition="", response=resp)
-        actions.append(ResolvedAction(verb, item, interaction, recipient, ambiguous))
+                action.interaction = Interaction(
+                    verb=action.verb, aliases=[], condition="", response=resp)
+        actions.append(action)
     return actions
+
+
+def _predicate_vps(sp):
+    """The predicate VP(s) of a sentence phrase. A conjunction predicate
+    ("take the torch and light it") flattens to several; a plain predicate is
+    a single VP. Non-VP predicates yield nothing."""
+    from engraf.pos.conjunction_phrase import ConjunctionPhrase
+    from engraf.pos.verb_phrase import VerbPhrase
+
+    pred = getattr(sp, "predicate", None)
+    if isinstance(pred, ConjunctionPhrase):
+        return [p for p in pred.phrases if isinstance(p, VerbPhrase)]
+    if isinstance(pred, VerbPhrase):
+        return [pred]
+    return []
 
 
 def resolve_item_interaction(

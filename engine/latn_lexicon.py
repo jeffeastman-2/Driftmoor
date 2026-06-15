@@ -119,8 +119,21 @@ def _build_rpg_layer() -> dict:
 
 
 def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
-                       zones: Iterable = ()) -> dict:
+                       zones: Iterable = (), landmarks: Iterable = ()) -> dict:
     layer: dict = {}
+    # Modifier-position words: every non-final word of a multi-word reference.
+    # These get a dual "noun adj" reading at the end so multi-word references
+    # ("rocky chamber", "secret passage", "banded mace") parse as adj* + noun
+    # head instead of an un-headable noun-noun chain. Only genuine modifiers
+    # get the extra reading (NOT every standalone noun) — blanket dual-typing
+    # explodes the tokenizer's hypothesis beam on long prose and the valid
+    # parse gets pruned. Grounding is string-based, so the adj reading is free.
+    modifiers: set[str] = set()
+
+    def _note(text: str) -> str:
+        words = _words(text)
+        modifiers.update(words[:-1])  # all but the head
+        return text
 
     # Item labels (and ids as fallback) -> nouns + their component words. Also
     # pull every distance/lighting appearance-band description so an entity is
@@ -130,7 +143,12 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
     # lexicon's — the lexicon just makes them all tokenizable.)
     for it in items:
         label = getattr(it, "label", "") or getattr(it, "id", "") or ""
-        _add_noun_text(layer, label)
+        _add_noun_text(layer, _note(label))
+        # Band descriptions are prose ("a low shadow against the far wall"), not
+        # "adj noun" labels — they're added for tokenizability but NOT fed to
+        # the modifier set (their common nouns would over-dual-type and explode
+        # the hypothesis beam on long prose). Structured labels/zones/places do
+        # feed it, via _note.
         bands = getattr(it, "appearance_bands", None) or {}
         if isinstance(bands, dict):
             for desc in bands.values():
@@ -138,13 +156,21 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
 
     # Place names -> nouns.
     for pl in places:
-        _add_noun_text(layer, getattr(pl, "name", "") or "")
+        _add_noun_text(layer, _note(getattr(pl, "name", "") or ""))
 
-    # Zone / landmark names (from scene geometry) -> nouns + component words,
-    # so "the rocky passage" / "echo chamber" tokenize. Grounding a zone NP to
-    # a movement target (and visibility-filtering) is the adapter's job.
+    # Zone names (from scene geometry) -> nouns + component words, so "the
+    # rocky passage" / "echo chamber" tokenize. Grounding a zone NP to a
+    # movement target (and visibility-filtering) is the adapter's job.
     for zname in zones:
-        _add_noun_text(layer, zname or "")
+        _add_noun_text(layer, _note(zname or ""))
+
+    # Landmark names (scene_geometry.landmarks keys, e.g. "echo_chamber_arch",
+    # "first_passage_mouth") -> nouns + component words, so "echo chamber arch"
+    # / "first passage mouth" tokenize as movement targets. _words splits on
+    # the underscores. Grounding a landmark NP to a position is the adapter's
+    # job (2b, distance/visibility-filtered).
+    for lname in landmarks:
+        _add_noun_text(layer, _note(lname or ""))
 
     # Characters: names as proper nouns, then descriptor words carrying their
     # property dims (added last so they win over any plain-noun homograph from
@@ -168,17 +194,29 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
                     layer[w] = _vf("noun adj", **{dim: 1.0})
                 if 2 <= len(_words(value)) <= 3:
                     layer[_phrase(value)] = _vf("noun adj", **{dim: 1.0})
+
+    # Give modifier-position words a dual "noun adj" reading so they can modify
+    # a following head ("rocky chamber"). Only plain nouns are re-typed: skip
+    # proper-noun names and the property descriptors above (already adj, and we
+    # must not clobber their dims).
+    for w in modifiers:
+        v = layer.get(w)
+        if v is not None and v.isa("noun") and not v.isa("adj") and not v.isa("proper_noun"):
+            layer[w] = _vf("noun adj")
     return layer
 
 
 def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
-                            places: Iterable = (), zones: Iterable = ()):
+                            places: Iterable = (), zones: Iterable = (),
+                            landmarks: Iterable = ()):
     """Build the layered Driftmoor lexicon. Registers the RPG dims first
     (idempotent), then returns an Engraf ``Lexicon`` over a ChainMap of
     world > rpg > function-base (Engraf's shared FUNCTION_WORDS).
 
-    ``zones`` is the scene's zone/landmark names (e.g. scene_geometry.zones)
-    so movement targets like "the rocky passage" tokenize.
+    ``zones`` is the scene's zone names (scene_geometry.zones) and
+    ``landmarks`` its landmark ids (scene_geometry.landmarks keys, e.g.
+    "echo_chamber_arch") so movement targets like "the rocky passage" and
+    "echo chamber arch" tokenize.
     """
     register_driftmoor_dimensions(characters)
 
@@ -186,7 +224,7 @@ def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
 
     base = dict(FUNCTION_WORDS)
     rpg = _build_rpg_layer()
-    world = _build_world_layer(characters, items, places, zones)
+    world = _build_world_layer(characters, items, places, zones, landmarks)
     # ChainMap lookup is first-wins; we want function/action backbone to take
     # precedence over world content homographs, so order base, rpg, world.
     return Lexicon(ChainMap(base, rpg, world))

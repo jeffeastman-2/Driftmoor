@@ -24,6 +24,12 @@ from engraf.lexer.vp_policy import (
     set_active_vp_policy,
     use_vp_policy,
 )
+from engraf.lexer.sp_policy import (
+    SPGroundingPolicy,
+    PermissiveSPPolicy,
+    set_active_sp_policy,
+    use_sp_policy,
+)
 from engraf.lexer.spatial_policy import (
     SpatialPolicy,
     EngrafSpatialPolicy,
@@ -46,6 +52,10 @@ __all__ = [
     "PermissiveVPPolicy",
     "set_active_vp_policy",
     "use_vp_policy",
+    "SPGroundingPolicy",
+    "PermissiveSPPolicy",
+    "set_active_sp_policy",
+    "use_sp_policy",
     "SpatialPolicy",
     "EngrafSpatialPolicy",
     "set_active_spatial_policy",
