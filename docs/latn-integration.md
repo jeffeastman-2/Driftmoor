@@ -334,7 +334,20 @@ the human is the agent and LATN is the parser.
 
 - Reuses everything from 2a (adapter, lexicon, policies), with the adapter
   fed from `RoleContext.perception` (the authoritative visible-entity list)
-  instead of the items dict alone.
+  instead of the items dict alone. (The 2a `DriftmoorSceneAdapter` over a
+  static items dict is a placeholder; the real 2b adapter is perception-fed
+  and distance-aware.)
+- **Layered descriptions.** Items/creatures present different descriptions by
+  distance/lighting (`Item.appearance_bands`; the giant spider is "a low
+  shadow" far, "giant spider" close). Handle along the lexicon/adapter split:
+  the **lexicon** carries the *union of all band descriptions* (so any is
+  tokenizable — pull all `appearance_bands`, not just `label`); the
+  **adapter** grounds only against the description valid at the actor's
+  *current* band. This makes reference perception-authoritative for free
+  ("the shadowbeast" can't ground before it's identified). Landmarks: name
+  always sayable (lexicon), grounding filtered by zone visibility (reuse the
+  POI builder's visited/visible filter — the "distance-filter landmarks"
+  TODO).
 - Output mapping: grounded NP → `interaction_target`; spatial PP (via
   `SpatialPolicy` + entity positions) → `movement_target` (x, y, z in feet,
   later speed-clamped by the engine as today); the verb and remaining text
