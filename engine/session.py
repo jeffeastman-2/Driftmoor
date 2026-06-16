@@ -2802,6 +2802,22 @@ def _split_transport_utterance(text: str) -> tuple[str, str]:
     return "", action
 
 
+async def _transport_send(character_id: str, cs: "CharacterSession", text: str) -> None:
+    """Send out-of-turn text to a human player over Telegram, if configured.
+
+    No-op for non-telegram actors or when the player's bot isn't configured.
+    Bot API call runs in a worker thread so it never blocks the event loop.
+    """
+    if (cs.player_transport or "").strip().lower() != "telegram":
+        return
+    from engine import telegram_transport
+    tt = telegram_transport.for_character(character_id)
+    if tt is None:
+        return
+    if not await asyncio.to_thread(tt.send, text):
+        _dbg(f"[TRANSPORT] failed to send broadcast to {character_id}")
+
+
 async def _player_roles_via_transport(
     *,
     turn_cycle: TurnCycle,
@@ -2814,22 +2830,27 @@ async def _player_roles_via_transport(
     if transport != "telegram":
         return await turn_cycle.player_roles(context)
 
-    inbox = (cs.player_inbox or "").strip()
-    outbox = (cs.player_outbox or "").strip()
-    if not inbox or not outbox:
+    from engine import telegram_transport
+    tt = telegram_transport.for_character(context.character_id)
+    if tt is None:
         raise RuntimeError(
-            f"Telegram transport for {context.character_id} requires both inbox and outbox paths."
+            f"Telegram transport for {context.character_id} requires "
+            f"BOT_TOKEN_{context.character_id.upper()} and "
+            f"CHAT_ID_{context.character_id.upper()} (or bare BOT_TOKEN/CHAT_ID) "
+            f"in the environment."
         )
 
-    host = (cs.player_host or "").strip()
     prompt_text = _render_transport_prompt(context=context, cs=cs, raw_history=raw_history)
-    await _host_write_text(host, outbox, prompt_text)
-    # Ignore stale inbox content from before this prompt was sent.
-    accept_after_ns = time.time_ns()
-    _dbg(f"[TRANSPORT] wrote turn {context.turn} prompt for {context.character_id} to {host or 'local'}:{outbox}")
+    # Discard anything received before this prompt (accept-after cutoff), then
+    # send it and long-poll for the reply. Bot API calls run in a worker thread
+    # so the 30s long-poll never blocks the event loop.
+    await asyncio.to_thread(tt.flush)
+    if not await asyncio.to_thread(tt.send, prompt_text):
+        _dbg(f"[TRANSPORT] failed to send turn {context.turn} prompt for {context.character_id}")
+    _dbg(f"[TRANSPORT] sent turn {context.turn} prompt to {context.character_id} via Telegram")
 
     while True:
-        inbound = (await _host_read_text(host, inbox, min_mtime_ns=accept_after_ns)).strip()
+        inbound = (await asyncio.to_thread(tt.poll_once) or "").strip()
         if inbound:
             intent = _intent_from_transport_text(
                 character_id=context.character_id,
@@ -2845,7 +2866,7 @@ async def _player_roles_via_transport(
             if action_text:
                 output.action = action_text
             return intent, output
-        await asyncio.sleep(1.0)
+        # poll_once already long-polls (~30s); loop straight back for the next.
 
 
 def _render_turn_result_packet(
@@ -2924,24 +2945,13 @@ async def _broadcast_turn_results_to_transports(
     for char_id, cs in characters.items():
         if (cs.player_transport or "").strip().lower() != "telegram":
             continue
-        if not (cs.player_outbox or "").strip():
-            continue
-
         packet = _render_turn_result_packet(
             player_id=char_id,
             turn_result=turn_result,
             characters=characters,
             current_positions=current_positions,
         )
-        await _host_write_text(
-            (cs.player_host or "").strip(),
-            (cs.player_outbox or "").strip(),
-            packet,
-        )
-        _dbg(
-            f"[TRANSPORT] wrote turn-result {turn_result.turn} for "
-            f"{char_id} to {(cs.player_host or 'local').strip()}:{(cs.player_outbox or '').strip()}"
-        )
+        await _transport_send(char_id, cs, packet)
 
 
 def _render_puzzle_press_packet(
@@ -2989,8 +2999,7 @@ async def _emit_puzzle_press_result(
     """
     if (cs.player_transport or "").strip().lower() != "telegram":
         return
-    outbox = (cs.player_outbox or "").strip()
-    if not outbox or not (response or "").strip():
+    if not (response or "").strip():
         return
     packet = _render_puzzle_press_packet(
         character_id=character_id,
@@ -2999,11 +3008,7 @@ async def _emit_puzzle_press_result(
         response=response,
         solved=solved,
     )
-    await _host_write_text((cs.player_host or "").strip(), outbox, packet)
-    _dbg(
-        f"[TRANSPORT] wrote mechanism-result turn {turn_num} press {label!r} "
-        f"for {character_id}"
-    )
+    await _transport_send(character_id, cs, packet)
 
 
 def _render_session_complete_packet(
@@ -3032,17 +3037,7 @@ async def _broadcast_session_complete_to_transports(
     for char_id, cs in characters.items():
         if (cs.player_transport or "").strip().lower() != "telegram":
             continue
-        if not (cs.player_outbox or "").strip():
-            continue
-        await _host_write_text(
-            (cs.player_host or "").strip(),
-            (cs.player_outbox or "").strip(),
-            packet,
-        )
-        _dbg(
-            f"[TRANSPORT] wrote session-complete for "
-            f"{char_id} to {(cs.player_host or 'local').strip()}:{(cs.player_outbox or '').strip()}"
-        )
+        await _transport_send(char_id, cs, packet)
 
 
 def _has_telegram_transport(characters: dict[str, CharacterSession]) -> bool:
@@ -3096,25 +3091,9 @@ async def iter_session(
     turn_cycle = TurnCycle(character_roles=character_roles)
     scene_history = initial_history
 
-    # Purge inbox and outbox dirs for all Telegram players so stale files from
-    # aborted previous runs don't produce duplicate or out-of-order messages.
-    for _cs in characters.values():
-        if (_cs.player_transport or "").strip().lower() == "telegram":
-            _inbox = (_cs.player_inbox or "").strip()
-            _outbox = (_cs.player_outbox or "").strip()
-            _host = (_cs.player_host or "").strip()
-            if _inbox:
-                try:
-                    await _host_purge_dir(_host, _inbox)
-                    _dbg(f"[TRANSPORT] purged inbox {_host or 'local'}:{_inbox} at session start")
-                except Exception as _e:
-                    _dbg(f"[TRANSPORT] inbox purge failed for {_host or 'local'}:{_inbox}: {_e}")
-            if _outbox:
-                try:
-                    await _host_purge_dir(_host, _outbox)
-                    _dbg(f"[TRANSPORT] purged outbox {_host or 'local'}:{_outbox} at session start")
-                except Exception as _e:
-                    _dbg(f"[TRANSPORT] outbox purge failed for {_host or 'local'}:{_outbox}: {_e}")
+    # (Pre-session inbox/outbox purge removed: the direct Telegram transport has
+    # no files; stale messages are handled by TelegramTransport.flush() at each
+    # prompt.)
 
     # Combat state
     in_combat = False
