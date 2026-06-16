@@ -2551,11 +2551,10 @@ def _render_transport_prompt(
             if not ln.strip().lower().startswith("## ")
         ]
         mechanism_section = "\n".join(mech_lines).strip()
-        parts = [header, f"MECHANISM (act now)\n{mechanism_section}"]
-        parts.append(
-            "Reply with your next action in plain text, and put what you say in quotes."
-        )
-        return "\n\n".join(parts) + "\n"
+        # Minimal, conversational exchange during a focused mechanism sequence:
+        # no packet/turn header, no labels — just the DM's prompt, so it reads
+        # like a back-and-forth rather than a turn packet.
+        return mechanism_section + "\n"
 
     perception = context.perception.strip() if context.perception else "No other creatures are visible."
     delta = _render_transport_scene_delta(
@@ -2818,6 +2817,51 @@ async def _transport_send(character_id: str, cs: "CharacterSession", text: str) 
         _dbg(f"[TRANSPORT] failed to send broadcast to {character_id}")
 
 
+_WH_WORDS = (
+    "what", "where", "who", "whom", "whose", "why", "when", "which", "how",
+)
+
+
+def _looks_like_question(text: str) -> bool:
+    """Heuristic: a player line is a question for the DM (not an action intent)
+    when it ends with '?' or opens with a wh-word. A deliberate string seam so
+    LATN's wh-question parse can replace it later."""
+    t = (text or "").strip()
+    if not t:
+        return False
+    if t.endswith("?"):
+        return True
+    first = t.lower().split()[0].strip(",.!:;\"'“”")
+    return first in _WH_WORDS
+
+
+async def _dm_answer(turn_cycle: TurnCycle, context: RoleContext, question: str) -> str:
+    """Answer a human player's question to the DM, bounded to what their
+    character can currently perceive. Reuses the character's own LLM provider;
+    returns a short fallback when no model is configured (stub mode)."""
+    call_llm = turn_cycle._roles_for(context.character_id).player_left._call_llm
+    if call_llm is None:
+        return "(The DM is silent — no model is configured to answer.)"
+    system = (
+        "You are the Dungeon Master answering a player's question. Answer "
+        "briefly, using ONLY what the player's character can currently perceive "
+        "(their perception and the scene below). Do not reveal hidden "
+        "information, do not invent facts, and do not take actions or advance "
+        "the story for them. If the character could not know, say so."
+    )
+    user = (
+        f"Scene:\n{context.scene_context}\n\n"
+        f"What {context.character_id} can perceive:\n{context.perception}\n\n"
+        f"Player asks: {question}"
+    )
+    try:
+        raw = await call_llm(system, user)
+    except Exception as e:  # noqa: BLE001 - keep the dialog alive on LLM error
+        _dbg(f"[TRANSPORT] DM answer failed for {context.character_id}: {e}")
+        return "(The DM doesn't respond just now.)"
+    return (raw or "").strip() or "(The DM has no answer.)"
+
+
 async def _player_roles_via_transport(
     *,
     turn_cycle: TurnCycle,
@@ -2851,22 +2895,28 @@ async def _player_roles_via_transport(
 
     while True:
         inbound = (await asyncio.to_thread(tt.poll_once) or "").strip()
-        if inbound:
-            intent = _intent_from_transport_text(
-                character_id=context.character_id,
-                turn=context.turn,
-                text=inbound,
-            )
-            output = await turn_cycle.player_right_from_intent(context, intent)
-            spoken_text, action_text = _split_transport_utterance(inbound)
-            # The human player's words are authoritative: only speak what they
-            # actually quoted. Never let the model invent dialogue for a human.
-            output.spoken = spoken_text or ""
-
-            if action_text:
-                output.action = action_text
-            return intent, output
-        # poll_once already long-polls (~30s); loop straight back for the next.
+        if not inbound:
+            # poll_once already long-polls (~30s); loop back for the next.
+            continue
+        # A question goes to the DM, not the action resolver: answer it and keep
+        # the dialog open (no cap) until the player states an actual intent.
+        if _looks_like_question(inbound):
+            answer = await _dm_answer(turn_cycle, context, inbound)
+            await asyncio.to_thread(tt.send, answer)
+            continue
+        intent = _intent_from_transport_text(
+            character_id=context.character_id,
+            turn=context.turn,
+            text=inbound,
+        )
+        output = await turn_cycle.player_right_from_intent(context, intent)
+        spoken_text, action_text = _split_transport_utterance(inbound)
+        # The human player's words are authoritative: only speak what they
+        # actually quoted. Never let the model invent dialogue for a human.
+        output.spoken = spoken_text or ""
+        if action_text:
+            output.action = action_text
+        return intent, output
 
 
 def _render_turn_result_packet(
@@ -2962,15 +3012,11 @@ def _render_puzzle_press_packet(
     response: str,
     solved: bool,
 ) -> str:
-    """Render a single puzzle press's outcome for human transport channels."""
-    from engine.runtime_paths import current_session_id
+    """Render a single puzzle press's outcome for human transport channels.
 
+    Minimal/conversational: no packet header — just what happened, so a focused
+    mechanism exchange reads like a dialog with the DM."""
     lines = [
-        "PACKET: MECHANISM RESULT",
-        f"TURN: {turn_num}",
-        f"SESSION: {current_session_id()}",
-        f"FOR: {character_id}",
-        "",
         f"You pressed {label}.",
         response.strip(),
     ]

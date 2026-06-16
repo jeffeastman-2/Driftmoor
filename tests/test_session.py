@@ -319,11 +319,14 @@ class TestTransportPromptAndPacketFormatting:
         )
 
         packet = _render_transport_prompt(context=ctx, cs=cs, raw_history="")
-        assert "MECHANISM (act now)" in packet
         assert "You just pressed Trigger glyph (top)" in packet
         assert "A faint dry click sounds" in packet
         assert "What do you do next?" in packet
-        # Mid-sequence the packet is focused: no standing scene dump.
+        # Minimal/conversational mid-sequence: no packet header, no section
+        # labels — just the DM's prompt.
+        assert "MECHANISM (act now)" not in packet
+        assert "PACKET: TURN PROMPT" not in packet
+        assert "CHARACTER:" not in packet
         assert "SCENE" not in packet
         assert "CURRENT POSITION" not in packet
         assert "PERCEPTION" not in packet
@@ -337,12 +340,13 @@ class TestTransportPromptAndPacketFormatting:
             response="A faint dry click sounds in the stone beneath your fingertip.",
             solved=False,
         )
-        assert "PACKET: MECHANISM RESULT" in packet
-        assert "TURN: 6" in packet
-        assert "FOR: gilthaness" in packet
         assert "You pressed Trigger glyph (top)." in packet
         assert "A faint dry click sounds" in packet
         assert "The sequence is complete." not in packet
+        # Minimal/conversational: no packet header.
+        assert "PACKET: MECHANISM RESULT" not in packet
+        assert "TURN:" not in packet
+        assert "FOR:" not in packet
 
     def test_puzzle_press_packet_marks_solve(self):
         packet = _render_puzzle_press_packet(
@@ -378,6 +382,46 @@ class TestTransportPromptAndPacketFormatting:
         assert action == (
             "Presses Trigger glyph (top), then Trigger glyph (bottom), in sequence."
         )
+
+    def test_looks_like_question_detects_wh_and_qmark(self):
+        from engine.session import _looks_like_question
+        assert _looks_like_question("What is behind the door?")
+        assert _looks_like_question("where do the passages lead")  # wh, no '?'
+        assert _looks_like_question("Is it safe?")                  # '?', no wh
+        assert not _looks_like_question("attack the giant spider")
+        assert not _looks_like_question("move to the rocky passage")
+        assert not _looks_like_question("")
+
+    def test_dm_answer_uses_character_llm_bounded_to_perception(self):
+        import asyncio
+        from types import SimpleNamespace as NS
+        from engine.session import _dm_answer
+        seen = {}
+
+        async def fake_llm(system, user):
+            seen["system"], seen["user"] = system, user
+            return "  You see only shadows.  "
+
+        tc = NS(_roles_for=lambda cid: NS(player_left=NS(_call_llm=fake_llm)))
+        ctx = RoleContext(
+            character_id="gilthaness", turn=1, condition_text="steady",
+            scene_context="A dim cave.", soul="", identity="",
+            perception="Nothing else is visible.")
+        out = asyncio.run(_dm_answer(tc, ctx, "What do I see?"))
+        assert out == "You see only shadows."           # trimmed
+        assert "perceive" in seen["system"].lower()      # bounded prompt
+        assert "What do I see?" in seen["user"]
+
+    def test_dm_answer_falls_back_without_llm(self):
+        import asyncio
+        from types import SimpleNamespace as NS
+        from engine.session import _dm_answer
+        tc = NS(_roles_for=lambda cid: NS(player_left=NS(_call_llm=None)))
+        ctx = RoleContext(
+            character_id="gilthaness", turn=1, condition_text="",
+            scene_context="", soul="", identity="", perception="")
+        out = asyncio.run(_dm_answer(tc, ctx, "What now?"))
+        assert out.startswith("(") and "DM" in out
 
 
 # ---------------------------------------------------------------------------
