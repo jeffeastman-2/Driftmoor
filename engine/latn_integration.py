@@ -29,6 +29,20 @@ def latn_enabled() -> bool:
     )
 
 
+def _actor_eligible(actor_id, characters) -> bool:
+    """LATN runs only for HUMAN-transport actors (Gil) during cutover; LLM NPCs
+    stay on the shallow resolver. Eligibility = the acting character's
+    ``player_transport`` is not ``"llm"``. An absent actor_id (direct callers /
+    headless tests) is treated as eligible so the flag alone governs them.
+    """
+    if actor_id is None:
+        return True
+    cs = characters.get(actor_id) if hasattr(characters, "get") else None
+    if cs is None:
+        return False
+    return (getattr(cs, "player_transport", "llm") or "llm") != "llm"
+
+
 def build_context(items: dict, characters: dict, actor_zone: str,
                   scene_geometry=None):
     """Build (lexicon, adapter) for LATN resolution this turn.
@@ -61,16 +75,18 @@ def resolve_item_interaction(
     characters: Optional[dict],
     character_zone: Optional[str],
     scene_geometry=None,
+    actor_id: Optional[str] = None,
 ) -> Optional[Tuple[Item, Interaction]]:
-    """LATN-first (flag-gated) resolution with shallow fallback.
+    """LATN-first (flag-gated, human-only) resolution with shallow fallback.
 
     Same return contract as ``verb_resolver.resolve_item_interaction``, plus a
-    ``characters`` argument (needed to build the adapter/lexicon) and an
-    optional ``scene_geometry`` (its zones/landmarks feed the lexicon). With the
-    flag off — or when items/characters are missing — it is exactly the shallow
-    resolver.
+    ``characters`` argument (needed to build the adapter/lexicon), an optional
+    ``scene_geometry`` (its zones/landmarks feed the lexicon), and ``actor_id``
+    (the LATN path runs only for human-transport actors — see _actor_eligible).
+    With the flag off, a non-human actor, or missing items/characters, it is
+    exactly the shallow resolver.
     """
-    if latn_enabled() and items and characters:
+    if latn_enabled() and _actor_eligible(actor_id, characters) and items and characters:
         from engine import latn_resolver
         lexicon, adapter = build_context(
             items, characters, character_zone or "", scene_geometry,
@@ -98,18 +114,21 @@ def infer_interaction_target(
     characters: Optional[dict],
     character_zone: Optional[str],
     scene_geometry=None,
+    actor_id: Optional[str] = None,
 ) -> Optional[str]:
-    """LATN-first (flag-gated) interaction-target inference, shallow fallback.
+    """LATN-first (flag-gated, human-only) interaction-target inference, shallow
+    fallback.
 
     Same role and return (an item label/id, or None) as
     ``verb_resolver.infer_interaction_target`` — derive the object the actor is
     acting on when the model left ``interaction_target`` empty — plus the
-    ``characters``/``scene_geometry`` needed to build the parser context. The
-    LATN adapter is zone-filtered (built with ``character_zone``), mirroring the
-    shallow resolver's in-zone requirement. With the flag off — or when
-    items/characters are missing — it is exactly the shallow inference.
+    ``characters``/``scene_geometry`` needed to build the parser context and
+    ``actor_id`` (LATN runs only for human-transport actors). The LATN adapter
+    is zone-filtered (built with ``character_zone``), mirroring the shallow
+    resolver's in-zone requirement. With the flag off, a non-human actor, or
+    missing items/characters, it is exactly the shallow inference.
     """
-    if latn_enabled() and items and characters:
+    if latn_enabled() and _actor_eligible(actor_id, characters) and items and characters:
         from engine import latn_resolver
         lexicon, adapter = build_context(
             items, characters, character_zone or "", scene_geometry,
@@ -129,13 +148,15 @@ def resolve_recipient(
     characters: Optional[dict],
     character_zone: Optional[str],
     scene_geometry=None,
+    actor_id: Optional[str] = None,
 ) -> Optional[str]:
     """LATN recipient (a character id) for a transfer like "give X to Y", or
-    None. Flag-gated: returns None when the flag is off or no recipient grounds,
-    so the caller falls back to its own shallow recipient resolution. Recipients
-    are grounded by vector similarity over the character property dims (race/
-    class/role) plus name/handle match — stronger than token overlap."""
-    if latn_enabled() and items and characters:
+    None. Flag-gated and human-only (``actor_id``): returns None when the flag
+    is off, the actor is a non-human NPC, or no recipient grounds — so the
+    caller falls back to its own shallow recipient resolution. Recipients are
+    grounded by vector similarity over the character property dims (race/class/
+    role) plus name/handle match — stronger than token overlap."""
+    if latn_enabled() and _actor_eligible(actor_id, characters) and items and characters:
         from engine import latn_resolver
         lexicon, adapter = build_context(
             items, characters, character_zone or "", scene_geometry,
