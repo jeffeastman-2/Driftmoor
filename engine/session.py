@@ -568,6 +568,7 @@ async def _run_puzzle_exchange(
     characters: dict[str, CharacterSession],
     attack_log: list[str],
     recent_events,
+    scene_geometry=None,
 ) -> list[dict]:
     """Drive a puzzle's state machine for one actor and return its effects.
 
@@ -592,8 +593,10 @@ async def _run_puzzle_exchange(
     """
     import dataclasses
 
-    from engine.verb_resolver import (
-        _detect_verb,
+    from engine.verb_resolver import _detect_verb
+    # LATN-first (flag-gated, shallow fallback) for the mid-puzzle re-prompt:
+    # the actor presses inputs, which LATN parses well (incl. "the top glyph").
+    from engine.latn_integration import (
         infer_interaction_target,
         resolve_item_interaction,
     )
@@ -684,14 +687,16 @@ async def _run_puzzle_exchange(
         )
 
         next_target = next_intent.interaction_target or infer_interaction_target(
-            next_intent.intent or "", items, actor_zone
+            next_intent.intent or "", items, characters, actor_zone, scene_geometry
         )
         next_resolved = (
             resolve_item_interaction(
                 intent_text=next_intent.intent or "",
                 interaction_target=next_target,
                 items=items,
+                characters=characters,
                 character_zone=actor_zone,
+                scene_geometry=scene_geometry,
             )
             if next_target else None
         )
@@ -1793,6 +1798,7 @@ def _handle_item_transfer(
     recent_events: list,
     cs: "CharacterSession",
     authored_response: Optional[str],
+    recipient_override: Optional[str] = None,
 ) -> None:
     """Apply a take/drop/give possession change and log the outcome.
 
@@ -1882,7 +1888,10 @@ def _handle_item_transfer(
             None,
         )
         return
-    recipient = _resolve_recipient_character(
+    # LATN grounds the recipient by vector similarity (recipient_override, set
+    # by the caller when the flag is on); fall back to the shallow token-overlap
+    # match when it is absent.
+    recipient = recipient_override or _resolve_recipient_character(
         intent_text,
         actor_id=character_id,
         characters=characters,
@@ -3814,12 +3823,15 @@ async def iter_session(
                 and not intent.interaction_target
                 and intent.intent
             ):
-                from engine.verb_resolver import infer_interaction_target
+                # LATN-first (flag-gated, shallow fallback): parse the free-text
+                # intent to backfill the object when the model left
+                # interaction_target empty.
+                from engine.latn_integration import infer_interaction_target
                 _infer_zone = current_positions.get(
                     character_id, ("", "", "")
                 )[2]
                 _inferred_target = infer_interaction_target(
-                    intent.intent, items, _infer_zone
+                    intent.intent, items, characters, _infer_zone, scene_geometry
                 )
                 if _inferred_target:
                     intent.interaction_target = _inferred_target
@@ -3853,6 +3865,7 @@ async def iter_session(
                     items=items,
                     characters=characters,
                     character_zone=_actor_zone,
+                    scene_geometry=scene_geometry,
                 )
                 if _resolved is not None:
                     _it_obj, _ = _resolved
@@ -4093,8 +4106,11 @@ async def iter_session(
                 from engine.verb_resolver import (
                     detect_transfer_verb,
                     authored_transfer_response,
-                    resolve_item_interaction,
+                    resolve_item_interaction as _shallow_resolve_item,
                 )
+                # LATN-first (flag-gated by DRIFTMOOR_LATN_RESOLVER, default
+                # off -> shallow), drop-in compatible with a shallow fallback.
+                from engine.latn_integration import resolve_item_interaction
                 actor_zone = current_positions.get(character_id, ("", "", ""))[2]
                 # Geometry-rendered zones come uppercase; items carry the
                 # canonical-cased zone from CONTENTS.md. Match case-insensitive.
@@ -4102,7 +4118,9 @@ async def iter_session(
                     intent_text=intent.intent or "",
                     interaction_target=intent.interaction_target,
                     items=items,
+                    characters=characters,
                     character_zone=actor_zone,
+                    scene_geometry=scene_geometry,
                 )
                 if resolved is None and intent.interaction_target.strip():
                     # Phase 3b.1: actor named a target but the verb
@@ -4110,7 +4128,10 @@ async def iter_session(
                     # Check whether the item exists in *some other* zone
                     # so the narrator gets an honest "out of reach" line
                     # instead of fabricating the interaction.
-                    other_zone_match = resolve_item_interaction(
+                    # Other-zone honesty check stays on the shallow resolver: it
+                    # is a "does this item exist anywhere" lookup, and the LATN
+                    # adapter's no-zone semantics are not yet validated.
+                    other_zone_match = _shallow_resolve_item(
                         intent_text=intent.intent or "",
                         interaction_target=intent.interaction_target,
                         items=items,
@@ -4154,6 +4175,15 @@ async def iter_session(
                     side_effects: list[dict] = []
 
                     if transfer_verb is not None:
+                        # LATN-grounded recipient for "give" (flag-gated; None
+                        # otherwise, so the handler uses its shallow match).
+                        from engine.latn_integration import resolve_recipient
+                        _recipient_override = (
+                            resolve_recipient(
+                                intent.intent or "", items, characters,
+                                actor_zone, scene_geometry,
+                            ) if transfer_verb == "give" else None
+                        )
                         _handle_item_transfer(
                             transfer_verb=transfer_verb,
                             item_obj=item_obj,
@@ -4172,6 +4202,7 @@ async def iter_session(
                             authored_response=authored_transfer_response(
                                 item_obj, transfer_verb
                             ),
+                            recipient_override=_recipient_override,
                         )
                     else:
                         # State-mutating presses on a puzzle input route through
@@ -4203,6 +4234,7 @@ async def iter_session(
                                 characters=characters,
                                 attack_log=attack_log,
                                 recent_events=recent_events,
+                                scene_geometry=scene_geometry,
                             )
                         else:
                             response = (interaction_obj.response or "").strip()
