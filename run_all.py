@@ -19,6 +19,9 @@ import sys
 import time
 from pathlib import Path
 
+from env_boot import load_project_dotenv
+load_project_dotenv()  # pick up a project-root .env before engine imports read env
+
 from models.space_time import GameTime
 from engine.scene_runner import print_turn_result, ROOT, _write_runtime_map
 from engine.md_loader import configure_from_md

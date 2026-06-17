@@ -18,6 +18,8 @@ from pathlib import Path
 
 
 def main():
+    from env_boot import load_project_dotenv
+    load_project_dotenv()  # pick up a project-root .env (BOT_TOKEN, CHAT_ID, ...)
     scenes_dir = Path(__file__).parent / "scenes"
     available = sorted(
         p.stem for p in scenes_dir.iterdir()
