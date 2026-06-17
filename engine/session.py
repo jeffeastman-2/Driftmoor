@@ -688,7 +688,7 @@ async def _run_puzzle_exchange(
 
         next_target = next_intent.interaction_target or infer_interaction_target(
             next_intent.intent or "", items, characters, actor_zone,
-            scene_geometry, actor_id=character_id,
+            scene_geometry,
         )
         next_resolved = (
             resolve_item_interaction(
@@ -698,7 +698,6 @@ async def _run_puzzle_exchange(
                 characters=characters,
                 character_zone=actor_zone,
                 scene_geometry=scene_geometry,
-                actor_id=character_id,
             )
             if next_target else None
         )
@@ -3848,7 +3847,7 @@ async def iter_session(
                 from engine.latn_integration import infer_movement_target
                 _dest = infer_movement_target(
                     intent.intent, items, characters, _move_zone,
-                    scene_geometry, actor_id=character_id,
+                    scene_geometry,
                 )
                 # Shallow fallback: zone/landmark named in the text.
                 if _dest is None and scene_geometry is not None:
@@ -3888,7 +3887,7 @@ async def iter_session(
                 )[2]
                 _inferred_target = infer_interaction_target(
                     intent.intent, items, characters, _infer_zone,
-                    scene_geometry, actor_id=character_id,
+                    scene_geometry,
                 )
                 if _inferred_target:
                     intent.interaction_target = _inferred_target
@@ -3910,8 +3909,7 @@ async def iter_session(
                 and items
                 and intent.interaction_target
             ):
-                # LATN-first (flag-gated by DRIFTMOOR_LATN_RESOLVER, default
-                # off -> shallow verb_resolver), with shallow fallback baked in.
+                # LATN-first with shallow verb_resolver fallback baked in.
                 from engine.latn_integration import resolve_item_interaction
                 _actor_zone = current_positions.get(
                     character_id, ("", "", "")
@@ -3923,7 +3921,6 @@ async def iter_session(
                     characters=characters,
                     character_zone=_actor_zone,
                     scene_geometry=scene_geometry,
-                    actor_id=character_id,
                 )
                 if _resolved is not None:
                     _it_obj, _ = _resolved
@@ -4166,8 +4163,7 @@ async def iter_session(
                     authored_transfer_response,
                     resolve_item_interaction as _shallow_resolve_item,
                 )
-                # LATN-first (flag-gated by DRIFTMOOR_LATN_RESOLVER, default
-                # off -> shallow), drop-in compatible with a shallow fallback.
+                # LATN-first, drop-in compatible with a shallow fallback.
                 from engine.latn_integration import resolve_item_interaction
                 actor_zone = current_positions.get(character_id, ("", "", ""))[2]
                 # Geometry-rendered zones come uppercase; items carry the
@@ -4179,7 +4175,6 @@ async def iter_session(
                     characters=characters,
                     character_zone=actor_zone,
                     scene_geometry=scene_geometry,
-                    actor_id=character_id,
                 )
                 if resolved is None and intent.interaction_target.strip():
                     # Phase 3b.1: actor named a target but the verb
@@ -4240,7 +4235,7 @@ async def iter_session(
                         _recipient_override = (
                             resolve_recipient(
                                 intent.intent or "", items, characters,
-                                actor_zone, scene_geometry, actor_id=character_id,
+                                actor_zone, scene_geometry,
                             ) if transfer_verb == "give" else None
                         )
                         _handle_item_transfer(

@@ -1,7 +1,7 @@
 """Tests for the session<->LATN glue (engine.latn_integration).
 
-Verifies the flag gate routes to the LATN path when on and the shallow
-verb_resolver when off, both producing a valid resolution. Needs Engraf.
+LATN is the default resolution path for every actor; the shallow verb_resolver
+remains the fallback when LATN doesn't parse/ground. Needs Engraf.
 """
 
 from types import SimpleNamespace as NS
@@ -26,26 +26,34 @@ def _scene():
     return items, chars
 
 
-def test_flag_off_uses_shallow_resolver(monkeypatch):
-    monkeypatch.delenv("DRIFTMOOR_LATN_RESOLVER", raising=False)
-    assert latn_integration.latn_enabled() is False
+def test_latn_grounds_from_parse():
+    # LATN grounds the object straight from the free-text parse — no explicit
+    # interaction_target needed.
     items, chars = _scene()
-    # shallow path keys off the explicit interaction_target
+    r = latn_integration.resolve_item_interaction(
+        intent_text="examine the shimmering patch", interaction_target=None,
+        items=items, characters=chars, character_zone="GLADE")
+    assert r is not None and r[0].id == "patch" and "shimmers" in r[1].response
+
+
+def test_shallow_fallback_when_latn_does_not_ground():
+    # When LATN can't ground (here "it" has no antecedent), fall back to the
+    # shallow resolver keyed off the explicit interaction_target.
+    items, chars = _scene()
     r = latn_integration.resolve_item_interaction(
         intent_text="look at it", interaction_target="shimmering patch",
         items=items, characters=chars, character_zone="GLADE")
     assert r is not None and r[0].id == "patch"
 
 
-def test_flag_on_uses_latn_path(monkeypatch):
-    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
-    assert latn_integration.latn_enabled() is True
+def test_npc_actor_also_uses_latn():
+    # No human-only gate any more: an LLM NPC grounds via LATN too.
     items, chars = _scene()
-    # LATN path grounds from the parse (no interaction_target needed)
+    chars["amara"].player_transport = "llm"
     r = latn_integration.resolve_item_interaction(
         intent_text="examine the shimmering patch", interaction_target=None,
         items=items, characters=chars, character_zone="GLADE")
-    assert r is not None and r[0].id == "patch" and "shimmers" in r[1].response
+    assert r is not None and r[0].id == "patch"
 
 
 def test_build_context_returns_lexicon_and_adapter():
@@ -54,67 +62,12 @@ def test_build_context_returns_lexicon_and_adapter():
     assert lexicon is not None and adapter is not None
 
 
-def test_actor_eligible_gates_on_transport():
-    # LATN runs only for human-transport actors; LLM NPCs (and missing/None
-    # transport) are gated to the shallow resolver. None actor_id (direct
-    # callers / headless tests) is eligible so the flag alone governs them.
-    chars = {
-        "gil": NS(player_transport="telegram"),
-        "npc": NS(player_transport="llm"),
-        "npc_default": NS(),  # no player_transport -> treated as llm
-    }
-    assert latn_integration._actor_eligible("gil", chars) is True
-    assert latn_integration._actor_eligible("npc", chars) is False
-    assert latn_integration._actor_eligible("npc_default", chars) is False
-    assert latn_integration._actor_eligible(None, chars) is True
-    assert latn_integration._actor_eligible("missing", chars) is False
-
-
-def test_flag_on_npc_actor_stays_shallow(monkeypatch):
-    # Flag on, but the acting character is an LLM NPC -> the LATN parse path is
-    # skipped, so the shallow resolver (which needs an explicit target) runs and
-    # cannot resolve from free text alone.
-    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
-    items, chars = _scene()
-    chars["amara"].player_transport = "llm"
-    r = latn_integration.resolve_item_interaction(
-        intent_text="examine the shimmering patch", interaction_target=None,
-        items=items, characters=chars, character_zone="GLADE", actor_id="amara")
-    assert r is None
-
-
-def test_flag_on_human_actor_uses_latn(monkeypatch):
-    # Same intent, but a human-transport actor -> LATN grounds it from the parse.
-    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
-    items, chars = _scene()
-    chars["amara"].player_transport = "telegram"
-    r = latn_integration.resolve_item_interaction(
-        intent_text="examine the shimmering patch", interaction_target=None,
-        items=items, characters=chars, character_zone="GLADE", actor_id="amara")
-    assert r is not None and r[0].id == "patch"
-
-
-def test_infer_movement_target_grounds_feature_for_human(monkeypatch):
+def test_infer_movement_target_grounds_feature():
     # "move to the <feature>" grounds the destination item (in the directional
     # PP, not the direct object) to its position.
     from models.space_time import Position
-    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
     items, chars = _scene()
     items["patch"].position = Position(x=12.0, y=34.0, z=0.0)
-    chars["amara"].player_transport = "telegram"  # human
     dest = latn_integration.infer_movement_target(
-        "move to the shimmering patch", items, chars, "GLADE",
-        scene_geometry=None, actor_id="amara")
+        "move to the shimmering patch", items, chars, "GLADE", scene_geometry=None)
     assert dest == (12.0, 34.0, 0.0)
-
-
-def test_infer_movement_target_none_for_npc(monkeypatch):
-    from models.space_time import Position
-    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
-    items, chars = _scene()
-    items["patch"].position = Position(x=12.0, y=34.0, z=0.0)
-    chars["amara"].player_transport = "llm"  # NPC -> gated to shallow
-    dest = latn_integration.infer_movement_target(
-        "move to the shimmering patch", items, chars, "GLADE",
-        scene_geometry=None, actor_id="amara")
-    assert dest is None
