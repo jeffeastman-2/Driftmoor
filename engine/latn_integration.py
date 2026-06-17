@@ -167,3 +167,31 @@ def resolve_recipient(
             if action.recipient_id is not None:
                 return action.recipient_id
     return None
+
+
+def infer_movement_target(
+    intent_text: str,
+    items: Optional[dict],
+    characters: Optional[dict],
+    character_zone: Optional[str],
+    scene_geometry=None,
+    actor_id: Optional[str] = None,
+):
+    """LATN-first (flag-gated, human-only) movement destination as an (x, y, z)
+    tuple, or None. Grounds "move to the <item>" to a scene item's position so a
+    feature/landmark named in free text becomes an actual destination. Returns
+    None when the flag is off, the actor is a non-human NPC, the intent isn't
+    movement, or nothing grounds — so the caller falls back to its shallow
+    zone/landmark geometry inference."""
+    if latn_enabled() and _actor_eligible(actor_id, characters) and items and characters:
+        from engine import latn_resolver
+        lexicon, adapter = build_context(
+            items, characters, character_zone or "", scene_geometry,
+        )
+        item = latn_resolver.resolve_movement_target(
+            intent_text or "", lexicon=lexicon, adapter=adapter,
+        )
+        pos = getattr(item, "position", None) if item is not None else None
+        if pos is not None:
+            return (pos.x, pos.y, pos.z)
+    return None

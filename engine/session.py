@@ -2523,8 +2523,15 @@ def _render_transport_prompt(
     context: RoleContext,
     cs: CharacterSession,
     raw_history: str = "",
+    actor_pos: Optional[tuple] = None,
 ) -> str:
-    """Format the DM situation packet sent to human transport channels."""
+    """Format the DM situation packet sent to human transport channels.
+
+    ``actor_pos`` is the actor's current ``(x, y, zone)`` (from
+    current_positions); when given, the exact coordinates are surfaced in the
+    CURRENT POSITION section — handy for debugging movement against item/landmark
+    coords. (Likely droppable once movement is solid.)
+    """
     from engine.runtime_paths import current_session_id
 
     header = (
@@ -2584,8 +2591,18 @@ def _render_transport_prompt(
     parts.append(f"SCENE\n{scene_section}")
     if recent_section.strip():
         parts.append(f"RECENT CONTEXT\n{recent_section}")
-    if current_position.strip():
-        parts.append(f"CURRENT POSITION\n{current_position}")
+    # Exact coordinates [x, y, z] + zone, so movement can be checked against
+    # item/landmark coords. z is 0.0 in the flat scene (matches item coords).
+    coord_line = ""
+    if actor_pos is not None and len(actor_pos) >= 2:
+        zone = actor_pos[2] if len(actor_pos) > 2 and isinstance(actor_pos[2], str) else ""
+        coord_line = (
+            f"You are at [{float(actor_pos[0]):.1f}, {float(actor_pos[1]):.1f}, 0.0]"
+            + (f" in {zone}" if zone else "")
+        )
+    if current_position.strip() or coord_line:
+        body = "\n".join(p for p in (coord_line, current_position.strip()) if p)
+        parts.append(f"CURRENT POSITION\n{body}")
     parts.append(f"PERCEPTION\n{perception}")
     parts.append("Reply with your intent for this turn in plain text, and put what you say in quotes.")
     return "\n\n".join(parts) + "\n"
@@ -2868,6 +2885,7 @@ async def _player_roles_via_transport(
     context: RoleContext,
     cs: CharacterSession,
     raw_history: str = "",
+    actor_pos: Optional[tuple] = None,
 ) -> tuple[ActionIntent, CharacterOutput]:
     """Run player roles using transport-backed human input when configured."""
     transport = (cs.player_transport or "llm").strip().lower()
@@ -2884,7 +2902,8 @@ async def _player_roles_via_transport(
             f"in the environment."
         )
 
-    prompt_text = _render_transport_prompt(context=context, cs=cs, raw_history=raw_history)
+    prompt_text = _render_transport_prompt(
+        context=context, cs=cs, raw_history=raw_history, actor_pos=actor_pos)
     # Discard anything received before this prompt (accept-after cutoff), then
     # send it and long-poll for the reply. Bot API calls run in a worker thread
     # so the 30s long-poll never blocks the event loop.
@@ -3323,6 +3342,7 @@ async def iter_session(
                 context=context,
                 cs=cs,
                 raw_history=combined_history,
+                actor_pos=current_positions.get(character_id),
             )
             loop_guard_notes: list[str] = []
 
@@ -3818,17 +3838,26 @@ async def iter_session(
                 and adjudication.approved
                 and player_target is None
                 and intent.intent
-                and scene_geometry is not None
             ):
                 _move_zone = current_positions.get(
                     character_id, ("", "", "")
                 )[2]
-                _dest = _infer_movement_destination(
-                    intent.intent,
-                    scene_geometry,
-                    current_positions.get(character_id),
-                    visited_zones.get(character_id, set()) if visited_zones else set(),
+                # LATN-first (flag-gated, human): ground "move to the <item>" to
+                # a scene item's position, so a feature/landmark named in free
+                # text becomes a real destination.
+                from engine.latn_integration import infer_movement_target
+                _dest = infer_movement_target(
+                    intent.intent, items, characters, _move_zone,
+                    scene_geometry, actor_id=character_id,
                 )
+                # Shallow fallback: zone/landmark named in the text.
+                if _dest is None and scene_geometry is not None:
+                    _dest = _infer_movement_destination(
+                        intent.intent,
+                        scene_geometry,
+                        current_positions.get(character_id),
+                        visited_zones.get(character_id, set()) if visited_zones else set(),
+                    )
                 if _dest is not None:
                     player_target = _dest
                     intent.movement_target = _dest

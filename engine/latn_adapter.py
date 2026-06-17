@@ -7,9 +7,13 @@ to, ranked best-first. The parser owns grammar; this owns *what exists* and
 
 Grounds two entity kinds, by the rule we settled on:
 
-* **Items** — matched by STRING against id/label (identity lives in the label),
-  zone-filtered to the actor's current zone. Wraps the same normalization the
-  shallow resolver uses (``_normalize_target`` / ``_tokens``).
+* **Items** — matched by STRING against id/label (identity lives in the label)
+  AND against each item's ``appearance_bands`` text, since perception shows the
+  player how a thing *looks* ("a low shadow at the foot of the west wall"), not
+  its label ("Discarded pack"). Zone-filtered to the actor's current zone. Wraps
+  the same normalization the shallow resolver uses (``_normalize_target`` /
+  ``_tokens``). (Distance-correct band selection is the 2b perception-fed
+  adapter; here any band can match.)
 * **Characters** — matched by VECTOR SIMILARITY over the race/class/role/faction
   one-hot property dims, which this adapter POPULATES on each character's vector
   from its ``Character`` fields (mint-and-populate is one decision). Names and
@@ -213,9 +217,39 @@ class DriftmoorSceneAdapter:
                 cand = _tokens(iid) | (_tokens(label) if label else set())
                 shared = want & cand
                 score = 0.6 * len(shared) / len(want) if want and shared else 0.0
+            # A player can only refer to an item by how it currently LOOKS:
+            # perception shows the appearance-band text ("a low shadow at the
+            # foot of the west wall"), not the label ("Discarded pack"). So
+            # ground the band descriptions too. (Distance-correct band selection
+            # — only the band valid at the actor's range — is the 2b
+            # perception-fed adapter's job; here any band can match.)
+            score = max(score, self._band_score(item, t, want))
             if score > 0:
                 out.append((score, self._item_entity(item)))
         return out
+
+    def _band_score(self, item, t: str, want: set) -> float:
+        """Match an NP against an item's appearance_bands. A whole-phrase
+        substring hit ("low shadow" inside the band) scores high and is
+        item-specific; otherwise fall back to token overlap (kept below the
+        id/label scores so a real label match always wins)."""
+        from engine.verb_resolver import _tokens
+
+        bands = getattr(item, "appearance_bands", None) or {}
+        if not isinstance(bands, dict):
+            return 0.0
+        best = 0.0
+        for desc in bands.values():
+            d = (desc or "").lower()
+            if not d:
+                continue
+            if t and t in d:
+                best = max(best, 0.8)
+            elif want:
+                shared = want & _tokens(d)
+                if shared:
+                    best = max(best, 0.55 * len(shared) / len(want))
+        return best
 
     def _match_characters(self, np) -> List[Tuple[float, object]]:
         from engine.verb_resolver import _normalize_target

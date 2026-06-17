@@ -92,3 +92,29 @@ def test_flag_on_human_actor_uses_latn(monkeypatch):
         intent_text="examine the shimmering patch", interaction_target=None,
         items=items, characters=chars, character_zone="GLADE", actor_id="amara")
     assert r is not None and r[0].id == "patch"
+
+
+def test_infer_movement_target_grounds_feature_for_human(monkeypatch):
+    # "move to the <feature>" grounds the destination item (in the directional
+    # PP, not the direct object) to its position.
+    from models.space_time import Position
+    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
+    items, chars = _scene()
+    items["patch"].position = Position(x=12.0, y=34.0, z=0.0)
+    chars["amara"].player_transport = "telegram"  # human
+    dest = latn_integration.infer_movement_target(
+        "move to the shimmering patch", items, chars, "GLADE",
+        scene_geometry=None, actor_id="amara")
+    assert dest == (12.0, 34.0, 0.0)
+
+
+def test_infer_movement_target_none_for_npc(monkeypatch):
+    from models.space_time import Position
+    monkeypatch.setenv("DRIFTMOOR_LATN_RESOLVER", "1")
+    items, chars = _scene()
+    items["patch"].position = Position(x=12.0, y=34.0, z=0.0)
+    chars["amara"].player_transport = "llm"  # NPC -> gated to shallow
+    dest = latn_integration.infer_movement_target(
+        "move to the shimmering patch", items, chars, "GLADE",
+        scene_geometry=None, actor_id="amara")
+    assert dest is None

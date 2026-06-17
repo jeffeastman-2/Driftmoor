@@ -34,6 +34,8 @@ from engine.verb_resolver import _find_by_verb, _pick_by_condition, authored_tra
 # change possession (and may carry an authored flavor response).
 _INTERACTION_VERBS = {"examine", "search", "read", "press"}
 _TRANSFER_VERBS = {"take", "drop", "give"}
+# Locomotion verbs whose object/PP names a destination, not a thing to act on.
+_MOVEMENT_VERBS = {"move", "dash"}
 
 _TIE_MARGIN = 1e-9
 
@@ -205,6 +207,45 @@ def _predicate_vps(sp):
     if isinstance(pred, VerbPhrase):
         return [pred]
     return []
+
+
+def _destination_np(vp):
+    """The NP naming a movement destination: the directional ('to') PP's object
+    if present, else the verb phrase's direct object. ("move to the X" puts the
+    destination in the PP; "approach the X" may put it directly.)"""
+    for pp in getattr(vp, "prepositions", None) or []:
+        is_to = pp.preposition == "to" or (pp.vector and pp.vector.isa("directional_target"))
+        if is_to and getattr(pp, "noun_phrase", None) is not None:
+            return pp.noun_phrase
+    return getattr(vp, "noun_phrase", None)
+
+
+def resolve_movement_target(intent_text: str, *, lexicon, adapter) -> Optional[Item]:
+    """Ground a movement intent's destination ("move to the tally scratches")
+    to a scene item and return it; the caller maps its position to a movement
+    target. Returns None when the intent isn't a movement verb or the
+    destination grounds to no unique item. (Zone/landmark destinations are left
+    to the caller's shallow geometry inference.)"""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        for vp in _predicate_vps(sp):
+            if _canonical_verb(vp) not in _MOVEMENT_VERBS:
+                continue
+            np = _destination_np(vp)
+            if np is None:
+                continue
+            items = _entities_of_kind(adapter.resolve_noun_phrase(np), "item")
+            winner = _unique_winner(items)
+            if winner is not None:
+                return winner.item
+    return None
 
 
 def resolve_item_interaction(
