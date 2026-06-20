@@ -532,9 +532,13 @@ def load_puzzles(path: Path) -> dict[str, PuzzleSpec]:
 def _parse_geometry_items_table(geometry_text: str) -> dict[str, dict]:
     """Parse the ``## Items`` table out of a GEOMETRY.md.
 
-    Returns ``{item_id: {"x": float, "y": float, "label": str}}``.
-    Defined here (rather than in geometry_loader) so the contents loader
-    can validate against geometry without touching SceneGeometry's schema.
+    Returns ``{item_id: {"x": float, "y": float, "z": float, "label": str}}``.
+    Header-driven so columns are read by NAME (id/x/y/z/label) — the optional
+    ``z`` column (height above the zone floor, blank = 0.0) can be present or
+    absent and in any order. Empty cells are preserved positionally so a blank
+    z doesn't shift the label. Defined here (rather than in geometry_loader) so
+    the contents loader can validate against geometry without touching
+    SceneGeometry's schema.
     """
     pattern = re.compile(
         r"^##\s+Items[^\n]*\n(.*?)(?=^##\s|\Z)",
@@ -543,28 +547,44 @@ def _parse_geometry_items_table(geometry_text: str) -> dict[str, dict]:
     match = pattern.search(geometry_text)
     if not match:
         return {}
+    header: Optional[dict] = None
     rows: dict[str, dict] = {}
     for raw in match.group(1).splitlines():
         line = raw.strip()
         if not line.startswith("|"):
             continue
-        cells = [c.strip() for c in line.split("|") if c.strip() != ""]
+        # Keep INTERNAL blank cells (drop only the outer empties from the
+        # leading/trailing pipe) so a blank z column stays positional.
+        cells = [c.strip() for c in line.split("|")][1:-1]
         if not cells:
             continue
-        # Skip header and separator rows.
-        if cells[0].lower() == "id":
+        # Separator row (---). Ignore blanks when checking.
+        if all(re.match(r"^-+$", c) for c in cells if c):
             continue
-        if all(re.match(r"^-+$", c) for c in cells):
+        low = [c.lower() for c in cells]
+        if "id" in low and "x" in low and "y" in low:  # header row
+            header = {name: i for i, name in enumerate(low)}
             continue
-        if len(cells) < 3:
+        if header is None:
             continue
+
+        def _cell(name: str, default: str = "") -> str:
+            i = header.get(name)
+            return cells[i] if i is not None and i < len(cells) else default
+
         try:
-            x = float(cells[1])
-            y = float(cells[2])
+            x = float(_cell("x"))
+            y = float(_cell("y"))
         except ValueError:
             continue
-        label = cells[3] if len(cells) >= 4 else ""
-        rows[cells[0]] = {"x": x, "y": y, "label": label}
+        z_raw = _cell("z")
+        try:
+            z = float(z_raw) if z_raw else 0.0
+        except ValueError:
+            z = 0.0
+        item_id = _cell("id")
+        if item_id:
+            rows[item_id] = {"x": x, "y": y, "z": z, "label": _cell("label")}
     return rows
 
 
@@ -607,7 +627,8 @@ def load_contents_with_geometry(
 
     for item_id, item in items.items():
         row = geom_items[item_id]
-        position = Position(row["x"], row["y"])
+        # z = height above the zone floor (default 0.0 on the floor).
+        position = Position(row["x"], row["y"], row.get("z", 0.0))
         item.position = position
         item.label = row["label"]
         if callable(zone_at):

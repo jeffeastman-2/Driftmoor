@@ -106,10 +106,15 @@ def infer_interaction_target(
         lexicon, adapter = build_context(
             items, characters, character_zone or "", scene_geometry,
         )
+        # Only an INTERACTION/transfer verb's object is an interaction target;
+        # a movement verb's grounded NP is a destination, not something to
+        # examine (so "move deeper through the passage" must not backfill an
+        # obelisk as the interaction target).
+        interaction_verbs = latn_resolver._INTERACTION_VERBS | latn_resolver._TRANSFER_VERBS
         for action in latn_resolver.resolve_actions(
             intent_text or "", lexicon=lexicon, adapter=adapter,
         ):
-            if action.item is not None:
+            if action.item is not None and action.verb in interaction_verbs:
                 return action.item.label or action.item.id
     from engine.verb_resolver import infer_interaction_target as _shallow
     return _shallow(intent_text or "", items, character_zone)

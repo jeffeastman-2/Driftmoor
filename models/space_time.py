@@ -222,6 +222,20 @@ class SceneGeometry:
                 return name
         return None
 
+    def floor_z_at(self, point: Position) -> float:
+        """Local floor z at (point.x, point.y): the containing zone's vertex z
+        interpolated across the polygon. Flat zones return their constant z;
+        sloping passages return a least-squares plane fit, so the floor follows
+        the slope as a creature descends. 0.0 when the point is outside every
+        zone or the zone carries no z. Relative to the scene floor (matches the
+        GEOMETRY vertex z); add ``z_level`` for world z. Distances within a scene
+        only need this relative value (z_level cancels)."""
+        for polygon in self.zones.values():
+            if polygon.contains(point):
+                return _interpolate_vertex_z(
+                    getattr(polygon, "vertices", None) or [], point.x, point.y)
+        return 0.0
+
     def ambient_sight_range(self, zone: Optional[str]) -> Optional[float]:
         """Ambient (light-limited) sight range in ft for an observer in ``zone``.
 
@@ -356,3 +370,50 @@ class Portal:
     traversal_cost: float
     conditions: list[str] = field(default_factory=list)
     direction_label: str = ""
+
+
+def _solve3(a11, a12, a13, a21, a22, a23, a31, a32, a33, b1, b2, b3):
+    """Solve a 3x3 linear system by Cramer's rule; None if singular."""
+    det = (a11 * (a22 * a33 - a23 * a32)
+           - a12 * (a21 * a33 - a23 * a31)
+           + a13 * (a21 * a32 - a22 * a31))
+    if abs(det) < 1e-12:
+        return None
+    dx = (b1 * (a22 * a33 - a23 * a32)
+          - a12 * (b2 * a33 - a23 * b3)
+          + a13 * (b2 * a32 - a22 * b3))
+    dy = (a11 * (b2 * a33 - a23 * b3)
+          - b1 * (a21 * a33 - a23 * a31)
+          + a13 * (a21 * b3 - b2 * a31))
+    dz = (a11 * (a22 * b3 - b2 * a32)
+          - a12 * (a21 * b3 - b2 * a31)
+          + b1 * (a21 * a32 - a22 * a31))
+    return (dx / det, dy / det, dz / det)
+
+
+def _interpolate_vertex_z(vertices, px: float, py: float) -> float:
+    """Interpolate the floor z at (px, py) from a zone polygon's vertices.
+
+    Flat polygons (all vertex z equal) return that constant; sloped ones fit a
+    least-squares plane z = a*x + b*y + c over the vertices (exact for the
+    planar quads that encode sloping passages) and evaluate it at (px, py).
+    Returns 0.0 if the vertices carry no z (2D polygon)."""
+    pts = [(v[0], v[1], v[2]) for v in vertices if len(v) > 2]
+    if not pts:
+        return 0.0
+    zs = [p[2] for p in pts]
+    if max(zs) - min(zs) < 1e-9:
+        return zs[0]  # flat floor
+    sx = sum(p[0] for p in pts)
+    sy = sum(p[1] for p in pts)
+    n = float(len(pts))
+    coeffs = _solve3(
+        sum(p[0] * p[0] for p in pts), sum(p[0] * p[1] for p in pts), sx,
+        sum(p[0] * p[1] for p in pts), sum(p[1] * p[1] for p in pts), sy,
+        sx, sy, n,
+        sum(p[0] * p[2] for p in pts), sum(p[1] * p[2] for p in pts), sum(zs),
+    )
+    if coeffs is None:
+        return sum(zs) / len(zs)  # degenerate (collinear) -> average
+    a, b, c = coeffs
+    return a * px + b * py + c

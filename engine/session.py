@@ -1083,7 +1083,17 @@ def _build_perception(
             if item.holder is not None:
                 continue
             item_pt = item.position
-            dist = math.hypot(item_pt.x - my_pos[0], item_pt.y - my_pos[1])
+            # 3D distance: the actor stands on the floor at her location; the
+            # item sits at its zone floor + its own height (position.z is height
+            # above the floor). This separates items stacked in z (the trigger
+            # glyphs) and reflects chambers at different elevations.
+            _actor_z = scene_geometry.floor_z_at(my_pos_pt)
+            _item_z = scene_geometry.floor_z_at(item_pt) + (getattr(item_pt, "z", 0.0) or 0.0)
+            dist = (
+                (item_pt.x - my_pos[0]) ** 2
+                + (item_pt.y - my_pos[1]) ** 2
+                + (_item_z - _actor_z) ** 2
+            ) ** 0.5
             currently_visible = (
                 dist <= visual_ft
                 and scene_geometry.can_see(my_pos_pt, item_pt)
@@ -2523,13 +2533,15 @@ def _render_transport_prompt(
     cs: CharacterSession,
     raw_history: str = "",
     actor_pos: Optional[tuple] = None,
+    actor_z: float = 0.0,
 ) -> str:
     """Format the DM situation packet sent to human transport channels.
 
     ``actor_pos`` is the actor's current ``(x, y, zone)`` (from
-    current_positions); when given, the exact coordinates are surfaced in the
-    CURRENT POSITION section — handy for debugging movement against item/landmark
-    coords. (Likely droppable once movement is solid.)
+    current_positions) and ``actor_z`` her floor elevation there; when given,
+    the exact coordinates [x, y, z] are surfaced in the CURRENT POSITION section
+    — handy for debugging movement against item/landmark coords. (Likely
+    droppable once movement is solid.)
     """
     from engine.runtime_paths import current_session_id
 
@@ -2591,12 +2603,13 @@ def _render_transport_prompt(
     if recent_section.strip():
         parts.append(f"RECENT CONTEXT\n{recent_section}")
     # Exact coordinates [x, y, z] + zone, so movement can be checked against
-    # item/landmark coords. z is 0.0 in the flat scene (matches item coords).
+    # item/landmark coords. z is the actor's floor elevation (sloped passages
+    # and lower chambers read negative).
     coord_line = ""
     if actor_pos is not None and len(actor_pos) >= 2:
         zone = actor_pos[2] if len(actor_pos) > 2 and isinstance(actor_pos[2], str) else ""
         coord_line = (
-            f"You are at [{float(actor_pos[0]):.1f}, {float(actor_pos[1]):.1f}, 0.0]"
+            f"You are at [{float(actor_pos[0]):.1f}, {float(actor_pos[1]):.1f}, {actor_z:.1f}]"
             + (f" in {zone}" if zone else "")
         )
     if current_position.strip() or coord_line:
@@ -2885,6 +2898,7 @@ async def _player_roles_via_transport(
     cs: CharacterSession,
     raw_history: str = "",
     actor_pos: Optional[tuple] = None,
+    actor_z: float = 0.0,
 ) -> tuple[ActionIntent, CharacterOutput]:
     """Run player roles using transport-backed human input when configured."""
     transport = (cs.player_transport or "llm").strip().lower()
@@ -2902,7 +2916,8 @@ async def _player_roles_via_transport(
         )
 
     prompt_text = _render_transport_prompt(
-        context=context, cs=cs, raw_history=raw_history, actor_pos=actor_pos)
+        context=context, cs=cs, raw_history=raw_history,
+        actor_pos=actor_pos, actor_z=actor_z)
     # Discard anything received before this prompt (accept-after cutoff), then
     # send it and long-poll for the reply. Bot API calls run in a worker thread
     # so the 30s long-poll never blocks the event loop.
@@ -3336,12 +3351,18 @@ async def iter_session(
             # Steps 1-3: Player-Left → Player-Right → DM-Left
             # When in combat and the character has structured weapons, bypass
             # DM-Left and use CombatResolver for attack resolution.
+            _ap = current_positions.get(character_id)
+            _az = (
+                scene_geometry.floor_z_at(Position(_ap[0], _ap[1]))
+                if scene_geometry is not None and _ap else 0.0
+            )
             intent, output = await _player_roles_via_transport(
                 turn_cycle=turn_cycle,
                 context=context,
                 cs=cs,
                 raw_history=combined_history,
-                actor_pos=current_positions.get(character_id),
+                actor_pos=_ap,
+                actor_z=_az,
             )
             loop_guard_notes: list[str] = []
 
