@@ -67,24 +67,24 @@ chambers decades ago.
 
 ## Items
 
-| id                  | x   | y   | label              |
-|---------------------|-----|-----|--------------------|
-| torch_bracket       | 100 | 270 | Torch bracket      |
-| wall_scratches      | 115 | 320 | Tally scratches    |
-| snapped_torch       | 132 | 268 | Snapped torch      |
-| old_bloodstain      | 140 | 263 | Dark stain         |
-| discarded_pack      | 105 | 285 | Discarded pack     |
-| drag_marks          | 130 | 268 | Drag marks         |
-| carved_symbols      | 222 | 200 | Carved symbols     |
-| obelisk_fragment    | 178 | 195 | Obelisk fragment   |
-| trigger_glyph_top    | 133 | 192 | Trigger glyph (top)    |
-| trigger_glyph_middle | 133 | 195 | Trigger glyph (middle) |
-| trigger_glyph_bottom | 133 | 198 | Trigger glyph (bottom) |
-| secret_burial_vault | 64  | 195 | Burial vault       |
-| mace_plus_one       | 64  | 195 | Mace +1            |
-| companion_remains   | 88  | 75  | Skeletal remains   |
-| holy_symbol_pelor   | 92  | 78  | Holy symbol        |
-| parchment_fragment  | 96  | 73  | Parchment fragment |
+| id                  | x   | y   | z   | label              |
+|---------------------|-----|-----|-----|--------------------|
+| torch_bracket       | 100 | 270 |  6  | Torch bracket      |
+| wall_scratches      | 115 | 320 |  3  | Tally scratches    |
+| snapped_torch       | 132 | 268 |     | Snapped torch      |
+| old_bloodstain      | 140 | 263 |     | Dark stain         |
+| discarded_pack      | 105 | 285 |     | Discarded pack     |
+| drag_marks          | 130 | 268 |     | Drag marks         |
+| carved_symbols      | 222 | 200 |  5  | Carved symbols     |
+| obelisk_fragment    | 178 | 195 |     | Obelisk fragment   |
+| trigger_glyph_top    | 130 | 196 |  5  | Trigger glyph (top)    |
+| trigger_glyph_middle | 130 | 196 | 4.5 | Trigger glyph (middle) |
+| trigger_glyph_bottom | 130 | 196 |  4  | Trigger glyph (bottom) |
+| secret_burial_vault | 64  | 195 |     | Burial vault       |
+| mace_plus_one       | 64  | 195 |  3  | Mace +1            |
+| companion_remains   | 88  | 75  |     | Skeletal remains   |
+| holy_symbol_pelor   | 92  | 78  |     | Holy symbol        |
+| parchment_fragment  | 96  | 73  |     | Parchment fragment |
 
 ---
 
