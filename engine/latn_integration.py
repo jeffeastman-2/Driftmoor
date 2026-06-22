@@ -156,12 +156,17 @@ def infer_movement_target(
     "move to the <item>" to a scene item's position so a feature/landmark named
     in free text becomes an actual destination. Returns None when the intent
     isn't movement or nothing grounds — so the caller falls back to its shallow
-    zone/landmark geometry inference."""
+    zone/landmark geometry inference.
+
+    Unlike interaction grounding, the destination is NOT zone-filtered: you move
+    *toward* a thing you can see across a threshold (the sarcophagus in the next
+    chamber), which lives in another zone. Perception already limits what the
+    player can name to what they perceive, so this stays "move to what you can
+    see"; a strict can-see gate is the 2b perception-fed adapter's job."""
     if items and characters:
         from engine import latn_resolver
-        lexicon, adapter = build_context(
-            items, characters, character_zone or "", scene_geometry,
-        )
+        # actor_zone="" -> no zone filter, so cross-zone destinations ground.
+        lexicon, adapter = build_context(items, characters, "", scene_geometry)
         item = latn_resolver.resolve_movement_target(
             intent_text or "", lexicon=lexicon, adapter=adapter,
         )
