@@ -367,6 +367,56 @@ def _waypoint_for_zone(
     return tx, ty
 
 
+def _next_zone_toward(
+    scene_geometry: Optional[SceneGeometry],
+    from_zone: str,
+    to_zone: str,
+) -> Optional[str]:
+    """First zone to step into from ``from_zone`` on a shortest path to
+    ``to_zone``, via the zone-adjacency graph (``_polygons_are_adjacent``).
+
+    Lets a cross-zone move advance one hop per turn through the connecting
+    passages instead of drawing a straight line that runs into walls. Returns
+    the destination's stored zone name (so it feeds ``_waypoint_for_zone``), or
+    None when the zones are the same, unknown, or not connected.
+    """
+    if scene_geometry is None:
+        return None
+    zones = scene_geometry.zones or {}
+    fz, tz = (from_zone or "").upper(), (to_zone or "").upper()
+    if not fz or not tz or fz == tz:
+        return None
+    by_upper = {name.upper(): name for name in zones}
+    if fz not in by_upper or tz not in by_upper:
+        return None
+
+    def _neighbors(zu: str) -> list[str]:
+        poly = zones[by_upper[zu]]
+        return [
+            name.upper()
+            for name, p in zones.items()
+            if name.upper() != zu and _polygons_are_adjacent(poly, p)
+        ]
+
+    from collections import deque
+    visited = {fz}
+    parent: dict[str, str] = {}
+    queue = deque([fz])
+    while queue:
+        cur = queue.popleft()
+        if cur == tz:
+            step = cur
+            while parent.get(step) != fz and step in parent:
+                step = parent[step]
+            return by_upper.get(step)
+        for nb in _neighbors(cur):
+            if nb not in visited:
+                visited.add(nb)
+                parent[nb] = cur
+                queue.append(nb)
+    return None
+
+
 def _should_block_backtrack(
     *,
     current_zone: str,
@@ -4084,6 +4134,40 @@ async def iter_session(
                 and adjudication.approved
                 and player_target is not None
             ):
+                # Cross-zone routing: a straight line to a target in another
+                # zone runs into walls. When the destination zone differs from
+                # the actor's, redirect this turn's move to the entry point of
+                # the next zone along the adjacency graph — one hop per turn,
+                # arriving over several turns. Same-zone targets are unaffected.
+                if scene_geometry is not None:
+                    _az = (current_positions.get(
+                        character_id, ("", "", ""))[2] or "").upper()
+                    _dz = ""
+                    _pt2 = player_target[2] if len(player_target) > 2 else None
+                    if isinstance(_pt2, str) and _pt2:
+                        _dz = _pt2.upper()
+                    if not _dz or _dz not in {
+                        z.upper() for z in scene_geometry.zones
+                    }:
+                        _zp = scene_geometry.zone_at(Position(
+                            float(player_target[0]), float(player_target[1])))
+                        _dz = (_zp or "").upper()
+                    if _az and _dz and _az != _dz:
+                        _nz = _next_zone_toward(scene_geometry, _az, _dz)
+                        if _nz:
+                            _wp = _waypoint_for_zone(
+                                character_id=character_id,
+                                current_positions=current_positions,
+                                scene_geometry=scene_geometry,
+                                target_zone=_nz,
+                            )
+                            if _wp is not None:
+                                player_target = (_wp[0], _wp[1], _nz)
+                                attack_log.append(
+                                    f"[ROUTE] {character_id}: {_az} → {_dz} via "
+                                    f"{_nz.upper()} — heading to its entry at "
+                                    f"({_wp[0]:.1f},{_wp[1]:.1f})"
+                                )
                 tx, ty = float(player_target[0]), float(player_target[1])
                 raw_pos: tuple[float, float, str] = (tx, ty, "")
                 char = characters[character_id].character

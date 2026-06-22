@@ -514,6 +514,40 @@ class TestInferCharacterDestination:
         assert dest is None
 
 
+class TestNextZoneToward:
+    """Zone-graph routing: one hop at a time toward a cross-zone destination."""
+
+    @pytest.fixture(scope="class")
+    def geo(self):
+        from pathlib import Path
+        from models.geometry_loader import load_geometry
+        return load_geometry(Path(
+            "scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md"))
+
+    def test_routes_first_hop_through_passage(self, geo):
+        from engine.session import _next_zone_toward
+        # Secret Chamber -> Rocky Passage -> Echo Chamber -> First Passage:
+        # the first step toward First Passage is the Rocky Passage.
+        assert _next_zone_toward(geo, "SECRET CHAMBER", "FIRST PASSAGE") == "Rocky Passage"
+        assert _next_zone_toward(geo, "SECRET CHAMBER", "ENTRY CHAMBER") == "Rocky Passage"
+
+    def test_routes_back_the_other_way(self, geo):
+        from engine.session import _next_zone_toward
+        assert _next_zone_toward(geo, "ENTRY CHAMBER", "SECRET CHAMBER") == "First Passage"
+
+    def test_adjacent_zone_is_its_own_first_hop(self, geo):
+        from engine.session import _next_zone_toward
+        assert _next_zone_toward(geo, "FIRST PASSAGE", "ECHO CHAMBER") == "Echo Chamber"
+
+    def test_same_zone_returns_none(self, geo):
+        from engine.session import _next_zone_toward
+        assert _next_zone_toward(geo, "ECHO CHAMBER", "ECHO CHAMBER") is None
+
+    def test_unknown_zone_returns_none(self, geo):
+        from engine.session import _next_zone_toward
+        assert _next_zone_toward(geo, "SECRET CHAMBER", "NOWHERE") is None
+
+
 # ---------------------------------------------------------------------------
 # run_session — stub mode (no LLMs)
 # ---------------------------------------------------------------------------
