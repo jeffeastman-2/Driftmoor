@@ -93,7 +93,8 @@ class TestPerceptionWithItems:
 
     def test_remembered_item_bypasses_radius(self, geometry, items):
         # An item previously examined by anyone in the party is recalled even
-        # when far beyond the torch radius, tagged "(remembered)".
+        # when far beyond the torch radius, under "Items remembered or examined:"
+        # (a separate section from "Items in view:").
         items["torch_bracket"].discovered_by.add("thorgrim")
         try:
             positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
@@ -102,7 +103,10 @@ class TestPerceptionWithItems:
                 items=items,
             )
             assert "Torch bracket" in perception, perception
-            assert "(remembered)" in perception, perception
+            assert "Items remembered or examined:" in perception, perception
+            # And it must NOT be under the currently-visible header.
+            view = perception.split("Items remembered or examined:")[0]
+            assert "Torch bracket" not in view, perception
         finally:
             items["torch_bracket"].discovered_by.discard("thorgrim")
 

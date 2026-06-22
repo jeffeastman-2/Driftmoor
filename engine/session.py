@@ -940,15 +940,17 @@ def _build_perception(
     elf ranger") rather than their internal character_id, because the
     acting character has not necessarily been introduced to them by name.
 
-    When ``items`` is provided, items the acting character can currently
-    perceive are appended under an ``Items in view:`` sub-header. An item is
-    perceivable when it is within sight range *and* has line of sight, which
-    lets a character at a zone seam perceive nearby items in an adjoining
-    zone. Items past half the sight range are visible but too far to identify
-    — their line collapses to a vague placeholder. Items previously examined
-    by anyone in the party (``discovered_by`` non-empty) have a known
-    identity and location and are always recalled — tagged ``(remembered)`` —
-    even when beyond sight.
+    When ``items`` is provided, items are reported in two sub-headers so
+    "in view" means only what is currently seen:
+
+    * ``Items in view:`` — items the actor can perceive RIGHT NOW (within sight
+      range *and* line of sight, which lets a character at a zone seam perceive
+      nearby items in an adjoining zone). Past half the sight range they read as
+      a vague placeholder; an in-view item already examined is flagged
+      ``(already examined)`` so it isn't re-examined.
+    * ``Items remembered or examined:`` — items previously examined by anyone in
+      the party (``discovered_by`` non-empty) whose identity/location is recalled
+      but which are NOT currently in sight.
     """
     import math
     from models.senses import resolve_senses
@@ -1074,7 +1076,8 @@ def _build_perception(
         # at far/distant it reads as a vague shape (authored or generic); below
         # the smallest band it is too small to make out and is omitted. Items
         # examined or remembered by the party keep their identity regardless.
-        item_lines: list[str] = []
+        view_lines: list[str] = []      # currently visible
+        recalled_lines: list[str] = []  # examined/remembered but not in sight now
         for item in items.values():
             if item.position is None:
                 continue
@@ -1107,11 +1110,18 @@ def _build_perception(
             zone_prefix = (
                 f"{item_zone}, " if item_zone.upper() != my_zone else ""
             )
+            if not currently_visible:
+                # Examined/remembered but out of sight now — its own section so
+                # "Items in view" means only what the actor can currently see.
+                recalled_lines.append(
+                    f"- {label} ({zone_prefix}~{dist_rounded:.0f} ft away)"
+                )
+                continue
             if examined:
-                # Known to the party — identity is established.
-                tag = " (already examined)" if currently_visible else " (remembered)"
-                item_lines.append(
-                    f"- {label} ({zone_prefix}~{dist_rounded:.0f} ft away){tag}"
+                # Visible AND already known — identity established; flag it so
+                # the actor doesn't re-examine it.
+                view_lines.append(
+                    f"- {label} ({zone_prefix}~{dist_rounded:.0f} ft away) (already examined)"
                 )
                 continue
             band = apparent_size_band(item.size_ft, dist)
@@ -1127,12 +1137,15 @@ def _build_perception(
             else:
                 # Far/distant and unauthored — only a vague shape registers.
                 shown = "An indistinct shape, too far to make out"
-            item_lines.append(
+            view_lines.append(
                 f"- {shown} ({zone_prefix}~{dist_rounded:.0f} ft away)"
             )
-        if item_lines:
-            items_block = "Items in view:\n" + "\n".join(item_lines)
-            result = f"{result}\n\n{items_block}" if result else items_block
+        if view_lines:
+            block = "Items in view:\n" + "\n".join(view_lines)
+            result = f"{result}\n\n{block}" if result else block
+        if recalled_lines:
+            block = "Items remembered or examined:\n" + "\n".join(recalled_lines)
+            result = f"{result}\n\n{block}" if result else block
 
     _dbg(f"[PERCEPTION]   result: {repr(result)}")
     return result
