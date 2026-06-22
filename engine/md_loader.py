@@ -584,6 +584,38 @@ def _normalize_player_transport(player_value: str, channel_value: str) -> str:
     return "llm"
 
 
+def _warn_unarmed_combatants(characters: dict, scene_name: str) -> list[str]:
+    """Flag (to stderr) characters with no structured weapons in a scene that
+    can see combat. Returns the flagged character ids (for tests).
+
+    The deterministic CombatResolver only engages for a character with at least
+    one structured weapon (parsed from a ``- **weapons:** ...`` line). Without
+    one, an attack silently degrades to LLM-narrated resolution that may apply
+    no HP — so surface the data gap at load instead of mid-fight. Only fires
+    when a hostile-faction combatant is present; otherwise the scene is social
+    and weaponlessness is expected.
+    """
+    has_hostile = any(
+        getattr(getattr(s, "character", None), "faction", "party") == "hostile"
+        for s in characters.values()
+    )
+    if not has_hostile:
+        return []
+    unarmed = sorted(
+        cid for cid, s in characters.items() if not getattr(s, "weapons", None)
+    )
+    if unarmed:
+        import sys
+        print(
+            f"[md_loader] WARNING: combat-capable scene '{scene_name}' has "
+            f"character(s) with no structured weapons; their attacks fall back "
+            f"to unreliable LLM narration: {', '.join(unarmed)}. Add a "
+            f"'- **weapons:** <id>+<bonus>, ...' line to each.",
+            file=sys.stderr,
+        )
+    return unarmed
+
+
 def _build_creature(
     char_id: str,
     cfg: dict[str, str],
@@ -834,6 +866,10 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             dm_left=DMLeft(call_llm=char_dm_llm),
             dm_right=DMRight(call_llm=char_dm_llm),
         )
+
+    # Surface combatants who will silently fall back to LLM-narrated attacks
+    # (no structured weapon → CombatResolver is bypassed).
+    _warn_unarmed_combatants(characters, scene_name)
 
     # ── Game State Sections ───────────────────────────────────────────────────
     gs_text          = _extract_section(text, "Game State Sections")

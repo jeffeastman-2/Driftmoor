@@ -120,6 +120,40 @@ class TestZoneEntryActivation:
         # No double-firing.
         assert fired == []
 
+    def test_dead_creature_not_revived(self):
+        # A spider killed (0 HP) and removed from active_characters must NOT be
+        # re-activated by its zone_entry trigger while a party member lingers in
+        # its lair — otherwise it stays "in the scene" and combat never ends.
+        spider = _stub_session("hostile", "zone_entry:Secret Chamber")
+        spider.character.current_hp = 0
+        chars = {"amara": _stub_session("party"), "spider": spider}
+        active = {"amara"}                      # spider already discarded on death
+        positions = {"amara": (60.0, 195.0, "SECRET CHAMBER")}
+        fired = check_activations(
+            characters=chars,
+            active_characters=active,
+            current_positions=positions,
+        )
+        assert "spider" not in active
+        assert fired == []
+
+    def test_live_creature_still_activates_with_hp(self):
+        # The HP guard must not block a healthy creature from waking.
+        spider = _stub_session("hostile", "zone_entry:Secret Chamber")
+        spider.character.current_hp = 26
+        chars = {"amara": _stub_session("party"), "spider": spider}
+        active = {"amara"}
+        positions = {
+            "amara": (60.0, 195.0, "SECRET CHAMBER"),
+            "spider": (64.0, 195.0, "SECRET CHAMBER"),
+        }
+        check_activations(
+            characters=chars,
+            active_characters=active,
+            current_positions=positions,
+        )
+        assert "spider" in active
+
 
 class TestDoorOpenActivation:
     def test_door_open_event_activates(self):

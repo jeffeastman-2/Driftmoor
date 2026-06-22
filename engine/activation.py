@@ -71,6 +71,13 @@ def check_activations(
     for cid, cs in characters.items():
         if cid in active_characters:
             continue
+        # A defeated character (0 HP) has left the fight for good. Without this
+        # guard a creature with a zone_entry/door_open trigger is re-added every
+        # turn while an enemy lingers in its trigger zone — so a dead spider
+        # stays "in the scene" and combat never ends. ("always" creatures are
+        # already protected by the branch below; this covers the triggered ones.)
+        if getattr(getattr(cs, "character", None), "current_hp", 1) <= 0:
+            continue
         activation = (getattr(cs, "activation", "always") or "always").strip()
         if not activation or activation.lower() == "always":
             # "always" creatures are never dormant in the first place,

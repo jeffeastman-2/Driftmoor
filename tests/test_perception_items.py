@@ -348,3 +348,44 @@ class TestApparentSizeBand:
         from models.item import apparent_size_band
         # Unspecified size behaves like a 5 ft medium object.
         assert apparent_size_band(0.0, 20.0) == apparent_size_band(5.0, 20.0)
+
+
+class TestExaminationStateReseed:
+    """item.discovered_by is not checkpointed; on resume it must be rebuilt
+    from the persisted party_examination_state, or the "Items remembered or
+    examined" perception section silently empties out after every restart."""
+
+    def test_reseed_repopulates_discovered_by(self, items):
+        from engine.session import _reseed_discovered_from_examination_state
+        # Fresh load -> nothing discovered (the resume starting condition).
+        assert not items["wall_scratches"].discovered_by
+        assert not items["obelisk_fragment"].discovered_by
+        # Deserialized examination state: keys are (ZONE, normalized target).
+        pes = {
+            ("ENTRY CHAMBER", "tally scratches"): {"by": "seraphina"},
+            ("ECHO CHAMBER", "obelisk fragment"): {"by": "amara"},
+        }
+        try:
+            _reseed_discovered_from_examination_state(items, pes)
+            assert items["wall_scratches"].discovered_by == {"seraphina"}
+            assert items["obelisk_fragment"].discovered_by == {"amara"}
+        finally:
+            items["wall_scratches"].discovered_by.clear()
+            items["obelisk_fragment"].discovered_by.clear()
+
+    def test_reseed_respects_zone_to_avoid_cross_pollination(self, items):
+        from engine.session import _reseed_discovered_from_examination_state
+        # Same target name but a zone where that item does not live: must NOT
+        # mark the Entry Chamber item.
+        pes = {("ECHO CHAMBER", "tally scratches"): {"by": "amara"}}
+        try:
+            _reseed_discovered_from_examination_state(items, pes)
+            assert not items["wall_scratches"].discovered_by
+        finally:
+            items["wall_scratches"].discovered_by.clear()
+
+    def test_reseed_noops_without_state(self, items):
+        from engine.session import _reseed_discovered_from_examination_state
+        _reseed_discovered_from_examination_state(items, None)
+        _reseed_discovered_from_examination_state(items, {})
+        assert not any(it.discovered_by for it in items.values())

@@ -332,6 +332,27 @@ class TestTransportPromptAndPacketFormatting:
         assert "PERCEPTION" not in packet
         assert "RECENT CONTEXT" not in packet
 
+    def test_transport_prompt_shows_current_hp_on_position_line(self):
+        cs = self._make_transport_session("gilthaness")
+        cs.character.current_hp = 7  # took 5 damage from 12 max
+        ctx = RoleContext(
+            character_id="gilthaness",
+            turn=4,
+            condition_text="steady",
+            scene_context="You stand in the Secret Chamber.",
+            soul="",
+            identity="",
+            perception="No other creatures are visible.",
+        )
+        packet = _render_transport_prompt(
+            context=ctx, cs=cs, raw_history="",
+            actor_pos=(64.0, 195.0, "SECRET CHAMBER"), actor_z=0.0,
+        )
+        assert (
+            "You are at [64.0, 195.0, 0.0] in SECRET CHAMBER with 7/12 HP"
+            in packet
+        ), packet
+
     def test_puzzle_press_packet_reports_each_press(self):
         packet = _render_puzzle_press_packet(
             character_id="gilthaness",
@@ -422,6 +443,75 @@ class TestTransportPromptAndPacketFormatting:
             scene_context="", soul="", identity="", perception="")
         out = asyncio.run(_dm_answer(tc, ctx, "What now?"))
         assert out.startswith("(") and "DM" in out
+
+
+class TestInferCharacterDestination:
+    """'move toward <party member>' grounds to that character's position."""
+
+    def _chars(self):
+        from types import SimpleNamespace as NS
+        return {
+            "gilthaness": NS(character=NS(name="Gilthaness"), scene_handle=""),
+            "amara": NS(character=NS(name="Sister Amara Solbright"),
+                        scene_handle="the cleric"),
+            "thorgrim": NS(character=NS(name="Thorgrim Stoneheart"),
+                           scene_handle=""),
+        }
+
+    def _positions(self):
+        return {
+            "gilthaness": (64.0, 195.0, "SECRET CHAMBER"),
+            "amara": (137.0, 227.0, "FIRST PASSAGE"),
+            "thorgrim": (137.0, 215.0, "ECHO CHAMBER"),
+        }
+
+    def test_move_toward_named_character(self):
+        from engine.session import _infer_character_destination
+        dest = _infer_character_destination(
+            "Move towards Amara", "gilthaness",
+            self._chars(), self._positions(),
+            {"gilthaness", "amara", "thorgrim"},
+        )
+        assert dest == (137.0, 227.0, "FIRST PASSAGE")
+
+    def test_matches_on_id_first_name(self):
+        from engine.session import _infer_character_destination
+        # "Gilthaness" by id, even though it's the proper name.
+        dest = _infer_character_destination(
+            "move to Gilthaness", "amara",
+            self._chars(), self._positions(),
+            {"gilthaness", "amara", "thorgrim"},
+        )
+        assert dest == (64.0, 195.0, "SECRET CHAMBER")
+
+    def test_self_excluded(self):
+        from engine.session import _infer_character_destination
+        dest = _infer_character_destination(
+            "move to Gilthaness", "gilthaness",
+            self._chars(), self._positions(),
+            {"gilthaness", "amara"},
+        )
+        assert dest is None
+
+    def test_requires_movement_cue(self):
+        from engine.session import _infer_character_destination
+        # No cue word -> not a movement intent.
+        dest = _infer_character_destination(
+            "talk to Amara", "gilthaness",
+            self._chars(), self._positions(),
+            {"gilthaness", "amara"},
+        )
+        assert dest is None
+
+    def test_inactive_character_not_a_target(self):
+        from engine.session import _infer_character_destination
+        # Amara named but not in the active set -> no destination.
+        dest = _infer_character_destination(
+            "move toward Amara", "gilthaness",
+            self._chars(), self._positions(),
+            {"gilthaness"},
+        )
+        assert dest is None
 
 
 # ---------------------------------------------------------------------------

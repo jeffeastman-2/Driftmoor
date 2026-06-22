@@ -1343,6 +1343,54 @@ def _point_inside_zone_near_gateway(
     return None
 
 
+# Honorifics/articles that precede a name but must not be used to match it.
+_NAME_TITLES = {
+    "sister", "father", "brother", "mother", "sir", "lord", "lady",
+    "master", "captain", "elder", "the",
+}
+
+
+def _infer_character_destination(
+    intent_text: str,
+    self_id: str,
+    characters: dict,
+    current_positions: dict[str, tuple[float, float, str]],
+    active_characters: set[str],
+) -> Optional[tuple[float, float, str]]:
+    """Resolve "move toward <character>" to that character's live position.
+
+    The movement backfill otherwise grounds only items (LATN) and
+    zones/landmarks (shallow), so naming a party member ("move to Gilthaness",
+    "move toward Amara") yields no destination and the actor never moves.
+    Requires a movement cue word, then matches the intent text against each
+    *other* active character's id and the proper-name/handle tokens of their
+    name (titles and short words excluded). Returns that character's current
+    (x, y, z) — clamped to walking speed downstream — or None when nothing, or
+    more than one character, matches.
+    """
+    words = _dest_tokens(intent_text)
+    if not words or not (words & _MOVE_CUE_WORDS):
+        return None
+    matches: list[tuple[float, float, str]] = []
+    for cid in active_characters:
+        if cid == self_id or cid not in characters:
+            continue
+        pos = current_positions.get(cid)
+        if pos is None:
+            continue
+        cs = characters[cid]
+        name = getattr(getattr(cs, "character", None), "name", "") or ""
+        handle = getattr(cs, "scene_handle", "") or ""
+        cands = {cid.lower()}
+        for tok in _dest_tokens(name) | _dest_tokens(handle):
+            if len(tok) >= 4 and tok not in _NAME_TITLES:
+                cands.add(tok)
+        if words & cands:
+            matches.append(pos)
+    # Exactly one named character -> its position; zero or ambiguous -> None.
+    return matches[0] if len(matches) == 1 else None
+
+
 def _infer_movement_destination(
     intent_text: str,
     scene_geometry: Optional[SceneGeometry],
@@ -1504,6 +1552,33 @@ def _events_from_cr(
         out.append(f"{ts} — {actor} was killed")
 
     return out
+
+
+def _reseed_discovered_from_examination_state(
+    items: Optional[dict],
+    party_examination_state: Optional[dict[tuple[str, str], dict]],
+) -> None:
+    """Re-populate each item's ``discovered_by`` from restored examination state.
+
+    ``item.discovered_by`` is not checkpointed: loose scene items are rebuilt
+    with an empty set on resume. The persisted ``party_examination_state`` does
+    record examinations (keyed by ``(ZONE, normalized target)`` with the
+    examiner id), so map it back onto the items. Without this, perception's
+    "Items remembered or examined" section silently empties on every resume.
+    """
+    if not items or not party_examination_state:
+        return
+    for (state_zone, state_target), meta in party_examination_state.items():
+        by = (meta or {}).get("by")
+        if not by:
+            continue
+        for it in items.values():
+            if _normalize_target_name(it.label or it.id) != state_target:
+                continue
+            it_zone = (getattr(it, "zone", None) or "").upper()
+            if it_zone and state_zone and it_zone != state_zone:
+                continue  # same name in a different zone — not this item
+            it.discovered_by.add(by)
 
 
 def _build_context(
@@ -2621,9 +2696,16 @@ def _render_transport_prompt(
     coord_line = ""
     if actor_pos is not None and len(actor_pos) >= 2:
         zone = actor_pos[2] if len(actor_pos) > 2 and isinstance(actor_pos[2], str) else ""
+        # Current HP appended so the player can track damage each turn.
+        hp_suffix = ""
+        if getattr(cs.character, "hp", None) is not None:
+            _maxhp = cs.character.hp
+            _curhp = getattr(cs.character, "current_hp", _maxhp)
+            hp_suffix = f" with {_curhp}/{_maxhp} HP"
         coord_line = (
             f"You are at [{float(actor_pos[0]):.1f}, {float(actor_pos[1]):.1f}, {actor_z:.1f}]"
             + (f" in {zone}" if zone else "")
+            + hp_suffix
         )
     if current_position.strip() or coord_line:
         body = "\n".join(p for p in (coord_line, current_position.strip()) if p)
@@ -3268,6 +3350,14 @@ async def iter_session(
         initial_party_examination_state or {}
     )
 
+    # Re-seed each item's discovered_by from the restored examination state.
+    # Loose scene items are rebuilt with an empty discovered_by on resume, but
+    # the checkpoint records who examined what in party_examination_state (keyed
+    # by ZONE + normalized target, with the examiner id). Perception's "Items
+    # remembered or examined" section reads item.discovered_by, so without this
+    # re-seed that section silently empties out whenever a session is resumed.
+    _reseed_discovered_from_examination_state(items, party_examination_state)
+
     # Per-session puzzles. Each puzzle owns its own state machine; the loop
     # only delegates presses to the registry and applies the results. An
     # empty registry (no authored puzzles) is a harmless no-op.
@@ -3890,6 +3980,16 @@ async def iter_session(
                         scene_geometry,
                         current_positions.get(character_id),
                         visited_zones.get(character_id, set()) if visited_zones else set(),
+                    )
+                # Character fallback: "move toward <party member>" grounds to
+                # that character's current position (clamped to speed below).
+                if _dest is None:
+                    _dest = _infer_character_destination(
+                        intent.intent,
+                        character_id,
+                        characters,
+                        current_positions,
+                        active_characters,
                     )
                 if _dest is not None:
                     player_target = _dest

@@ -1,4 +1,50 @@
-from engine.md_loader import parse_identity_stats, _merge_identity_defaults
+from types import SimpleNamespace
+
+from engine.md_loader import (
+    parse_identity_stats,
+    _merge_identity_defaults,
+    _warn_unarmed_combatants,
+)
+
+
+def _sess(faction, weapons):
+    return SimpleNamespace(
+        character=SimpleNamespace(faction=faction),
+        weapons=weapons,
+    )
+
+
+class TestUnarmedCombatantWarning:
+    def test_flags_weaponless_party_when_hostile_present(self, capsys):
+        chars = {
+            "gilthaness": _sess("party", []),          # weaponless party member
+            "aeliana": _sess("party", ["rapier"]),     # armed
+            "giant_spider": _sess("hostile", []),      # weaponless hostile
+        }
+        flagged = _warn_unarmed_combatants(chars, "echoing_caverns")
+        # Both weaponless combatants flagged; the armed one is not.
+        assert flagged == ["giant_spider", "gilthaness"]
+        err = capsys.readouterr().err
+        assert "gilthaness" in err and "giant_spider" in err
+        assert "aeliana" not in err
+
+    def test_silent_without_hostiles(self, capsys):
+        chars = {
+            "gilthaness": _sess("party", []),
+            "fennel": _sess("party", []),
+        }
+        flagged = _warn_unarmed_combatants(chars, "fey_glade")
+        assert flagged == []
+        assert capsys.readouterr().err == ""
+
+    def test_silent_when_all_combatants_armed(self, capsys):
+        chars = {
+            "aeliana": _sess("party", ["longbow"]),
+            "giant_spider": _sess("hostile", ["spider_bite"]),
+        }
+        flagged = _warn_unarmed_combatants(chars, "echoing_caverns")
+        assert flagged == []
+        assert capsys.readouterr().err == ""
 
 
 def test_parse_identity_runtime_defaults_block():
