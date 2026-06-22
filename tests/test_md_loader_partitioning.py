@@ -4,7 +4,34 @@ from engine.md_loader import (
     parse_identity_stats,
     _merge_identity_defaults,
     _warn_unarmed_combatants,
+    _char_llm_config,
 )
+
+
+class TestCharLLMConfig:
+    """A character inherits the scene's DM provider/model unless its own scene
+    block overrides them; identities never contribute."""
+
+    def test_inherits_dm_when_unspecified(self):
+        assert _char_llm_config({}, "ollama", "gemma4:26b") == ("ollama", "gemma4:26b")
+
+    def test_block_overrides_both(self):
+        cfg = {"provider": "openai", "model": "gpt-4o"}
+        assert _char_llm_config(cfg, "ollama", "gemma4:26b") == ("openai", "gpt-4o")
+
+    def test_block_overrides_model_only(self):
+        cfg = {"model": "gemma4:9b"}
+        assert _char_llm_config(cfg, "ollama", "gemma4:26b") == ("ollama", "gemma4:9b")
+
+    def test_empty_string_falls_back_to_dm(self):
+        cfg = {"provider": "", "model": ""}
+        assert _char_llm_config(cfg, "ollama", "gemma4:26b") == ("ollama", "gemma4:26b")
+
+    def test_identity_provider_not_merged(self):
+        # _merge_identity_defaults must NOT pull provider/model off the identity.
+        cfg = {}
+        _merge_identity_defaults(cfg, {"provider": "openai", "model": "gpt-4o"})
+        assert "provider" not in cfg and "model" not in cfg
 
 
 def _sess(faction, weapons):

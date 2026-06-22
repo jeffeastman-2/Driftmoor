@@ -4,6 +4,7 @@
 - **Full Name:** Aeliana Moonglade
 - **Player:** TBD
 - **Race:** Wood Elf
+- **Pronouns:** she/her
 - **Class:** Ranger, Level 1
 - **Background:** Outlander
 - **Alignment:** Neutral Good
@@ -38,11 +39,6 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 ## Combat Equipment
 - **weapons:** longbow+5, shortsword+5, dagger+5
 - **armor:** leather_armor
-
-## Engine
-- **provider:** ollama
-- **model:** gemma4:26b
-- **pronouns:** she/her
 
 ## Runtime Defaults
 - **scene_handle:** Aeliana, the elf ranger

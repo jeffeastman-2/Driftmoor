@@ -5,7 +5,7 @@
 - **title:** FEY GLADE
 - **narrative_title:** The Fey Glade
 - **transcript_title:** FEY GLADE ENCOUNTER — Aeliana, Fennel, Shadowbeast
-- **character_summary:** Aeliana (Grok), Fennel (GPT-4o), Shadowbeast (DeepSeek)
+- **character_summary:** Aeliana, Fennel, Shadowbeast
 - **default_turns:** 8
 - **geometry_file:** scenario/places/mistwood_hills/fey_glade/GEOMETRY.md
 - **place_file:** scenario/places/mistwood_hills/fey_glade/PLACE.md
@@ -39,8 +39,6 @@
 - **soul_file:** scenario/creatures/shadowbeast_soul.md
 - **identity_file:** scenario/creatures/shadowbeast_identity.md
 - **faction:** hostile
-- **provider:** ollama
-- **model:** gemma4:26b
 - **pronouns:** it/its
 - **weapons:** shadowbeast_claw+4
 - **armor:** natural_armor_shadowbeast

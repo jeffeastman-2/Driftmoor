@@ -60,6 +60,3 @@ Sturdy build. Short-cropped black hair streaked with gray. Permanent smirk. Arms
 - **Recent events:** None yet — session not started
 - **Active concerns:** Suspicious meeting room guests; Wilfred's claims; hidden compartment
 
-## Engine
-- **provider:** ollama
-- **model:** gemma4:26b

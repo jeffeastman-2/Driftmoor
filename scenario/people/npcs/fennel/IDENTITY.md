@@ -4,6 +4,7 @@
 - **Full Name:** Fennel Ashwick
 - **Role:** Apprentice herbalist, The Bitter Remedy
 - **Race:** Human, Male, age 22
+- **Pronouns:** he/him
 - **Alignment:** Neutral Good
 - **Background:** Guild Artisan (Herbalist)
 - **Location (normal):** The Bitter Remedy, Driftmoor
@@ -70,11 +71,6 @@ reasonably coordinated young man with no combat training.*
 - **weapons:** shortbow+1, improvised_spear+1, belt_knife+1
 - **armor:** no_armor
 - **note:** Not proficient with weapons — attack bonuses are ability modifier only, no proficiency bonus.
-
-## Engine
-- **provider:** openai
-- **model:** gpt-4o
-- **pronouns:** he/him
 
 ## Runtime Defaults
 - **scene_handle:** the young gatherer

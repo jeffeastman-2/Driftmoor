@@ -38,6 +38,3 @@ Weathered face, split knuckles, old tar stains under the nails. A heavy wool coa
 - **Recent events:** None yet - session not started
 - **Active concerns:** Being dismissed as a drunk liar
 
-## Engine
-- **provider:** ollama
-- **model:** gemma4:26b

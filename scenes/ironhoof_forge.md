@@ -41,22 +41,16 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/thorgrim/SOUL.md
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### darrin
 - **type:** npc
 - **soul_file:** scenario/people/npcs/darrin/SOUL.md
 - **identity_file:** scenario/people/npcs/darrin/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### kara
 - **type:** npc
 - **soul_file:** scenario/people/npcs/kara/SOUL.md
 - **identity_file:** scenario/people/npcs/kara/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ## Scene Introductions
 

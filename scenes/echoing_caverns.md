@@ -80,22 +80,16 @@ characters know, in-fiction, the following caver's wisdom:
 - **type:** player
 - **soul_file:** scenario/people/players/seraphina/SOUL.md
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### thorgrim
 - **type:** player
 - **soul_file:** scenario/people/players/thorgrim/SOUL.md
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### amara
 - **type:** player
 - **soul_file:** scenario/people/players/amara/SOUL.md
 - **identity_file:** scenario/people/players/amara/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### gilthaness
 - **type:** player
@@ -112,8 +106,6 @@ characters know, in-fiction, the following caver's wisdom:
 - **ac:** 14
 - **faction:** hostile
 - **activation:** zone_entry:Secret Chamber
-- **provider:** ollama
-- **model:** gemma4:26b
 - **pronouns:** it/its
 - **weapons:** spider_bite+5
 - **armor:** natural_armor_spider

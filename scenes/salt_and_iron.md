@@ -42,15 +42,11 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/varrak/SOUL.md
 - **identity_file:** scenario/people/players/varrak/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### jorgen
 - **type:** npc
 - **soul_file:** scenario/people/npcs/jorgen/SOUL.md
 - **identity_file:** scenario/people/npcs/jorgen/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ## Scene Introductions
 

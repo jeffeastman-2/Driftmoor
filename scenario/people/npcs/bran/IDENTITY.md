@@ -38,6 +38,3 @@ Broad shoulders, rough beard, hands nicked from net hooks. Wears patched work le
 - **Recent events:** None yet - session not started
 - **Active concerns:** Proving he is not being cheated
 
-## Engine
-- **provider:** ollama
-- **model:** gemma4:26b

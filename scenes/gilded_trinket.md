@@ -40,15 +40,11 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/seraphina/SOUL.md
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### tavian
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tavian/SOUL.md
 - **identity_file:** scenario/people/npcs/tavian/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ## Scene Introductions
 

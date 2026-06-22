@@ -42,22 +42,16 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/lilar/SOUL.md
 - **identity_file:** scenario/people/players/lilar/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### gregan
 - **type:** npc
 - **soul_file:** scenario/people/npcs/haversteads/gregan.md
 - **identity_file:** scenario/people/npcs/haversteads/gregan.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### tessa
 - **type:** npc
 - **soul_file:** scenario/people/npcs/haversteads/tessa.md
 - **identity_file:** scenario/people/npcs/haversteads/tessa.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ## Scene Introductions
 

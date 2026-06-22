@@ -38,6 +38,3 @@ Lean build, practical dock coat, ink smudge on her left thumb from keeping tally
 - **Recent events:** None yet - session not started
 - **Active concerns:** Keeping the argument factual
 
-## Engine
-- **provider:** ollama
-- **model:** gemma4:26b

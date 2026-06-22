@@ -42,22 +42,16 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/amara/SOUL.md
 - **identity_file:** scenario/people/players/amara/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### elden
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elden/SOUL.md
 - **identity_file:** scenario/people/npcs/elden/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ### mira
 - **type:** npc
 - **soul_file:** scenario/people/npcs/mira/SOUL.md
 - **identity_file:** scenario/people/npcs/mira/IDENTITY.md
-- **provider:** ollama
-- **model:** gemma4:26b
 
 ## Scene Introductions
 

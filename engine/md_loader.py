@@ -253,16 +253,29 @@ def parse_identity_stats(text: str) -> dict:
     return stats
 
 
+def _char_llm_config(
+    cfg: dict, dm_provider: str, dm_model: str
+) -> tuple[str, str]:
+    """Per-character (provider, model) for a scene.
+
+    The scene's DM provider/model are the default for every character; a
+    character's scene block may override either. LLM routing is a scene/runtime
+    concern, so identities never contribute here.
+    """
+    return cfg.get("provider") or dm_provider, cfg.get("model") or dm_model
+
+
 def _merge_identity_defaults(cfg: dict[str, str], id_stats: dict) -> None:
     """Fill missing scene config keys from identity-derived defaults.
 
     Scene config remains authoritative; this only fills absent values.
     """
+    # NOTE: provider/model are intentionally NOT merged from the identity.
+    # LLM routing is a scene/runtime concern (see _char_llm_config): a
+    # character inherits the scene's DM model unless its scene block overrides.
     for field in (
         "weapons",
         "armor",
-        "provider",
-        "model",
         "pronouns",
         "player_transport",
         "channel",
@@ -856,8 +869,10 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         if cfg.get("pronouns"):
             character_pronouns[char_id] = cfg["pronouns"]
 
-        provider   = cfg.get("provider", "ollama")
-        model      = cfg.get("model", "gemma4:26b")
+        # LLM routing is a scene/runtime concern: a character inherits the
+        # scene's DM provider/model unless its own scene block overrides them.
+        # Identities never carry provider/model (see _merge_identity_defaults).
+        provider, model = _char_llm_config(cfg, dm_provider, dm_model)
         player_llm = make_call_llm(provider, model)
         char_dm_llm = player_llm if self_dm else dm_llm
         roles[char_id] = RoleSet(
