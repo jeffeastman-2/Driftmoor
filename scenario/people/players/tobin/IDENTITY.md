@@ -47,6 +47,9 @@ Tobin is broad-shouldered and comfortably grounded, with brown hair gone silver 
 - Prayer of Healing - 10 minutes
 - Aid - 1 action
 
+## Combat Equipment
+- **weapons:** mace+3
+
 ## Equipment
 - Mace (1d6 bludgeoning)
 - Shield with Bright Hearth sigil

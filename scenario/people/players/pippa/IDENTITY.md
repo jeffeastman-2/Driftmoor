@@ -42,6 +42,9 @@ Pippa is small even for a fairy, all quick wings and kinetic posture, with wild 
 - Chromatic Orb - 1 action
 - Mirror Image - 1 action
 
+## Combat Equipment
+- **weapons:** dagger+4
+
 ## Equipment
 - Arcane focus (silver chain wand)
 - Dagger (1d4 piercing)

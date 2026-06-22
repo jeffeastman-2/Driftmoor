@@ -42,6 +42,9 @@ Weathered face, marks of a life in service. Broad-shouldered, sturdy. Graying br
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
+## Combat Equipment
+- **weapons:** mace+3, quarterstaff+3
+
 ## Equipment
 - Studded leather armor (AC 12)
 - Wooden shield with engraved sunburst (+2 AC)

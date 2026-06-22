@@ -40,6 +40,9 @@ Cinnabar is slight and quick, with copper-red hair cut unevenly short, freckled 
 - Silent Image - 1 action, concentration up to 10 minutes
 - Tasha's Hideous Laughter - 1 action, concentration up to 1 minute, WIS save DC 12
 
+## Combat Equipment
+- **weapons:** rapier+5, shortbow+5, dagger+5
+
 ## Equipment
 - Rapier (1d8 piercing)
 - Shortbow with 20 arrows (1d6 piercing)

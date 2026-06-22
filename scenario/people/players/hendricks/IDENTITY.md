@@ -43,6 +43,9 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 - Mirror Image - 1 action
 - Misty Step - 1 bonus action
 
+## Combat Equipment
+- **weapons:** quarterstaff+1
+
 ## Equipment
 - Quarterstaff (1d6 bludgeoning)
 - Spellbook

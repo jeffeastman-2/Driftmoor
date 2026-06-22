@@ -43,6 +43,9 @@ Tall and imposing, scales the deep crimson of cooling iron. Amber eyes with vert
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
+## Combat Equipment
+- **weapons:** quarterstaff+2, dagger+4
+
 ## Equipment
 - Quarterstaff (1d6 bludgeoning)
 - Component pouch

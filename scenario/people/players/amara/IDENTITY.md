@@ -63,6 +63,9 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
+## Combat Equipment
+- **weapons:** mace+4
+
 ## Equipment
 - Chain mail (AC 16)
 - Mace (1d6 bludgeoning)

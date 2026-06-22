@@ -12,6 +12,7 @@ Python reads the base stat (damage, range, reach, properties) from this table.
 | shortsword | Short Sword | 1d6 | piercing | 5 | 0 | 0 | finesse,light |
 | rapier | Rapier | 1d8 | piercing | 5 | 0 | 0 | finesse |
 | battle_axe | Battle Axe | 1d8 | slashing | 5 | 0 | 0 | versatile:1d10 |
+| greatsword | Greatsword | 2d6 | slashing | 5 | 0 | 0 | heavy,two_handed |
 | mace | Mace | 1d6 | bludgeoning | 5 | 0 | 0 | |
 | quarterstaff | Quarterstaff | 1d6 | bludgeoning | 5 | 0 | 0 | versatile:1d8 |
 | dagger | Dagger | 1d4 | piercing | 5 | 20 | 60 | finesse,light,thrown |

@@ -24,6 +24,9 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes. Dusky 
 - Sleight of Hand +2 (DEX)
 - Proficient: thieves' tools, disguise kit
 
+## Combat Equipment
+- **weapons:** dagger+5, shortbow+5
+
 ## Equipment
 - Leather armor
 - Two daggers (1d4 piercing), one concealed in boot

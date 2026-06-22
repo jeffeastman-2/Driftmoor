@@ -23,6 +23,9 @@ Short but commanding. Fiery red beard braided and tucked into his belt. Steel-gr
 - Athletics +2 (STR)
 - Intimidation +2 (CHA)
 
+## Combat Equipment
+- **weapons:** battle_axe+5, dagger+5, light_crossbow+3
+
 ## Equipment
 - Steel and iron plate armor (AC 18)
 - Shield (+2 AC)

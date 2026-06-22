@@ -27,6 +27,9 @@ Brenna is tall and broad-shouldered, built by decades of drill and road work. Pa
 - Student of War: proficiency with smith's tools
 - Athletics +5, Insight +2, Intimidation +3, Survival +2
 
+## Combat Equipment
+- **weapons:** greatsword+5, dagger+5, light_crossbow+3
+
 ## Equipment
 - Greatsword (2d6 slashing)
 - Chain mail
