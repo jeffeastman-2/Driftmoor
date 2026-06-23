@@ -133,3 +133,40 @@ def parse_character_weapons(
         w = dataclasses.replace(base, attack_bonus=bonus)
         weapons.append(w)
     return weapons
+
+
+def build_item_weapon(
+    spec: str,
+    weapon_library: dict[str, Weapon],
+    *,
+    item_id: str,
+    label: str = "",
+):
+    """Resolve a scene item's ``*Weapon:* <library_id>+<enhancement>`` spec into a
+    base Weapon, or None when the id is unknown.
+
+    The returned Weapon is keyed by the *item* id (so a held item maps 1:1 to a
+    wieldable weapon), names itself after the item label, folds the enhancement
+    into the damage dice (mace 1d6 +1 -> "1d6+1"), and stores the enhancement in
+    ``attack_bonus`` — the wielder's proficiency + ability modifier are added
+    when the weapon is registered onto a character (see engine.loadout).
+    """
+    m = re.match(r'^(\w+)([+-]\d+)?$', (spec or "").strip())
+    if not m:
+        return None
+    wid = m.group(1)
+    enhancement = int(m.group(2)) if m.group(2) else 0
+    base = weapon_library.get(wid)
+    if base is None:
+        return None
+    import dataclasses
+    dice = base.damage_dice
+    if enhancement:
+        dice = f"{dice}{enhancement:+d}"
+    return dataclasses.replace(
+        base,
+        id=item_id,
+        name=label or base.name,
+        attack_bonus=enhancement,
+        damage_dice=dice,
+    )

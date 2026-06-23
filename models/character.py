@@ -25,6 +25,10 @@ class Character:
     # Item ids currently carried by this character. Kept in sync with each
     # held ``Item.holder`` (see engine.session transfer helpers).
     inventory: list[str] = field(default_factory=list)
+    # Hand slots for wielding (humanoid default 2). Per-weapon hand cost plus
+    # this budget is what makes "shield + two-handed sword" impossible without
+    # a special case (see engine.loadout). Creatures may override.
+    hands: int = 2
 
 
 @dataclass

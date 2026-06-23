@@ -75,6 +75,9 @@ class CharacterSession:
     scene_handle: str = ""  # How others see this character before names are exchanged
     weapons: list[Weapon] = field(default_factory=list)
     armor: Armor | None = None
+    # Phase 2: weapon/item ids currently in hand (subset of the kit). Natural
+    # weapons are always available and need not appear here. See engine.loadout.
+    wielded: list[str] = field(default_factory=list)
     # Phase 3b: dormancy. "always" = active from turn 1 (default).
     # "zone_entry:<Zone Name>" = activate when an opposing-faction
     # character enters that zone. "door_open:<door_id>" = activate when
@@ -2005,6 +2008,16 @@ def _handle_item_transfer(
             f"{actor_handle} picks up the {label}.",
             f"you picked up {label} and are now carrying it.",
         )
+        # A picked-up weapon becomes usable: register it on the character and
+        # ready it (auto-sheathing to free a hand if needed).
+        if getattr(item_obj, "weapon", None) is not None:
+            from engine import loadout
+            _w = loadout.register_held_weapon(cs, item_obj)
+            if _w is not None:
+                _ld: list[str] = []
+                loadout.draw(cs, _w, _ld)
+                if _ld:
+                    attack_log.append(f"[LOADOUT] {character_id}: " + ", ".join(_ld))
         return
 
     if transfer_verb == "drop":
@@ -2256,6 +2269,11 @@ def _save_turn(
             spell_runtime or SpellRuntimeState()
         ),
         "item_ownership": _serialize_item_ownership(items or {}),
+        "wielded": {
+            char_id: list(getattr(cs, "wielded", None) or [])
+            for char_id, cs in characters.items()
+            if char_id in active and (getattr(cs, "wielded", None) or [])
+        },
     }
     path.write_text(json.dumps(data, indent=2, default=str))
     return path
@@ -2337,6 +2355,12 @@ def load_resume_state(
     for char_id, hp_dict in last_data.get("hp", {}).items():
         if char_id in characters:
             characters[char_id].character.current_hp = hp_dict["current"]
+
+    # Restore the wielded set so a resumed fight remembers what's drawn
+    # (default_wield at scene start only fills empty hands, so this wins).
+    for char_id, wielded in last_data.get("wielded", {}).items():
+        if char_id in characters and isinstance(wielded, list):
+            characters[char_id].wielded = list(wielded)
 
     # Restore active_characters set if the checkpoint recorded it
     if "active_characters" in last_data:
@@ -2665,6 +2689,101 @@ async def _host_read_text(host: str, path: str, *, min_mtime_ns: int = 0) -> str
     )
 
 
+_DRAW_VERB_RE = re.compile(
+    r'\b(draw|draws|ready|readies|wield|wields|unsheath\w*|equip\w*|brandish\w*)\b',
+    re.IGNORECASE,
+)
+_SHEATHE_VERB_RE = re.compile(
+    r'\b(sheath\w*|stow\w*|holster\w*|put away|puts away|put down)\b',
+    re.IGNORECASE,
+)
+_ATTACK_VERB_RE = re.compile(
+    r'\b(attack|strike|stab|slash|hit|shoot|fire|swing|lunge|thrust|loose)\b',
+    re.IGNORECASE,
+)
+
+
+def _apply_loadout_intent(intent_text: str, cs: "CharacterSession",
+                          log: list[str]) -> None:
+    """Apply draw/sheathe manipulations named in the intent and auto-draw the
+    weapon the actor says they're attacking with, mutating ``cs.wielded``.
+
+    Focused clause parser (split on commas / and / then) so "I sheathe my
+    dagger, draw my crossbow and attack the spider" works in one turn; Phase 2c
+    replaces this with LATN multi-action parsing plus a reword on failure.
+    """
+    from engine import loadout
+    from engine.combat_resolver import _weapon_name_tokens
+    weapons = getattr(cs, "weapons", None) or []
+
+    def _named(s: str):
+        s_l = s.lower()
+        for w in weapons:
+            if any(re.search(rf'\b{re.escape(t)}\b', s_l)
+                   for t in _weapon_name_tokens(w)):
+                return w
+        return None
+
+    clauses = re.split(r'\s*(?:,|\band\b|\bthen\b)\s*', intent_text or "",
+                       flags=re.IGNORECASE)
+    for clause in clauses:
+        if _SHEATHE_VERB_RE.search(clause):
+            w = _named(clause)
+            if w is not None:
+                loadout.sheathe(cs, w, log)
+        elif _DRAW_VERB_RE.search(clause):
+            w = _named(clause)
+            if w is not None:
+                loadout.draw(cs, w, log)
+    # Auto-draw a weapon named in the attack clause ("attack with my dagger").
+    for clause in clauses:
+        if _ATTACK_VERB_RE.search(clause):
+            w = _named(clause)
+            if w is not None and not loadout.is_wielding(cs, w):
+                loadout.draw(cs, w, log)
+            break
+
+
+def _find_takeable_weapon_item(intent_text: str, items, actor_zone: str):
+    """A loose weapon item named in the intent and within reach (same zone,
+    unheld), or None. Lets "pick up the mace and attack" ground the mace even
+    while the attack drives the turn through the combat resolver."""
+    from engine.combat_resolver import _weapon_name_tokens
+    text = (intent_text or "").lower()
+    az = (actor_zone or "").upper()
+    for item in (items.values() if hasattr(items, "values") else (items or [])):
+        w = getattr(item, "weapon", None)
+        if w is None or getattr(item, "holder", None):
+            continue
+        iz = (getattr(item, "zone", None) or "").upper()
+        if az and iz and iz != az:
+            continue
+        toks = set(_weapon_name_tokens(w))
+        lbl = (getattr(item, "label", "") or "").lower()
+        if lbl:
+            toks.add(lbl)
+            toks.update(lbl.split())
+        if any(re.search(rf'\b{re.escape(t)}\b', text) for t in toks if t):
+            return item
+    return None
+
+
+def _loadout_summary(cs: "CharacterSession") -> str:
+    """One-line summary of the character's weapons (and worn armor) for the
+    turn prompt, so the player/LLM knows what they can attack with. Built from
+    the character's structured kit; "" when there's nothing to show."""
+    weapons = [w.name for w in (getattr(cs, "weapons", None) or [])
+               if getattr(w, "name", "")]
+    armor = getattr(cs, "armor", None)
+    armor_name = getattr(armor, "name", "") if armor is not None else ""
+    if not weapons and not armor_name:
+        return ""
+    line = ", ".join(weapons) if weapons else "(no weapons)"
+    if armor_name:
+        line += f" (worn: {armor_name})"
+    return line
+
+
 def _render_transport_prompt(
     *,
     context: RoleContext,
@@ -2760,6 +2879,17 @@ def _render_transport_prompt(
     if current_position.strip() or coord_line:
         body = "\n".join(p for p in (coord_line, current_position.strip()) if p)
         parts.append(f"CURRENT POSITION\n{body}")
+    loadout = _loadout_summary(cs)
+    if loadout:
+        parts.append(f"CARRYING\n{loadout}")
+    from engine.loadout import wielded_weapons as _wielded_weapons, hands_free as _hands_free
+    in_hand = [w.name for w in _wielded_weapons(cs)]
+    if in_hand:
+        free = _hands_free(cs)
+        parts.append(
+            f"WIELDING\n{', '.join(in_hand)} "
+            f"({free} hand{'s' if free != 1 else ''} free)"
+        )
     parts.append(f"PERCEPTION\n{perception}")
     parts.append("Reply with your intent for this turn in plain text, and put what you say in quotes.")
     return "\n\n".join(parts) + "\n"
@@ -3408,6 +3538,14 @@ async def iter_session(
     # re-seed that section silently empties out whenever a session is resumed.
     _reseed_discovered_from_examination_state(items, party_examination_state)
 
+    # Phase 2: put a primary weapon in each character's hand at scene start so
+    # nobody is empty-handed (no-op for characters already wielding or with only
+    # natural weapons). Restored wielded state (resume) is left untouched.
+    from engine.loadout import default_wield, sync_held_weapons
+    for _cs in characters.values():
+        sync_held_weapons(_cs, items)  # re-register picked-up weapons on resume
+        default_wield(_cs)
+
     # Per-session puzzles. Each puzzle owns its own state machine; the loop
     # only delegates presses to the registry and applies the results. An
     # empty registry (no authored puzzles) is a harmless no-op.
@@ -3859,6 +3997,39 @@ async def iter_session(
                     active_characters,
                 )
                 if target_id and target_id in characters:
+                    # Conjoined "pick up <weapon> and attack": do the pickup now
+                    # (the take path is otherwise gated to non-attack turns), so
+                    # the just-grabbed weapon is wielded and used this swing.
+                    _pickup_log: list[str] = []
+                    _preferred_weapon = None
+                    from engine.verb_resolver import (
+                        detect_transfer_verb, authored_transfer_response,
+                    )
+                    if detect_transfer_verb(intent.intent or "") == "take":
+                        _wi = _find_takeable_weapon_item(
+                            intent.intent or "", items, actor_zone)
+                        if _wi is not None:
+                            _handle_item_transfer(
+                                transfer_verb="take", item_obj=_wi,
+                                label=_wi.label or _wi.id,
+                                character_id=character_id, characters=characters,
+                                active_characters=active_characters,
+                                current_positions=current_positions,
+                                intent_text=intent.intent or "",
+                                actor_zone=actor_zone, turn_num=turn_num,
+                                game_time=game_time, attack_log=_pickup_log,
+                                recent_events=recent_events, cs=cs,
+                                authored_response=authored_transfer_response(
+                                    _wi, "take"),
+                                recipient_override=None,
+                            )
+                            _preferred_weapon = next(
+                                (w for w in cs.weapons if w.id == _wi.id), None)
+                    # Apply any draw/sheathe the actor declared this turn and
+                    # auto-draw the weapon they're attacking with, so the
+                    # resolver swings the right thing.
+                    _loadout_log: list[str] = []
+                    _apply_loadout_intent(intent.intent, cs, _loadout_log)
                     resolver = CombatResolver()
                     attack_disadvantage = _has_vicious_mockery_disadvantage(
                         spell_runtime, character_id
@@ -3875,7 +4046,14 @@ async def iter_session(
                         game_time=game_time,
                         intent_text=intent.intent,
                         attack_disadvantage=attack_disadvantage,
+                        preferred_weapon=_preferred_weapon,
                     )
+                    # Narrate the pickup, then the draw/sheathe, before the swing.
+                    if _loadout_log:
+                        attack_log[:0] = [f"[LOADOUT] {character_id}: "
+                                          + ", ".join(_loadout_log)]
+                    if _pickup_log:
+                        attack_log[:0] = _pickup_log
                     if attack_disadvantage and _consume_vicious_mockery_disadvantage(
                         spell_runtime, character_id
                     ):

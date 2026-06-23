@@ -329,3 +329,27 @@ class TestValidation:
         )
         with pytest.raises(ValueError, match="unknown interactions source"):
             load_contents(contents)
+
+
+class TestWeaponSpec:
+    def test_weapon_line_parsed_into_spec(self):
+        text = (
+            "# CONTENTS.md — Test\n\n## Items\n\n"
+            "### banded_mace\n"
+            "A heavy mace.\n\n"
+            "*(Pickup-able; +1 mace.)*\n\n"
+            "*Weapon:* mace+1\n"
+            "*Size:* small\n"
+        )
+        items = parse_contents_md(text)["items"]
+        assert items["banded_mace"].weapon_spec == "mace+1"
+        # The weapon line is consumed, not left in the description.
+        assert "Weapon:" not in items["banded_mace"].description
+
+    def test_no_weapon_line_leaves_spec_none(self):
+        text = (
+            "# CONTENTS.md — Test\n\n## Items\n\n"
+            "### rock\nA plain rock.\n\n*(Pickup-able.)*\n\n*Size:* small\n"
+        )
+        items = parse_contents_md(text)["items"]
+        assert items["rock"].weapon_spec is None

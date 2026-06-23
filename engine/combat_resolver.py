@@ -160,6 +160,39 @@ def _intent_prefers_ranged(intent_text: str) -> bool:
     return bool(_RANGED_INTENT_RE.search(intent_text or ""))
 
 
+def _weapon_name_tokens(w: Weapon) -> set[str]:
+    """Lowercase tokens that name a weapon in free text: its full name, its
+    head noun (last word — 'crossbow' for 'Light Crossbow'), and its id with
+    underscores spaced ('battle axe' for 'battle_axe')."""
+    toks: set[str] = set()
+    name = (w.name or "").strip().lower()
+    if name:
+        toks.add(name)
+        toks.add(name.split()[-1])
+    if getattr(w, "id", ""):
+        toks.add(w.id.replace("_", " ").lower())
+    return {t for t in toks if t}
+
+
+def _named_weapon(
+    intent_text: str, weapons: list[Weapon], dist: float
+) -> Weapon | None:
+    """The character's own weapon explicitly named in the intent and usable at
+    this distance, or None.
+
+    Lets "attack with my dagger" override the damage-maximizing default in
+    _best_weapon (which otherwise always picks the rapier over the dagger).
+    """
+    text = (intent_text or "").lower()
+    for w in weapons:
+        if any(re.search(rf"\b{re.escape(t)}\b", text)
+               for t in _weapon_name_tokens(w)):
+            usable = (dist <= w.range_normal) if w.is_ranged else (dist <= w.reach + 0.5)
+            if usable:
+                return w
+    return None
+
+
 # ---------------------------------------------------------------------------
 # CombatResolver
 # ---------------------------------------------------------------------------
@@ -186,6 +219,7 @@ class CombatResolver:
         game_time=None,
         intent_text: str = "",
         attack_disadvantage: bool = False,
+        preferred_weapon: "Weapon | None" = None,
     ) -> tuple[Adjudication, list[str]]:
         """Resolve one attack action. Returns (Adjudication, log_lines).
 
@@ -196,7 +230,10 @@ class CombatResolver:
         log: list[str] = []
         attacker_char  = attacker_session.character
         target_char    = target_session.character
-        weapons        = attacker_session.weapons
+        # Only weapons actually in hand (plus natural weapons) can be attacked
+        # with — a sheathed dagger isn't an option until it's drawn.
+        from engine.loadout import wielded_weapons
+        weapons        = wielded_weapons(attacker_session)
 
         speed_str = getattr(attacker_char, "speed", "30 ft")
         speed_m = re.search(r'(\d+)', speed_str or "")
@@ -213,8 +250,18 @@ class CombatResolver:
             )
 
         # 2. Select weapon — honor ranged intent if the character said so
+        # Weapon priority: a just-picked-up weapon the caller wants used, then a
+        # weapon the attacker explicitly named ("attack with my dagger"), then
+        # the damage-maximizing default. All are constrained to what's wielded.
         prefer_ranged = _intent_prefers_ranged(intent_text)
-        weapon = _best_weapon(weapons, dist_after, prefer_ranged=prefer_ranged)
+        weapon = None
+        if preferred_weapon is not None and preferred_weapon in weapons:
+            weapon = preferred_weapon
+        weapon = (
+            weapon
+            or _named_weapon(intent_text, weapons, dist_after)
+            or _best_weapon(weapons, dist_after, prefer_ranged=prefer_ranged)
+        )
         if weapon is None:
             log.append(f"[COMBAT] {character_id}: no weapon can reach {target_id} at {dist_after:.1f} ft")
             adj = Adjudication(

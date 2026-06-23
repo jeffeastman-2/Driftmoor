@@ -810,6 +810,17 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     weapon_library = load_weapons(weapons_path)
     armor_library  = load_armors(armor_path)
 
+    # Resolve pickable weapon items (``*Weapon:* mace+1``) into base Weapons now
+    # that the library is loaded, so a picked-up item can be wielded in combat.
+    from engine.weapon_loader import build_item_weapon
+    for _it in (items or {}).values():
+        _spec = getattr(_it, "weapon_spec", None)
+        if _spec:
+            _it.weapon = build_item_weapon(
+                _spec, weapon_library,
+                item_id=_it.id, label=_it.label or _it.id.replace("_", " "),
+            )
+
     # ── Characters ───────────────────────────────────────────────────────────
     char_cfgs = _parse_all_char_sections(text)
     characters: dict[str, CharacterSession] = {}

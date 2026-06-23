@@ -435,6 +435,7 @@ training, the haft hums faintly when gripped: the weapon is enchanted.
 *(Pickup-able; +1 mace, 1d6+1 bludgeoning, light, no special properties
 beyond the enhancement bonus.)*
 
+*Weapon:* mace+1
 *Size:* small
 *Appearance by distance:*
 - **intermediate** → a banded mace lying atop the vault

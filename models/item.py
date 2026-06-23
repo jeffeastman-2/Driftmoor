@@ -133,6 +133,13 @@ class Item:
     zone: Optional[str] = None
     label: str = ""
 
+    # Weapon: a pickable item that can be wielded. ``weapon_spec`` is the raw
+    # ``<library_id>+<enhancement>`` from CONTENTS (e.g. "mace+1"); ``weapon`` is
+    # the resolved base Weapon, attached by md_loader once the weapon library is
+    # available (Optional[object] to avoid importing models.weapon here).
+    weapon_spec: Optional[str] = None
+    weapon: Optional[object] = None
+
     # Mutable runtime state — not parsed; engine maintains these.
     holder: Optional[str] = None
     state: dict[str, str] = field(default_factory=dict)

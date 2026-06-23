@@ -353,6 +353,37 @@ class TestTransportPromptAndPacketFormatting:
             in packet
         ), packet
 
+    def test_transport_prompt_lists_loadout(self):
+        from types import SimpleNamespace as NS
+        from models.weapon import Weapon
+        cs = self._make_transport_session("gilthaness")
+        cs.weapons = [
+            Weapon(id="rapier", name="Rapier", damage_dice="1d8", damage_type="piercing"),
+            Weapon(id="dagger", name="Dagger", damage_dice="1d4", damage_type="piercing"),
+            Weapon(id="light_crossbow", name="Light Crossbow", damage_dice="1d8",
+                   damage_type="piercing", range_normal=80),
+        ]
+        cs.armor = NS(name="Studded Leather")
+        cs.wielded = ["rapier"]  # only the rapier is in hand
+        ctx = RoleContext(
+            character_id="gilthaness", turn=4, condition_text="steady",
+            scene_context="You stand in the Secret Chamber.", soul="",
+            identity="", perception="No other creatures are visible.",
+        )
+        packet = _render_transport_prompt(
+            context=ctx, cs=cs, raw_history="",
+            actor_pos=(64.0, 195.0, "SECRET CHAMBER"), actor_z=0.0,
+        )
+        # CARRYING = full kit; WIELDING = what's in hand now + free hands.
+        assert "CARRYING" in packet
+        assert "Rapier, Dagger, Light Crossbow (worn: Studded Leather)" in packet
+        assert "WIELDING\nRapier (1 hand free)" in packet
+
+    def test_loadout_summary_empty_without_kit(self):
+        from engine.session import _loadout_summary
+        from types import SimpleNamespace as NS
+        assert _loadout_summary(NS(weapons=[], armor=None)) == ""
+
     def test_puzzle_press_packet_reports_each_press(self):
         packet = _render_puzzle_press_packet(
             character_id="gilthaness",
@@ -512,6 +543,47 @@ class TestInferCharacterDestination:
             {"gilthaness"},
         )
         assert dest is None
+
+
+class TestFindTakeableWeaponItem:
+    """"pick up the mace and attack" must ground the mace item in reach."""
+
+    def _items(self):
+        from types import SimpleNamespace as NS
+        from models.weapon import Weapon
+        mace_w = Weapon(id="mace_plus_one", name="Mace +1", damage_dice="1d6+1",
+                        damage_type="bludgeoning", attack_bonus=1, reach=5)
+        return {
+            "mace_plus_one": NS(id="mace_plus_one", weapon=mace_w,
+                                label="Banded Mace", holder=None,
+                                zone="SECRET CHAMBER"),
+            "bones": NS(id="bones", weapon=None, label="Remains",
+                        holder=None, zone="SECRET CHAMBER"),
+        }
+
+    def test_finds_named_weapon_in_zone(self):
+        from engine.session import _find_takeable_weapon_item
+        it = _find_takeable_weapon_item(
+            "I pick up the mace and attack the spider",
+            self._items(), "SECRET CHAMBER")
+        assert it is not None and it.id == "mace_plus_one"
+
+    def test_skips_when_in_other_zone(self):
+        from engine.session import _find_takeable_weapon_item
+        assert _find_takeable_weapon_item(
+            "pick up the mace", self._items(), "ENTRY CHAMBER") is None
+
+    def test_skips_when_already_held(self):
+        from engine.session import _find_takeable_weapon_item
+        items = self._items()
+        items["mace_plus_one"].holder = "gilthaness"
+        assert _find_takeable_weapon_item(
+            "pick up the mace", items, "SECRET CHAMBER") is None
+
+    def test_non_weapon_item_not_returned(self):
+        from engine.session import _find_takeable_weapon_item
+        assert _find_takeable_weapon_item(
+            "pick up the remains", self._items(), "SECRET CHAMBER") is None
 
 
 class TestNextZoneToward:

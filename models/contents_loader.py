@@ -71,11 +71,32 @@ _SIZE_LINE_RE = re.compile(
     re.MULTILINE,
 )
 
+# Optional ``*Weapon:* <library_id>+<enhancement>`` line marking a pickable
+# item as a usable weapon (e.g. ``*Weapon:* mace+1``). md_loader resolves it
+# against the weapon library on load.
+_WEAPON_LINE_RE = re.compile(
+    r"^\s*\*Weapon:\*\s*([A-Za-z0-9_]+(?:[+-]\d+)?)\s*$",
+    re.MULTILINE,
+)
+
 # Opener of the optional apparent-size appearance block.
 _APPEARANCE_OPENER_RE = re.compile(
     r"^\s*\*Appearance by distance:\*\s*$",
     re.MULTILINE,
 )
+
+
+def _extract_weapon_spec(body: str) -> tuple[str, Optional[str]]:
+    """Pull an optional ``*Weapon:* <spec>`` line out of an item body.
+
+    Returns ``(body_without_line, spec)``; ``spec`` is None when absent.
+    """
+    m = _WEAPON_LINE_RE.search(body)
+    if not m:
+        return body, None
+    spec = m.group(1).strip()
+    new_body = body[: m.start()] + body[m.end():]
+    return new_body, spec
 
 # An appearance bullet: ``- **<band>** → <description>`` where band is one of
 # near / intermediate / far / distant. The arrow may be ``→`` or ``->``.
@@ -454,6 +475,7 @@ def parse_contents_md(text: str) -> dict:
 
     for item_id, body in _split_item_blocks(items_section):
         body, size_ft = _extract_size(body)
+        body, weapon_spec = _extract_weapon_spec(body)
         body, appearance_bands = _extract_appearance_bands(body)
         prose, interactions_text = _split_prose_and_interactions(body)
         prose_clean, props = _parse_properties(prose)
@@ -468,6 +490,7 @@ def parse_contents_md(text: str) -> dict:
             extra_facts=list(props["extra_facts"]),
             interactions_ref=props["interactions_ref"],
             size_ft=size_ft,
+            weapon_spec=weapon_spec,
             appearance_bands=appearance_bands,
         )
 
