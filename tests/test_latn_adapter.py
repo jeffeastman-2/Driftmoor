@@ -8,7 +8,7 @@ from types import SimpleNamespace as NS
 
 import pytest
 
-pytest.importorskip("engraf.lexer.vector_space")
+pytest.importorskip("latn.lexer.vector_space")
 
 from models.character import PlayerCharacter
 from models.item import Item

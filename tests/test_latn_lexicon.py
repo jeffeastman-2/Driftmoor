@@ -33,14 +33,14 @@ def test_words_and_phrase_drop_punctuation():
 
 
 def _tok_map(lex, sentence):
-    from engraf.lexer.lexicon import use_lexicon
-    from engraf.lexer.latn_tokenizer_layer1 import latn_tokenize_best
+    from latn.lexer.lexicon import use_lexicon
+    from latn.lexer.latn_tokenizer_layer1 import latn_tokenize_best
     with use_lexicon(lex):
         return {t.word: t for t in latn_tokenize_best(sentence)}
 
 
 def test_lexicon_tokenizes_actions_recipients_and_descriptors():
-    pytest.importorskip("engraf.lexer.vector_space")
+    pytest.importorskip("latn.lexer.vector_space")
     from engine.latn_lexicon import build_driftmoor_lexicon
 
     chars = [_Ch(name="Amara", race="High Elf", character_class="Cleric", role="Smith"),

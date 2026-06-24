@@ -66,8 +66,8 @@ def test_empty_characters_yields_only_static():
 
 
 def test_registration_round_trip_if_engraf_available():
-    pytest.importorskip("engraf.An_N_Space_Model.vector_dimensions")
-    from engraf.An_N_Space_Model import vector_dimensions as vd
+    pytest.importorskip("latn.An_N_Space_Model.vector_dimensions")
+    from latn.An_N_Space_Model import vector_dimensions as vd
     from engine.latn_dimensions import register_driftmoor_dimensions
 
     snap = list(vd.VECTOR_DIMENSIONS)

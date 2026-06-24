@@ -198,8 +198,8 @@ def _predicate_vps(sp):
     """The predicate VP(s) of a sentence phrase. A conjunction predicate
     ("take the torch and light it") flattens to several; a plain predicate is
     a single VP. Non-VP predicates yield nothing."""
-    from engraf.pos.conjunction_phrase import ConjunctionPhrase
-    from engraf.pos.verb_phrase import VerbPhrase
+    from latn.pos.conjunction_phrase import ConjunctionPhrase
+    from latn.pos.verb_phrase import VerbPhrase
 
     pred = getattr(sp, "predicate", None)
     if isinstance(pred, ConjunctionPhrase):
