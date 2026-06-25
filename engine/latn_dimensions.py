@@ -65,7 +65,8 @@ VERB_DIMS: tuple[str, ...] = (
     "dodge", "help", "ready", "hide", "search",
     # Object interaction -> engine/verb_resolver (phase 2a). The fine split of
     # 5e's "Use an Object" (+ the examine-class verbs already resolved today).
-    "examine", "read", "press", "take", "drop", "give",
+    # "stow" = move a held item into the pack (distinct from "drop" to ground).
+    "examine", "read", "press", "take", "drop", "give", "stow",
 )
 
 # Character.faction is a closed set (see models/character.py:24).

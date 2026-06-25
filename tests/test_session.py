@@ -379,10 +379,74 @@ class TestTransportPromptAndPacketFormatting:
         assert "Rapier, Dagger, Light Crossbow (worn: Studded Leather)" in packet
         assert "WIELDING\nRapier (1 hand free)" in packet
 
+    def test_transport_prompt_lists_picked_up_gear(self):
+        """A picked-up non-weapon item (e.g. a torch) lands in the character's
+        inventory; the prompt must surface it under CARRYING so the player can
+        see they hold it. Regression: previously only weapons/armor showed."""
+        from types import SimpleNamespace as NS
+        cs = self._make_transport_session("gilthaness")
+        cs.character.inventory = ["snapped_torch", "rapier_1"]
+        items = {
+            "snapped_torch": NS(label="Snapped torch", weapon=None),
+            "rapier_1": NS(label="Rapier", weapon=object()),  # weapon: shown elsewhere
+        }
+        ctx = RoleContext(
+            character_id="gilthaness", turn=4, condition_text="steady",
+            scene_context="You stand in the Entry Chamber.", soul="",
+            identity="", perception="No other creatures are visible.",
+        )
+        packet = _render_transport_prompt(
+            context=ctx, cs=cs, raw_history="",
+            actor_pos=(132.0, 268.0, "ENTRY CHAMBER"), actor_z=0.0,
+            items=items,
+        )
+        assert "CARRYING" in packet
+        assert "Snapped torch" in packet
+        # The weapon item is not double-listed as gear (no separate label line).
+        assert packet.count("Rapier") <= 1, packet
+
     def test_loadout_summary_empty_without_kit(self):
         from engine.session import _loadout_summary
         from types import SimpleNamespace as NS
         assert _loadout_summary(NS(weapons=[], armor=None)) == ""
+
+    def test_carried_items_summary_excludes_weapons_and_prettifies(self):
+        from engine.session import _carried_items_summary
+        from types import SimpleNamespace as NS
+        items = {
+            "snapped_torch": NS(label="Snapped torch", weapon=None),
+            "rapier_1": NS(label="Rapier", weapon=object()),
+        }
+        cs = NS(character=NS(inventory=["snapped_torch", "rapier_1"]))
+        assert _carried_items_summary(cs, items) == "Snapped torch"
+        # Unknown id (not in registry) falls back to a prettified id.
+        cs2 = NS(character=NS(inventory=["mystery_relic"]))
+        assert _carried_items_summary(cs2, items) == "mystery relic"
+        # Empty inventory -> "".
+        assert _carried_items_summary(NS(character=NS(inventory=[])), items) == ""
+
+    def test_transport_prompt_shows_held_item_under_wielding(self):
+        """A held non-weapon (torch) shares the WIELDING line and consumes a
+        hand, so the player sees what's in their hands."""
+        from types import SimpleNamespace as NS
+        from models.weapon import Weapon
+        cs = self._make_transport_session("gilthaness")
+        cs.weapons = [Weapon(id="rapier", name="Rapier", damage_dice="1d8",
+                             damage_type="piercing")]
+        cs.wielded = ["rapier"]
+        cs.held_items = ["snapped_torch"]
+        items = {"snapped_torch": NS(label="Snapped torch", weapon=None)}
+        ctx = RoleContext(
+            character_id="gilthaness", turn=4, condition_text="steady",
+            scene_context="Entry Chamber.", soul="", identity="",
+            perception="No other creatures are visible.",
+        )
+        packet = _render_transport_prompt(
+            context=ctx, cs=cs, raw_history="",
+            actor_pos=(137.5, 292.5, "ENTRY CHAMBER"), actor_z=0.0, items=items,
+        )
+        # Rapier + torch both in hand; no hands free (2 used of 2).
+        assert "WIELDING\nRapier, Snapped torch (0 hands free)" in packet
 
     def test_puzzle_press_packet_reports_each_press(self):
         packet = _render_puzzle_press_packet(
@@ -543,6 +607,163 @@ class TestInferCharacterDestination:
             {"gilthaness"},
         )
         assert dest is None
+
+
+class TestInferCardinalDestination:
+    """'move south/north/east/west' grounds to the nearest zone that way.
+    Map orientation: +y is north, +x is east (map_renderer flips screen y)."""
+
+    def _geom(self):
+        from types import SimpleNamespace as NS
+        # Zones around an actor at (0, 50): one to each compass point.
+        return NS(zones={
+            "North Room": NS(vertices=[(-10, 90), (10, 90), (10, 110), (-10, 110)]),
+            "South Room": NS(vertices=[(-10, -10), (10, -10), (10, 10), (-10, 10)]),
+            "East Room": NS(vertices=[(90, 40), (110, 40), (110, 60), (90, 60)]),
+        })
+
+    def test_resolves_each_present_heading(self):
+        from engine.session import _infer_cardinal_destination
+        pos = (0.0, 50.0, "")
+        sg = self._geom()
+        assert _infer_cardinal_destination("move north", pos, sg)[2] == "North Room"
+        assert _infer_cardinal_destination("I move south", pos, sg)[2] == "South Room"
+        assert _infer_cardinal_destination("go east", pos, sg)[2] == "East Room"
+
+    def test_picks_nearest_zone_in_the_cone(self):
+        from engine.session import _infer_cardinal_destination
+        from types import SimpleNamespace as NS
+        sg = NS(zones={
+            "Near South": NS(vertices=[(-5, 20), (5, 20), (5, 30), (-5, 30)]),   # (0,25)
+            "Far South": NS(vertices=[(-5, -30), (5, -30), (5, -20), (-5, -20)]),  # (0,-25)
+        })
+        assert _infer_cardinal_destination(
+            "move south", (0.0, 50.0, ""), sg)[2] == "Near South"
+
+    def test_no_zone_that_way_returns_none(self):
+        from engine.session import _infer_cardinal_destination
+        # No zone to the west of the actor.
+        assert _infer_cardinal_destination(
+            "head west", (0.0, 50.0, ""), self._geom()) is None
+
+    def test_requires_movement_cue(self):
+        from engine.session import _infer_cardinal_destination
+        assert _infer_cardinal_destination(
+            "south", (0.0, 50.0, ""), self._geom()) is None
+
+    def test_conflicting_headings_returns_none(self):
+        from engine.session import _infer_cardinal_destination
+        assert _infer_cardinal_destination(
+            "move north and south", (0.0, 50.0, ""), self._geom()) is None
+
+    def test_excludes_current_zone(self):
+        from engine.session import _infer_cardinal_destination
+        from types import SimpleNamespace as NS
+        sg = NS(zones={
+            "Here": NS(vertices=[(-5, 45), (5, 45), (5, 55), (-5, 55)]),
+            "North Room": NS(vertices=[(-10, 90), (10, 90), (10, 110), (-10, 110)]),
+        })
+        dest = _infer_cardinal_destination("move north", (0.0, 50.0, "HERE"), sg)
+        assert dest[2] == "North Room"
+
+
+class TestItemTransferHandModel:
+    """take a non-weapon -> into a hand; stow -> pack (frees hand, keeps item);
+    drop -> on the ground (removed from inventory)."""
+
+    def _setup(self):
+        from types import SimpleNamespace as NS
+        cs = NS(character=NS(id="gil", name="Gil", inventory=[], hands=2,
+                             current_hp=10, hp=10),
+                scene_handle="Gil", weapons=[], wielded=[], held_items=[],
+                episodic_memory=[])
+        item = NS(id="torch", label="Torch", weapon=None, holder=None,
+                  description="A pitch-soaked torch.", discovered_by=set(),
+                  position=None, zone="ROOM")
+        return cs, item
+
+    def _transfer(self, verb, cs, item, text):
+        from engine.session import _handle_item_transfer
+        _handle_item_transfer(
+            transfer_verb=verb, item_obj=item, label="Torch",
+            character_id="gil", characters={"gil": cs}, active_characters={"gil"},
+            current_positions={"gil": (1.0, 2.0, "ROOM")}, intent_text=text,
+            actor_zone="ROOM", turn_num=1, game_time=None, attack_log=[],
+            recent_events=[], cs=cs, authored_response=None,
+        )
+
+    def test_take_puts_non_weapon_in_hand(self):
+        from engine import loadout
+        cs, item = self._setup()
+        self._transfer("take", cs, item, "pick up the torch")
+        assert item.holder == "gil"
+        assert "torch" in cs.character.inventory
+        assert loadout.held_items(cs) == ["torch"]
+
+    def test_take_narrates_item_description(self):
+        cs, item = self._setup()
+        log: list[str] = []
+        from engine.session import _handle_item_transfer
+        _handle_item_transfer(
+            transfer_verb="take", item_obj=item, label="Torch",
+            character_id="gil", characters={"gil": cs}, active_characters={"gil"},
+            current_positions={"gil": (1.0, 2.0, "ROOM")},
+            intent_text="pick up the torch", actor_zone="ROOM", turn_num=1,
+            game_time=None, attack_log=log, recent_events=[], cs=cs,
+            authored_response=None,
+        )
+        # The narrator log carries the authored description for a detailed look.
+        assert any("pitch-soaked torch" in line for line in log)
+
+    def test_stow_moves_to_pack_keeping_item(self):
+        from engine import loadout
+        cs, item = self._setup()
+        self._transfer("take", cs, item, "pick up the torch")
+        self._transfer("stow", cs, item, "save the torch")
+        assert item.holder == "gil"                 # still carried
+        assert "torch" in cs.character.inventory     # still in the pack
+        assert loadout.held_items(cs) == []          # but no longer in hand
+
+    def test_drop_returns_it_to_the_ground(self):
+        from engine import loadout
+        cs, item = self._setup()
+        self._transfer("take", cs, item, "pick up the torch")
+        self._transfer("drop", cs, item, "drop the torch")
+        assert item.holder is None                   # on the ground
+        assert "torch" not in cs.character.inventory
+        assert loadout.held_items(cs) == []          # hand freed
+
+
+class TestSyncCarriedItemPositions:
+    """Carried items follow their holder so possession verbs resolve in the
+    holder's current zone after they move."""
+
+    def test_held_item_follows_holder(self):
+        from engine.session import _sync_carried_item_positions
+        from types import SimpleNamespace as NS
+        from models.space_time import Position
+        item = NS(holder="gil", position=Position(1.0, 1.0), zone="ENTRY CHAMBER")
+        loose = NS(holder=None, position=Position(5.0, 5.0), zone="ENTRY CHAMBER")
+        items = {"torch": item, "rock": loose}
+        _sync_carried_item_positions(
+            {"gil": NS()}, {"gil": (50.0, 60.0, "FIRST PASSAGE")}, items)
+        assert item.zone == "FIRST PASSAGE"
+        assert (item.position.x, item.position.y) == (50.0, 60.0)
+        # Loose item (no holder) is untouched.
+        assert loose.zone == "ENTRY CHAMBER"
+        assert (loose.position.x, loose.position.y) == (5.0, 5.0)
+
+    def test_noop_without_items(self):
+        from engine.session import _sync_carried_item_positions
+        _sync_carried_item_positions({}, {}, None)  # no error, no-op
+
+    def test_unknown_holder_skipped(self):
+        from engine.session import _sync_carried_item_positions
+        from types import SimpleNamespace as NS
+        from models.space_time import Position
+        item = NS(holder="ghost", position=Position(1.0, 1.0), zone="ENTRY CHAMBER")
+        _sync_carried_item_positions({}, {"ghost": (9.0, 9.0, "X")}, {"t": item})
+        assert item.zone == "ENTRY CHAMBER"  # holder not among characters
 
 
 class TestFindTakeableWeaponItem:

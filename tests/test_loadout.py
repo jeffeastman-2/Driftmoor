@@ -27,9 +27,9 @@ GREATSWORD = _w("greatsword", "Greatsword", "2d6", props=["two_handed"])
 BITE = _w("bite", "Bite", "1d8", props=["natural"])
 
 
-def _cs(weapons, wielded=None, hands=2):
+def _cs(weapons, wielded=None, hands=2, held_items=None):
     return NS(character=NS(hands=hands), weapons=list(weapons),
-              wielded=list(wielded or []))
+              wielded=list(wielded or []), held_items=list(held_items or []))
 
 
 class TestWeaponHands:
@@ -156,3 +156,58 @@ class TestHeldWeapons:
         sync_held_weapons(cs, items)
         ids = {w.id for w in cs.weapons}
         assert "mace_plus_one" in ids and "other_mace" not in ids
+
+
+class TestHeldItems:
+    """Non-weapon items held in-hand (e.g. a torch): they occupy a hand like a
+    weapon, can be stowed to the pack (freeing the hand), and round-trip."""
+
+    def test_hold_item_takes_a_hand(self):
+        from engine.loadout import hold_item, held_items, hands_free
+        cs = _cs([RAPIER], wielded=["rapier"])  # 1 hand free
+        assert hold_item(cs, "snapped_torch") is True
+        assert held_items(cs) == ["snapped_torch"]
+        assert hands_free(cs) == 0
+
+    def test_hold_item_is_idempotent(self):
+        from engine.loadout import hold_item, held_items
+        cs = _cs([], held_items=["torch"])
+        assert hold_item(cs, "torch") is True
+        assert held_items(cs) == ["torch"]
+
+    def test_hold_item_auto_sheathes_a_weapon_when_full(self):
+        from engine.loadout import hold_item, held_items
+        cs = _cs([RAPIER, DAGGER], wielded=["rapier", "dagger"])  # 0 free
+        log: list[str] = []
+        assert hold_item(cs, "torch", log) is True
+        # The lower-value weapon (dagger) is sheathed to free a hand.
+        assert "dagger" not in cs.wielded and "rapier" in cs.wielded
+        assert any("sheathes" in line for line in log)
+        assert held_items(cs) == ["torch"]
+
+    def test_hold_item_sheathes_two_hander_to_free_a_hand(self):
+        from engine.loadout import hold_item, held_items
+        cs = _cs([GREATSWORD], wielded=["greatsword"])  # 0 free
+        # The greatsword is the only weapon; sheathing it frees both hands, so
+        # the torch can be taken in one hand.
+        assert hold_item(cs, "torch") is True
+        assert held_items(cs) == ["torch"]
+        assert cs.wielded == []
+
+    def test_stow_item_frees_the_hand_but_keeps_it(self):
+        from engine.loadout import stow_item, held_items, hands_free
+        cs = _cs([RAPIER], wielded=["rapier"], held_items=["torch"])
+        assert hands_free(cs) == 0
+        assert stow_item(cs, "torch") is True
+        assert held_items(cs) == []
+        assert hands_free(cs) == 1
+
+    def test_stow_item_noop_when_not_held(self):
+        from engine.loadout import stow_item
+        cs = _cs([RAPIER], wielded=["rapier"])
+        assert stow_item(cs, "torch") is False
+
+    def test_held_item_counts_against_hands_free(self):
+        from engine.loadout import hands_free
+        cs = _cs([RAPIER], wielded=["rapier"], held_items=["torch"])
+        assert hands_free(cs) == 0

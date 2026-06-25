@@ -10,6 +10,7 @@ from engine.verb_resolver import (
     _detect_verb,
     _match_item,
     _normalize_target,
+    detect_transfer_verb,
     resolve_item_interaction,
 )
 from models.contents_loader import load_contents_with_geometry
@@ -51,6 +52,28 @@ class TestVerbDetection:
 
     def test_empty(self):
         assert _detect_verb("") is None
+
+
+class TestTransferVerbDetection:
+    def test_take_phrases(self):
+        assert detect_transfer_verb("pick up the torch") == "take"
+        assert detect_transfer_verb("I grab the mace") == "take"
+
+    def test_drop_puts_it_on_the_ground(self):
+        assert detect_transfer_verb("drop the torch") == "drop"
+        assert detect_transfer_verb("set down the torch") == "drop"
+
+    def test_stow_puts_it_in_the_pack(self):
+        # "save"/"stow"/"put away" mean stow-to-pack, distinct from "drop".
+        assert detect_transfer_verb("save the torch") == "stow"
+        assert detect_transfer_verb("stow the torch") == "stow"
+        assert detect_transfer_verb("put away the torch") == "stow"
+
+    def test_give_outranks_take(self):
+        assert detect_transfer_verb("give the torch to Amara") == "give"
+
+    def test_none_when_no_transfer(self):
+        assert detect_transfer_verb("examine the torch") is None
         assert _detect_verb(None) is None  # type: ignore[arg-type]
 
 

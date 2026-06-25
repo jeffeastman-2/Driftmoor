@@ -40,18 +40,22 @@ _VERB_LEXICON: list[tuple[str, list[str]]] = [
 # multi-word phrases are matched longest-first within each canonical group.
 _TRANSFER_LEXICON: list[tuple[str, list[str]]] = [
     ("give", ["give", "hand over", "hand to", "hand", "pass to", "pass", "offer", "hand off"]),
+    # "stow" = move a held item into the pack (keeps it, frees the hand);
+    # distinct from "drop", which puts it on the ground. Checked before "drop"
+    # so "put away" / "pack away" win over the "put"/"away" of other groups.
+    ("stow", ["stow", "stash", "save", "put away", "puts away", "pack away", "pack it", "put it away"]),
     ("drop", ["drop", "put down", "set down", "lay down", "discard", "leave behind", "leave"]),
     ("take", ["take", "pick up", "pickup", "grab", "lift", "collect", "pocket", "retrieve", "snatch"]),
 ]
 
 
 def detect_transfer_verb(intent_text: str) -> Optional[str]:
-    """Return the ownership verb (``take``/``drop``/``give``) in the text.
+    """Return the ownership verb (``take``/``drop``/``give``/``stow``) in the text.
 
     Independent of ``_detect_verb`` so possession changes are recognised
     even when an item authored no take/drop/give interaction. Multi-word
     phrases match longest-first; canonical groups are tried in list order
-    so "give"/"drop" outrank "take".
+    so "give"/"stow"/"drop" outrank "take".
     """
     if not intent_text:
         return None

@@ -78,6 +78,9 @@ class CharacterSession:
     # Phase 2: weapon/item ids currently in hand (subset of the kit). Natural
     # weapons are always available and need not appear here. See engine.loadout.
     wielded: list[str] = field(default_factory=list)
+    # Non-weapon items currently held in-hand (e.g. a picked-up torch). A subset
+    # of inventory; each occupies one hand like a weapon. See engine.loadout.
+    held_items: list[str] = field(default_factory=list)
     # Phase 3b: dormancy. "always" = active from turn 1 (default).
     # "zone_entry:<Zone Name>" = activate when an opposing-faction
     # character enters that zone. "door_open:<door_id>" = activate when
@@ -737,6 +740,7 @@ async def _run_puzzle_exchange(
             turn_cycle=turn_cycle,
             context=focused,
             cs=cs,
+            items=items,
         )
 
         next_target = next_intent.interaction_target or infer_interaction_target(
@@ -1337,6 +1341,69 @@ _DESTINATION_GENERIC = {
 def _dest_tokens(s: str) -> set[str]:
     """Word tokens for destination matching (keeps ordinals like 'first')."""
     return {tok for tok in re.split(r"[^a-z0-9]+", s.lower()) if tok}
+
+
+# Compass directions as world-space unit vectors. Map orientation (see
+# map_renderer: screen y = -world y) puts +y at the top, so +y is NORTH and +x
+# is EAST. Diagonals are normalized.
+_DIAG = 0.7071
+_CARDINAL_VECTORS: dict[str, tuple[float, float]] = {
+    "north": (0.0, 1.0), "n": (0.0, 1.0),
+    "south": (0.0, -1.0), "s": (0.0, -1.0),
+    "east": (1.0, 0.0), "e": (1.0, 0.0),
+    "west": (-1.0, 0.0), "w": (-1.0, 0.0),
+    "northeast": (_DIAG, _DIAG), "ne": (_DIAG, _DIAG),
+    "northwest": (-_DIAG, _DIAG), "nw": (-_DIAG, _DIAG),
+    "southeast": (_DIAG, -_DIAG), "se": (_DIAG, -_DIAG),
+    "southwest": (-_DIAG, -_DIAG), "sw": (-_DIAG, -_DIAG),
+}
+
+
+def _infer_cardinal_destination(
+    intent_text: str,
+    my_pos: Optional[tuple[float, float, str]],
+    scene_geometry: Optional["SceneGeometry"],
+) -> Optional[tuple[float, float, str]]:
+    """Resolve "move south/north/east/west" to the nearest zone that way.
+
+    The other movement backfills ground named zones, landmarks, items, and party
+    members, but a bare compass heading ("I move south") matched nothing, so the
+    actor never moved. Map orientation: +y is north, +x is east. Picks the
+    *nearest* other zone whose centroid lies within ~60° of the requested
+    heading and returns its centroid (x, y, zone) — clamped to walking speed and
+    routed through gateways downstream, so walls are handled like any cross-zone
+    move. Returns None when the intent names no single compass direction or no
+    zone lies that way.
+    """
+    if scene_geometry is None or my_pos is None:
+        return None
+    import math
+    words = _dest_tokens(intent_text)
+    if not words or not (words & _MOVE_CUE_WORDS):
+        return None
+    dirs = {_CARDINAL_VECTORS[w] for w in words if w in _CARDINAL_VECTORS}
+    if len(dirs) != 1:  # zero, or conflicting headings -> don't guess
+        return None
+    ux, uy = next(iter(dirs))
+    px, py = float(my_pos[0]), float(my_pos[1])
+    cur_zone = (my_pos[2] or "").upper()
+    best: Optional[tuple[float, float, str]] = None
+    best_dist = 0.0
+    for zname, polygon in scene_geometry.zones.items():
+        verts = getattr(polygon, "vertices", None)
+        if not verts or zname.upper() == cur_zone:
+            continue
+        cx = sum(v[0] for v in verts) / len(verts)
+        cy = sum(v[1] for v in verts) / len(verts)
+        dx, dy = cx - px, cy - py
+        dist = math.hypot(dx, dy)
+        if dist < 1e-6:
+            continue
+        if (dx * ux + dy * uy) / dist < 0.5:  # outside a ~60° cone of the heading
+            continue
+        if best is None or dist < best_dist:
+            best, best_dist = (cx, cy, zname), dist
+    return best
 
 
 def _point_inside_zone_near_gateway(
@@ -2002,22 +2069,42 @@ def _handle_item_transfer(
         )
         item_obj.discovered_by.add(character_id)
         flavor = authored_response or f"{actor_handle} picks up the {label}."
-        _emit(
-            f"[ITEM-TRANSFER] {character_id} takes {label} (now carried by "
-            f"{character_id}): {flavor}",
-            f"{actor_handle} picks up the {label}.",
-            f"you picked up {label} and are now carrying it.",
-        )
-        # A picked-up weapon becomes usable: register it on the character and
-        # ready it (auto-sheathing to free a hand if needed).
+        from engine import loadout
         if getattr(item_obj, "weapon", None) is not None:
-            from engine import loadout
+            # A picked-up weapon becomes usable: register it on the character and
+            # ready it (auto-sheathing to free a hand if needed).
+            _emit(
+                f"[ITEM-TRANSFER] {character_id} takes {label} (now carried by "
+                f"{character_id}): {flavor}",
+                f"{actor_handle} picks up the {label}.",
+                f"you picked up {label} and are now carrying it.",
+            )
             _w = loadout.register_held_weapon(cs, item_obj)
             if _w is not None:
                 _ld: list[str] = []
                 loadout.draw(cs, _w, _ld)
                 if _ld:
                     attack_log.append(f"[LOADOUT] {character_id}: " + ", ".join(_ld))
+        else:
+            # A non-weapon (a torch, a relic) is taken up into a hand. Surface
+            # the item's authored description so the narrator gives the player a
+            # close look at what they now hold.
+            in_hand = loadout.hold_item(cs, item_obj.id)
+            desc = (getattr(item_obj, "description", "") or "").strip()
+            hand_note = (
+                "It is now in hand." if in_hand
+                else "Their hands are full, so they tuck it away."
+            )
+            detail = f" Up close: {desc}" if desc else ""
+            _emit(
+                f"[ITEM-TRANSFER] {character_id} takes {label} (now carried by "
+                f"{character_id}): {flavor} {hand_note} Describe the item in "
+                f"vivid detail for the player.{detail}",
+                f"{actor_handle} picks up the {label}.",
+                f"you picked up {label} and are now holding it.",
+            )
+            if not in_hand:
+                loadout.stow_item(cs, item_obj.id)  # no-op safety; keep in pack
         return
 
     if transfer_verb == "drop":
@@ -2029,6 +2116,8 @@ def _handle_item_transfer(
                 None,
             )
             return
+        from engine import loadout
+        loadout.stow_item(cs, item_obj.id)  # free the hand if it was held
         _apply_item_transfer(
             item_obj, None, characters=characters, target_pos=actor_pos
         )
@@ -2038,6 +2127,28 @@ def _handle_item_transfer(
             f"{actor_zone.upper() or 'this zone'}: {flavor}",
             f"{actor_handle} sets the {label} down.",
             f"you set down {label} in {actor_zone.upper() or 'this zone'}.",
+        )
+        return
+
+    if transfer_verb == "stow":
+        if item_obj.holder != character_id:
+            _emit(
+                f"[ITEM-TRANSFER] {character_id} is not carrying {label}; "
+                f"nothing to stow. Do not narrate stowing it.",
+                f"{actor_handle} is not carrying the {label}.",
+                None,
+            )
+            return
+        # Stow = into the pack: stays in inventory, but the hand is freed. Item
+        # ownership and position are unchanged (still carried by the actor).
+        from engine import loadout
+        loadout.stow_item(cs, item_obj.id)
+        flavor = authored_response or f"{actor_handle} stows the {label} in their pack."
+        _emit(
+            f"[ITEM-TRANSFER] {character_id} stows {label} in their pack "
+            f"(still carried; hand freed): {flavor}",
+            f"{actor_handle} stows the {label} away.",
+            f"you stowed {label} in your pack.",
         )
         return
 
@@ -2194,6 +2305,38 @@ def _classify_examination_result(
     return True, False, False
 
 
+def _sync_carried_item_positions(
+    characters: dict[str, "CharacterSession"],
+    current_positions: dict,
+    items: Optional[dict],
+) -> None:
+    """Make carried items follow their holder.
+
+    A held item's position/zone are only set at the moment of pickup, so it
+    otherwise "stays" in the zone where it was grabbed even as the holder walks
+    away — which made "drop"/"save" fail once you moved (the verb resolver keys
+    on the item's zone). Run once per turn after movement so each held item sits
+    at its holder's current position, and possession verbs resolve in the
+    holder's current zone. Loose items (no holder) are untouched. Perception
+    already excludes held items (see ``_build_perception``), so this never makes
+    a carried item surface as a loose scene item.
+    """
+    if not items:
+        return
+    from models.space_time import Position
+    for it in (items.values() if hasattr(items, "values") else items):
+        holder = getattr(it, "holder", None)
+        if not holder or holder not in characters:
+            continue
+        pos = current_positions.get(holder)
+        if pos is None:
+            continue
+        it.position = Position(float(pos[0]), float(pos[1]))
+        zone = pos[2] if len(pos) > 2 else ""
+        if zone:
+            it.zone = zone
+
+
 def _save_turn(
     checkpoint_dir: Path,
     turn: int,
@@ -2273,6 +2416,11 @@ def _save_turn(
             char_id: list(getattr(cs, "wielded", None) or [])
             for char_id, cs in characters.items()
             if char_id in active and (getattr(cs, "wielded", None) or [])
+        },
+        "held_items": {
+            char_id: list(getattr(cs, "held_items", None) or [])
+            for char_id, cs in characters.items()
+            if char_id in active and (getattr(cs, "held_items", None) or [])
         },
     }
     path.write_text(json.dumps(data, indent=2, default=str))
@@ -2361,6 +2509,12 @@ def load_resume_state(
     for char_id, wielded in last_data.get("wielded", {}).items():
         if char_id in characters and isinstance(wielded, list):
             characters[char_id].wielded = list(wielded)
+
+    # Restore held non-weapon items (e.g. a torch) so a resumed scene remembers
+    # what's in hand vs stowed in the pack.
+    for char_id, held in last_data.get("held_items", {}).items():
+        if char_id in characters and isinstance(held, list):
+            characters[char_id].held_items = list(held)
 
     # Restore active_characters set if the checkpoint recorded it
     if "active_characters" in last_data:
@@ -2784,6 +2938,26 @@ def _loadout_summary(cs: "CharacterSession") -> str:
     return line
 
 
+def _carried_items_summary(cs: "CharacterSession", items: Optional[dict]) -> str:
+    """Non-weapon gear the character is carrying (e.g. a picked-up torch), for
+    the turn prompt. Weapons are already shown by ``_loadout_summary``/WIELDING,
+    so they're excluded here to avoid double-listing. Built from the character's
+    inventory (item ids) resolved against the scene ``items`` registry for
+    labels; falls back to the prettified id when an item isn't in the registry.
+    Returns "" when there's nothing to show."""
+    inv = getattr(getattr(cs, "character", None), "inventory", None) or []
+    if not inv:
+        return ""
+    labels: list[str] = []
+    for iid in inv:
+        it = items.get(iid) if items else None
+        if it is not None and getattr(it, "weapon", None) is not None:
+            continue  # weapons are shown under CARRYING (weapons)/WIELDING
+        label = (getattr(it, "label", "") or "").strip() if it is not None else ""
+        labels.append(label or str(iid).replace("_", " "))
+    return ", ".join(labels)
+
+
 def _render_transport_prompt(
     *,
     context: RoleContext,
@@ -2791,6 +2965,7 @@ def _render_transport_prompt(
     raw_history: str = "",
     actor_pos: Optional[tuple] = None,
     actor_z: float = 0.0,
+    items: Optional[dict] = None,
 ) -> str:
     """Format the DM situation packet sent to human transport channels.
 
@@ -2880,10 +3055,22 @@ def _render_transport_prompt(
         body = "\n".join(p for p in (coord_line, current_position.strip()) if p)
         parts.append(f"CURRENT POSITION\n{body}")
     loadout = _loadout_summary(cs)
-    if loadout:
-        parts.append(f"CARRYING\n{loadout}")
-    from engine.loadout import wielded_weapons as _wielded_weapons, hands_free as _hands_free
+    gear = _carried_items_summary(cs, items)
+    carry_body = "\n".join(p for p in (loadout, gear) if p)
+    if carry_body:
+        parts.append(f"CARRYING\n{carry_body}")
+    from engine.loadout import (
+        wielded_weapons as _wielded_weapons,
+        hands_free as _hands_free,
+        held_items as _held_items,
+    )
     in_hand = [w.name for w in _wielded_weapons(cs)]
+    # Non-weapon items held in-hand (e.g. a torch) share the WIELDING line so the
+    # player sees everything currently occupying their hands.
+    for _hid in _held_items(cs):
+        _hit = items.get(_hid) if items else None
+        _hlabel = (getattr(_hit, "label", "") or "").strip() if _hit else ""
+        in_hand.append(_hlabel or str(_hid).replace("_", " "))
     if in_hand:
         free = _hands_free(cs)
         parts.append(
@@ -3174,43 +3361,66 @@ async def _player_roles_via_transport(
     raw_history: str = "",
     actor_pos: Optional[tuple] = None,
     actor_z: float = 0.0,
+    items: Optional[dict] = None,
 ) -> tuple[ActionIntent, CharacterOutput]:
-    """Run player roles using transport-backed human input when configured."""
-    transport = (cs.player_transport or "llm").strip().lower()
-    if transport != "telegram":
-        return await turn_cycle.player_roles(context)
+    """Run player roles using transport-backed human input when configured.
 
-    from engine import telegram_transport
-    tt = telegram_transport.for_character(context.character_id)
-    if tt is None:
-        raise RuntimeError(
-            f"Telegram transport for {context.character_id} requires "
-            f"BOT_TOKEN_{context.character_id.upper()} and "
-            f"CHAT_ID_{context.character_id.upper()} (or bare BOT_TOKEN/CHAT_ID) "
-            f"in the environment."
-        )
+    Supports two human transports — Telegram (long-poll over the Bot API) and
+    the in-process web transport (asyncio queues). They differ only in how a
+    line is sent/received; the prompt, the wh-question -> DM dialog, and the
+    intent conversion are shared. Non-transport actors fall back to the LLM.
+    """
+    transport = (cs.player_transport or "llm").strip().lower()
+
+    if transport == "telegram":
+        from engine import telegram_transport
+        tt = telegram_transport.for_character(context.character_id)
+        if tt is None:
+            raise RuntimeError(
+                f"Telegram transport for {context.character_id} requires "
+                f"BOT_TOKEN_{context.character_id.upper()} and "
+                f"CHAT_ID_{context.character_id.upper()} (or bare BOT_TOKEN/CHAT_ID) "
+                f"in the environment."
+            )
+        # Discard anything received before this prompt (accept-after cutoff).
+        # Bot API calls run in a worker thread so the long-poll never blocks.
+        await asyncio.to_thread(tt.flush)
+
+        async def _send(text: str) -> None:
+            await asyncio.to_thread(tt.send, text)
+
+        async def _recv() -> str:
+            return (await asyncio.to_thread(tt.poll_once) or "").strip()
+    elif transport == "web":
+        from engine import web_transport
+        wt = web_transport.for_character(context.character_id)
+
+        async def _send(text: str) -> None:
+            await wt.send(text)
+
+        async def _recv() -> str:
+            return (await wt.receive() or "").strip()
+    else:
+        return await turn_cycle.player_roles(context)
 
     prompt_text = _render_transport_prompt(
         context=context, cs=cs, raw_history=raw_history,
-        actor_pos=actor_pos, actor_z=actor_z)
-    # Discard anything received before this prompt (accept-after cutoff), then
-    # send it and long-poll for the reply. Bot API calls run in a worker thread
-    # so the 30s long-poll never blocks the event loop.
-    await asyncio.to_thread(tt.flush)
-    if not await asyncio.to_thread(tt.send, prompt_text):
-        _dbg(f"[TRANSPORT] failed to send turn {context.turn} prompt for {context.character_id}")
-    _dbg(f"[TRANSPORT] sent turn {context.turn} prompt to {context.character_id} via Telegram")
+        actor_pos=actor_pos, actor_z=actor_z, items=items)
+    await _send(prompt_text)
+    _dbg(f"[TRANSPORT] sent turn {context.turn} prompt to "
+         f"{context.character_id} via {transport}")
 
     while True:
-        inbound = (await asyncio.to_thread(tt.poll_once) or "").strip()
+        inbound = await _recv()
         if not inbound:
-            # poll_once already long-polls (~30s); loop back for the next.
+            # Telegram's poll_once long-polls (~30s) then returns empty; web's
+            # receive blocks until input. Either way, loop for the next line.
             continue
         # A question goes to the DM, not the action resolver: answer it and keep
         # the dialog open (no cap) until the player states an actual intent.
         if _looks_like_question(inbound):
             answer = await _dm_answer(turn_cycle, context, inbound)
-            await asyncio.to_thread(tt.send, answer)
+            await _send(answer)
             continue
         intent = _intent_from_transport_text(
             character_id=context.character_id,
@@ -3654,6 +3864,7 @@ async def iter_session(
                 raw_history=combined_history,
                 actor_pos=_ap,
                 actor_z=_az,
+                items=items,
             )
             loop_guard_notes: list[str] = []
 
@@ -4218,6 +4429,15 @@ async def iter_session(
                         characters,
                         current_positions,
                         active_characters,
+                    )
+                # Compass fallback: a bare heading ("move south") grounds to the
+                # nearest zone that way, so cardinal navigation works even when
+                # no place/person is named.
+                if _dest is None:
+                    _dest = _infer_cardinal_destination(
+                        intent.intent,
+                        current_positions.get(character_id),
+                        scene_geometry,
                     )
                 if _dest is not None:
                     player_target = _dest
@@ -4911,6 +5131,11 @@ async def iter_session(
         # Advance scene-level spell effect durations once per completed turn.
         spell_resolver.tick_effects(spell_runtime, rounds=1)
 
+        # Carried items follow their holder, so a torch picked up in one zone and
+        # carried into another can still be dropped/stowed there (the possession
+        # verbs resolve on the item's current zone).
+        _sync_carried_item_positions(characters, current_positions, items)
+
         # Persist checkpoint
         if checkpoint_dir:
             _save_turn(
@@ -4986,12 +5211,18 @@ async def run_session(
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
     initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
     initial_spell_runtime: Optional[SpellRuntimeState] = None,
+    on_turn: "Callable[[TurnResult], None] | None" = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
     Wraps ``iter_session`` for the common single-scene case.  Use
     ``iter_session`` directly when you need to interleave multiple scenes
     turn-by-turn (e.g. ``run_all.py``).
+
+    ``on_turn`` (if given) is invoked after each turn's checkpoint is written —
+    the checkpoint is already on disk — so callers can regenerate per-turn
+    artifacts (e.g. the live map). It is best-effort: an exception in it is
+    swallowed so a visualization failure never aborts the session.
     """
     turns: list[TurnResult] = []
     async for turn_result in iter_session(
@@ -5013,6 +5244,11 @@ async def run_session(
         initial_spell_runtime=initial_spell_runtime,
     ):
         turns.append(turn_result)
+        if on_turn is not None:
+            try:
+                on_turn(turn_result)
+            except Exception:  # noqa: BLE001 — live artifacts are best-effort
+                pass
 
     # Give the final TURN RESULT packet time to be consumed before
     # SESSION COMPLETE is emitted on transport channels.

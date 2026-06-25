@@ -18,7 +18,7 @@ from engine.transcript import elaborate_session_from_dir
 if TYPE_CHECKING:
     from engine.puzzles import PuzzleRegistry
 from engine.narrator import generate_narrative_from_dir
-from engine.map_renderer import render_interactive_map_html
+from engine.map_renderer import render_interactive_map_html, render_turn_slider_html
 from engine.runtime_paths import get_scene_dir, get_session_dir
 from engine.spell_resolver import SpellRuntimeState
 from models.character import PlayerCharacter, NPC, Creature
@@ -325,6 +325,7 @@ def _write_runtime_map(
     geometry_path: Path,
     scene_name: str,
     checkpoint_dir: Path,
+    live: bool = False,
 ) -> None:
     """Write the runtime HTML map (full character paths from snapshots) into
     the checkpoint directory.
@@ -339,15 +340,18 @@ def _write_runtime_map(
     """
     runtime_map_html = checkpoint_dir / f"{scene_name}_map.html"
     try:
-        render_interactive_map_html(
+        render_turn_slider_html(
             geometry_path,
             runtime_map_html,
             snapshot_dir=checkpoint_dir,
-            title=f"{scene_name.replace('_', ' ').title()} — interactive character paths",
+            title=f"{scene_name.replace('_', ' ').title()}",
+            live_refresh_secs=8 if live else None,
         )
-        print(f"  Written to {runtime_map_html}")
+        if not live:                       # per-turn live regen stays quiet
+            print(f"  Written to {runtime_map_html}")
     except Exception as exc:  # noqa: BLE001 — visualization is best-effort
-        print(f"  [map] failed: {exc}")
+        if not live:
+            print(f"  [map] failed: {exc}")
 
 
 def _archive_existing_run(checkpoint_dir: Path) -> Path | None:
@@ -464,10 +468,21 @@ async def run_scene(
         print(f"Archived previous run to: {archived}\n")
 
     start = time.monotonic()
+    # Regenerate the live map after every turn so an open browser tab (with the
+    # page's self-refresh) follows the fog peeling back in real time.
+    _geom = config.geometry_path
+    _on_turn = None
+    if _geom is not None and _geom.exists():
+        def _on_turn(_turn_result):
+            _write_runtime_map(
+                geometry_path=_geom, scene_name=scene_name,
+                checkpoint_dir=checkpoint_dir, live=True,
+            )
     try:
         result = await run_session(
             config.characters, config.roles,
             num_turns=num_turns,
+            on_turn=_on_turn,
             game_state_summary=config.game_state_summary,
             geometry_summary=config.geometry_summary,
             scene_geometry=config.scene_geometry,

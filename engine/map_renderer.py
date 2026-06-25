@@ -699,6 +699,240 @@ def render_interactive_map_html(
     output_path.write_text("".join(parts), encoding="utf-8")
 
 
+def _point_in_poly(x: float, y: float, verts: list[tuple[float, float]]) -> bool:
+    """Ray-casting point-in-polygon test in world coordinates."""
+    n = len(verts)
+    if n < 3:
+        return False
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = verts[i]
+        xj, yj = verts[j]
+        denom = (yj - yi) or 1e-12
+        if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / denom + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _containing_zone(x: float, y: float, zones: dict) -> str | None:
+    for name, verts in zones.items():
+        if _point_in_poly(x, y, verts):
+            return name
+    return None
+
+
+def render_turn_slider_html(
+    geometry_path: Path,
+    output_path: Path,
+    *,
+    snapshot_dir: Path | None = None,
+    title: str | None = None,
+    char_colors: dict[str, str] | None = None,
+    live_refresh_secs: int | None = None,
+) -> None:
+    """Interactive turn-slider map with fog of war.
+
+    One self-contained HTML page (SVG + a little vanilla JS, no libraries): a
+    slider scrubs through the session's turns. At each turn only the zones the
+    party has explored — entered — up to that turn are drawn, with every
+    character's marker at its position for that turn. Rebuilt entirely from the
+    per-turn snapshot JSONs in ``snapshot_dir`` plus the scenario GEOMETRY.md.
+    """
+    g = parse_geometry(geometry_path.read_text(encoding="utf-8"))
+    tracks = (load_tracks_from_snapshots(snapshot_dir)
+              if snapshot_dir is not None and snapshot_dir.exists() else {})
+
+    # Seed turn 0 from GEOMETRY starting positions so the slider always opens on
+    # the party's initial layout — even before the first turn is taken (live web
+    # play, when no snapshots exist yet). The starting zone is resolved by
+    # point-in-polygon so it reveals at turn 0 like any explored zone.
+    start_pos = g.get("starting_positions") or {}
+    for cid, (sx, sy) in start_pos.items():
+        z0 = _containing_zone(float(sx), float(sy), g["zones"]) or ""
+        entry = (0, float(sx), float(sy), z0)
+        pts = tracks.get(cid)
+        if not pts:
+            tracks[cid] = [entry]
+        elif pts[0][0] != 0:
+            tracks[cid] = [entry] + pts
+
+    turn_list = sorted({t for pts in tracks.values() for (t, _x, _y, _z) in pts})
+    if not turn_list:
+        turn_list = [0]
+    never = turn_list[-1] + 1  # data-reveal sentinel: never <= any slider turn
+
+    # frames[turn] = {cid: (x, y)} — character positions per turn.
+    frames: dict[int, dict[str, tuple[float, float]]] = {t: {} for t in turn_list}
+    for cid, pts in tracks.items():
+        for (t, x, y, _z) in pts:
+            frames[t][cid] = (x, y)
+
+    # A zone is "explored" the first turn a character is recorded in it. Use the
+    # snapshot's zone (the engine's authoritative zone_at, with its edge
+    # tolerance) rather than re-deriving with point-in-polygon, so boundary
+    # cases agree with the game.
+    zone_by_upper = {n.upper(): n for n in g["zones"]}
+    reveal_zone: dict[str, int] = {}
+    for pts in tracks.values():
+        for (t, _x, _y, zstr) in pts:
+            zname = zone_by_upper.get((zstr or "").upper())
+            if zname is not None and t < reveal_zone.get(zname, never + 1):
+                reveal_zone[zname] = t
+
+    def _elem_reveal(x: float, y: float) -> int:
+        z = _containing_zone(x, y, g["zones"])
+        if z is None:
+            return turn_list[0]               # not in any zone -> ungated
+        return reveal_zone.get(z, never)      # zone never explored -> hidden
+
+    # viewBox extents (same as the path map).
+    all_pts: list[tuple[float, float]] = []
+    for v in g["zones"].values():
+        all_pts.extend(v)
+    for _n, v in g["impassable"]:
+        all_pts.extend(v)
+    for _n, v in g["boundaries"]:
+        all_pts.extend(v)
+    all_pts.extend(g["landmarks"].values())
+    all_pts.extend((x, y) for (x, y, _l) in g["items"].values())
+    for pts in tracks.values():
+        all_pts.extend((x, y) for (_t, x, y, _z) in pts)
+    if not all_pts:
+        all_pts = [(0.0, 0.0), (100.0, 100.0)]
+    min_x = min(p[0] for p in all_pts); max_x = max(p[0] for p in all_pts)
+    min_y = min(p[1] for p in all_pts); max_y = max(p[1] for p in all_pts)
+    margin = 8.0
+    view_x = min_x - margin
+    view_w = max((max_x - min_x) + 2 * margin, 1.0)
+    view_h = max((max_y - min_y) + 2 * margin, 1.0)
+    view_top = -(max_y + margin)
+    label_base = max(0.85, min(1.9, max(view_w, view_h) / 90.0))
+
+    def fy(y: float) -> float:
+        return -y
+
+    def poly(points: list[tuple[float, float]]) -> str:
+        return " ".join(f"{x:.2f},{-y:.2f}" for x, y in points)
+
+    cc = dict(char_colors or {})
+    pal = 0
+    for cid in sorted(tracks):
+        if cid not in cc:
+            cc[cid] = _PALETTE[pal % len(_PALETTE)]
+            pal += 1
+
+    zone_order = sorted(g["zones"], key=lambda n: (g["zone_z"].get(n, 0.0), n))
+    uniq_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
+    z_rank = {z: i for i, z in enumerate(uniq_z)}
+
+    p: list[str] = []
+    safe_title = html.escape(
+        title or geometry_path.parent.name.replace("_", " ").title())
+    p.append("<!doctype html><html><head><meta charset='utf-8'>")
+    p.append(f"<title>{safe_title} — turn map</title><style>")
+    p.append("body{font-family:ui-sans-serif,system-ui,sans-serif;margin:0;"
+             "background:#f7f7f5;color:#111;}.wrap{padding:12px 14px;}"
+             "h1{font-size:16px;margin:0 0 6px;}"
+             ".ctl{display:flex;align-items:center;gap:10px;margin:6px 0 10px;"
+             "font-size:13px;}.ctl input[type=range]{flex:1;}"
+             "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;"
+             "background:#0e0e12;}button{font:inherit;padding:3px 10px;cursor:pointer;}")
+    p.append(f".zlabel{{font-size:{label_base*1.10:.2f}px;font-weight:700;fill:#eee;opacity:.85;}}")
+    p.append(f".llabel{{font-size:{label_base*0.85:.2f}px;fill:#cfcfcf;}}")
+    p.append(f".ilabel{{font-size:{label_base*0.78:.2f}px;fill:#d9c98a;font-style:italic;}}")
+    p.append(f".clabel{{font-size:{label_base*0.90:.2f}px;font-weight:700;fill:#fff;"
+             "paint-order:stroke;stroke:#000;stroke-width:0.3px;}")
+    p.append("</style></head><body><div class='wrap'>")
+    p.append(f"<h1>{safe_title}</h1>")
+    p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
+             f"<input id='sl' type='range' min='0' max='{len(turn_list)-1}' "
+             f"value='{len(turn_list)-1}' step='1'>"
+             "<span id='rd' style='min-width:70px;'></span></div>")
+    p.append(f"<svg viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
+             "preserveAspectRatio='xMidYMid meet'>")
+
+    for zname in zone_order:
+        verts = g["zones"].get(zname)
+        if not verts:
+            continue
+        zval = g["zone_z"].get(zname, 0.0)
+        color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
+        cx = sum(x for x, _ in verts) / len(verts)
+        cy = sum(y for _, y in verts) / len(verts)
+        p.append(f"<g data-reveal='{reveal_zone.get(zname, never)}'>")
+        p.append(f"<polygon points='{poly(verts)}' fill='{color}' "
+                 f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='0.6'/>")
+        p.append(f"<text x='{cx:.2f}' y='{fy(cy):.2f}' text-anchor='middle' "
+                 f"dominant-baseline='middle' class='zlabel'>{html.escape(zname)}</text></g>")
+
+    for iname, verts in g["impassable"]:
+        if not verts:
+            continue
+        cx = sum(x for x, _ in verts) / len(verts)
+        cy = sum(y for _, y in verts) / len(verts)
+        p.append(f"<g data-reveal='{_elem_reveal(cx, cy)}'><polygon points='{poly(verts)}' "
+                 "fill='#3a3a42' fill-opacity='0.7' stroke='#22222a' stroke-width='0.6'>"
+                 f"<title>{html.escape(iname)}</title></polygon></g>")
+    for bname, verts in g["boundaries"]:
+        if not verts:
+            continue
+        cx = sum(x for x, _ in verts) / len(verts)
+        cy = sum(y for _, y in verts) / len(verts)
+        p.append(f"<g data-reveal='{_elem_reveal(cx, cy)}'><polygon points='{poly(verts)}' "
+                 "fill='none' stroke='gold' stroke-width='1.1' stroke-dasharray='2.5,2.5'>"
+                 f"<title>{html.escape(bname)}</title></polygon></g>")
+
+    for name, (x, y) in g["landmarks"].items():
+        p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
+                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='1.1' fill='#b9b9b9'>"
+                 f"<title>{html.escape(name)}</title></circle>"
+                 f"<text x='{x+1.5:.2f}' y='{fy(y):.2f}' class='llabel'>{html.escape(name)}</text></g>")
+    for _iid, (x, y, label) in g["items"].items():
+        p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
+                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='0.9' fill='#d9c98a'/>"
+                 f"<text x='{x+1.4:.2f}' y='{fy(y):.2f}' class='ilabel'>{html.escape(label)}</text></g>")
+
+    for cid in sorted(tracks):
+        p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
+                 f"<circle r='1.5' fill='{cc[cid]}' stroke='#000' stroke-width='0.35'/>"
+                 f"<text x='2.0' y='-1.0' class='clabel'>{html.escape(cid)}</text></g>")
+    p.append("</svg>")
+
+    frames_js = json.dumps({
+        t: {c: [round(x, 2), round(y, 2)] for c, (x, y) in frames[t].items()}
+        for t in turn_list})
+    p.append("<script>")
+    p.append(f"const FRAMES={frames_js};const TURNS={json.dumps(turn_list)};")
+    p.append(
+        "const sl=document.getElementById('sl'),rd=document.getElementById('rd');"
+        "function show(i){const t=TURNS[i];"
+        "document.querySelectorAll('[data-reveal]').forEach(e=>{"
+        "e.style.display=(+e.dataset.reveal<=t)?'':'none';});"
+        "const f=FRAMES[t]||{};"
+        "document.querySelectorAll('[data-char]').forEach(e=>{const c=f[e.dataset.char];"
+        "if(c){e.setAttribute('transform','translate('+c[0]+','+(-c[1])+')');"
+        "e.style.display='';}else{e.style.display='none';}});"
+        "rd.textContent='Turn '+t;}"
+        "sl.addEventListener('input',()=>show(+sl.value));"
+        "let timer=null;const pb=document.getElementById('play');"
+        "pb.addEventListener('click',()=>{if(timer){clearInterval(timer);timer=null;"
+        "pb.innerHTML='&#9654; Play';return;}pb.innerHTML='&#10073;&#10073; Pause';"
+        "timer=setInterval(()=>{let v=+sl.value;if(v>=TURNS.length-1){clearInterval(timer);"
+        "timer=null;pb.innerHTML='&#9654; Play';return;}sl.value=v+1;show(v+1);},2000);});"
+        "show(+sl.value);")
+    if live_refresh_secs:
+        # Live-follow: while parked on the latest turn, reload to pick up new
+        # turns; if the viewer has scrubbed back into history, leave them be.
+        p.append(
+            f"setInterval(function(){{if(+sl.value>=TURNS.length-1)"
+            f"{{location.reload();}}}},{int(live_refresh_secs) * 1000});")
+    p.append("</script></body></html>")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("".join(p), encoding="utf-8")
+
+
 def update_place_map(place_path: str | Path) -> Path:
     """Regenerate the static scenario map for a place as HTML.
 

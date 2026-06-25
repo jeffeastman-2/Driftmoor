@@ -41,8 +41,48 @@ def hands_total(cs) -> int:
 
 
 def hands_free(cs) -> int:
-    return max(0, hands_total(cs) - hands_used(
-        getattr(cs, "wielded", None), getattr(cs, "weapons", None)))
+    used = hands_used(getattr(cs, "wielded", None), getattr(cs, "weapons", None))
+    used += len(getattr(cs, "held_items", None) or [])  # torch etc. — 1 hand each
+    return max(0, hands_total(cs) - used)
+
+
+def held_items(cs) -> list[str]:
+    """Non-weapon item ids currently in-hand (e.g. a torch)."""
+    return list(getattr(cs, "held_items", None) or [])
+
+
+def hold_item(cs, item_id: str, log: list | None = None) -> bool:
+    """Take a non-weapon item into a free hand, auto-sheathing the lowest-value
+    wielded weapon when no hand is free. Returns True if it ends up in hand.
+    Idempotent. Each held item costs one hand."""
+    if getattr(cs, "held_items", None) is None:
+        cs.held_items = []
+    if item_id in cs.held_items:
+        return True
+    from engine.combat_resolver import _avg_damage
+    while hands_free(cs) < 1 and (getattr(cs, "wielded", None) or []):
+        by_id = _by_id(getattr(cs, "weapons", None))
+        held = [by_id[w] for w in cs.wielded if w in by_id]
+        if not held:
+            break
+        victim = min(held, key=lambda w: _avg_damage(w.damage_dice))
+        cs.wielded.remove(victim.id)
+        if log is not None:
+            log.append(f"sheathes {victim.name}")
+    if hands_free(cs) >= 1:
+        cs.held_items.append(item_id)
+        return True
+    return False
+
+
+def stow_item(cs, item_id: str) -> bool:
+    """Move a held item from hand to pack: it stays in inventory but frees the
+    hand. Returns True if it was in hand."""
+    held = getattr(cs, "held_items", None)
+    if held and item_id in held:
+        held.remove(item_id)
+        return True
+    return False
 
 
 def wielded_weapons(cs) -> list[Weapon]:
