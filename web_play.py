@@ -79,15 +79,28 @@ def _item_icon(label: str) -> str:
     return "📦"
 
 
+# Words that mark a possession as WORN (vs merely carried). (An "Ingested"
+# bucket may join these someday.)
+_WORN_KEYWORDS = (
+    "armor", "mail", "plate", "cloak", "boots", "gauntlet", "helm", "helmet",
+    "bracer", "bracelet", "amulet", "ring", "robe", "belt", "pendant",
+    "necklace", "shield", "vestment", "circlet", "worn",
+)
+
+
+def _is_worn(text: str) -> bool:
+    low = (text or "").lower()
+    return any(k in low for k in _WORN_KEYWORDS)
+
+
 def _player_inventory(cs, items: dict | None) -> dict:
-    """The player's current possessions from the live character, split into
-    what's in hand vs in the pack: {"hand": [...], "pack": [...]} where each
-    entry is {icon, label}. Covers the character's own kit (weapons) AND any
-    picked-up scene gear — read live so it's current even at turn 0 (before any
-    checkpoint exists). Weapons in ``wielded`` and items in ``held_items`` are
-    in hand; everything else carried is in the pack."""
+    """The player's current possessions from the live character, bucketed as
+    ``{"hand": [...], "worn": [...], "carried": [...]}`` (each entry {icon,
+    label}). Read live so it's current even at turn 0. Wielded weapons + held
+    items are in hand; armor and worn gear (by keyword) are worn; everything
+    else carried — non-wielded weapons, tools, kits, picked-up scene items."""
     if cs is None:
-        return {"hand": [], "pack": []}
+        return {"hand": [], "worn": [], "carried": []}
     char = getattr(cs, "character", None)
     weapons = list(getattr(cs, "weapons", None) or [])
     weapon_ids = {w.id for w in weapons}
@@ -97,6 +110,7 @@ def _player_inventory(cs, items: dict | None) -> dict:
     held_set = set(held)
     inv = list(getattr(char, "inventory", None) or [])
     equipment = list(getattr(char, "equipment", None) or [])
+    armor = getattr(cs, "armor", None)
 
     def item_chip(iid: str) -> dict:
         it = (items or {}).get(iid)
@@ -108,30 +122,67 @@ def _player_inventory(cs, items: dict | None) -> dict:
         return {"icon": _item_icon(label), "label": label}
 
     hand: list[dict] = []
-    pack: list[dict] = []
-    for w in weapons:
+    worn: list[dict] = []
+    carried: list[dict] = []
+    for w in weapons:                      # wielded -> in hand; else carried
         chip = {"icon": _item_icon(w.name), "label": w.name}
-        (hand if w.id in wielded else pack).append(chip)
+        (hand if w.id in wielded else carried).append(chip)
     for iid in held:                       # held non-weapon gear (e.g. a torch)
         hand.append(item_chip(iid))
+    worn_labels: set[str] = set()
+    if armor is not None and getattr(armor, "name", ""):  # structured armor
+        worn.append({"icon": _item_icon(armor.name), "label": armor.name})
+        worn_labels.add(armor.name.lower())
     for iid in inv:                        # carried scene gear not in hand
         if iid in weapon_ids or iid in held_set:
             continue                       # already shown as a weapon / in hand
-        pack.append(item_chip(iid))
-    # Free-text possessions from the character sheet (armor, tools, kits,
-    # trinkets). Skip entries that just restate a weapon already listed.
+        carried.append(item_chip(iid))
+    # Free-text possessions from the character sheet: worn (armor, trinkets) vs
+    # carried (tools, kits). Skip entries that just restate a weapon, or an
+    # armor already covered by the structured armor above.
     for entry in equipment:
         low = entry.lower()
         if any(wn and wn in low for wn in weapon_names):
             continue
-        pack.append(gear_chip(entry))
-    return {"hand": hand, "pack": pack}
+        chip = gear_chip(entry)
+        if chip["label"].lower() in worn_labels:
+            continue
+        (worn if _is_worn(entry) else carried).append(chip)
+    return {"hand": hand, "worn": worn, "carried": carried}
+
+
+_NAME_TITLES = {"sister", "brother", "father", "mother", "lord", "lady",
+                "the", "of", "ser", "sir", "captain"}
+
+
+def _highlight_names(characters) -> list[str]:
+    """Names of every player and monster to highlight in the log — each
+    character's id tokens plus the distinctive words of its name (titles
+    dropped). Lower-cased and de-duped; matched case-insensitively client-side,
+    longest first so multi-word names (e.g. "giant spider") win over a token."""
+    names: set[str] = set()
+    for cid, cs in (characters or {}).items():
+        names.add(cid.replace("_", " "))
+        for tok in cid.split("_"):
+            if len(tok) >= 4:
+                names.add(tok)
+        nm = getattr(getattr(cs, "character", None), "name", "") or ""
+        for tok in nm.replace(",", " ").split():
+            t = tok.strip()
+            if len(t) >= 4 and t.lower() not in _NAME_TITLES:
+                names.add(t)
+    return sorted({n.lower() for n in names if n.strip()}, key=len, reverse=True)
 
 
 async def handle_index(request: web.Request) -> web.Response:
     scene = request.app["scene"].replace("_", " ").title()
-    return web.Response(text=_PAGE.replace("__TITLE__", scene),
-                        content_type="text/html")
+    names = _highlight_names(request.app["config"].characters)
+    # Build the highlight regex source in Python (re.escape + json.dumps handle
+    # all escaping) so the page JS needs no fragile backslash literals.
+    pattern = (r"\b(" + "|".join(re.escape(n) for n in names) + r")\b") if names else ""
+    page = (_PAGE.replace("__TITLE__", scene)
+            .replace("__NAME_PATTERN__", json.dumps(pattern)))
+    return web.Response(text=page, content_type="text/html")
 
 
 async def handle_map(request: web.Request) -> web.Response:
@@ -270,6 +321,7 @@ header{padding:8px 14px;font-size:15px;font-weight:700;border-bottom:1px solid #
   letter-spacing:.05em;text-transform:uppercase;}
 .line{margin:0 0 6px;font-size:14px;line-height:1.45;}
 .cid{font-weight:700;color:#9ecbff;}.spoken{color:#cfe8c0;font-style:italic;}
+.name{font-weight:700;color:#9ecbff;}
 .dm{margin:0 0 12px;padding:8px 10px;background:#15212e;border-left:3px solid #4a90d9;
   white-space:pre-wrap;font-size:13px;line-height:1.4;border-radius:3px;}
 form{display:flex;gap:8px;padding:8px 14px;border-top:1px solid #2a2a33;}
@@ -283,6 +335,7 @@ button{font:inherit;padding:7px 14px;cursor:pointer;}
 .chip{display:inline-flex;gap:5px;align-items:center;padding:2px 9px;border-radius:12px;
   background:#1a1a22;border:1px solid #3a3a44;}
 .chip.hand{border-color:#4a90d9;background:#15212e;}
+.chip.worn{border-color:#7a6a3a;background:#1e1a10;}
 .chip .ic{font-size:15px;line-height:1;}
 </style></head><body>
 <header>__TITLE__ — you are playing in the browser</header>
@@ -301,11 +354,20 @@ function atBottom(){return log.scrollHeight-log.scrollTop-log.clientHeight<140;}
 function add(node){const b=atBottom();log.appendChild(node);if(b)log.scrollTop=log.scrollHeight;}
 const es=new EventSource('/events');
 const turnBlocks={};
+const NAME_PATTERN=__NAME_PATTERN__;
+const NAME_RE=NAME_PATTERN?new RegExp(NAME_PATTERN,'gi'):null;
+function hi(s){return NAME_RE?s.replace(NAME_RE,'<span class="name">$1</span>'):s;}
+function nameOf(cid){return (cid||'').split('_').map(w=>w?w[0].toUpperCase()+w.slice(1):w).join(' ');}
+// One unified line per character:  "spoken" narration  — every player/monster
+// name is highlighted, and the narration already opens with the actor's name,
+// so no separate name prefix is needed. (A spoken-only line, with no narration
+// to name the speaker, still gets a name prefix so the quote is attributed.)
 function lineHTML(l){
-  let h='';
-  if(l.spoken)h+='<p class="line"><span class="cid">'+esc(l.cid)+'</span>: <span class="spoken">“'+esc(l.spoken)+'”</span></p>';
-  if(l.prose)h+='<p class="line">'+esc(l.prose)+'</p>';
-  return h;
+  let body='';
+  if(l.spoken)body+='<span class="spoken">“'+hi(esc(l.spoken))+'”</span> ';
+  if(l.prose)body+=hi(esc(l.prose));
+  else if(l.spoken)body='<span class="name">'+esc(nameOf(l.cid))+'</span>: '+body;
+  return '<p class="line">'+body+'</p>';
 }
 function turnBlock(t){
   let b=turnBlocks[t];
@@ -335,9 +397,10 @@ function renderInv(m){
   const inv=document.getElementById('inv');
   const chips=(arr,cls)=>arr.map(x=>'<span class="chip '+cls+'"><span class="ic">'
     +x.icon+'</span>'+esc(x.label)+'</span>').join('');
-  let h='';
-  if(m.hand&&m.hand.length)h+='<span class="grp"><span class="lbl">In hand</span>'+chips(m.hand,'hand')+'</span>';
-  if(m.pack&&m.pack.length)h+='<span class="grp"><span class="lbl">Pack</span>'+chips(m.pack,'pack')+'</span>';
+  const grp=(label,arr,cls)=>(arr&&arr.length)
+    ?'<span class="grp"><span class="lbl">'+label+'</span>'+chips(arr,cls)+'</span>':'';
+  const h=grp('In hand',m.hand,'hand')+grp('Worn',m.worn,'worn')
+    +grp('Carried',m.carried,'carried');  // (+ grp('Ingested',m.ingested,...) someday)
   inv.innerHTML=h||'<span class="lbl">No possessions yet</span>';
 }
 const f=document.getElementById('f'),inp=document.getElementById('in');
