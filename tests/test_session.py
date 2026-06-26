@@ -651,6 +651,15 @@ class TestInferCardinalDestination:
         assert _infer_cardinal_destination(
             "south", (0.0, 50.0, ""), self._geom()) is None
 
+    def test_named_place_without_compass_is_none(self):
+        # "move to the first passage" names a place but no compass word -> None,
+        # so resolving cardinal FIRST never hijacks a normal place/item move.
+        from engine.session import _infer_cardinal_destination
+        for txt in ("move to the first passage", "move to the torch",
+                    "go to the well"):
+            assert _infer_cardinal_destination(
+                txt, (0.0, 50.0, ""), self._geom()) is None, txt
+
     def test_conflicting_headings_returns_none(self):
         from engine.session import _infer_cardinal_destination
         assert _infer_cardinal_destination(

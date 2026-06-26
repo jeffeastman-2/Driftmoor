@@ -19,6 +19,19 @@ def _clean():
     wt.reset()
 
 
+def test_publish_and_latest_positions():
+    wt.publish_positions({"a": (1, 2, "X"), "b": (3, 4, "Y"), "c": None})
+    assert wt.latest_positions() == {"a": (1, 2, "X"), "b": (3, 4, "Y")}  # None skipped
+    wt.publish_positions({"a": (5, 6, "Z")})  # replaces, not merges
+    assert wt.latest_positions() == {"a": (5, 6, "Z")}
+
+
+def test_reset_clears_positions():
+    wt.publish_positions({"a": (1, 2, "X")})
+    wt.reset()
+    assert wt.latest_positions() == {}
+
+
 def test_send_then_drain_outbound():
     async def go():
         h = wt.for_character("p")

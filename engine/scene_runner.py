@@ -320,12 +320,21 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
     )
 
 
+def _start_characters(characters: dict) -> list[str]:
+    """Characters present on the board at scene start (active from turn 1), so
+    the turn-0 map seeds only the party and dormant creatures stay fogged."""
+    return [cid for cid, cs in characters.items()
+            if (getattr(cs, "activation", "always") or "always") == "always"]
+
+
 def _write_runtime_map(
     *,
     geometry_path: Path,
     scene_name: str,
     checkpoint_dir: Path,
     live: bool = False,
+    start_characters: "list[str] | None" = None,
+    item_details: dict | None = None,
 ) -> None:
     """Write the runtime HTML map (full character paths from snapshots) into
     the checkpoint directory.
@@ -346,6 +355,8 @@ def _write_runtime_map(
             snapshot_dir=checkpoint_dir,
             title=f"{scene_name.replace('_', ' ').title()}",
             live_refresh_secs=8 if live else None,
+            start_characters=start_characters,
+            item_details=item_details,
         )
         if not live:                       # per-turn live regen stays quiet
             print(f"  Written to {runtime_map_html}")
@@ -473,10 +484,13 @@ async def run_scene(
     _geom = config.geometry_path
     _on_turn = None
     if _geom is not None and _geom.exists():
+        _party = _start_characters(config.characters)
+        _items = config.items or None
         def _on_turn(_turn_result):
             _write_runtime_map(
                 geometry_path=_geom, scene_name=scene_name,
                 checkpoint_dir=checkpoint_dir, live=True,
+                start_characters=_party, item_details=_items,
             )
     try:
         result = await run_session(
@@ -556,4 +570,6 @@ async def run_scene(
             geometry_path=config.geometry_path,
             scene_name=scene_name,
             checkpoint_dir=checkpoint_dir,
+            start_characters=_start_characters(config.characters),
+            item_details=config.items or None,
         )

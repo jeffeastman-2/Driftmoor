@@ -11,6 +11,7 @@ from engine.verb_resolver import (
     _match_item,
     _normalize_target,
     detect_transfer_verb,
+    infer_interaction_target,
     resolve_item_interaction,
 )
 from models.contents_loader import load_contents_with_geometry
@@ -209,3 +210,37 @@ class TestResolveInteraction:
         assert result is not None
         _, interaction = result
         assert interaction.matches("examine")
+
+
+class TestTransferTargetInference:
+    """infer_interaction_target must resolve the object of a possession verb
+    (take/drop/give/stow) — not just examine-class verbs — so the take/drop can
+    fire, and disambiguate a shared word toward the real (non-flavor) item."""
+
+    def test_pick_up_resolves_takeable_item(self, items):
+        # "pick up" is a transfer verb, not in _VERB_LEXICON; inference still
+        # resolves the object (regression: it returned None and the take no-op'd).
+        assert infer_interaction_target(
+            "I pick up the torch", items, "Entry Chamber") == "Snapped torch"
+
+    def test_drop_and_save_resolve_object(self, items):
+        assert infer_interaction_target(
+            "drop the torch", items, "Entry Chamber") == "Snapped torch"
+        assert infer_interaction_target(
+            "save the torch", items, "Entry Chamber") == "Snapped torch"
+
+    def test_torch_disambiguates_to_takeable_over_flavor(self, items):
+        # "the torch" token-ties snapped_torch and the flavor "Torch bracket";
+        # the decoration loses the tie.
+        item = _match_item("pick up the torch", items, "Entry Chamber")
+        assert item is not None and item.id == "snapped_torch"
+
+    def test_flavor_item_still_matches_when_named(self, items):
+        # Naming the bracket explicitly still resolves it (exact/substring pass).
+        item = _match_item("examine the bracket", items, "Entry Chamber")
+        assert item is not None and item.id == "torch_bracket"
+
+    def test_non_interaction_text_still_none(self, items):
+        # No verb (interaction or transfer) -> no target.
+        assert infer_interaction_target(
+            "the torch is over there", items, "Entry Chamber") is None

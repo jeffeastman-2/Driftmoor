@@ -55,6 +55,62 @@ def _turn_entries(checkpoint_dir: Path) -> list[dict]:
     return out
 
 
+# Keyword -> emoji "icon" for an item, matched against its label.
+_ITEM_ICONS = (
+    ("torch", "🔥"), ("crossbow", "🏹"), ("bow", "🏹"), ("dagger", "🗡️"),
+    ("rapier", "🗡️"), ("sword", "🗡️"), ("blade", "🗡️"), ("axe", "🪓"),
+    ("mace", "🔨"), ("hammer", "🔨"), ("shield", "🛡️"), ("staff", "🪄"),
+    ("wand", "🪄"), ("potion", "🧪"), ("vial", "🧪"), ("scroll", "📜"),
+    ("key", "🗝️"), ("gem", "💎"), ("shard", "💎"), ("crystal", "💎"),
+    ("coin", "🪙"), ("gold", "🪙"), ("book", "📖"), ("tome", "📖"),
+    ("rope", "🪢"), ("bone", "🦴"), ("skull", "💀"), ("ring", "💍"),
+    ("pack", "🎒"), ("bag", "🎒"), ("chalk", "✏️"), ("charcoal", "✏️"),
+)
+
+
+def _item_icon(label: str) -> str:
+    low = (label or "").lower()
+    for kw, icon in _ITEM_ICONS:
+        if kw in low:
+            return icon
+    return "📦"
+
+
+def _player_inventory(cs, items: dict | None) -> dict:
+    """The player's current possessions from the live character, split into
+    what's in hand vs in the pack: {"hand": [...], "pack": [...]} where each
+    entry is {icon, label}. Covers the character's own kit (weapons) AND any
+    picked-up scene gear — read live so it's current even at turn 0 (before any
+    checkpoint exists). Weapons in ``wielded`` and items in ``held_items`` are
+    in hand; everything else carried is in the pack."""
+    if cs is None:
+        return {"hand": [], "pack": []}
+    weapons = list(getattr(cs, "weapons", None) or [])
+    weapon_ids = {w.id for w in weapons}
+    wielded = set(getattr(cs, "wielded", None) or [])
+    held = list(getattr(cs, "held_items", None) or [])
+    held_set = set(held)
+    inv = list(getattr(getattr(cs, "character", None), "inventory", None) or [])
+
+    def item_chip(iid: str) -> dict:
+        it = (items or {}).get(iid)
+        label = (getattr(it, "label", "") or "").strip() or iid.replace("_", " ")
+        return {"icon": _item_icon(label), "label": label}
+
+    hand: list[dict] = []
+    pack: list[dict] = []
+    for w in weapons:
+        chip = {"icon": _item_icon(w.name), "label": w.name}
+        (hand if w.id in wielded else pack).append(chip)
+    for iid in held:                       # held non-weapon gear (e.g. a torch)
+        hand.append(item_chip(iid))
+    for iid in inv:                        # carried scene gear not in hand
+        if iid in weapon_ids or iid in held_set:
+            continue                       # already shown as a weapon / in hand
+        pack.append(item_chip(iid))
+    return {"hand": hand, "pack": pack}
+
+
 async def handle_index(request: web.Request) -> web.Response:
     scene = request.app["scene"].replace("_", " ").title()
     return web.Response(text=_PAGE.replace("__TITLE__", scene),
@@ -87,7 +143,11 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     })
     await resp.prepare(request)
     cd, player = request.app["checkpoint_dir"], request.app["player"]
+    cfg = request.app["config"]
+    items = cfg.items
+    player_cs = cfg.characters.get(player)
     sent: set[int] = set()
+    last_inv: dict | None = None
     try:
         while True:
             for msg in web_transport.drain_outbound(player):
@@ -99,6 +159,11 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
                 sent.add(entry["turn"])
                 entry["type"] = "turn"
                 await resp.write(f"data: {json.dumps(entry)}\n\n".encode())
+            inv = _player_inventory(player_cs, items)
+            if inv != last_inv:
+                last_inv = inv
+                await resp.write(
+                    f"data: {json.dumps({'type': 'inventory', **inv})}\n\n".encode())
             await resp.write(b": keep-alive\n\n")
             await asyncio.sleep(0.8)
     except (ConnectionResetError, asyncio.CancelledError):
@@ -106,18 +171,22 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     return resp
 
 
-async def _session_task(app: web.Application) -> None:
+def _render_map(app: web.Application, live_positions: dict | None = None) -> None:
+    """(Re)write the scene map. ``live_positions`` stamps the latest frame with
+    mid-turn positions so the map shows where everyone is now. Best-effort."""
     cfg, cd, scene = app["config"], app["checkpoint_dir"], app["scene"]
+    try:
+        render_turn_slider_html(
+            cfg.geometry_path, cd / f"{scene}_map.html",
+            snapshot_dir=cd, title=scene.replace("_", " ").title(),
+            live_refresh_secs=8, start_characters=app["start_characters"],
+            item_details=cfg.items or None, live_positions=live_positions)
+    except Exception:  # noqa: BLE001 — map is best-effort
+        pass
 
-    def _on_turn(_tr) -> None:
-        try:
-            render_turn_slider_html(
-                cfg.geometry_path, cd / f"{scene}_map.html",
-                snapshot_dir=cd, title=scene.replace("_", " ").title(),
-                live_refresh_secs=8)
-        except Exception:  # noqa: BLE001 — map is best-effort
-            pass
 
+async def _session_task(app: web.Application) -> None:
+    cfg, cd = app["config"], app["checkpoint_dir"]
     await run_session(
         cfg.characters, cfg.roles, num_turns=app["turns"],
         game_state_summary=cfg.game_state_summary,
@@ -126,28 +195,39 @@ async def _session_task(app: web.Application) -> None:
         items=cfg.items or None, puzzles=cfg.puzzles,
         checkpoint_dir=cd, game_time=cfg.game_time,
         character_pronouns=cfg.character_pronouns or None,
-        on_turn=_on_turn,
+        on_turn=lambda _tr: _render_map(app),
     )
+
+
+async def _live_map_task(app: web.Application) -> None:
+    """Regenerate the map mid-turn when the turn loop publishes new live
+    positions (i.e. while the human is being prompted), so NPCs that already
+    moved this turn appear without waiting for the turn to complete."""
+    last: dict | None = None
+    try:
+        while True:
+            await asyncio.sleep(1.0)
+            pos = web_transport.latest_positions()
+            if pos and pos != last:
+                last = pos
+                _render_map(app, live_positions=pos)
+    except asyncio.CancelledError:
+        pass
 
 
 async def _on_startup(app: web.Application) -> None:
     # Render an initial (turn 0) map from the GEOMETRY starting positions so the
     # browser shows the party's starting layout before the first turn lands.
-    cfg, cd, scene = app["config"], app["checkpoint_dir"], app["scene"]
-    try:
-        render_turn_slider_html(
-            cfg.geometry_path, cd / f"{scene}_map.html",
-            snapshot_dir=cd, title=scene.replace("_", " ").title(),
-            live_refresh_secs=8)
-    except Exception:  # noqa: BLE001 — map is best-effort
-        pass
+    _render_map(app)
     app["session_task"] = asyncio.create_task(_session_task(app))
+    app["live_map_task"] = asyncio.create_task(_live_map_task(app))
 
 
 async def _on_cleanup(app: web.Application) -> None:
-    task = app.get("session_task")
-    if task is not None:
-        task.cancel()
+    for key in ("session_task", "live_map_task"):
+        task = app.get(key)
+        if task is not None:
+            task.cancel()
 
 
 _PAGE = """<!doctype html><html><head><meta charset='utf-8'>
@@ -169,12 +249,21 @@ form{display:flex;gap:8px;padding:8px 14px;border-top:1px solid #2a2a33;}
 input{flex:1;font:inherit;padding:7px 10px;background:#1a1a22;color:#e6e6e6;
   border:1px solid #3a3a44;border-radius:4px;}
 button{font:inherit;padding:7px 14px;cursor:pointer;}
+.inv{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 14px;
+  border-top:1px solid #2a2a33;font-size:13px;min-height:22px;}
+.inv .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.inv .lbl{color:#8a8a99;font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+.chip{display:inline-flex;gap:5px;align-items:center;padding:2px 9px;border-radius:12px;
+  background:#1a1a22;border:1px solid #3a3a44;}
+.chip.hand{border-color:#4a90d9;background:#15212e;}
+.chip .ic{font-size:15px;line-height:1;}
 </style></head><body>
 <header>__TITLE__ — you are playing in the browser</header>
 <div class='cols'>
   <div class='log' id='log'></div>
   <div class='map'><iframe id='mapframe' src='/map'></iframe></div>
 </div>
+<div class='inv' id='inv'><span class='lbl'>No possessions yet</span></div>
 <form id='f'><input id='in' autocomplete='off'
   placeholder='State your intent (or ask the DM a question)…' autofocus>
   <button type='submit'>Send</button></form>
@@ -196,8 +285,19 @@ es.onmessage=e=>{
       if(l.prose)h+='<p class="line">'+esc(l.prose)+'</p>';
     }
     div.innerHTML=h;add(div);
+  }else if(m.type==='inventory'){
+    renderInv(m);
   }
 };
+function renderInv(m){
+  const inv=document.getElementById('inv');
+  const chips=(arr,cls)=>arr.map(x=>'<span class="chip '+cls+'"><span class="ic">'
+    +x.icon+'</span>'+esc(x.label)+'</span>').join('');
+  let h='';
+  if(m.hand&&m.hand.length)h+='<span class="grp"><span class="lbl">In hand</span>'+chips(m.hand,'hand')+'</span>';
+  if(m.pack&&m.pack.length)h+='<span class="grp"><span class="lbl">Pack</span>'+chips(m.pack,'pack')+'</span>';
+  inv.innerHTML=h||'<span class="lbl">No possessions yet</span>';
+}
 const f=document.getElementById('f'),inp=document.getElementById('in');
 f.addEventListener('submit',async ev=>{
   ev.preventDefault();const t=inp.value.trim();if(!t)return;inp.value='';
@@ -206,7 +306,9 @@ f.addEventListener('submit',async ev=>{
   await fetch('/input',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({text:t})});
 });
-setInterval(()=>{document.getElementById('mapframe').src='/map?'+Date.now();},9000);
+// The map reloads itself (only while parked on the latest turn) via its own
+// live-refresh; don't force-reload the iframe here, or it interrupts Play and
+// manual scrubbing through past turns.
 </script>
 </body></html>"""
 
@@ -237,6 +339,12 @@ def main():
     app["player"] = args.player
     app["checkpoint_dir"] = checkpoint_dir
     app["turns"] = args.turns or cfg.default_turns or 40
+    # Party = characters active from turn 1; only these seed the turn-0 map, so
+    # dormant creatures (e.g. a lurking spider) stay fogged until discovered.
+    app["start_characters"] = [
+        cid for cid, cs in cfg.characters.items()
+        if (getattr(cs, "activation", "always") or "always") == "always"
+    ]
     app.add_routes([
         web.get("/", handle_index),
         web.get("/map", handle_map),

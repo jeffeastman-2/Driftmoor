@@ -85,6 +85,18 @@ def test_point_in_poly():
     assert not _point_in_poly(-1, 5, sq)
 
 
+def test_parse_geometry_item_labels_with_z_column():
+    # Items table is `id | x | y | z | label`; the optional z must not be read
+    # as the label. Regression: torch_bracket (z=6) showed "6", not its name.
+    from engine.map_renderer import parse_geometry
+    g = parse_geometry(GEOMETRY.read_text(encoding="utf-8"))
+    items = g["items"]
+    assert items["torch_bracket"][2] == "Torch bracket"   # had z=6
+    assert items["wall_scratches"][2] == "Tally scratches"  # had z=3
+    assert items["snapped_torch"][2] == "Snapped torch"   # no z
+    assert items["mace_plus_one"][2] == "Mace +1"         # had z=3
+
+
 def test_containing_zone_matches_geometry():
     from engine.map_renderer import parse_geometry, _containing_zone
     g = parse_geometry(GEOMETRY.read_text(encoding="utf-8"))
@@ -119,3 +131,93 @@ def test_render_turn_slider_fog_and_slider(tmp_path):
     assert "const TURNS=[0, 1, 2]" in t
     # The character appears in the per-turn frames.
     assert "thorgrim" in t
+
+
+def test_render_turn_slider_seeds_only_start_characters(tmp_path):
+    """Turn-0 seeding is restricted to the named party; the dormant giant_spider
+    (present in GEOMETRY starting_positions) must NOT leak onto the map or
+    un-fog its lair before the party finds it."""
+    from engine.map_renderer import render_turn_slider_html
+    out = tmp_path / "init.html"  # no snapshots: live initial render
+    render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+                            start_characters=["thorgrim", "gilthaness"])
+    t = out.read_text(encoding="utf-8")
+    assert "thorgrim" in t and "gilthaness" in t
+    assert "giant_spider" not in t            # dormant creature stays fogged
+    assert "data-reveal='0'" in t             # party's start zone is revealed
+
+
+def test_render_turn_slider_has_trail_segments(tmp_path):
+    """Each tracked character gets a single prev->current trail segment (the JS
+    repositions it per turn); the full route is not drawn."""
+    from engine.map_renderer import render_turn_slider_html
+    (tmp_path / "day1_01.json").write_text(json.dumps({
+        "turn": 1,
+        "current_positions": {"thorgrim": {"x": 138.0, "y": 295.0,
+                                           "zone": "ENTRY CHAMBER"}},
+    }), encoding="utf-8")
+    out = tmp_path / "slider.html"
+    render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+                            start_characters=["thorgrim"])
+    t = out.read_text(encoding="utf-8")
+    assert "data-trail='thorgrim'" in t
+    assert t.count("data-trail=") == 1   # one segment per character, not a path
+    assert "data-trail" in t and "x1" in t  # show() positions the segment
+
+
+def test_render_turn_slider_item_tooltip_has_size_descriptions(tmp_path):
+    """Item hover text carries the by-distance ("size-relative") appearances."""
+    from types import SimpleNamespace as NS
+    from engine.map_renderer import render_turn_slider_html, _item_tooltip
+    detail = NS(description="A snapped torch on the floor.",
+                appearance_bands={"intermediate": "a short pale length of wood",
+                                  "far": "a slim pale streak"})
+    tip = _item_tooltip("Snapped torch", detail)
+    assert "Appears by distance" in tip
+    assert "intermediate: a short pale length of wood" in tip
+    assert "far: a slim pale streak" in tip
+    # And it reaches the rendered SVG <title>.
+    out = tmp_path / "m.html"
+    render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+                            start_characters=["thorgrim"],
+                            item_details={"snapped_torch": detail})
+    assert "Appears by distance" in out.read_text(encoding="utf-8")
+
+
+def test_item_tooltip_label_only_without_detail():
+    from engine.map_renderer import _item_tooltip
+    assert _item_tooltip("Torch bracket", None) == "Torch bracket"
+
+
+def test_render_turn_slider_live_positions_override(tmp_path):
+    """Live (mid-turn) positions stamp the latest frame so the map shows current
+    positions; a dormant creature passed in live_positions stays fogged."""
+    import re
+    from engine.map_renderer import render_turn_slider_html
+    out = tmp_path / "m.html"  # no snapshots -> turn 0 only
+    render_turn_slider_html(
+        GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+        start_characters=["thorgrim"],
+        live_positions={"thorgrim": (137.0, 243.5, "FIRST PASSAGE"),
+                        "giant_spider": (64.0, 195.0, "SECRET CHAMBER")})
+    t = out.read_text(encoding="utf-8")
+    assert "data-char='thorgrim'" in t
+    assert "giant_spider" not in t  # not in start_characters -> stays fogged
+    frames = json.loads(re.search(r"const FRAMES=(\{.*?\});const TURNS", t).group(1))
+    assert frames[list(frames)[-1]]["thorgrim"] == [137.0, 243.5]
+
+
+def test_render_turn_slider_default_seeds_only_tracked_chars(tmp_path):
+    """With no start_characters, only characters recorded in the snapshots are
+    seeded at turn 0 — a GEOMETRY-only entry (the spider) never leaks."""
+    from engine.map_renderer import render_turn_slider_html
+    (tmp_path / "day1_01.json").write_text(json.dumps({
+        "turn": 1,
+        "current_positions": {"thorgrim": {"x": 138.0, "y": 295.0,
+                                           "zone": "ENTRY CHAMBER"}},
+    }), encoding="utf-8")
+    out = tmp_path / "slider.html"
+    render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="EC")
+    t = out.read_text(encoding="utf-8")
+    assert "thorgrim" in t
+    assert "giant_spider" not in t

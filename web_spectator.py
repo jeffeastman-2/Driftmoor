@@ -132,8 +132,9 @@ es.onmessage=e=>{
   const atBottom=log.scrollHeight-log.scrollTop-log.clientHeight<120;
   if(atBottom)log.scrollTop=log.scrollHeight;
 };
-// Refresh the map iframe periodically so it follows new turns.
-setInterval(()=>{const f=document.getElementById('mapframe');f.src='/map?'+Date.now();},9000);
+// The map follows new turns via its own live-refresh (it reloads only while
+// parked on the latest turn), so we don't force-reload the iframe here — that
+// would reset the slider and interrupt Play / scrubbing through past turns.
 </script>
 </body></html>"""
 

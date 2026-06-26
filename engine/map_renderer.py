@@ -19,6 +19,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from collections.abc import Iterable
 from pathlib import Path
 
 import matplotlib.patches as patches
@@ -28,6 +29,28 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------------------------
 # Geometry parsing
 # ---------------------------------------------------------------------------
+
+_BAND_ORDER = ("near", "intermediate", "far", "distant")
+
+
+def _item_tooltip(label: str, detail: object | None) -> str:
+    """Hover text for a map item: its label, full description, and the
+    by-distance ("size-relative") appearances an observer sees near vs far.
+    ``detail`` is duck-typed (``.description``, ``.appearance_bands``)."""
+    lines = [label]
+    desc = (getattr(detail, "description", "") or "").strip() if detail else ""
+    if desc:
+        lines.append(desc)
+    bands = getattr(detail, "appearance_bands", None) if detail else None
+    if isinstance(bands, dict) and bands:
+        shown = [k for k in _BAND_ORDER if (bands.get(k) or "").strip()]
+        shown += [k for k in bands if k not in _BAND_ORDER and (bands.get(k) or "").strip()]
+        if shown:
+            lines.append("Appears by distance:")
+            for k in shown:
+                lines.append(f"  • {k}: {bands[k].strip()}")
+    return "\n".join(lines)
+
 
 def _verts(s: str) -> list[tuple[float, float]]:
     out: list[tuple[float, float]] = []
@@ -121,8 +144,17 @@ def parse_geometry(text: str) -> dict:
                 x, y = float(cells[1]), float(cells[2])
             except ValueError:
                 continue
-            # Optional 4th col is label; otherwise humanize the id.
-            label = cells[3] if len(cells) >= 4 else cells[0].replace("_", " ")
+            # Schema is `id | x | y | z | label` with an optional z; _table drops
+            # the empty z cell, so the label is always the LAST column. A trailing
+            # numeric cell means z is present but the label was omitted -> fall
+            # back to the humanized id (otherwise z, e.g. "6", became the label).
+            label = cells[0].replace("_", " ")
+            if len(cells) >= 4:
+                last = cells[-1]
+                try:
+                    float(last)
+                except ValueError:
+                    label = last
             g["items"][cells[0]] = (x, y, label)
 
     for cells in _table("Starting Positions"):
@@ -731,6 +763,9 @@ def render_turn_slider_html(
     title: str | None = None,
     char_colors: dict[str, str] | None = None,
     live_refresh_secs: int | None = None,
+    start_characters: "Iterable[str] | None" = None,
+    item_details: dict | None = None,
+    live_positions: dict | None = None,
 ) -> None:
     """Interactive turn-slider map with fog of war.
 
@@ -739,6 +774,13 @@ def render_turn_slider_html(
     party has explored — entered — up to that turn are drawn, with every
     character's marker at its position for that turn. Rebuilt entirely from the
     per-turn snapshot JSONs in ``snapshot_dir`` plus the scenario GEOMETRY.md.
+
+    ``start_characters`` is the set of characters present on the board at scene
+    start (the party — those active from turn 1). Only these are seeded at turn 0
+    from GEOMETRY, so a *dormant* creature (a monster that activates on zone
+    entry) does NOT leak its position or un-fog its lair before the party finds
+    it. When omitted, only characters already recorded in the snapshots are
+    seeded (so a GEOMETRY-only entry never leaks by default).
     """
     g = parse_geometry(geometry_path.read_text(encoding="utf-8"))
     tracks = (load_tracks_from_snapshots(snapshot_dir)
@@ -747,9 +789,16 @@ def render_turn_slider_html(
     # Seed turn 0 from GEOMETRY starting positions so the slider always opens on
     # the party's initial layout — even before the first turn is taken (live web
     # play, when no snapshots exist yet). The starting zone is resolved by
-    # point-in-polygon so it reveals at turn 0 like any explored zone.
+    # point-in-polygon so it reveals at turn 0 like any explored zone. Restrict
+    # the seed to the party (``start_characters``) so dormant/hidden creatures
+    # stay fogged until discovered.
     start_pos = g.get("starting_positions") or {}
-    for cid, (sx, sy) in start_pos.items():
+    if start_characters is not None:
+        seed_ids = [c for c in start_characters if c in start_pos]
+    else:
+        seed_ids = [c for c in start_pos if c in tracks]
+    for cid in seed_ids:
+        sx, sy = start_pos[cid]
         z0 = _containing_zone(float(sx), float(sy), g["zones"]) or ""
         entry = (0, float(sx), float(sy), z0)
         pts = tracks.get(cid)
@@ -780,6 +829,25 @@ def render_turn_slider_html(
             zname = zone_by_upper.get((zstr or "").upper())
             if zname is not None and t < reveal_zone.get(zname, never + 1):
                 reveal_zone[zname] = t
+
+    # Live (mid-turn) override: stamp the latest frame with the positions the turn
+    # loop published while waiting on the human, so the map shows where everyone
+    # is NOW — including NPCs who already acted this turn — rather than lagging to
+    # the last end-of-turn checkpoint. Reveals each live zone at the latest turn.
+    if live_positions:
+        lt = turn_list[-1]
+        allowed = set(start_characters) if start_characters is not None else None
+        for cid, pos in live_positions.items():
+            if allowed is not None and cid not in allowed:
+                continue                      # keep dormant creatures fogged
+            if not pos or len(pos) < 2:
+                continue
+            x, y = float(pos[0]), float(pos[1])
+            frames[lt][cid] = (x, y)
+            zstr = pos[2] if len(pos) > 2 else ""
+            zname = zone_by_upper.get((zstr or "").upper()) or _containing_zone(x, y, g["zones"])
+            if zname is not None:
+                reveal_zone[zname] = min(reveal_zone.get(zname, never), lt)
 
     def _elem_reveal(x: float, y: float) -> int:
         z = _containing_zone(x, y, g["zones"])
@@ -890,10 +958,19 @@ def render_turn_slider_html(
                  f"<title>{html.escape(name)}</title></circle>"
                  f"<text x='{x+1.5:.2f}' y='{fy(y):.2f}' class='llabel'>{html.escape(name)}</text></g>")
     for _iid, (x, y, label) in g["items"].items():
+        tooltip = _item_tooltip(label, (item_details or {}).get(_iid))
         p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
-                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='0.9' fill='#d9c98a'/>"
+                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='0.9' fill='#d9c98a'>"
+                 f"<title>{html.escape(tooltip)}</title></circle>"
                  f"<text x='{x+1.4:.2f}' y='{fy(y):.2f}' class='ilabel'>{html.escape(label)}</text></g>")
 
+    # Per-character "where you just came from" segment: previous turn -> current.
+    # Drawn before the markers so the dot sits on top of its own trail tail.
+    for cid in sorted(tracks):
+        p.append(f"<line class='trail' data-trail='{html.escape(cid)}' "
+                 f"stroke='{cc[cid]}' stroke-width='0.7' stroke-opacity='0.65' "
+                 f"stroke-linecap='round' stroke-dasharray='1.6,1.3' "
+                 f"style='display:none'/>")
     for cid in sorted(tracks):
         p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
                  f"<circle r='1.5' fill='{cc[cid]}' stroke='#000' stroke-width='0.35'/>"
@@ -910,7 +987,12 @@ def render_turn_slider_html(
         "function show(i){const t=TURNS[i];"
         "document.querySelectorAll('[data-reveal]').forEach(e=>{"
         "e.style.display=(+e.dataset.reveal<=t)?'':'none';});"
-        "const f=FRAMES[t]||{};"
+        "const f=FRAMES[t]||{};const pf=i>0?(FRAMES[TURNS[i-1]]||{}):{};"
+        "document.querySelectorAll('[data-trail]').forEach(e=>{"
+        "const a=pf[e.dataset.trail],b=f[e.dataset.trail];"
+        "if(a&&b){e.setAttribute('x1',a[0]);e.setAttribute('y1',-a[1]);"
+        "e.setAttribute('x2',b[0]);e.setAttribute('y2',-b[1]);e.style.display='';}"
+        "else{e.style.display='none';}});"
         "document.querySelectorAll('[data-char]').forEach(e=>{const c=f[e.dataset.char];"
         "if(c){e.setAttribute('transform','translate('+c[0]+','+(-c[1])+')');"
         "e.style.display='';}else{e.style.display='none';}});"

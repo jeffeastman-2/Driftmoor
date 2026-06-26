@@ -142,19 +142,25 @@ def _token_match(
     want = _tokens(target)
     if not want:
         return None
-    best_item: Optional[Item] = None
     best_score = 0
-    tied = False
+    scored: list[tuple[int, Item]] = []
     for it in candidates:
         cand_tokens = _tokens(it.id) | (_tokens(it.label) if it.label else set())
         score = len(want & cand_tokens)
-        if score > best_score:
-            best_score, best_item, tied = score, it, False
-        elif score == best_score and score > 0:
-            tied = True
-    if best_score == 0 or tied:
+        if score > 0:
+            scored.append((score, it))
+            best_score = max(best_score, score)
+    if best_score == 0:
         return None
-    return best_item
+    top = [it for s, it in scored if s == best_score]
+    if len(top) == 1:
+        return top[0]
+    # Tie: a flavor-only decoration loses to a real interactive item that shares
+    # the word, so "pick up the torch" picks the takeable snapped_torch over the
+    # flavor "Torch bracket". Only break the tie when exactly one interactive
+    # item remains; otherwise stay ambiguous (return None).
+    interactive = [it for it in top if not getattr(it, "flavor_only", False)]
+    return interactive[0] if len(interactive) == 1 else None
 
 
 def _match_item(
@@ -285,7 +291,10 @@ def infer_interaction_target(
     """
     if not intent_text or not items:
         return None
-    if _detect_verb(intent_text) is None:
+    # Proceed for an interaction verb (examine/search/press/...) OR a possession
+    # verb (take/drop/give/stow). The latter was missing, so "pick up the torch"
+    # never resolved an object and the possession change silently no-op'd.
+    if _detect_verb(intent_text) is None and detect_transfer_verb(intent_text) is None:
         return None
     item = _match_item(intent_text, items, character_zone)
     if item is None:

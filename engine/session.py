@@ -3362,6 +3362,7 @@ async def _player_roles_via_transport(
     actor_pos: Optional[tuple] = None,
     actor_z: float = 0.0,
     items: Optional[dict] = None,
+    current_positions: Optional[dict] = None,
 ) -> tuple[ActionIntent, CharacterOutput]:
     """Run player roles using transport-backed human input when configured.
 
@@ -3394,6 +3395,11 @@ async def _player_roles_via_transport(
     elif transport == "web":
         from engine import web_transport
         wt = web_transport.for_character(context.character_id)
+        # Publish live positions (incl. NPCs who already acted THIS turn) so the
+        # web map shows where everyone is now while the human decides, instead of
+        # lagging a turn behind the end-of-turn checkpoints.
+        if current_positions is not None:
+            web_transport.publish_positions(current_positions)
 
         async def _send(text: str) -> None:
             await wt.send(text)
@@ -3865,6 +3871,7 @@ async def iter_session(
                 actor_pos=_ap,
                 actor_z=_az,
                 items=items,
+                current_positions=current_positions,
             )
             loop_guard_notes: list[str] = []
 
@@ -4404,14 +4411,25 @@ async def iter_session(
                 _move_zone = current_positions.get(
                     character_id, ("", "", "")
                 )[2]
-                # LATN-first (flag-gated, human): ground "move to the <item>" to
-                # a scene item's position, so a feature/landmark named in free
-                # text becomes a real destination.
-                from engine.latn_integration import infer_movement_target
-                _dest = infer_movement_target(
-                    intent.intent, items, characters, _move_zone,
+                # Compass FIRST: a bare heading ("move south") is an unambiguous
+                # direction. _infer_cardinal_destination returns None unless the
+                # text names a single compass word, so trying it first never
+                # hijacks a normal "move to the <item/place>" — but it does stop
+                # LATN from mis-grounding the word "south" to a nearby item (which
+                # could lie the *opposite* way).
+                _dest = _infer_cardinal_destination(
+                    intent.intent,
+                    current_positions.get(character_id),
                     scene_geometry,
                 )
+                # LATN: ground "move to the <item>" to a scene item's position,
+                # so a feature/landmark named in free text becomes a destination.
+                if _dest is None:
+                    from engine.latn_integration import infer_movement_target
+                    _dest = infer_movement_target(
+                        intent.intent, items, characters, _move_zone,
+                        scene_geometry,
+                    )
                 # Shallow fallback: zone/landmark named in the text.
                 if _dest is None and scene_geometry is not None:
                     _dest = _infer_movement_destination(
@@ -4429,15 +4447,6 @@ async def iter_session(
                         characters,
                         current_positions,
                         active_characters,
-                    )
-                # Compass fallback: a bare heading ("move south") grounds to the
-                # nearest zone that way, so cardinal navigation works even when
-                # no place/person is named.
-                if _dest is None:
-                    _dest = _infer_cardinal_destination(
-                        intent.intent,
-                        current_positions.get(character_id),
-                        scene_geometry,
                     )
                 if _dest is not None:
                     player_target = _dest

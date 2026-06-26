@@ -63,11 +63,32 @@ def submit_inbound(character_id: str, text: str) -> None:
     _in(character_id).put_nowait(text)
 
 
+# Latest live (possibly mid-turn) character positions, published by the turn loop
+# when it prompts a web player. Lets the web app show where everyone is *now* —
+# including NPCs who already acted this turn — instead of lagging a turn behind
+# the end-of-turn checkpoints the map is otherwise built from.
+_POS: dict[str, tuple] = {}
+
+
+def publish_positions(positions: dict | None) -> None:
+    """Store the latest live positions (cid -> (x, y, zone))."""
+    _POS.clear()
+    for cid, p in (positions or {}).items():
+        if p is not None:
+            _POS[cid] = tuple(p)
+
+
+def latest_positions() -> dict:
+    """The most recent live positions the turn loop published (copy)."""
+    return dict(_POS)
+
+
 def reset(character_id: str | None = None) -> None:
     """Drop queues (between sessions / in tests)."""
     if character_id is None:
         _OUT.clear()
         _IN.clear()
+        _POS.clear()
     else:
         _OUT.pop(character_id, None)
         _IN.pop(character_id, None)
