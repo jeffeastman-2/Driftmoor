@@ -32,6 +32,20 @@ def test_reset_clears_positions():
     assert wt.latest_positions() == {}
 
 
+def test_publish_and_drain_actions():
+    wt.publish_action({"turn": 1, "cid": "amara", "prose": "She steps forward."})
+    wt.publish_action({"turn": 1, "cid": "thorgrim", "prose": "He raises his axe."})
+    drained = wt.drain_actions()
+    assert [a["cid"] for a in drained] == ["amara", "thorgrim"]
+    assert wt.drain_actions() == []      # destructive — drained once
+
+
+def test_reset_clears_actions():
+    wt.publish_action({"turn": 1, "cid": "amara", "prose": "x"})
+    wt.reset()
+    assert wt.drain_actions() == []
+
+
 def test_send_then_drain_outbound():
     async def go():
         h = wt.for_character("p")

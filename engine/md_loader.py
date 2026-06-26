@@ -184,6 +184,21 @@ def parse_identity_stats(text: str) -> dict:
         if am:
             stats["armor"] = am.group(1).strip()
 
+    # Equipment section: the character's free-text possessions (gear beyond the
+    # structured combat weapons) — armor, tools, kits, trinkets. One bullet each.
+    eq_m = re.search(
+        r"^##\s+Equipment\s*\n(.*?)(?=^##|\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    )
+    if eq_m:
+        equipment = [
+            ln.strip()[1:].strip()
+            for ln in eq_m.group(1).splitlines()
+            if ln.strip().startswith("-") and ln.strip()[1:].strip()
+        ]
+        if equipment:
+            stats["equipment"] = equipment
+
     # Engine section: provider, model, pronouns
     engine_m = re.search(
         r"^##\s+Engine\s*\n(.*?)(?=^##|\Z)",
@@ -829,6 +844,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
 
     for char_id, cfg in char_cfgs.items():
         # For player/NPC characters, pre-fill missing cfg fields from IDENTITY.md
+        id_stats: dict = {}
         if cfg.get("type") != "creature" and cfg.get("identity_file"):
             id_stats = parse_identity_stats(_load(ROOT / cfg["identity_file"]))
             _merge_identity_defaults(cfg, id_stats)
@@ -842,6 +858,12 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             session = _build_creature(char_id, cfg, introductions)
         else:
             session = _build_player_or_npc(char_id, cfg, introductions)
+
+        # Attach the character's free-text possessions (armor, tools, kits,
+        # trinkets) from IDENTITY's ## Equipment list, so loadout/UI can show the
+        # full pack — not just the structured combat weapons.
+        if id_stats.get("equipment"):
+            session.character.equipment = list(id_stats["equipment"])
 
         # Attach weapons: CONFIG.md takes precedence, already merged above
         if cfg.get("weapons"):

@@ -74,6 +74,29 @@ class TestUnarmedCombatantWarning:
         assert capsys.readouterr().err == ""
 
 
+def test_parse_identity_equipment_list():
+    text = """
+# IDENTITY.md - Example Character
+
+## Combat Equipment
+- **weapons:** rapier+5, dagger+10
+
+## Equipment
+- Rapier (1d8 piercing)
+- Studded leather armor
+- Thieves' tools
+- Wooden vine-carved bracelet
+""".strip()
+    stats = parse_identity_stats(text)
+    # Combat Equipment still parses the structured weapons line...
+    assert stats["weapons"] == "rapier+5, dagger+10"
+    # ...and the free-text ## Equipment list is captured separately, in order.
+    assert stats["equipment"] == [
+        "Rapier (1d8 piercing)", "Studded leather armor",
+        "Thieves' tools", "Wooden vine-carved bracelet",
+    ]
+
+
 def test_parse_identity_runtime_defaults_block():
     text = """
 # IDENTITY.md - Example Character

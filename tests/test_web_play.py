@@ -12,10 +12,10 @@ def _weapon(wid, name):
     return NS(id=wid, name=name)
 
 
-def _cs(weapons=(), wielded=(), held_items=(), inventory=()):
+def _cs(weapons=(), wielded=(), held_items=(), inventory=(), equipment=()):
     return NS(weapons=list(weapons), wielded=list(wielded),
               held_items=list(held_items),
-              character=NS(inventory=list(inventory)))
+              character=NS(inventory=list(inventory), equipment=list(equipment)))
 
 
 def test_item_icon_keyword_and_fallback():
@@ -68,3 +68,17 @@ def test_inventory_picked_up_weapon_not_double_listed():
     inv = web_play._player_inventory(cs, {"mace": NS(label="Mace")})
     labels = [c["label"] for c in inv["hand"] + inv["pack"]]
     assert labels.count("Mace") == 1
+
+
+def test_inventory_includes_non_weapon_equipment():
+    # Character-sheet equipment (armor, tools, trinkets) shows in the pack;
+    # equipment entries that just restate a weapon are de-duped, and stat
+    # parentheticals are stripped.
+    cs = _cs(weapons=[_weapon("rapier", "Rapier")], wielded=["rapier"],
+             equipment=["Rapier (1d8 piercing)", "Studded leather armor",
+                        "Thieves' tools", "Wooden vine-carved bracelet"])
+    inv = web_play._player_inventory(cs, {})
+    assert inv["hand"] == [{"icon": "🗡️", "label": "Rapier"}]  # wielded weapon
+    pack = {c["label"] for c in inv["pack"]}
+    assert pack == {"Studded leather armor", "Thieves' tools",
+                    "Wooden vine-carved bracelet"}  # Rapier de-duped, no "(...)"

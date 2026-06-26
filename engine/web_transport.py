@@ -83,12 +83,32 @@ def latest_positions() -> dict:
     return dict(_POS)
 
 
+# Live per-character narration, published by the turn loop as each character
+# acts so the web log can show progress during a slow turn instead of a blank
+# screen until the whole turn completes. Drained (destructively) by the SSE
+# loop; the authoritative per-turn replay still comes from the checkpoints.
+_ACTIONS: list[dict] = []
+
+
+def publish_action(entry: dict) -> None:
+    """Queue one character's just-resolved narration for the web log."""
+    _ACTIONS.append(entry)
+
+
+def drain_actions() -> list[dict]:
+    """All queued live narration entries (non-blocking, clears the queue)."""
+    out = _ACTIONS[:]
+    _ACTIONS.clear()
+    return out
+
+
 def reset(character_id: str | None = None) -> None:
     """Drop queues (between sessions / in tests)."""
     if character_id is None:
         _OUT.clear()
         _IN.clear()
         _POS.clear()
+        _ACTIONS.clear()
     else:
         _OUT.pop(character_id, None)
         _IN.pop(character_id, None)

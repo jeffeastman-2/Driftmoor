@@ -892,6 +892,24 @@ class TestRunSessionStub:
         ids = {r.character_id for r in result.turns[0].character_results}
         assert ids == {"aeliana", "fennel"}
 
+    def test_on_character_acted_fires_per_initiative(self, aeliana_session,
+                                                      fennel_session):
+        """The per-initiative hook fires once per acting character per turn, with
+        that character's id and a positions snapshot — so live views (the web
+        map) can refresh after each move, not just at end of turn."""
+        characters = {"aeliana": aeliana_session, "fennel": fennel_session}
+        roles = {"aeliana": RoleSet(), "fennel": RoleSet()}
+        calls: list[tuple] = []
+        asyncio.run(run_session(
+            characters, roles, num_turns=1,
+            on_character_acted=lambda cid, turn, pos, cr: calls.append((cid, turn, pos, cr)),
+        ))
+        assert {c[0] for c in calls} == {"aeliana", "fennel"}  # both fired
+        assert all(c[1] == 1 for c in calls)                   # turn 1
+        assert all(isinstance(c[2], dict) for c in calls)      # positions snapshot
+        # cr carries this character's result (id matches) for live narration.
+        assert all(c[3].character_id == c[0] for c in calls)
+
     def test_initiative_determines_order(self, aeliana_session, fennel_session):
         """Characters should act in initiative order (varies by roll)."""
         characters = {

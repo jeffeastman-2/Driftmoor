@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -65,6 +66,8 @@ _ITEM_ICONS = (
     ("coin", "🪙"), ("gold", "🪙"), ("book", "📖"), ("tome", "📖"),
     ("rope", "🪢"), ("bone", "🦴"), ("skull", "💀"), ("ring", "💍"),
     ("pack", "🎒"), ("bag", "🎒"), ("chalk", "✏️"), ("charcoal", "✏️"),
+    ("armor", "🛡️"), ("leather", "🛡️"), ("tools", "🛠️"), ("kit", "🧰"),
+    ("bracelet", "💍"), ("amulet", "🔱"), ("cloak", "🧥"), ("boots", "🥾"),
 )
 
 
@@ -85,16 +88,23 @@ def _player_inventory(cs, items: dict | None) -> dict:
     in hand; everything else carried is in the pack."""
     if cs is None:
         return {"hand": [], "pack": []}
+    char = getattr(cs, "character", None)
     weapons = list(getattr(cs, "weapons", None) or [])
     weapon_ids = {w.id for w in weapons}
+    weapon_names = [w.name.lower() for w in weapons if getattr(w, "name", "")]
     wielded = set(getattr(cs, "wielded", None) or [])
     held = list(getattr(cs, "held_items", None) or [])
     held_set = set(held)
-    inv = list(getattr(getattr(cs, "character", None), "inventory", None) or [])
+    inv = list(getattr(char, "inventory", None) or [])
+    equipment = list(getattr(char, "equipment", None) or [])
 
     def item_chip(iid: str) -> dict:
         it = (items or {}).get(iid)
         label = (getattr(it, "label", "") or "").strip() or iid.replace("_", " ")
+        return {"icon": _item_icon(label), "label": label}
+
+    def gear_chip(text: str) -> dict:
+        label = re.sub(r"\s*\([^)]*\)", "", text).strip()  # drop "(1d8 piercing)"
         return {"icon": _item_icon(label), "label": label}
 
     hand: list[dict] = []
@@ -108,6 +118,13 @@ def _player_inventory(cs, items: dict | None) -> dict:
         if iid in weapon_ids or iid in held_set:
             continue                       # already shown as a weapon / in hand
         pack.append(item_chip(iid))
+    # Free-text possessions from the character sheet (armor, tools, kits,
+    # trinkets). Skip entries that just restate a weapon already listed.
+    for entry in equipment:
+        low = entry.lower()
+        if any(wn and wn in low for wn in weapon_names):
+            continue
+        pack.append(gear_chip(entry))
     return {"hand": hand, "pack": pack}
 
 
@@ -118,11 +135,15 @@ async def handle_index(request: web.Request) -> web.Response:
 
 
 async def handle_map(request: web.Request) -> web.Response:
+    # no-cache so the iframe's periodic reload always gets the freshly-rendered
+    # map (with the latest mid-turn positions), never a stale cached copy.
+    headers = {"Cache-Control": "no-cache, no-store, must-revalidate"}
     f = request.app["checkpoint_dir"] / f"{request.app['scene']}_map.html"
     if not f.exists():
         return web.Response(text="<p>No map yet — waiting for the first turn…</p>",
-                            content_type="text/html")
-    return web.Response(text=f.read_text(encoding="utf-8"), content_type="text/html")
+                            content_type="text/html", headers=headers)
+    return web.Response(text=f.read_text(encoding="utf-8"),
+                        content_type="text/html", headers=headers)
 
 
 async def handle_input(request: web.Request) -> web.Response:
@@ -153,6 +174,11 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
             for msg in web_transport.drain_outbound(player):
                 await resp.write(
                     f"data: {json.dumps({'type': 'dm', 'text': msg})}\n\n".encode())
+            # Live per-character narration as the turn unfolds (progress before
+            # the turn's authoritative checkpoint lands below).
+            for act in web_transport.drain_actions():
+                act["type"] = "action"
+                await resp.write(f"data: {json.dumps(act)}\n\n".encode())
             for entry in _turn_entries(cd):
                 if entry["turn"] in sent:
                     continue
@@ -179,7 +205,9 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
         render_turn_slider_html(
             cfg.geometry_path, cd / f"{scene}_map.html",
             snapshot_dir=cd, title=scene.replace("_", " ").title(),
-            live_refresh_secs=8, start_characters=app["start_characters"],
+            # Refresh faster than scene_runner's batch maps so per-initiative
+            # moves are visible while watching live play.
+            live_refresh_secs=4, start_characters=app["start_characters"],
             item_details=cfg.items or None, live_positions=live_positions)
     except Exception:  # noqa: BLE001 — map is best-effort
         pass
@@ -187,6 +215,22 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
 
 async def _session_task(app: web.Application) -> None:
     cfg, cd = app["config"], app["checkpoint_dir"]
+
+    def _on_character_acted(cid: str, turn: int, positions: dict, cr) -> None:
+        # Runs synchronously inside the turn loop's own window, right after each
+        # character acts — so the map and the log update per-initiative instead
+        # of only at end of turn (a separate async task gets starved by the busy
+        # session loop). Map first, then stream this character's narration.
+        web_transport.publish_positions(positions)
+        _render_map(app, live_positions=positions)
+        prose = (getattr(cr.narration, "prose", "") or "").strip()
+        spoken = (getattr(cr.output, "spoken", "") or "").strip()
+        if spoken.lower() in {"", "(none)", "(silent)", "(silence)"}:
+            spoken = ""
+        if prose or spoken:
+            web_transport.publish_action(
+                {"turn": turn, "cid": cid, "prose": prose, "spoken": spoken})
+
     await run_session(
         cfg.characters, cfg.roles, num_turns=app["turns"],
         game_state_summary=cfg.game_state_summary,
@@ -196,23 +240,8 @@ async def _session_task(app: web.Application) -> None:
         checkpoint_dir=cd, game_time=cfg.game_time,
         character_pronouns=cfg.character_pronouns or None,
         on_turn=lambda _tr: _render_map(app),
+        on_character_acted=_on_character_acted,
     )
-
-
-async def _live_map_task(app: web.Application) -> None:
-    """Regenerate the map mid-turn when the turn loop publishes new live
-    positions (i.e. while the human is being prompted), so NPCs that already
-    moved this turn appear without waiting for the turn to complete."""
-    last: dict | None = None
-    try:
-        while True:
-            await asyncio.sleep(1.0)
-            pos = web_transport.latest_positions()
-            if pos and pos != last:
-                last = pos
-                _render_map(app, live_positions=pos)
-    except asyncio.CancelledError:
-        pass
 
 
 async def _on_startup(app: web.Application) -> None:
@@ -220,14 +249,12 @@ async def _on_startup(app: web.Application) -> None:
     # browser shows the party's starting layout before the first turn lands.
     _render_map(app)
     app["session_task"] = asyncio.create_task(_session_task(app))
-    app["live_map_task"] = asyncio.create_task(_live_map_task(app))
 
 
 async def _on_cleanup(app: web.Application) -> None:
-    for key in ("session_task", "live_map_task"):
-        task = app.get(key)
-        if task is not None:
-            task.cancel()
+    task = app.get("session_task")
+    if task is not None:
+        task.cancel()
 
 
 _PAGE = """<!doctype html><html><head><meta charset='utf-8'>
@@ -273,18 +300,33 @@ function esc(s){const d=document.createElement('div');d.textContent=s;return d.i
 function atBottom(){return log.scrollHeight-log.scrollTop-log.clientHeight<140;}
 function add(node){const b=atBottom();log.appendChild(node);if(b)log.scrollTop=log.scrollHeight;}
 const es=new EventSource('/events');
+const turnBlocks={};
+function lineHTML(l){
+  let h='';
+  if(l.spoken)h+='<p class="line"><span class="cid">'+esc(l.cid)+'</span>: <span class="spoken">“'+esc(l.spoken)+'”</span></p>';
+  if(l.prose)h+='<p class="line">'+esc(l.prose)+'</p>';
+  return h;
+}
+function turnBlock(t){
+  let b=turnBlocks[t];
+  if(!b){b=document.createElement('div');b.className='turn';
+    b.innerHTML='<h3>Turn '+t+'</h3>';add(b);turnBlocks[t]=b;}
+  return b;
+}
 es.onmessage=e=>{
   const m=JSON.parse(e.data);
   if(m.type==='dm'){
     const d=document.createElement('div');d.className='dm';d.textContent=m.text;add(d);
+  }else if(m.type==='action'){
+    // Live per-character narration: append to its turn block as it happens.
+    const b=turnBlock(m.turn);const at=atBottom();
+    b.insertAdjacentHTML('beforeend',lineHTML(m));
+    if(at)log.scrollTop=log.scrollHeight;
   }else if(m.type==='turn'){
-    const div=document.createElement('div');div.className='turn';
-    let h='<h3>Turn '+m.turn+'</h3>';
-    for(const l of m.lines){
-      if(l.spoken)h+='<p class="line"><span class="cid">'+esc(l.cid)+'</span>: <span class="spoken">“'+esc(l.spoken)+'”</span></p>';
-      if(l.prose)h+='<p class="line">'+esc(l.prose)+'</p>';
-    }
-    div.innerHTML=h;add(div);
+    // Authoritative end-of-turn record: replace the block built live (also the
+    // sole source on reconnect/replay), so nothing is duplicated.
+    const b=turnBlock(m.turn);
+    b.innerHTML='<h3>Turn '+m.turn+'</h3>'+m.lines.map(lineHTML).join('');
   }else if(m.type==='inventory'){
     renderInv(m);
   }

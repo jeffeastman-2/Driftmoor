@@ -3644,6 +3644,7 @@ async def iter_session(
     initial_positions: Optional[dict[str, tuple[float, float, str]]] = None,
     initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
     initial_spell_runtime: Optional[SpellRuntimeState] = None,
+    on_character_acted: "Callable[[str, int, dict, CharacterTurnResult], None] | None" = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -5095,6 +5096,17 @@ async def iter_session(
             if history_entry:
                 within_turn_history += history_entry
 
+            # Per-initiative hook: this character has acted and moved, so callers
+            # can refresh live views (e.g. the web map + log) without waiting for
+            # the whole turn to finish. ``cr`` carries this character's narration
+            # so a live UI can stream it. Best-effort; a failure never aborts play.
+            if on_character_acted is not None:
+                try:
+                    on_character_acted(
+                        character_id, turn_num, dict(current_positions), cr)
+                except Exception:  # noqa: BLE001 — live views are best-effort
+                    pass
+
         await _broadcast_turn_results_to_transports(
             turn_result=turn_result,
             characters=characters,
@@ -5221,6 +5233,7 @@ async def run_session(
     initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
     initial_spell_runtime: Optional[SpellRuntimeState] = None,
     on_turn: "Callable[[TurnResult], None] | None" = None,
+    on_character_acted: "Callable[[str, int, dict, CharacterTurnResult], None] | None" = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
@@ -5251,6 +5264,7 @@ async def run_session(
         initial_positions=initial_positions,
         initial_party_examination_state=initial_party_examination_state,
         initial_spell_runtime=initial_spell_runtime,
+        on_character_acted=on_character_acted,
     ):
         turns.append(turn_result)
         if on_turn is not None:
