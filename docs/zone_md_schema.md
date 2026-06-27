@@ -162,6 +162,29 @@ focused enough to read in one pass and balanced against the others. Over-propose
 - **Everything in `## Proposed` is deletable in one stroke.** If cutting a
   proposal would break anything above it, it's in the wrong place.
 
+### Encounter pacing & ecology
+
+A scene whose only threat sits at the far end is a *threat vacuum* — the party
+walks in unopposed until one fight. Distribute **graded** danger along the
+approach so tension rises toward the main monster.
+
+- **Tie new creatures to the established monster as an ECOLOGY, not a grab-bag.**
+  The giant spider isn't a lone boss — it's the apex of an infestation. Its
+  smaller brood (spiderlings, a spider swarm, a ceiling ambusher) hunt the
+  approach. One coherent ecology reads better than random monsters *and* it
+  auto-satisfies the lore-check.
+- **A threshold near a predator's territory is a hunting ground, not a safe
+  room.** Web-builders nest where prey enters, so the entrance-side zones (Entry
+  Chamber, First Passage, Echo Chamber) should carry *minor* encounters — don't
+  leave a zone empty just because it's "a threshold." (This overrides the Entry
+  Chamber draft's "a threshold, not a lair" call — revisit it.)
+- **"More, smaller" → model as a swarm or a small pack (one stat entry each),**
+  so density stays within the ≤2-creatures-per-zone cap and the ≤1-deadly-per-
+  scene rule. The apex stays the sole *deadly* threat; the approach is *minor*.
+- **Reuse the hooks already in the prose.** E.g. the Entry Chamber's "something
+  moves up there if a torch is held high" is a ceiling ambusher waiting to be
+  written; webs near the mouth set up the web/dagger tactics.
+
 ---
 
 ## Roles (eJeff directs; adjust to your agents' strengths)

@@ -182,7 +182,10 @@ async def handle_index(request: web.Request) -> web.Response:
     pattern = (r"\b(" + "|".join(re.escape(n) for n in names) + r")\b") if names else ""
     page = (_PAGE.replace("__TITLE__", scene)
             .replace("__NAME_PATTERN__", json.dumps(pattern)))
-    return web.Response(text=page, content_type="text/html")
+    # no-cache so a new run never serves a stale page from a previous version
+    # (e.g. an older inventory bar that didn't know the Worn/Carried groups).
+    return web.Response(text=page, content_type="text/html",
+                        headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
 async def handle_map(request: web.Request) -> web.Response:

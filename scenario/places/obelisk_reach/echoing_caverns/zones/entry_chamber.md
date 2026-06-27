@@ -139,7 +139,7 @@ Ideas to enrich the zone. NOT loaded by the engine. No coordinates. Keep what we
 
 ### Creatures (≤ 2 per zone)
 
-None proposed. The Entry Chamber is a threshold, not a lair. Encounters belong deeper in the cavern system.
+- **Spiderlings (brood cluster)** — The giant spider's offspring, recently hatched and still small enough to fit through cracks near the entrance. They hunt in loose coordination, drawn to light and movement. Power: minor. Role: minor pack hunter / web-builder. Fits because: The entrance is part of the spider's territory and hunting ground. Webs near the cave mouth (referenced in the Description) catch prey entering the caverns. The Spiderlings set the tone: *this* is where the wrongness begins, and it bites. Encounters a spiderling swarm early establishes the spider infestation as an active, spreading threat, not just a lurking apex predator in the deep chambers.
 
 ### Treasure & Notable Items (≤ 3 per zone)
 
@@ -147,5 +147,7 @@ None proposed. The Entry Chamber is a threshold, not a lair. Encounters belong d
 
 ### Features (optional)
 
+- **Webbing near the entrance mouth** — Thin strands of silk drape the crack entrance on the interior side, partially obscured by shadow. Fresh enough to be sticky; old enough to be nearly invisible unless you're looking for it. Evidence of active web-building by creatures that hunt at the threshold.
 - Uneven footing that makes stealth difficult—stepping carelessly produces echoes that carry downward into the First Passage, alerting anything listening below.
 - A faint draft from the First Passage mouth—barely noticeable until you stand directly over it, then unmistakable. Something deeper in draws air through these chambers, and occasionally sends it back.
+- **"Something moves up there if a torch is held high"** — Ceiling ambusher hint: shadows in the upper vault shift and resettle when light reaches them. Not immediately threatening, but unnerving. Sets up the ceiling-hunter predator archetype (leading to the matriarch above the burial vault deeper in).
