@@ -89,6 +89,11 @@ detail outward:
 `distant` fall back to a generic "indistinct shape" — so **authoring `far` and
 `distant` is where you add the most value.**
 
+The `size:` field is the categorical authoring form; the engine's band math uses
+a numeric `size_ft`, which the loader derives from your `size:` word — roughly
+**tiny ≈ 0.5 ft · small ≈ 1.5 ft · medium ≈ 3 ft · large ≈ 6 ft**. Pick the word
+that matches the object's largest dimension; the loader does the conversion.
+
 ### Interaction verbs — bounded set
 Author `interactions:` **only** under these canonical verbs (what the engine
 resolves to your authored response today): **`examine`, `search`, `read`,
