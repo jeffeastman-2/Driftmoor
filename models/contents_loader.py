@@ -1,4 +1,4 @@
-"""Parse scene-level CONTENTS.md files into Item objects.
+"""Parse scene-level CONTENTS.md or zone files into Item objects.
 
 See ``specs/CONTENTS.md`` for the file-format specification.
 The exemplar / reference file is
@@ -9,6 +9,8 @@ Public API:
     parse_contents_md(text)      -> dict (raw parse: items, sections, ...)
     load_contents(path)          -> dict[item_id, Item]
     load_contents_with_geometry(contents_path, geometry)
+                                 -> dict[item_id, Item] with positions/zones
+    load_zone_contents_with_geometry(zones_dir, geometry)
                                  -> dict[item_id, Item] with positions/zones
 """
 
@@ -609,6 +611,174 @@ def _parse_geometry_items_table(geometry_text: str) -> dict[str, dict]:
         if item_id:
             rows[item_id] = {"x": x, "y": y, "z": z, "label": _cell("label")}
     return rows
+
+
+def _parse_bool(value: str, *, default: bool = False) -> bool:
+    """Parse common boolean strings used in markdown fields."""
+    v = (value or "").strip().lower()
+    if v in {"true", "yes", "y", "1"}:
+        return True
+    if v in {"false", "no", "n", "0", "", "n/a", "na", "-"}:
+        return False
+    return default
+
+
+def _size_to_feet(size_value: str) -> float:
+    """Convert zone-schema ``size`` field to feet.
+
+    Accepts D&D keywords (tiny/small/medium/...) or explicit numeric forms
+    like ``2 ft``. Returns 0.0 when unspecified.
+    """
+    raw = (size_value or "").strip().lower()
+    if not raw or raw in {"n/a", "na", "-"}:
+        return 0.0
+    m = re.match(r"(\d+(?:\.\d+)?)\s*(?:ft|feet|')?", raw)
+    if m:
+        return float(m.group(1))
+    return SIZE_KEYWORDS_FT.get(raw, 0.0)
+
+
+def _parse_zone_item_body(body: str) -> Item:
+    """Parse one zone-file item body (schema bullets) into an :class:`Item`."""
+    fields: dict[str, str] = {}
+    appearance: dict[str, str] = {}
+    interactions: list[Interaction] = []
+
+    lines = body.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip("\n")
+        top = re.match(r"^\s*-\s*([^:]+):\s*(.*)$", line)
+        if not top:
+            i += 1
+            continue
+
+        key = top.group(1).strip().lower()
+        value = top.group(2).strip()
+
+        if key == "appearance by distance":
+            i += 1
+            while i < len(lines):
+                sub = re.match(r"^\s{2,}-\s*([^:]+):\s*(.*)$", lines[i])
+                if not sub:
+                    break
+                band = sub.group(1).strip().lower()
+                desc = sub.group(2).strip()
+                if band in {"near", "intermediate", "far", "distant"} and desc:
+                    appearance[band] = desc
+                i += 1
+            continue
+
+        if key == "interactions":
+            i += 1
+            while i < len(lines):
+                sub = re.match(r"^\s{2,}-\s*([^:]+):\s*(.*)$", lines[i])
+                if not sub:
+                    break
+                verb = sub.group(1).strip()
+                resp = sub.group(2).strip()
+                if verb and resp:
+                    interactions.append(
+                        Interaction(verb=verb, aliases=[], condition="", response=resp)
+                    )
+                i += 1
+            continue
+
+        fields[key] = value
+        i += 1
+
+    # Preserve non-core affordances as free facts for future grounding policy.
+    extra_facts: list[str] = []
+    for name in ("weight", "wearable"):
+        val = fields.get(name, "").strip()
+        if val and val.lower() not in {"n/a", "na", "-", "false", "none"}:
+            extra_facts.append(f"{name}: {val}")
+
+    return Item(
+        id="",
+        description=fields.get("description", "").strip(),
+        pickable=_parse_bool(fields.get("pickable", "false")),
+        flavor_only=_parse_bool(fields.get("flavor_only", "false")),
+        # Pressable is a first-class affordance used by resolver pathways.
+        pressable=any((inter.verb or "").strip().lower() == "press" for inter in interactions),
+        extra_facts=extra_facts,
+        size_ft=_size_to_feet(fields.get("size", "")),
+        appearance_bands=appearance,
+        interactions=interactions,
+    )
+
+
+def parse_zone_md(text: str) -> dict[str, Item]:
+    """Parse one zone markdown file and return ``{item_id: Item}``.
+
+    Zone files may legitimately have no item blocks in their ``## Items``
+    section; this returns an empty dict in that case.
+    """
+    items_section = _extract_section(text, "Items")
+    if not items_section:
+        return {}
+
+    out: dict[str, Item] = {}
+    for item_id, body in _split_item_blocks(items_section):
+        item = _parse_zone_item_body(body)
+        item.id = item_id
+        out[item_id] = item
+    return out
+
+
+def load_zone_contents_with_geometry(
+    zones_dir: Path,
+    geometry_path: Path,
+    *,
+    scene_geometry=None,
+) -> dict[str, Item]:
+    """Load all ``zones/*.md`` item blocks and merge geometry metadata.
+
+    Validates id parity with GEOMETRY.md's ``## Items`` table exactly like the
+    legacy CONTENTS loader path.
+    """
+    from models.space_time import Position  # local import to avoid cycle
+
+    zones_path = Path(zones_dir)
+    zone_files = sorted(p for p in zones_path.glob("*.md") if p.is_file())
+    if not zone_files:
+        raise ValueError(f"No zone markdown files found under: {zones_path}")
+
+    items: dict[str, Item] = {}
+    for zone_file in zone_files:
+        parsed = parse_zone_md(zone_file.read_text(encoding="utf-8"))
+        for item_id, item in parsed.items():
+            if item_id in items:
+                raise ValueError(
+                    f"Duplicate item id {item_id!r} across zone files "
+                    f"(latest: {zone_file.name})"
+                )
+            items[item_id] = item
+
+    geometry_text = Path(geometry_path).read_text(encoding="utf-8")
+    geom_items = _parse_geometry_items_table(geometry_text)
+
+    zones_only = set(items) - set(geom_items)
+    geometry_only = set(geom_items) - set(items)
+    if zones_only:
+        raise ValueError(
+            f"Items in zones/*.md but not in GEOMETRY.md: {sorted(zones_only)}"
+        )
+    if geometry_only:
+        raise ValueError(
+            f"Items in GEOMETRY.md but not in zones/*.md: {sorted(geometry_only)}"
+        )
+
+    zone_at = getattr(scene_geometry, "zone_at", None) if scene_geometry else None
+    for item_id, item in items.items():
+        row = geom_items[item_id]
+        position = Position(row["x"], row["y"], row.get("z", 0.0))
+        item.position = position
+        item.label = row["label"]
+        if callable(zone_at):
+            item.zone = zone_at(position)
+
+    return items
 
 
 def load_contents_with_geometry(

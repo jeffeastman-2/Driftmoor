@@ -786,19 +786,31 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     # legacy scenes without CONTENTS.md continue to run.
     items: dict = {}
     if geo_path is not None:
-        contents_path = geo_path.parent / "CONTENTS.md"
-        if contents_path.exists():
-            from models.contents_loader import load_contents_with_geometry
-            try:
+        scene_dir = geo_path.parent
+        zones_dir = scene_dir / "zones"
+        contents_path = scene_dir / "CONTENTS.md"
+        from models.contents_loader import (
+            load_contents_with_geometry,
+            load_zone_contents_with_geometry,
+        )
+        try:
+            # Prefer per-zone source files when present; fall back to legacy
+            # scene-level CONTENTS.md for older scenes.
+            if zones_dir.exists() and any(zones_dir.glob("*.md")):
+                items = load_zone_contents_with_geometry(
+                    zones_dir, geo_path, scene_geometry=scene_geometry,
+                )
+            elif contents_path.exists():
                 items = load_contents_with_geometry(
                     contents_path, geo_path, scene_geometry=scene_geometry,
                 )
-            except Exception as e:  # pragma: no cover - logged for diagnostics
-                import sys
-                print(
-                    f"[md_loader] WARNING: failed to load {contents_path}: {e}",
-                    file=sys.stderr,
-                )
+        except Exception as e:  # pragma: no cover - logged for diagnostics
+            import sys
+            src = str(zones_dir if zones_dir.exists() else contents_path)
+            print(
+                f"[md_loader] WARNING: failed to load scene items from {src}: {e}",
+                file=sys.stderr,
+            )
     # ── Puzzles ───────────────────────────────────────────────────────────────
     # The optional ``## Puzzles`` block of the same CONTENTS.md. Each puzzle
     # owns its own state machine (see engine.puzzles); the loader only turns
