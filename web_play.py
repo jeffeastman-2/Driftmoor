@@ -223,11 +223,21 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     player_cs = cfg.characters.get(player)
     sent: set[int] = set()
     last_inv: dict | None = None
+    last_turn_active: bool | None = None
     try:
         while True:
             for msg in web_transport.drain_outbound(player):
                 await resp.write(
                     f"data: {json.dumps({'type': 'dm', 'text': msg})}\n\n".encode())
+            # Whether it's the player's turn — reported on change so the browser
+            # can enable/disable its input. A fresh connection starts at None, so
+            # a page reload mid-turn always re-receives the current state.
+            active = web_transport.is_awaiting(player)
+            if active != last_turn_active:
+                last_turn_active = active
+                await resp.write(
+                    f"data: {json.dumps({'type': 'turnstate', 'active': active})}\n\n"
+                    .encode())
             # Live per-character narration as the turn unfolds (progress before
             # the turn's authoritative checkpoint lands below).
             for act in web_transport.drain_actions():
@@ -330,7 +340,12 @@ header{padding:8px 14px;font-size:15px;font-weight:700;border-bottom:1px solid #
 form{display:flex;gap:8px;padding:8px 14px;border-top:1px solid #2a2a33;}
 input{flex:1;font:inherit;padding:7px 10px;background:#1a1a22;color:#e6e6e6;
   border:1px solid #3a3a44;border-radius:4px;}
+input:disabled{opacity:.5;cursor:not-allowed;}
 button{font:inherit;padding:7px 14px;cursor:pointer;}
+button:disabled{opacity:.5;cursor:not-allowed;}
+.status{padding:5px 14px;font-size:12px;letter-spacing:.03em;color:#8a8a99;
+  border-top:1px solid #2a2a33;transition:color .15s,background .15s;}
+.status.active{color:#7fd18c;background:#132015;font-weight:600;}
 .inv{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 14px;
   border-top:1px solid #2a2a33;font-size:13px;min-height:22px;}
 .inv .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
@@ -347,9 +362,10 @@ button{font:inherit;padding:7px 14px;cursor:pointer;}
   <div class='map'><iframe id='mapframe' src='/map'></iframe></div>
 </div>
 <div class='inv' id='inv'><span class='lbl'>No possessions yet</span></div>
-<form id='f'><input id='in' autocomplete='off'
-  placeholder='State your intent (or ask the DM a question)…' autofocus>
-  <button type='submit'>Send</button></form>
+<div class='status' id='turnstatus'>Waiting for your turn…</div>
+<form id='f'><input id='in' autocomplete='off' disabled
+  placeholder='Waiting for your turn…'>
+  <button id='send' type='submit' disabled>Send</button></form>
 <script>
 const log=document.getElementById('log');
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
@@ -382,6 +398,8 @@ es.onmessage=e=>{
   const m=JSON.parse(e.data);
   if(m.type==='dm'){
     const d=document.createElement('div');d.className='dm';d.textContent=m.text;add(d);
+    // A DM message (turn prompt or an answer to a question) means it's our move.
+    setTurn(true);
   }else if(m.type==='action'){
     // Live per-character narration: append to its turn block as it happens.
     const b=turnBlock(m.turn);const at=atBottom();
@@ -394,6 +412,10 @@ es.onmessage=e=>{
     b.innerHTML='<h3>Turn '+m.turn+'</h3>'+m.lines.map(lineHTML).join('');
   }else if(m.type==='inventory'){
     renderInv(m);
+  }else if(m.type==='turnstate'){
+    // Authoritative turn state from the server (also fires on reconnect), so
+    // the input line settles correctly even if a one-shot 'dm' event was missed.
+    setTurn(m.active);
   }
 };
 function renderInv(m){
@@ -406,9 +428,24 @@ function renderInv(m){
     +grp('Carried',m.carried,'carried');  // (+ grp('Ingested',m.ingested,...) someday)
   inv.innerHTML=h||'<span class="lbl">No possessions yet</span>';
 }
-const f=document.getElementById('f'),inp=document.getElementById('in');
+const f=document.getElementById('f'),inp=document.getElementById('in'),
+      sendBtn=document.getElementById('send'),
+      turnStatus=document.getElementById('turnstatus');
+// Single source of truth for the input's live/idle state. A 'dm' SSE event
+// (turn prompt or DM answer) flips us live; submitting an intent flips us idle
+// until the next prompt arrives, so out-of-turn input is impossible.
+function setTurn(active){
+  inp.disabled=!active;sendBtn.disabled=!active;
+  turnStatus.className=active?'status active':'status';
+  turnStatus.textContent=active
+    ?'● Your turn — state your intent, or ask the DM a question':'Waiting for your turn…';
+  inp.placeholder=active
+    ?'State your intent (or ask the DM a question)…':'Waiting for your turn…';
+  if(active)inp.focus();
+}
 f.addEventListener('submit',async ev=>{
-  ev.preventDefault();const t=inp.value.trim();if(!t)return;inp.value='';
+  ev.preventDefault();if(inp.disabled)return;const t=inp.value.trim();if(!t)return;
+  inp.value='';setTurn(false);
   const e=document.createElement('div');e.className='line';
   e.innerHTML='<span class="cid">you</span>: '+esc(t);add(e);
   await fetch('/input',{method:'POST',headers:{'Content-Type':'application/json'},

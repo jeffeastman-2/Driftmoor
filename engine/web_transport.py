@@ -63,6 +63,34 @@ def submit_inbound(character_id: str, text: str) -> None:
     _in(character_id).put_nowait(text)
 
 
+def flush_inbound(character_id: str) -> None:
+    """Discard any input queued before this prompt. The web UI only enables the
+    input line when it's the player's turn, but a stray/duplicate POST could
+    still land out of turn; dropping it here guarantees the next ``receive()``
+    reads *this* turn's reply, not a stale one (mirrors the telegram seam)."""
+    q = _in(character_id)
+    while not q.empty():
+        q.get_nowait()
+
+
+# Whether the turn loop is currently blocked awaiting THIS player's line — i.e.
+# it is their turn. The web app reports this to the browser so the input line
+# can enable/disable itself, and (because it's steady state, not a one-shot
+# event) a page reload mid-turn re-derives the right state instead of stranding
+# the input disabled.
+_AWAITING: dict[str, bool] = {}
+
+
+def set_awaiting(character_id: str, flag: bool) -> None:
+    """Mark whether the loop is waiting on this player's input (their turn)."""
+    _AWAITING[character_id] = flag
+
+
+def is_awaiting(character_id: str) -> bool:
+    """Is it this player's turn (the loop is blocked on their input)?"""
+    return _AWAITING.get(character_id, False)
+
+
 # Latest live (possibly mid-turn) character positions, published by the turn loop
 # when it prompts a web player. Lets the web app show where everyone is *now* —
 # including NPCs who already acted this turn — instead of lagging a turn behind
@@ -109,6 +137,8 @@ def reset(character_id: str | None = None) -> None:
         _IN.clear()
         _POS.clear()
         _ACTIONS.clear()
+        _AWAITING.clear()
     else:
         _OUT.pop(character_id, None)
         _IN.pop(character_id, None)
+        _AWAITING.pop(character_id, None)

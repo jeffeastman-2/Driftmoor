@@ -95,3 +95,42 @@ def test_queues_are_per_character():
         assert wt.drain_outbound("a") == ["for-a"]
         assert wt.drain_outbound("b") == ["for-b"]
     asyncio.run(go())
+
+
+def test_flush_inbound_drops_stale_input():
+    # A stray out-of-turn POST is discarded so the next receive() reads the
+    # reply submitted *after* the prompt, never a stale one.
+    wt.submit_inbound("p", "stale line typed out of turn")
+    wt.flush_inbound("p")
+    assert wt._in("p").empty()
+
+    async def go():
+        wt.submit_inbound("p", "fresh reply")
+        assert await wt.for_character("p").receive() == "fresh reply"
+    asyncio.run(go())
+
+
+def test_awaiting_defaults_false_then_toggles():
+    assert wt.is_awaiting("p") is False        # not their turn until prompted
+    wt.set_awaiting("p", True)
+    assert wt.is_awaiting("p") is True
+    wt.set_awaiting("p", False)
+    assert wt.is_awaiting("p") is False
+
+
+def test_awaiting_is_per_character():
+    wt.set_awaiting("a", True)
+    assert wt.is_awaiting("a") is True
+    assert wt.is_awaiting("b") is False        # b unaffected
+
+
+def test_reset_clears_awaiting():
+    wt.set_awaiting("p", True)
+    wt.reset()
+    assert wt.is_awaiting("p") is False
+
+    wt.set_awaiting("a", True)
+    wt.set_awaiting("b", True)
+    wt.reset("a")
+    assert wt.is_awaiting("a") is False         # cleared
+    assert wt.is_awaiting("b") is True          # untouched
