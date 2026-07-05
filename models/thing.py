@@ -103,6 +103,59 @@ class Interaction:
         return any(c == a.lower() for a in self.aliases)
 
 
+# ---------------------------------------------------------------------------
+# Affordances, effects, carry-state
+#
+# A Thing is manipulated through its *affordances* (capability tags that gate
+# verbs) and *effects* (what it does), while its *carry-state* says where it is
+# relative to a possessor. "weapon" and "armor" are just affordance + effect,
+# not separate classes. These are additive scaffolding in this phase — the
+# unified verb dispatch and derived legacy views (cs.weapons/wielded/...) wire
+# them up in the switchover phase.
+# ---------------------------------------------------------------------------
+
+# Affordance tags (a Thing may carry several).
+HOLDABLE = "holdable"      # can occupy a hand (take/draw/stow/drop)
+WEARABLE = "wearable"      # can occupy a body slot (wear/remove)
+WEAPON = "weapon"          # holdable whose in-hand-use effect is an attack
+ARMOR = "armor"            # wearable whose worn effect is an AC bonus
+CONSUMABLE = "consumable"  # destroyed on use (eat/drink)
+TOOL = "tool"              # grants a `use` action / check bonus / produces a Thing
+READABLE = "readable"      # has a `read` interaction
+CONTAINER = "container"    # can hold other Things
+LIGHT = "light"            # light source (stateful lit/unlit)
+PRESSABLE = "pressable"    # has a `press` interaction
+
+# Carry-state locations (where a Thing is relative to its holder).
+IN_WORLD = "in_world"      # loose in the world (holder is None), at `position`
+CARRIED = "carried"        # possessed, in the pack (not in hand or worn)
+IN_HAND = "in_hand"        # occupying hand slot(s)
+WORN = "worn"              # occupying a body slot
+CONSUMED = "consumed"      # used up / destroyed
+
+
+@dataclass
+class Effect:
+    """Something a Thing does. ``kind`` is the effect family (``damage``/``ac``/
+    ``heal``/``check_bonus``/``light``/``produce``/…); ``payload`` carries its
+    data; ``source`` distinguishes intrinsic effects from added enchantments;
+    ``state`` holds mutable per-effect runtime (e.g. wand charges)."""
+
+    kind: str
+    payload: dict = field(default_factory=dict)
+    source: str = "intrinsic"     # "intrinsic" | "enchantment"
+    state: dict = field(default_factory=dict)
+
+
+@dataclass
+class CarryState:
+    """Where a Thing is relative to its holder, and what slots it occupies."""
+
+    location: str = IN_WORLD      # one of the IN_WORLD/CARRIED/IN_HAND/WORN/CONSUMED constants
+    hands: int = 0                # hand slots used while IN_HAND
+    slot: str = ""                # body slot filled while WORN (e.g. "torso", "head")
+
+
 @dataclass
 class Thing:
     """A possessable thing — scene prop, weapon, armor, consumable, or shop good.
@@ -160,6 +213,17 @@ class Thing:
     state: dict[str, str] = field(default_factory=dict)
     discovered_by: set[str] = field(default_factory=set)
 
+    # Resolved Armor for a wearable-armor Thing (mirrors ``weapon`` above;
+    # Optional[object] to avoid importing models.weapon here).
+    armor: Optional[object] = None
+
+    # --- Affordances / effects / carry-state --------------------------------
+    # Capability tags gating verbs, what the thing does, and where it is on the
+    # body. Populated by ``derive_affordances`` (and, for the kit, at load).
+    affordances: set[str] = field(default_factory=set)
+    effects: list["Effect"] = field(default_factory=list)
+    carry: "CarryState" = field(default_factory=CarryState)
+
     # --- Market facet -------------------------------------------------------
     # Populated only for shop goods (models.thing_loader). A shop good is a
     # Thing with a price; these stay empty for scene props / floor loot.
@@ -189,3 +253,49 @@ class Thing:
         conditions; callers can then pick by condition match.
         """
         return [i for i in self.interactions if i.matches(verb)]
+
+
+def derive_affordances(thing: "Thing") -> "Thing":
+    """Fill in a scene Thing's ``affordances``/``effects`` from its already-parsed
+    fields (pickable / weapon / armor / interactions). Idempotent — uses set
+    semantics — so it is safe to call more than once (e.g. before and after the
+    weapon library is resolved). Returns the same Thing for chaining.
+
+    Kit-supplied Things (weapons, armor, tools, consumables materialized from a
+    character's equipment) declare their affordances directly at build time;
+    this covers scene props parsed from CONTENTS/zone.md.
+    """
+    aff = thing.affordances
+
+    # A flavor-only prop can't be manipulated: no carry affordances.
+    if not thing.flavor_only and thing.pickable:
+        aff.add(HOLDABLE)
+
+    if thing.weapon is not None:
+        aff.add(WEAPON)
+        aff.add(HOLDABLE)  # a weapon occupies a hand
+        if not any(e.kind == "damage" for e in thing.effects):
+            w = thing.weapon
+            thing.effects.append(Effect(kind="damage", payload={
+                "weapon_id": getattr(w, "id", thing.id),
+                "damage_dice": getattr(w, "damage_dice", ""),
+                "damage_type": getattr(w, "damage_type", ""),
+            }))
+
+    if thing.armor is not None:
+        aff.add(WEARABLE)
+        aff.add(ARMOR)
+        if not any(e.kind == "ac" for e in thing.effects):
+            a = thing.armor
+            thing.effects.append(Effect(kind="ac", payload={
+                "armor_id": getattr(a, "id", thing.id),
+                "ac_base": getattr(a, "ac_base", None),
+            }))
+
+    # Interaction-derived affordances (so "read/press the X" can ground).
+    if thing.pressable or thing.find_interaction("press") is not None:
+        aff.add(PRESSABLE)
+    if thing.find_interaction("read") is not None:
+        aff.add(READABLE)
+
+    return thing
