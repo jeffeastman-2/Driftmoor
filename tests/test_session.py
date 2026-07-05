@@ -640,11 +640,23 @@ class TestInferCardinalDestination:
         assert _infer_cardinal_destination(
             "move south", (0.0, 50.0, ""), sg)[2] == "Near South"
 
-    def test_no_zone_that_way_returns_none(self):
+    def test_no_zone_that_way_projects_a_step(self):
+        # No zone lies west, but all 8 compass points are valid travel: it
+        # projects a step westward (clamped + wall-checked downstream) instead of
+        # giving up. So the x drops below the actor's and it's off-zone ('').
         from engine.session import _infer_cardinal_destination
-        # No zone to the west of the actor.
-        assert _infer_cardinal_destination(
-            "head west", (0.0, 50.0, ""), self._geom()) is None
+        dest = _infer_cardinal_destination("head west", (0.0, 50.0, ""), self._geom())
+        assert dest is not None
+        assert dest[0] < 0 and abs(dest[1] - 50.0) < 1.0 and dest[2] == ""
+
+    def test_all_eight_headings_travel(self):
+        # Every compass point (incl. diagonals) yields a destination — a zone in
+        # that direction if one exists, else a projected step.
+        from engine.session import _infer_cardinal_destination
+        for d in ("north", "northeast", "east", "southeast",
+                  "south", "southwest", "west", "northwest"):
+            assert _infer_cardinal_destination(
+                f"move {d}", (0.0, 50.0, ""), self._geom()) is not None, d
 
     def test_requires_movement_cue(self):
         from engine.session import _infer_cardinal_destination
@@ -674,6 +686,81 @@ class TestInferCardinalDestination:
         })
         dest = _infer_cardinal_destination("move north", (0.0, 50.0, "HERE"), sg)
         assert dest[2] == "North Room"
+
+
+class TestDropCarriedWeapon:
+    """Dropping a KIT weapon (not a scene item) must actually drop it — unhand
+    it, remove it from the kit, and leave a re-pickable item on the ground."""
+
+    def _cs(self):
+        from types import SimpleNamespace as NS
+        from models.weapon import Weapon
+        rapier = Weapon(id="rapier", name="Rapier", damage_dice="1d8",
+                        damage_type="piercing")
+        return NS(scene_handle="Gil", episodic_memory=[],
+                  character=NS(name="Gil", inventory=[]),
+                  weapons=[rapier], wielded=["rapier"], held_items=[])
+
+    def test_find_carried_weapon_by_name(self):
+        from engine.session import _find_carried_weapon
+        cs = self._cs()
+        assert _find_carried_weapon("I drop my rapier", cs).id == "rapier"
+        assert _find_carried_weapon("I move north", cs) is None
+
+    def test_drop_unhands_removes_and_materializes(self):
+        from engine.session import _drop_carried_weapon
+        cs = self._cs()
+        items: dict = {}
+        w = cs.weapons[0]
+        _drop_carried_weapon(cs, w, items, (10.0, 20.0, "ENTRY CHAMBER"),
+                             "ENTRY CHAMBER", "gil", [], [], None, 1)
+        assert cs.wielded == []            # out of hand
+        assert cs.weapons == []            # out of the kit
+        it = items["rapier"]               # materialized on the ground, re-pickable
+        assert it.holder is None and it.pickable and it.weapon is w
+        assert (it.position.x, it.position.y) == (10.0, 20.0)
+        assert it.zone == "ENTRY CHAMBER"
+
+
+class TestDrawKitWeapon:
+    """Drawing a KIT weapon into hand must work outside combat too — 'unsheathe
+    my dagger' / 'get my dagger' should wield it, not just narrate that it did."""
+
+    def _cs(self):
+        from types import SimpleNamespace as NS
+        from models.weapon import Weapon
+        rapier = Weapon(id="rapier", name="Rapier", damage_dice="1d8",
+                        damage_type="piercing")
+        dagger = Weapon(id="dagger", name="Dagger", damage_dice="1d4",
+                        damage_type="piercing")
+        return NS(character=NS(name="Gil", hands=2), weapons=[rapier, dagger],
+                  wielded=[], held_items=[])
+
+    def test_draw_verb_re_matches_get_and_unsheathe(self):
+        from engine.session import _DRAW_VERB_RE
+        for phrase in ("get my dagger", "unsheathe the dagger", "hold my dagger",
+                       "draw my rapier", "pull out my dagger"):
+            assert _DRAW_VERB_RE.search(phrase), phrase
+        assert not _DRAW_VERB_RE.search("I walk south")
+
+    def test_unsheathe_named_weapon_wields_it(self):
+        from engine.session import _apply_loadout_intent
+        cs = self._cs()
+        _apply_loadout_intent("I unsheathe my dagger", cs, [])
+        assert "dagger" in cs.wielded
+
+    def test_get_named_weapon_wields_it(self):
+        from engine.session import _apply_loadout_intent
+        cs = self._cs()
+        _apply_loadout_intent("get my dagger", cs, [])
+        assert "dagger" in cs.wielded
+
+    def test_no_named_weapon_leaves_hands_unchanged(self):
+        from engine.session import _apply_loadout_intent
+        cs = self._cs()
+        cs.wielded = ["rapier"]
+        _apply_loadout_intent("hold still", cs, [])   # 'hold' but no weapon named
+        assert cs.wielded == ["rapier"]
 
 
 class TestItemTransferHandModel:
