@@ -20,7 +20,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
-from models.thing import HOLDABLE, WEAPON, WEARABLE
+from models.thing import CONSUMABLE, HOLDABLE, WEAPON, WEARABLE
 
 
 # Verb → canonical manipulation. Drop/stow/take come from the shared transfer
@@ -34,6 +34,9 @@ _SHEATHE_RE = re.compile(
 _WEAR_RE = re.compile(r"\b(wear|wears|don|dons|put on|puts on|equip\w*)\b", re.IGNORECASE)
 _REMOVE_RE = re.compile(
     r"\b(remove|removes|take off|takes off|doff|doffs|unequip\w*)\b", re.IGNORECASE)
+_EAT_RE = re.compile(
+    r"\b(eat|eats|drink|drinks|consume|consumes|quaff\w*|swallow\w*|sip|sips)\b",
+    re.IGNORECASE)
 
 
 @dataclass
@@ -70,18 +73,24 @@ def find_possessed_thing(cs, intent_text: str):
 
 def classify_verb(intent_text: str, thing) -> Optional[str]:
     """Map free-text intent + the target's affordances to a canonical verb:
-    ``drop`` / ``sheathe`` / ``draw`` / ``wear`` / ``remove`` (or None)."""
+    ``drop`` / ``sheathe`` / ``draw`` / ``wear`` / ``remove`` / ``eat`` (or None).
+
+    Each verb is gated on the affordance it requires — this is where "wield the
+    potion" is refused (a potion has no ``weapon`` affordance, so no verb
+    classifies) while "drink the potion" resolves to ``eat``."""
     from engine.verb_resolver import detect_transfer_verb
     aff = getattr(thing, "affordances", set()) or set()
     tv = detect_transfer_verb(intent_text)
     if tv == "drop":
         return "drop"
+    if CONSUMABLE in aff and _EAT_RE.search(intent_text):
+        return "eat"
     if WEARABLE in aff and WEAPON not in aff:
         if _REMOVE_RE.search(intent_text):
             return "remove"
         if _WEAR_RE.search(intent_text):
             return "wear"
-    if HOLDABLE in aff or WEAPON in aff:
+    if WEAPON in aff:  # draw/sheathe are weapon verbs (a potion won't wield)
         if tv == "stow" or _SHEATHE_RE.search(intent_text):
             return "sheathe"
         if tv == "take" or _DRAW_RE.search(intent_text):
@@ -121,6 +130,17 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
             f"{(actor_zone or 'this zone').upper()}: {handle} sets it down. Narrate the drop.")
         res.events.append((turn_num, f"{ts} | {handle} drops the {weapon.name}."))
         res.memory.append(f"Turn {turn_num}: you dropped your {weapon.name}.")
+        res.applied = True
+    elif verb == "eat":
+        # Consume a holdable consumable: it leaves play. The effect it applies
+        # (heal, buff) rides the Thing's effects and is resolved in the magic /
+        # effects phase; here we just mark it consumed and log the act.
+        from models.thing import CONSUMED
+        thing.carry.location = CONSUMED
+        res.log.append(
+            f"[ITEM] {character_id} consumes {name}: {handle} uses it up. Narrate it.")
+        res.events.append((turn_num, f"{ts} | {handle} consumes the {name}."))
+        res.memory.append(f"Turn {turn_num}: you consumed the {name}.")
         res.applied = True
     # wear/remove for kit armor is a carry-state change only in the bridge
     # (cs.armor is unchanged); left minimal until equipment wearables are Things.

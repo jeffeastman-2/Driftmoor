@@ -39,6 +39,15 @@ _MOVEMENT_VERBS = {"move", "dash"}
 
 _TIE_MARGIN = 1e-9
 
+# The affordance a verb *attends to* when grounding its object (the QK step:
+# verbs attend affordances). Used as a SOFT tiebreak in `_resolve_object` —
+# when several candidates ground and only some afford the verb, prefer those;
+# never eliminate a sole candidate, so this can only sharpen disambiguation,
+# never lose a grounding. Adjective->effect attention is a later refinement.
+def _verb_affordances() -> dict:
+    from models.thing import HOLDABLE, PRESSABLE, READABLE
+    return {"read": READABLE, "press": PRESSABLE, "take": HOLDABLE, "drop": HOLDABLE}
+
 
 @dataclass
 class ResolvedAction:
@@ -74,12 +83,30 @@ def _entities_of_kind(ranked, kind):
     return [(s, e) for s, e in ranked if getattr(e, "kind", None) == kind]
 
 
-def _resolve_object(vp, adapter) -> Tuple[Optional[Item], bool]:
-    """Ground the VP's object NP to an Item. Returns (item, ambiguous)."""
+def _prefer_affordance(items, verb):
+    """Soft affordance tiebreak: when ``verb`` attends to an affordance and SOME
+    (but not all) grounded candidates afford it, keep only those. Never empties a
+    non-empty list, so a sole grounding is untouched — this only breaks ties in
+    favour of the candidate that actually affords the verb ("press the lever",
+    not "press the mural")."""
+    aff = _verb_affordances().get(verb or "")
+    if aff is None or len(items) < 2:
+        return items
+    matching = [
+        (s, e) for s, e in items
+        if aff in (getattr(getattr(e, "item", None), "affordances", None) or set())
+    ]
+    return matching or items
+
+
+def _resolve_object(vp, adapter, verb=None) -> Tuple[Optional[Item], bool]:
+    """Ground the VP's object NP to an Item. Returns (item, ambiguous). When a
+    ``verb`` is given, its attended affordance breaks ties among candidates."""
     np = getattr(vp, "noun_phrase", None)
     if np is None:
         return None, False
     items = _entities_of_kind(adapter.resolve_noun_phrase(np), "item")
+    items = _prefer_affordance(items, verb)
     winner = _unique_winner(items)
     if winner is not None:
         return winner.item, False
@@ -167,7 +194,7 @@ def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedActio
             verb = _canonical_verb(vp)
             if verb is None:
                 continue
-            item, ambiguous = _resolve_object(vp, adapter)
+            item, ambiguous = _resolve_object(vp, adapter, verb)
             recipient = _resolve_recipient(vp, adapter) if verb in _TRANSFER_VERBS else None
             key = (verb, item.id if item is not None else None)
             prev = merged.get(key)

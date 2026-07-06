@@ -292,10 +292,14 @@ def derive_affordances(thing: "Thing") -> "Thing":
                 "ac_base": getattr(a, "ac_base", None),
             }))
 
-    # Interaction-derived affordances (so "read/press the X" can ground).
+    # Interaction-derived affordances (so "read/press/drink the X" can ground).
     if thing.pressable or thing.find_interaction("press") is not None:
         aff.add(PRESSABLE)
     if thing.find_interaction("read") is not None:
         aff.add(READABLE)
+    if (thing.find_interaction("drink") is not None
+            or thing.find_interaction("eat") is not None):
+        aff.add(CONSUMABLE)
+        aff.add(HOLDABLE)  # you hold it to consume it
 
     return thing
