@@ -7,7 +7,7 @@
 - **Class:** Wizard (School of Illusion), Level 13
 - **Background:** Spy
 - **Alignment:** Chaotic Good
-- **Pronouns:** she/her
+- **Pronouns:** he/him
 
 ## Physical Description
 Gilthaness is lean, poised, and difficult to pin down at a glance unless she chooses otherwise. Silver threads run through dark hair worn in a long braid; her eyes are pale grey-green, settled and patient. She favors finely tailored travel clothes in muted greens and browns, with quiet jewelry worn like remembered promises.
@@ -83,17 +83,18 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - Mislead - 1 action, concentration up to 1 hour
 - Teleport - 1 action
 
-## Combat Equipment
-- **weapons:** rapier+5, dagger+10, light_crossbow+10
-
 ## Equipment
-- Rapier (1d8 piercing)
-- Dagger x3 (1d4 piercing)
-- Light crossbow with 20 bolts (1d6 piercing)
-- Studded leather armor
-- Thieves' tools
-- Disguise kit
-- Wooden vine-carved bracelet
+- rapier+5: Silver handled rapier
+- dagger+10
+- light_crossbow+10
+- studded_leather: Green and brown studded leather
+- pemmican
+- hard_tack
+- water
+- mead
+- bracelet: Wooden vine-carved bracelet
+- thieves_tools
+- disguise_kit
 
 ## Dynamic State
 *(Updated by monitor agent each round)*
