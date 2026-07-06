@@ -57,7 +57,7 @@ def apply_effect(cs, effect) -> Optional[str]:
         delta = float(payload.get("delta", 0) or 0)
         ext = getattr(cond, "extensions", None)
         if ext is not None and name:
-            ext[name] = max(0.0, min(1.0, ext.get(name, 0.0) + delta))
+            ext[name] = round(max(0.0, min(1.0, ext.get(name, 0.0) + delta)), 4)
             return f"{name} {delta:+.2f}"
         return None
 

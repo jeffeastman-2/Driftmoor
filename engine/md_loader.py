@@ -183,21 +183,28 @@ def parse_identity_stats(text: str) -> dict:
         am = re.search(r"-\s*\*\*armor:\*\*\s*(\S+)", block, re.IGNORECASE)
         if am:
             stats["armor"] = am.group(1).strip()
+        pm = re.search(r"-\s*\*\*provisions:\*\*\s*(.+)", block, re.IGNORECASE)
+        if pm:
+            stats["provisions"] = pm.group(1).strip()
 
-    # Equipment section: the character's free-text possessions (gear beyond the
-    # structured combat weapons) — armor, tools, kits, trinkets. One bullet each.
+    # Equipment section: a FLAT list of catalog id references (any order), each
+    # ``id[+N][: Display Name]``, resolved against the catalogs at load time.
+    # Anything that isn't a catalog id stays free-text. (A legacy
+    # ``## Combat Equipment`` block above still supplies structured weapons/armor
+    # for un-migrated characters; their prose ``## Equipment`` list simply
+    # resolves to all-free-text.)
     eq_m = re.search(
         r"^##\s+Equipment\s*\n(.*?)(?=^##|\Z)",
         text, re.MULTILINE | re.DOTALL,
     )
     if eq_m:
-        equipment = [
+        entries = [
             ln.strip()[1:].strip()
             for ln in eq_m.group(1).splitlines()
             if ln.strip().startswith("-") and ln.strip()[1:].strip()
         ]
-        if equipment:
-            stats["equipment"] = equipment
+        if entries:
+            stats["equipment_entries"] = entries
 
     # Engine section: provider, model, pronouns
     engine_m = re.search(
@@ -278,6 +285,80 @@ def _char_llm_config(
     concern, so identities never contribute here.
     """
     return cfg.get("provider") or dm_provider, cfg.get("model") or dm_model
+
+
+# A flat Equipment entry: a lower-case snake_case catalog id, an optional weapon
+# attack-bonus override (+N / -N), and an optional ": Display Name" instance
+# label. Anything not matching (prose like "Holy symbol") is a free-text item.
+_EQUIP_ENTRY_RE = re.compile(r"^([a-z0-9_]+)([+-]\d+)?\s*(?::\s*(.+))?$")
+
+
+def _parse_equip_entry(entry: str):
+    """Parse ``id[+N][: Name]`` -> (id, bonus_str, name) or None for free-text."""
+    m = _EQUIP_ENTRY_RE.match((entry or "").strip())
+    if not m:
+        return None
+    return m.group(1), (m.group(2) or ""), (m.group(3) or "").strip()
+
+
+def _instantiate(lib, cid: str, name: str):
+    """Deep-copy a catalog template (independent per-character instance) and
+    apply the optional display-name override."""
+    import copy
+    inst = copy.deepcopy(lib[cid])
+    if name:
+        inst.label = name
+    return inst
+
+
+def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
+                     consumable_library, gear_library) -> None:
+    """Resolve a character's equipment onto the session. Structured weapons/armor
+    may come from a legacy ``## Combat Equipment`` (via ``cfg``); a flat
+    ``## Equipment`` id list contributes weapons, armor, and pack Things. Each
+    flat entry ``id[+N][: Name]`` is routed by which catalog holds the id;
+    anything unrecognized stays a free-text possession. (``+N`` is a legacy
+    manual attack-bonus override — it will be computed at runtime once the
+    proficiency model lands.)"""
+    from models.thing import DRINKABLE, EDIBLE
+    weapons = (parse_character_weapons(cfg["weapons"], weapon_library)
+               if cfg.get("weapons") else [])
+    armor_id = cfg.get("armor")
+    pack: list = []
+    free_text: list = []
+    for entry in (id_stats.get("equipment_entries") or []):
+        parsed = _parse_equip_entry(entry)
+        if parsed is None:
+            free_text.append(entry)
+            continue
+        eid, bonus, name = parsed
+        if eid in weapon_library:
+            w = parse_character_weapons(eid + bonus, weapon_library)
+            if w and name:               # honor the ": Display Name" override
+                w[0].name = name
+            weapons.extend(w)
+        elif eid in armor_library:
+            armor_id = eid
+        elif eid in consumable_library:
+            pack.append(_instantiate(consumable_library, eid, name))
+        elif eid in gear_library:
+            pack.append(_instantiate(gear_library, eid, name))
+        else:
+            free_text.append(name or entry)
+    if weapons:
+        session.weapons = weapons
+    if armor_id:
+        session.armor = armor_library.get(str(armor_id).strip())
+    session.pack = pack
+    if free_text:
+        session.character.equipment = free_text
+    # Seed hunger/thirst when the character carries food/drink, so consuming
+    # visibly reduces them (until a needs tick drives them over time).
+    if getattr(session, "condition", None) is not None and any(
+            (EDIBLE in t.affordances or DRINKABLE in t.affordances) for t in pack):
+        ext = session.condition.extensions
+        ext.setdefault("hunger", 0.5)
+        ext.setdefault("thirst", 0.5)
 
 
 def _merge_identity_defaults(cfg: dict[str, str], id_stats: dict) -> None:
@@ -836,6 +917,9 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     armor_path   = ROOT / "scenario" / "things" / "ARMOR.md"
     weapon_library = load_weapons(weapons_path)
     armor_library  = load_armors(armor_path)
+    from engine.consumable_loader import load_consumables, load_gear
+    consumable_library = load_consumables(ROOT / "scenario" / "things" / "CONSUMABLES.md")
+    gear_library = load_gear(ROOT / "scenario" / "things" / "GEAR.md")
 
     # Resolve pickable weapon items (``*Weapon:* mace+1``) into base Weapons now
     # that the library is loaded, so a picked-up item can be wielded in combat.
@@ -876,19 +960,10 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         else:
             session = _build_player_or_npc(char_id, cfg, introductions)
 
-        # Attach the character's free-text possessions (armor, tools, kits,
-        # trinkets) from IDENTITY's ## Equipment list, so loadout/UI can show the
-        # full pack — not just the structured combat weapons.
-        if id_stats.get("equipment"):
-            session.character.equipment = list(id_stats["equipment"])
-
-        # Attach weapons: CONFIG.md takes precedence, already merged above
-        if cfg.get("weapons"):
-            session.weapons = parse_character_weapons(cfg["weapons"], weapon_library)
-
-        # Attach armor: CONFIG.md takes precedence, already merged above
-        if cfg.get("armor"):
-            session.armor = armor_library.get(cfg["armor"].strip())
+        # Resolve equipment (structured legacy weapons/armor + the flat
+        # ## Equipment id list) onto weapons / armor / pack / free-text.
+        _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
+                         consumable_library, gear_library)
 
         # Append starting position to initial_scene so the LLM knows where to begin
         pos = starting_positions.get(char_id) or starting_positions.get(

@@ -208,7 +208,7 @@ def materialize_things(cs) -> None:
     manipulation dispatch and affordance-aware grounding as Things. Cheap and
     idempotent — call it after any loadout change (draw/sheathe/pickup/drop)."""
     from models.thing import (
-        Thing, CarryState, derive_affordances, IN_HAND, CARRIED, WORN,
+        Thing, CarryState, derive_affordances, IN_HAND, IN_WORLD, CARRIED, WORN,
     )
     holder = getattr(getattr(cs, "character", None), "id", None)
     wielded = set(getattr(cs, "wielded", None) or [])
@@ -230,6 +230,15 @@ def materialize_things(cs) -> None:
         t.carry = CarryState(location=WORN, slot="torso")
         derive_affordances(t)
         things.append(t)
+    # The pack: catalog-instantiated possessions (food, drink, tools,
+    # wearables) — already full Things with affordances + effects. Stateful
+    # storage, folded in so eat/drink/wear/use can reach them.
+    for prov in (getattr(cs, "pack", None) or []):
+        if getattr(prov, "holder", None) is None:
+            prov.holder = holder
+        if prov.carry.location in ("", IN_WORLD):
+            prov.carry.location = CARRIED
+        things.append(prov)
     cs.things = things
 
 

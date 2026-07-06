@@ -87,6 +87,12 @@ class CharacterSession:
     # (engine.manipulation) and affordance-aware grounding read this; the
     # loadout fields above remain the source of truth.
     things: list = field(default_factory=list)
+    # The character's instantiated catalog possessions — food & drink
+    # (CONSUMABLES) plus tools & wearables (GEAR) — each a models.thing.Thing
+    # with affordances + effects, referenced by id in IDENTITY. Stateful
+    # (consuming removes one); materialize_things folds these into ``things`` so
+    # the unified eat/drink/wear/use dispatch and grounding reach them.
+    pack: list = field(default_factory=list)
     # Phase 3b: dormancy. "always" = active from turn 1 (default).
     # "zone_entry:<Zone Name>" = activate when an opposing-faction
     # character enters that zone. "door_open:<door_id>" = activate when

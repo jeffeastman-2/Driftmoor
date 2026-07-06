@@ -52,13 +52,14 @@ class ManipulationResult:
 
 
 def _name_tokens(thing) -> list[str]:
-    """Lower-case identifying tokens for a kit Thing (weapon/armor name + id)."""
+    """Lower-case identifying tokens for a kit Thing (name/label + id), so a
+    provision named "Waterskin" with id "water" matches "drink the water"."""
     from engine.combat_resolver import _weapon_name_tokens
     w = getattr(thing, "weapon", None)
     if w is not None:
         return list(_weapon_name_tokens(w))
-    label = (getattr(thing, "label", "") or getattr(thing, "id", "") or "")
-    return [t for t in re.split(r"[^a-z0-9]+", label.lower()) if len(t) > 1]
+    text = " ".join(filter(None, [getattr(thing, "label", ""), getattr(thing, "id", "")]))
+    return [t for t in re.split(r"[^a-z0-9]+", text.lower()) if len(t) > 1]
 
 
 def find_possessed_thing(cs, intent_text: str):
@@ -149,6 +150,10 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         from models.thing import CONSUMED
         notes = effects.apply_thing_effects(cs, thing)
         thing.carry.location = CONSUMED
+        # Used up — drop it from the pack.
+        pack = getattr(cs, "pack", None)
+        if pack is not None:
+            cs.pack = [p for p in pack if p is not thing]
         detail = (" (" + ", ".join(notes) + ")") if notes else ""
         pres, past = ("drinks", "drank") if verb == "drink" else ("eats", "ate")
         res.log.append(

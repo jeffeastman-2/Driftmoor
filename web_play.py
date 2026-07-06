@@ -68,6 +68,9 @@ _ITEM_ICONS = (
     ("pack", "🎒"), ("bag", "🎒"), ("chalk", "✏️"), ("charcoal", "✏️"),
     ("armor", "🛡️"), ("leather", "🛡️"), ("tools", "🛠️"), ("kit", "🧰"),
     ("bracelet", "💍"), ("amulet", "🔱"), ("cloak", "🧥"), ("boots", "🥾"),
+    ("pemmican", "🥩"), ("tack", "🍪"), ("ration", "🍖"), ("bread", "🍞"),
+    ("waterskin", "💧"), ("water", "💧"), ("mead", "🍺"), ("ale", "🍺"),
+    ("wine", "🍷"), ("flask", "🍶"),
 )
 
 
@@ -148,6 +151,12 @@ def _player_inventory(cs, items: dict | None) -> dict:
         if chip["label"].lower() in worn_labels:
             continue
         (worn if _is_worn(entry) else carried).append(chip)
+    for prov in (getattr(cs, "pack", None) or []):   # food, drink, tools, wearables
+        from models.thing import WEARABLE
+        label = getattr(prov, "label", None) or getattr(prov, "id", "")
+        chip = {"icon": _item_icon(label), "label": label}
+        (worn if WEARABLE in (getattr(prov, "affordances", None) or set())
+         else carried).append(chip)
     return {"hand": hand, "worn": worn, "carried": carried}
 
 

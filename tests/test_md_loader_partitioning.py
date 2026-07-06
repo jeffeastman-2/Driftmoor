@@ -90,8 +90,9 @@ def test_parse_identity_equipment_list():
     stats = parse_identity_stats(text)
     # Combat Equipment still parses the structured weapons line...
     assert stats["weapons"] == "rapier+5, dagger+10"
-    # ...and the free-text ## Equipment list is captured separately, in order.
-    assert stats["equipment"] == [
+    # ...and the flat ## Equipment list is captured verbatim as raw entries, in
+    # order (resolved to ids/free-text later, at load).
+    assert stats["equipment_entries"] == [
         "Rapier (1d8 piercing)", "Studded leather armor",
         "Thieves' tools", "Wooden vine-carved bracelet",
     ]
