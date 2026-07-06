@@ -63,17 +63,15 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
-## Combat Equipment
-- **weapons:** mace+4
-
 ## Equipment
-- Chain mail (AC 16)
-- Mace (1d6 bludgeoning)
-- Shield (+2 AC, not currently equipped — AC 18 when used)
-- Holy symbol of Lathander (silver, worn as amulet)
-- Healer's kit
-- Explorer's pack
-- Prayer book and incense
+- chain_mail
+- mace
+- shield
+- holy_symbol: Holy Symbol of Lathander
+- healers_kit
+- explorers_pack
+- prayer_book 
+- incense
 
 ## Dynamic State
 *(Updated by monitor agent each round)*

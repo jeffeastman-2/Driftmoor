@@ -29,16 +29,12 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 - Fog Cloud (20-ft sphere, 120 ft range, concentration, up to 1 hour)
 
 ## Equipment
-- Leather armor
-- Longbow + 20 arrows (1d8 piercing, range 150/600 ft)
-- Short sword (1d6 piercing)
-- Dagger (1d4 piercing)
-- Explorer's pack
-- Wooden tree talisman (personal)
-
-## Combat Equipment
-- **weapons:** longbow+5, shortsword+5, dagger+5
-- **armor:** leather_armor
+- leather_armor
+- longbow
+- shortsword
+- dagger
+- explorers_pack
+- talisman: Wooden tree talisman (personal)
 
 ## Runtime Defaults
 - **scene_handle:** Aeliana, the elf ranger

@@ -41,15 +41,13 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
-## Combat Equipment
-- **weapons:** rapier+4, dagger+4
-
 ## Equipment
-- Leather armor
-- Rapier (1d8 piercing)
-- 2 daggers (1d4+1 piercing)
-- Lute (irreplaceable)
-- Musician's pack
+- leather_armor
+- rapier
+- dagger
+- belt_knife
+- instrument: Lute
+- musicians_pack
 
 ## Neurochemical Baseline
 - **dopamine:** 0.7

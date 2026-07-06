@@ -24,16 +24,14 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes. Dusky 
 - Sleight of Hand +2 (DEX)
 - Proficient: thieves' tools, disguise kit
 
-## Combat Equipment
-- **weapons:** dagger+5, shortbow+5
-
 ## Equipment
-- Leather armor
-- Two daggers (1d4 piercing), one concealed in boot
-- Short bow + 20 arrows (1d4 piercing)
-- Thieves' tools
-- Disguise kit
-- Crescent moon pendant (personal, not for trade)
+- leather_armor
+- dagger
+- dagger: Dagger concealed in boot
+- shortbow
+- thieves_tools
+- disguise_kit
+- amulet: Crescent moon pendant
 
 ## Neurochemical Baseline
 - **dopamine:** 0.65

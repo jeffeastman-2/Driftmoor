@@ -43,15 +43,13 @@ Tall and imposing, scales the deep crimson of cooling iron. Amber eyes with vert
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
-## Combat Equipment
-- **weapons:** quarterstaff+2, dagger+4
-
 ## Equipment
-- Quarterstaff (1d6 bludgeoning)
-- Component pouch
-- Explorer's pack
-- Leather satchel with collected obelisk notes and fragment sketches
-- Two daggers (1d4 piercing)
+- quarterstaff
+- pouch: Component pouch
+- explorers_pack
+- sachel: Leather satchel with collected obelisk notes and fragment sketches
+- dagger
+- dagger
 
 ## Neurochemical Baseline
 - **dopamine:** 0.55

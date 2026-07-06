@@ -27,17 +27,14 @@ Brenna is tall and broad-shouldered, built by decades of drill and road work. Pa
 - Student of War: proficiency with smith's tools
 - Athletics +5, Insight +2, Intimidation +3, Survival +2
 
-## Combat Equipment
-- **weapons:** greatsword+5, dagger+5, light_crossbow+3
-
 ## Equipment
-- Greatsword (2d6 slashing)
-- Chain mail
-- Dagger
-- Light crossbow with 20 bolts
-- Explorer's pack
-- Smith's tools
-- Bronze Whitecairn falcon badge sewn into surcoat lining
+- greatsword
+- chain_mail
+- dagger
+- light_crossbow
+- explorers_pack
+- smiths_tools
+- amulet: Bronze Whitecairn falcon badge sewn into surcoat lining
 
 ## Dynamic State
 *(Updated by monitor agent each round)*

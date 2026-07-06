@@ -17,6 +17,7 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - **AC:** 17 (studded leather)
 - **STR:** 10 (+0) | **DEX:** 20 (+5) | **CON:** 14 (+2)
 - **INT:** 16 (+3) | **WIS:** 14 (+2) | **CHA:** 12 (+1)
+- **Weapon Proficiencies:** dagger, light_crossbow, quarterstaff, longsword, shortsword, shortbow, longbow
 
 ## Neurochemical Baseline
 - **dopamine:** 0.58
@@ -84,9 +85,9 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - Teleport - 1 action
 
 ## Equipment
-- rapier+5: Silver handled rapier
-- dagger+10
-- light_crossbow+10
+- longsword: Silver handled longsword
+- dagger
+- light_crossbow
 - studded_leather: Green and brown studded leather
 - pemmican
 - hard_tack

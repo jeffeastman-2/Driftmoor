@@ -42,17 +42,14 @@ Weathered face, marks of a life in service. Broad-shouldered, sturdy. Graying br
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
-## Combat Equipment
-- **weapons:** mace+3, quarterstaff+3
-
 ## Equipment
-- Studded leather armor (AC 12)
-- Wooden shield with engraved sunburst (+2 AC)
-- Mace (1d6 bludgeoning)
-- Quarterstaff (1d6 bludgeoning)
-- Holy symbol of Pelor
-- Explorer's pack
-- Healer's kit (stabilize without a roll)
+- studded_leather
+- shield: Wooden shield with engraved sunburst
+- mace
+- quarterstaff
+- holy_symbol: Holy symbol of Pelor
+- explorers_pack
+- healers_kit
 
 ## Neurochemical Baseline
 - **dopamine:** 0.45

@@ -23,15 +23,12 @@ Short but commanding. Fiery red beard braided and tucked into his belt. Steel-gr
 - Athletics +2 (STR)
 - Intimidation +2 (CHA)
 
-## Combat Equipment
-- **weapons:** battle_axe+5, dagger+5, light_crossbow+3
-
 ## Equipment
-- Steel and iron plate armor (AC 18)
-- Shield (+2 AC)
-- Battle Axe (1d8 slashing)
-- Dagger (1d4 piercing)
-- Light crossbow + 20 bolts (1d8 piercing, range 80/320)
+- plate_armor: Steel and iron plate armor
+- shield
+- battle_axe
+- dagger
+- light_crossbow
 
 ## Neurochemical Baseline
 - **dopamine:** 0.4

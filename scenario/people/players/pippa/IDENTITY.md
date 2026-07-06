@@ -46,11 +46,11 @@ Pippa is small even for a fairy, all quick wings and kinetic posture, with wild 
 - **weapons:** dagger+4
 
 ## Equipment
-- Arcane focus (silver chain wand)
-- Dagger (1d4 piercing)
-- Explorer's pack sized for Small creatures
-- Patchwork tunic and scarf belt
-- Locket with charred splinter
+- wand: Arcane focus (silver chain wand)
+- dagger
+- explorers_pack: Explorer's pack sized for Small creatures
+- no_armor: Patchwork tunic and scarf belt
+- amulet: Locket with charred splinter
 
 ## Dynamic State
 *(Updated by monitor agent each round)*

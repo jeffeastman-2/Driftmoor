@@ -43,16 +43,13 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 - Mirror Image - 1 action
 - Misty Step - 1 bonus action
 
-## Combat Equipment
-- **weapons:** quarterstaff+1
-
 ## Equipment
-- Quarterstaff (1d6 bludgeoning)
-- Spellbook
-- Component pouch
-- Scholar's pack
-- Mended blue robes
-- Leather notebook with Ilse's last letters
+- quarterstaff
+- spellbook
+- pouch: Component pouch
+- scholars_pack
+- no_armor: Mended blue robes
+- notebook: Leather notebook with Ilse's last letters
 
 ## Dynamic State
 *(Updated by monitor agent each round)*
