@@ -52,14 +52,21 @@ class ManipulationResult:
 
 
 def _name_tokens(thing) -> list[str]:
-    """Lower-case identifying tokens for a kit Thing (name/label + id), so a
-    provision named "Waterskin" with id "water" matches "drink the water"."""
+    """Lower-case identifying tokens for a kit Thing — its name/label + id, plus
+    any CATEGORY tags (a rapier's `sword`/`blade`). So "draw my sword" grounds to
+    the rapier and "drink the water" finds a "Waterskin" with id "water". Nouns
+    attend to category tags."""
     from engine.combat_resolver import _weapon_name_tokens
+    toks: list[str] = []
     w = getattr(thing, "weapon", None)
     if w is not None:
-        return list(_weapon_name_tokens(w))
-    text = " ".join(filter(None, [getattr(thing, "label", ""), getattr(thing, "id", "")]))
-    return [t for t in re.split(r"[^a-z0-9]+", text.lower()) if len(t) > 1]
+        toks += list(_weapon_name_tokens(w))
+        toks += [t.lower() for t in (getattr(w, "tags", None) or [])]
+    else:
+        text = " ".join(filter(None, [getattr(thing, "label", ""), getattr(thing, "id", "")]))
+        toks += [t for t in re.split(r"[^a-z0-9]+", text.lower()) if len(t) > 1]
+    toks += [t.lower() for t in (getattr(thing, "tags", None) or [])]  # Thing-level categories
+    return toks
 
 
 def find_possessed_thing(cs, intent_text: str):

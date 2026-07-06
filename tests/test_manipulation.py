@@ -50,6 +50,21 @@ def test_find_possessed_thing_by_name():
     assert manipulation.find_possessed_thing(cs, "I move north") is None
 
 
+def test_find_possessed_thing_by_category_tag():
+    # "draw my sword" grounds to the rapier via its `sword` tag; nouns attend to
+    # category tags. An axe request must NOT match a sword.
+    from types import SimpleNamespace as NS
+    from models.weapon import Weapon
+    rapier = Weapon(id="rapier", name="Rapier", damage_dice="1d8",
+                    damage_type="piercing", tags=["martial", "sword", "blade"])
+    cs = NS(scene_handle="Gil", character=NS(id="gil", name="Gil", hands=2),
+            weapons=[rapier], wielded=[], held_items=[], armor=None, things=[], pack=[])
+    loadout.materialize_things(cs)
+    assert manipulation.find_possessed_thing(cs, "draw my sword").id == "rapier"
+    assert manipulation.find_possessed_thing(cs, "wield my blade").id == "rapier"
+    assert manipulation.find_possessed_thing(cs, "draw my axe") is None
+
+
 def test_classify_verb_from_affordances():
     cs = _cs()
     rapier = manipulation.find_possessed_thing(cs, "the rapier")
