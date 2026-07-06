@@ -33,6 +33,17 @@ def test_materialize_things_tags_kit_with_affordances_and_carry():
     assert WEARABLE in by_id["studded_leather"].affordances
 
 
+def test_materialize_honors_restored_wielded_state():
+    # Resume restores cs.wielded before run_session's setup loop calls
+    # materialize_things, so a non-default wielded set (dagger, when rapier is
+    # the default_wield pick) is reflected in the Thing carry-state — carry-state
+    # survives a checkpoint via the existing wielded persistence.
+    cs = _cs(wielded=["dagger"])          # as if restored from a checkpoint
+    by_id = {t.id: t for t in cs.things}
+    assert by_id["dagger"].carry.location == IN_HAND
+    assert by_id["rapier"].carry.location != IN_HAND
+
+
 def test_find_possessed_thing_by_name():
     cs = _cs()
     assert manipulation.find_possessed_thing(cs, "I drop my rapier").id == "rapier"
