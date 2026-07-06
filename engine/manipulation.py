@@ -132,15 +132,19 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         res.memory.append(f"Turn {turn_num}: you dropped your {weapon.name}.")
         res.applied = True
     elif verb == "eat":
-        # Consume a holdable consumable: it leaves play. The effect it applies
-        # (heal, buff) rides the Thing's effects and is resolved in the magic /
-        # effects phase; here we just mark it consumed and log the act.
+        # Consume a holdable consumable: it leaves play and its effects transfer
+        # onto the character (heal / neurochemical nudge / satiety / status),
+        # source-agnostic — a potion and a loaf run the same pipe.
+        from engine import effects
         from models.thing import CONSUMED
+        notes = effects.apply_thing_effects(cs, thing)
         thing.carry.location = CONSUMED
+        detail = (" (" + ", ".join(notes) + ")") if notes else ""
         res.log.append(
-            f"[ITEM] {character_id} consumes {name}: {handle} uses it up. Narrate it.")
+            f"[ITEM] {character_id} consumes {name}{detail}: {handle} uses it up. "
+            f"Narrate it and any effect.")
         res.events.append((turn_num, f"{ts} | {handle} consumes the {name}."))
-        res.memory.append(f"Turn {turn_num}: you consumed the {name}.")
+        res.memory.append(f"Turn {turn_num}: you consumed the {name}{detail}.")
         res.applied = True
     # wear/remove for kit armor is a carry-state change only in the bridge
     # (cs.armor is unchanged); left minimal until equipment wearables are Things.
