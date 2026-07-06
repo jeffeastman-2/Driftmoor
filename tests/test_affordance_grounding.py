@@ -13,12 +13,13 @@ from types import SimpleNamespace as NS
 from engine import manipulation
 from engine.latn_resolver import _prefer_affordance
 from models.thing import (
-    CONSUMABLE, CONSUMED, PRESSABLE, READABLE, Interaction, Thing, derive_affordances,
+    CONSUMABLE, CONSUMED, DRINKABLE, EDIBLE, PRESSABLE, READABLE,
+    Interaction, Thing, derive_affordances,
 )
 from models.weapon import Weapon
 
 
-# --- manipulation gate: wield vs drink ------------------------------------
+# --- manipulation gate: wield vs drink, eat vs drink ----------------------
 
 def _potion():
     return derive_affordances(Thing(
@@ -26,9 +27,18 @@ def _potion():
         interactions=[Interaction(verb="drink", response="You drink it.")]))
 
 
-def test_potion_is_consumable_not_weapon():
-    p = _potion()
-    assert CONSUMABLE in p.affordances and "weapon" not in p.affordances
+def _bread():
+    return derive_affordances(Thing(
+        id="bread", label="Loaf of bread", pickable=True,
+        interactions=[Interaction(verb="eat", response="You eat it.")]))
+
+
+def test_potion_is_drinkable_bread_is_edible():
+    assert {CONSUMABLE, DRINKABLE} <= _potion().affordances
+    assert EDIBLE not in _potion().affordances
+    assert {CONSUMABLE, EDIBLE} <= _bread().affordances
+    assert DRINKABLE not in _bread().affordances
+    assert "weapon" not in _potion().affordances
 
 
 def test_wield_the_potion_is_refused():
@@ -37,9 +47,23 @@ def test_wield_the_potion_is_refused():
     assert manipulation.classify_verb("draw the potion", _potion()) is None
 
 
-def test_drink_the_potion_resolves_to_eat():
-    assert manipulation.classify_verb("drink the potion", _potion()) == "eat"
-    assert manipulation.classify_verb("quaff the healing potion", _potion()) == "eat"
+def test_drink_the_potion_resolves_to_drink():
+    assert manipulation.classify_verb("drink the potion", _potion()) == "drink"
+    assert manipulation.classify_verb("quaff the healing potion", _potion()) == "drink"
+
+
+def test_eat_the_bread_resolves_to_eat():
+    assert manipulation.classify_verb("eat the bread", _bread()) == "eat"
+
+
+def test_state_strictness_no_drinking_solids_or_eating_liquids():
+    assert manipulation.classify_verb("drink the bread", _bread()) is None   # can't drink a solid
+    assert manipulation.classify_verb("eat the potion", _potion()) is None   # can't eat a liquid
+
+
+def test_generic_consume_resolves_to_whichever_it_affords():
+    assert manipulation.classify_verb("consume the potion", _potion()) == "drink"
+    assert manipulation.classify_verb("swallow the bread", _bread()) == "eat"
 
 
 def test_eat_consumes_the_thing():

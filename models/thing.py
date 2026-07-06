@@ -119,7 +119,9 @@ HOLDABLE = "holdable"      # can occupy a hand (take/draw/stow/drop)
 WEARABLE = "wearable"      # can occupy a body slot (wear/remove)
 WEAPON = "weapon"          # holdable whose in-hand-use effect is an attack
 ARMOR = "armor"            # wearable whose worn effect is an AC bonus
-CONSUMABLE = "consumable"  # destroyed on use (eat/drink)
+CONSUMABLE = "consumable"  # umbrella: destroyed on use (edible OR drinkable)
+EDIBLE = "edible"          # a solid consumable — "eat"
+DRINKABLE = "drinkable"    # a liquid consumable — "drink"
 TOOL = "tool"              # grants a `use` action / check bonus / produces a Thing
 READABLE = "readable"      # has a `read` interaction
 CONTAINER = "container"    # can hold other Things
@@ -297,9 +299,14 @@ def derive_affordances(thing: "Thing") -> "Thing":
         aff.add(PRESSABLE)
     if thing.find_interaction("read") is not None:
         aff.add(READABLE)
-    if (thing.find_interaction("drink") is not None
-            or thing.find_interaction("eat") is not None):
-        aff.add(CONSUMABLE)
-        aff.add(HOLDABLE)  # you hold it to consume it
+    edible = thing.find_interaction("eat") is not None
+    drinkable = thing.find_interaction("drink") is not None
+    if edible:
+        aff.add(EDIBLE)
+    if drinkable:
+        aff.add(DRINKABLE)
+    if edible or drinkable:
+        aff.add(CONSUMABLE)  # umbrella: consumable == edible or drinkable
+        aff.add(HOLDABLE)    # you hold it to consume it
 
     return thing

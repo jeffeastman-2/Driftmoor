@@ -73,12 +73,12 @@ def test_magic_is_source_agnostic_same_pipe():
     assert arcane.character.current_hp == mundane.character.current_hp == 16
 
 
-def test_eat_applies_effects_and_consumes():
+def test_drink_applies_effects_and_consumes():
     cs = _cs()
     potion = _consumable("healing_potion", "Healing potion",
                          [Effect(kind="heal", payload={"amount": 8}, source="arcane")])
     res = manipulation.apply_manipulation(
-        cs, "eat", potion, items={}, actor_pos=(0.0, 0.0, "Z"), actor_zone="Z",
+        cs, "drink", potion, items={}, actor_pos=(0.0, 0.0, "Z"), actor_zone="Z",
         character_id="gil", game_time=None, turn_num=1)
     assert res.applied
     assert cs.character.current_hp == 18          # effect landed
