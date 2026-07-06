@@ -989,6 +989,16 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
                          consumable_library, gear_library)
 
+        # Compute AC for characters in real (non-"no_armor") worn armor: armor
+        # base + capped DEX + `ac` effects (a held shield stacks here). Casters /
+        # unarmored keep their authored AC (it comes from spells/features the
+        # engine doesn't model — mage armor, unarmored defense, natural armor).
+        _armor = session.armor
+        if (_armor is not None and getattr(_armor, "id", "") != "no_armor"
+                and int(getattr(_armor, "ac_base", 10) or 10) > 10):
+            from engine.loadout import armor_class
+            session.character.ac = armor_class(session.character, _armor, session.pack)
+
         # Append starting position to initial_scene so the LLM knows where to begin
         pos = starting_positions.get(char_id) or starting_positions.get(
             re.sub(r"_\d+$", "", char_id)

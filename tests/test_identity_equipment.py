@@ -170,3 +170,18 @@ def test_explicit_bonus_still_overrides_computation():
     s = _session()                       # proficient with nothing
     _apply_equipment(s, {"equipment_entries": ["rapier+7"]}, {}, wl, al, cl, gl)
     assert s.weapons[0].attack_bonus == 7   # manual +N wins over the computed value
+
+
+# --- AC computation: worn armor + capped DEX + ac-effects (a held shield) ---
+
+def test_armor_class_base_dex_and_shield():
+    from engine.consumable_loader import make_thing
+    from engine.loadout import armor_class
+    from models.weapon import Armor
+    chain = Armor(id="chain_mail", name="Chain Mail", ac_base=16, ac_dex_cap=0)
+    leather = Armor(id="leather_armor", name="Leather", ac_base=11, ac_dex_cap=None)
+    shield = make_thing("shield", "Shield", "shield", ["ac +2"])
+    assert armor_class(NS(dexterity=12), chain, []) == 16          # heavy: DEX capped at 0
+    assert armor_class(NS(dexterity=12), chain, [shield]) == 18    # + a held shield
+    assert armor_class(NS(dexterity=16), leather, []) == 14        # light: 11 + DEX(+3)
+    assert armor_class(NS(dexterity=10), None, []) == 10           # unarmored: 10 + 0

@@ -113,6 +113,26 @@ def can_wield(cs, weapon: Weapon) -> bool:
     return True if need == 0 else hands_free(cs) >= need
 
 
+def armor_class(character, armor, things=()) -> int:
+    """Compute AC = base + sum of `ac` effects from equipped things. Base is the
+    worn armor's ``ac_base`` + DEX (capped per the armor), or 10 + DEX unarmored.
+    A held shield or a ring of protection contributes via its `ac` effect —
+    which is exactly why a shield is holdable-with-an-ac-effect, not worn armor."""
+    dex_mod = (int(getattr(character, "dexterity", 10) or 10) - 10) // 2
+    if armor is not None:
+        base = int(getattr(armor, "ac_base", 10) or 10)
+        cap = getattr(armor, "ac_dex_cap", None)
+        base += dex_mod if cap is None else min(dex_mod, int(cap))
+    else:
+        base = 10 + dex_mod
+    bonus = 0
+    for t in (things or []):
+        for e in (getattr(t, "effects", None) or []):
+            if getattr(e, "kind", None) == "ac":
+                bonus += int((getattr(e, "payload", None) or {}).get("bonus", 0) or 0)
+    return base + bonus
+
+
 def proficient_with(character, weapon: Weapon) -> bool:
     """True if ``character`` is trained with ``weapon`` — by its id, any of its
     category/group tags (simple/martial/sword/…), or because it's a natural

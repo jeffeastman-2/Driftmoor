@@ -116,3 +116,20 @@ def test_gear_catalog_loads_with_kinds():
     lib = load_gear(GEAR)
     assert WEARABLE in lib["bracelet"].affordances
     assert TOOL in lib["thieves_tools"].affordances
+
+
+def test_parse_effect_ac():
+    assert parse_effect("ac +2") == Effect(kind="ac", payload={"bonus": 2})
+
+
+def test_shield_is_holdable_with_an_ac_effect_not_worn():
+    from models.thing import HOLDABLE, WEARABLE
+    sh = make_thing("shield", "Shield", "shield", ["ac +2"])
+    assert HOLDABLE in sh.affordances and WEARABLE not in sh.affordances
+    assert any(e.kind == "ac" and e.payload["bonus"] == 2 for e in sh.effects)
+
+
+def test_make_thing_multi_kind():
+    from models.thing import CONTAINER, WEARABLE
+    t = make_thing("explorers_pack", "Explorer's Pack", "wearable, container", [])
+    assert {WEARABLE, CONTAINER} <= t.affordances

@@ -40,6 +40,11 @@ def parse_effect(spec: str) -> Optional[Effect]:
     if head == "status":
         name = " ".join(parts[1:]).strip()
         return Effect(kind="status", payload={"name": name}) if name else None
+    if head == "ac":
+        try:
+            return Effect(kind="ac", payload={"bonus": int(float(parts[1]))})
+        except (IndexError, ValueError):
+            return None
     if len(parts) >= 2:
         try:
             delta = float(parts[1])
@@ -65,12 +70,12 @@ def make_thing(cid: str, name: str, kind: str, effect_specs) -> Thing:
     """Build a catalog Thing of a given ``kind``: ``eat``/``drink`` (a consumable
     with the matching interaction → EDIBLE/DRINKABLE), ``tool`` (holdable, usable)
     or ``wearable`` (occupies a body slot), plus any parsed effects."""
-    from models.thing import HOLDABLE, TOOL, WEARABLE
-    k = (kind or "").strip().lower()
+    from models.thing import CONTAINER, HOLDABLE, TOOL, WEARABLE
+    kinds = [k.strip().lower() for k in (kind or "").split(",") if k.strip()]
     interactions = []
-    if k in ("eat", "edible"):
+    if any(k in ("eat", "edible") for k in kinds):
         interactions = [Interaction(verb="eat", response=f"You eat the {name.lower()}.")]
-    elif k in ("drink", "drinkable"):
+    elif any(k in ("drink", "drinkable") for k in kinds):
         interactions = [Interaction(verb="drink", response=f"You drink the {name.lower()}.")]
     thing = Thing(id=cid, label=name, pickable=True,
                   description=f"{name}.", interactions=interactions)
@@ -79,11 +84,18 @@ def make_thing(cid: str, name: str, kind: str, effect_specs) -> Thing:
         if eff is not None:
             thing.effects.append(eff)
     derive_affordances(thing)
-    # Kinds without a defining interaction get their affordance directly.
-    if k == "tool":
-        thing.affordances.update({TOOL, HOLDABLE})
-    elif k in ("wearable", "worn", "armor"):
-        thing.affordances.add(WEARABLE)
+    # Each kind adds its affordance (a Thing may have several, e.g.
+    # "wearable, container"). A shield is HAND-HELD (holdable), not worn — its AC
+    # comes from an `ac +N` effect that stacks on worn armor.
+    for k in kinds:
+        if k == "tool":
+            thing.affordances.update({TOOL, HOLDABLE})
+        elif k in ("wearable", "worn", "armor"):
+            thing.affordances.add(WEARABLE)
+        elif k in ("shield", "held", "holdable"):
+            thing.affordances.add(HOLDABLE)
+        elif k == "container":
+            thing.affordances.add(CONTAINER)
     return thing
 
 
