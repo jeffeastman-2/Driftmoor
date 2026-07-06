@@ -66,6 +66,17 @@ def parse_effects(cell: str) -> list[Effect]:
     return out
 
 
+def parse_contents(cell: str) -> list[tuple[str, int]]:
+    """Parse a container's ``contents`` cell — ``id`` or ``id xN`` / ``id×N``,
+    comma-separated — into (catalog_id, quantity) pairs."""
+    out: list[tuple[str, int]] = []
+    for part in (cell or "").split(","):
+        m = re.match(r"^([a-z0-9_]+)(?:\s*[x×]\s*(\d+))?$", part.strip(), re.IGNORECASE)
+        if m:
+            out.append((m.group(1).lower(), int(m.group(2)) if m.group(2) else 1))
+    return out
+
+
 def make_thing(cid: str, name: str, kind: str, effect_specs) -> Thing:
     """Build a catalog Thing of a given ``kind``: ``eat``/``drink`` (a consumable
     with the matching interaction → EDIBLE/DRINKABLE), ``tool`` (holdable, usable)
@@ -137,9 +148,11 @@ def load_catalog(path: Path, default_kind: str = "eat") -> dict[str, Thing]:
         cid = (row.get("id") or "").strip()
         if not cid:
             continue
-        lib[cid] = make_thing(
+        thing = make_thing(
             cid, (row.get("name") or cid).strip(),
             (row.get("kind") or default_kind).strip(), parse_effects(row.get("effects", "")))
+        thing.contents = parse_contents(row.get("contents", ""))
+        lib[cid] = thing
     return lib
 
 

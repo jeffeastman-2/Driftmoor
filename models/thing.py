@@ -226,6 +226,12 @@ class Thing:
     effects: list["Effect"] = field(default_factory=list)
     carry: "CarryState" = field(default_factory=CarryState)
 
+    # How many of this identical thing (10 torches, 10 days of rations). A stack.
+    quantity: int = 1
+    # For a CONTAINER (a pack): its contents as (catalog_id, quantity) pairs.
+    # Expanded into the holder's possessions at load so the items are usable.
+    contents: list = field(default_factory=list)
+
     # --- Market facet -------------------------------------------------------
     # Populated only for shop goods (models.thing_loader). A shop good is a
     # Thing with a price; these stay empty for scene props / floor loot.

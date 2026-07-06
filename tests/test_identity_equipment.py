@@ -174,6 +174,23 @@ def test_explicit_bonus_still_overrides_computation():
 
 # --- AC computation: worn armor + capped DEX + ac-effects (a held shield) ---
 
+def test_container_expands_into_contents_with_quantity():
+    from engine.consumable_loader import make_thing, parse_contents
+    from models.thing import CONTAINER
+    torch = make_thing("torch", "Torch", "tool", [])
+    rope = make_thing("rope", "Rope", "tool", [])
+    pack = make_thing("explorers_pack", "Explorer's Pack", "wearable, container", [])
+    pack.contents = parse_contents("torch x10, rope")
+    gear = {"torch": torch, "rope": rope, "explorers_pack": pack}
+    s = _session()
+    _apply_equipment(s, {"equipment_entries": ["explorers_pack"]}, {}, {}, {}, {}, gear)
+    by_id = {t.id: t for t in s.pack}
+    assert CONTAINER in by_id["explorers_pack"].affordances   # the pack itself
+    assert by_id["torch"].quantity == 10                      # contents expanded, stacked
+    assert by_id["rope"].quantity == 1
+    assert pack.contents == [("torch", 10), ("rope", 1)]      # template contents intact
+
+
 def test_armor_class_base_dex_and_shield():
     from engine.consumable_loader import make_thing
     from engine.loadout import armor_class

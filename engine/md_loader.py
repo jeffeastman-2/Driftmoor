@@ -366,6 +366,17 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
             import dataclasses
             a = dataclasses.replace(a, name=armor_name)
         session.armor = a
+    # Expand containers (packs) into their contents so the items are usable —
+    # a resolved catalog Thing per (id, quantity), from gear or consumables.
+    import copy
+    for container in list(pack):
+        for cid, qty in (getattr(container, "contents", None) or []):
+            src = gear_library.get(cid) or consumable_library.get(cid)
+            if src is None:
+                continue
+            inst = copy.deepcopy(src)
+            inst.quantity = qty
+            pack.append(inst)
     session.pack = pack
     if free_text:
         session.character.equipment = free_text

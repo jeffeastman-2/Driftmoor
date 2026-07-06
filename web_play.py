@@ -154,6 +154,9 @@ def _player_inventory(cs, items: dict | None) -> dict:
     for prov in (getattr(cs, "pack", None) or []):   # food, drink, tools, wearables
         from models.thing import WEARABLE
         label = getattr(prov, "label", None) or getattr(prov, "id", "")
+        qty = int(getattr(prov, "quantity", 1) or 1)
+        if qty > 1:
+            label = f"{label} ×{qty}"
         chip = {"icon": _item_icon(label), "label": label}
         (worn if WEARABLE in (getattr(prov, "affordances", None) or set())
          else carried).append(chip)

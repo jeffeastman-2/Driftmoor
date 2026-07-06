@@ -133,3 +133,10 @@ def test_make_thing_multi_kind():
     from models.thing import CONTAINER, WEARABLE
     t = make_thing("explorers_pack", "Explorer's Pack", "wearable, container", [])
     assert {WEARABLE, CONTAINER} <= t.affordances
+
+
+def test_parse_contents():
+    from engine.consumable_loader import parse_contents
+    assert parse_contents("torch x10, rope, rations×5") == [
+        ("torch", 10), ("rope", 1), ("rations", 5)]
+    assert parse_contents("") == []
