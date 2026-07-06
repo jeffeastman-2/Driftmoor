@@ -29,6 +29,11 @@ class Character:
     # this budget is what makes "shield + two-handed sword" impossible without
     # a special case (see engine.loadout). Creatures may override.
     hands: int = 2
+    # Weapons this character is trained with, for the runtime attack-bonus
+    # computation. A flat set that may hold proficiency tiers (``simple`` /
+    # ``martial``), weapon groups (``sword``), or specific ids (``dagger``); a
+    # weapon is proficient if its id or any of its tags is in this set.
+    weapon_proficiencies: set[str] = field(default_factory=set)
 
 
 @dataclass

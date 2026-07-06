@@ -109,9 +109,14 @@ def _mace_item(holder=None):
     return NS(id="mace_plus_one", weapon=base, holder=holder)
 
 
-def _char(strength=10, dexterity=10, level=1, cid="gil"):
+def _char(strength=10, dexterity=10, level=1, cid="gil",
+          proficiencies=("mace_plus_one",)):
+    # Proficient with the picked-up mace by default, so the attack-bonus tests
+    # exercise the prof + mod + enhancement path (proficiency is now checked,
+    # not assumed).
     return NS(character=NS(id=cid, strength=strength, dexterity=dexterity,
-                           level=level, hands=2),
+                           level=level, hands=2,
+                           weapon_proficiencies=set(proficiencies)),
               weapons=[], wielded=[])
 
 

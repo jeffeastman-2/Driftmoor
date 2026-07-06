@@ -28,6 +28,11 @@ class Weapon:
     range_max: int = 0    # ranged maximum distance in feet; 0 = melee only
     properties: list[str] = field(default_factory=list)  # finesse, light, thrown, two_handed, natural, ammunition
     ammunition_id: str = ""  # item id for ammo (e.g. "arrow"); "" = no ammo needed
+    # Category/group tags: proficiency tier (simple/martial) + weapon group
+    # (sword/blade/axe/bow/...). Used for proficiency checks AND noun grounding
+    # ("draw my sword" -> a rapier tagged `sword`). Categorical truth, not a
+    # subclass — a rapier carries {martial, sword, blade} at once.
+    tags: list[str] = field(default_factory=list)
 
     @property
     def is_ranged(self) -> bool:

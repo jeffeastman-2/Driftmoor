@@ -9,10 +9,12 @@ from pathlib import Path
 from types import SimpleNamespace as NS
 
 from engine.consumable_loader import load_consumables, load_gear
+from engine.loadout import proficient_with, weapon_attack_bonus
 from engine.md_loader import _apply_equipment, _parse_equip_entry, parse_identity_stats
 from engine.weapon_loader import load_armors, load_weapons
 from models.condition import CharacterCondition
 from models.thing import TOOL, WEARABLE
+from models.weapon import Weapon
 
 FLAT = """\
 ## Equipment
@@ -67,7 +69,8 @@ def _libs():
 
 
 def _session():
-    return NS(character=NS(id="gil", name="Gil", equipment=[]),
+    return NS(character=NS(id="gil", name="Gil", equipment=[], level=13,
+                           strength=10, dexterity=20, weapon_proficiencies=set()),
               condition=CharacterCondition(character_id="gil", character_name="Gil"),
               weapons=[], armor=None, pack=[])
 
@@ -105,3 +108,65 @@ def test_weapon_honors_name_and_bonus_override():
     assert w.name == "Silver handled rapier"  # : Name override applied
     assert w.attack_bonus == 5                # +N override applied
     assert w.damage_dice == "1d8"             # base stats still from the catalog
+
+
+def test_armor_honors_name_override():
+    wl, al, cl, gl = _libs()
+    s = _session()
+    _apply_equipment(s, {"equipment_entries": ["studded_leather: Green studded leather"]},
+                     {}, wl, al, cl, gl)
+    assert s.armor.id == "studded_leather"          # catalog template
+    assert s.armor.name == "Green studded leather"  # : Name override applied
+
+
+# --- proficiency + runtime attack bonus (retiring +N) ---------------------
+
+def _char(profs, level=13, dex=20, strength=10):
+    return NS(level=level, strength=strength, dexterity=dex,
+              weapon_proficiencies={p.lower() for p in profs})
+
+
+def _rapier():
+    return Weapon(id="rapier", name="Rapier", damage_dice="1d8", damage_type="piercing",
+                  properties=["finesse"], tags=["martial", "sword", "blade"])
+
+
+def test_proficient_with_id_tag_and_natural():
+    r = _rapier()
+    claw = Weapon(id="claw", name="Claw", damage_dice="1d6", damage_type="slashing",
+                  properties=["natural"], tags=["natural"])
+    assert proficient_with(_char({"dagger"}), r) is False   # no id/tag match
+    assert proficient_with(_char({"rapier"}), r) is True    # specific id
+    assert proficient_with(_char({"martial"}), r) is True   # category tag
+    assert proficient_with(_char({"sword"}), r) is True     # group tag
+    assert proficient_with(_char(set()), claw) is True      # natural: always
+
+
+def test_weapon_attack_bonus_proficient_vs_not():
+    r = _rapier()                       # level 13 -> prof +5; DEX 20 -> +5 (finesse)
+    assert weapon_attack_bonus(_char(set()), r) == 5        # not proficient: DEX only
+    assert weapon_attack_bonus(_char({"martial"}), r) == 10  # + proficiency
+
+
+def test_parse_weapon_proficiencies_line():
+    s = parse_identity_stats(
+        "## Combat Statistics\n- **Weapon Proficiencies:** dagger, martial\n")
+    assert s["weapon_proficiencies"] == "dagger, martial"
+
+
+def test_apply_equipment_computes_attack_when_no_bonus():
+    wl, al, cl, gl = _libs()
+    s = _session()
+    s.character.weapon_proficiencies = {"dagger", "light_crossbow"}
+    _apply_equipment(s, {"equipment_entries": ["rapier", "dagger", "light_crossbow"]},
+                     {}, wl, al, cl, gl)
+    got = {w.id: w.attack_bonus for w in s.weapons}
+    # DEX 20 (+5), level 13 (prof +5); rapier is NOT in Gil's proficiencies.
+    assert got == {"rapier": 5, "dagger": 10, "light_crossbow": 10}
+
+
+def test_explicit_bonus_still_overrides_computation():
+    wl, al, cl, gl = _libs()
+    s = _session()                       # proficient with nothing
+    _apply_equipment(s, {"equipment_entries": ["rapier+7"]}, {}, wl, al, cl, gl)
+    assert s.weapons[0].attack_bonus == 7   # manual +N wins over the computed value

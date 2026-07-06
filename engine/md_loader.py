@@ -206,6 +206,12 @@ def parse_identity_stats(text: str) -> dict:
         if entries:
             stats["equipment_entries"] = entries
 
+    # Weapon proficiencies: a comma list of tiers (simple/martial), groups
+    # (sword), or specific weapon ids — used to compute attack bonuses at load.
+    wp = re.search(r"-\s*\*\*weapon proficiencies:\*\*\s*(.+)", text, re.IGNORECASE)
+    if wp:
+        stats["weapon_proficiencies"] = wp.group(1).strip()
+
     # Engine section: provider, model, pronouns
     engine_m = re.search(
         r"^##\s+Engine\s*\n(.*?)(?=^##|\Z)",
@@ -324,6 +330,7 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
     weapons = (parse_character_weapons(cfg["weapons"], weapon_library)
                if cfg.get("weapons") else [])
     armor_id = cfg.get("armor")
+    armor_name = ""
     pack: list = []
     free_text: list = []
     for entry in (id_stats.get("equipment_entries") or []):
@@ -333,12 +340,18 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
             continue
         eid, bonus, name = parsed
         if eid in weapon_library:
-            w = parse_character_weapons(eid + bonus, weapon_library)
-            if w and name:               # honor the ": Display Name" override
-                w[0].name = name
-            weapons.extend(w)
+            import dataclasses
+            from engine.loadout import weapon_attack_bonus
+            w = dataclasses.replace(weapon_library[eid])
+            if name:                     # ": Display Name" instance override
+                w.name = name
+            if bonus:                    # explicit +N: legacy manual override
+                w.attack_bonus = int(bonus)
+            else:                        # otherwise compute from stats + proficiency
+                w.attack_bonus = weapon_attack_bonus(session.character, w)
+            weapons.append(w)
         elif eid in armor_library:
-            armor_id = eid
+            armor_id, armor_name = eid, name
         elif eid in consumable_library:
             pack.append(_instantiate(consumable_library, eid, name))
         elif eid in gear_library:
@@ -348,7 +361,11 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
     if weapons:
         session.weapons = weapons
     if armor_id:
-        session.armor = armor_library.get(str(armor_id).strip())
+        a = armor_library.get(str(armor_id).strip())
+        if a is not None and armor_name:      # ": Display Name" instance override
+            import dataclasses
+            a = dataclasses.replace(a, name=armor_name)
+        session.armor = a
     session.pack = pack
     if free_text:
         session.character.equipment = free_text
@@ -959,6 +976,13 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             session = _build_creature(char_id, cfg, introductions)
         else:
             session = _build_player_or_npc(char_id, cfg, introductions)
+
+        # Weapon proficiencies (for the runtime attack-bonus computation) must
+        # be set before equipment is resolved.
+        profs = id_stats.get("weapon_proficiencies")
+        if profs:
+            session.character.weapon_proficiencies = {
+                p.strip().lower() for p in str(profs).split(",") if p.strip()}
 
         # Resolve equipment (structured legacy weapons/armor + the flat
         # ## Equipment id list) onto weapons / armor / pack / free-text.

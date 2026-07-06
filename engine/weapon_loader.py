@@ -64,6 +64,8 @@ def load_weapons(weapons_md: Path) -> dict[str, Weapon]:
             else:
                 properties.append(p)
 
+        tags = [t.strip().lower() for t in row.get("tags", "").split(",") if t.strip()]
+
         result[wid] = Weapon(
             id=wid,
             name=row.get("name", wid).strip(),
@@ -74,6 +76,7 @@ def load_weapons(weapons_md: Path) -> dict[str, Weapon]:
             range_max=range_max,
             properties=properties,
             ammunition_id=ammunition_id,
+            tags=tags,
         )
     return result
 

@@ -113,23 +113,45 @@ def can_wield(cs, weapon: Weapon) -> bool:
     return True if need == 0 else hands_free(cs) >= need
 
 
-def _held_weapon_attack_bonus(character, base: Weapon) -> int:
-    """Attack bonus for a picked-up weapon wielded by ``character``:
-    proficiency + ability modifier + the weapon's enhancement (stored in
-    ``base.attack_bonus`` by build_item_weapon). Assumes proficiency."""
-    enhancement = int(getattr(base, "attack_bonus", 0) or 0)
+def proficient_with(character, weapon: Weapon) -> bool:
+    """True if ``character`` is trained with ``weapon`` — by its id, any of its
+    category/group tags (simple/martial/sword/…), or because it's a natural
+    weapon (creatures are always proficient with their own body). Reads
+    ``character.weapon_proficiencies`` (a flat set of ids/tiers/groups)."""
+    tags = {t.lower() for t in (getattr(weapon, "tags", None) or [])}
+    if "natural" in tags or "natural" in {
+            p.lower() for p in (getattr(weapon, "properties", None) or [])}:
+        return True
+    profs = {p.lower() for p in (getattr(character, "weapon_proficiencies", None) or set())}
+    return weapon.id.lower() in profs or bool(tags & profs)
+
+
+def weapon_attack_bonus(character, weapon: Weapon) -> int:
+    """The character's attack (to-hit) bonus with ``weapon``, computed at
+    runtime: ability modifier (finesse picks the better of STR/DEX; ranged uses
+    DEX) + proficiency bonus IF proficient + the weapon's own magic enhancement
+    (``weapon.attack_bonus``, set for a +N magic item). Replaces the frozen
+    per-character ``+N`` total."""
+    enhancement = int(getattr(weapon, "attack_bonus", 0) or 0)
     level = int(getattr(character, "level", 1) or 1)
     prof = 2 + (level - 1) // 4
-    props = [p.lower() for p in (getattr(base, "properties", None) or [])]
+    props = [p.lower() for p in (getattr(weapon, "properties", None) or [])]
     str_mod = (int(getattr(character, "strength", 10) or 10) - 10) // 2
     dex_mod = (int(getattr(character, "dexterity", 10) or 10) - 10) // 2
-    if getattr(base, "range_normal", 0) > 0:
+    if getattr(weapon, "range_normal", 0) > 0:
         mod = dex_mod
     elif "finesse" in props:
         mod = max(str_mod, dex_mod)
     else:
         mod = str_mod
-    return prof + mod + enhancement
+    return mod + (prof if proficient_with(character, weapon) else 0) + enhancement
+
+
+def _held_weapon_attack_bonus(character, base: Weapon) -> int:
+    """Attack bonus for a picked-up weapon (kept as a thin wrapper). Now
+    proficiency-aware via ``weapon_attack_bonus`` — a character no longer gets
+    the proficiency bonus for a weapon they aren't trained with."""
+    return weapon_attack_bonus(character, base)
 
 
 def register_held_weapon(cs, item) -> Weapon | None:
