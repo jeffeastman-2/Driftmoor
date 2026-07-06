@@ -688,38 +688,8 @@ class TestInferCardinalDestination:
         assert dest[2] == "North Room"
 
 
-class TestDropCarriedWeapon:
-    """Dropping a KIT weapon (not a scene item) must actually drop it — unhand
-    it, remove it from the kit, and leave a re-pickable item on the ground."""
-
-    def _cs(self):
-        from types import SimpleNamespace as NS
-        from models.weapon import Weapon
-        rapier = Weapon(id="rapier", name="Rapier", damage_dice="1d8",
-                        damage_type="piercing")
-        return NS(scene_handle="Gil", episodic_memory=[],
-                  character=NS(name="Gil", inventory=[]),
-                  weapons=[rapier], wielded=["rapier"], held_items=[])
-
-    def test_find_carried_weapon_by_name(self):
-        from engine.session import _find_carried_weapon
-        cs = self._cs()
-        assert _find_carried_weapon("I drop my rapier", cs).id == "rapier"
-        assert _find_carried_weapon("I move north", cs) is None
-
-    def test_drop_unhands_removes_and_materializes(self):
-        from engine.session import _drop_carried_weapon
-        cs = self._cs()
-        items: dict = {}
-        w = cs.weapons[0]
-        _drop_carried_weapon(cs, w, items, (10.0, 20.0, "ENTRY CHAMBER"),
-                             "ENTRY CHAMBER", "gil", [], [], None, 1)
-        assert cs.wielded == []            # out of hand
-        assert cs.weapons == []            # out of the kit
-        it = items["rapier"]               # materialized on the ground, re-pickable
-        assert it.holder is None and it.pickable and it.weapon is w
-        assert (it.position.x, it.position.y) == (10.0, 20.0)
-        assert it.zone == "ENTRY CHAMBER"
+# Dropping/drawing a KIT weapon out of combat is now the unified
+# affordance-gated dispatch — see tests/test_manipulation.py.
 
 
 class TestDrawKitWeapon:

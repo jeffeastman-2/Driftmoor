@@ -200,6 +200,39 @@ def sheathe(cs, weapon: Weapon, log: list | None = None) -> bool:
     return False
 
 
+def materialize_things(cs) -> None:
+    """(Re)build ``cs.things`` — a derived Thing-view of the character's kit
+    (weapons + armor) carrying affordances and carry-state mirrored from the
+    live loadout (``cs.weapons``/``wielded``/``armor``, which stay the source of
+    truth). This is what makes kit possessions visible to the unified
+    manipulation dispatch and affordance-aware grounding as Things. Cheap and
+    idempotent — call it after any loadout change (draw/sheathe/pickup/drop)."""
+    from models.thing import (
+        Thing, CarryState, derive_affordances, IN_HAND, CARRIED, WORN,
+    )
+    holder = getattr(getattr(cs, "character", None), "id", None)
+    wielded = set(getattr(cs, "wielded", None) or [])
+    things: list = []
+    for w in (getattr(cs, "weapons", None) or []):
+        in_hand = w.id in wielded
+        t = Thing(id=w.id, label=getattr(w, "name", w.id), weapon=w, holder=holder,
+                  pickable=True)
+        t.carry = CarryState(
+            location=IN_HAND if in_hand else CARRIED,
+            hands=weapon_hands(w) if in_hand else 0,
+        )
+        derive_affordances(t)
+        things.append(t)
+    armor = getattr(cs, "armor", None)
+    if armor is not None:
+        t = Thing(id=getattr(armor, "id", "armor"),
+                  label=getattr(armor, "name", "armor"), armor=armor, holder=holder)
+        t.carry = CarryState(location=WORN, slot="torso")
+        derive_affordances(t)
+        things.append(t)
+    cs.things = things
+
+
 def default_wield(cs) -> None:
     """Put a sensible primary weapon in hand at scene start so a character is
     not empty-handed. Picks the highest-average-damage weapon that fits the

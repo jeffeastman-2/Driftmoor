@@ -81,6 +81,12 @@ class CharacterSession:
     # Non-weapon items currently held in-hand (e.g. a picked-up torch). A subset
     # of inventory; each occupies one hand like a weapon. See engine.loadout.
     held_items: list[str] = field(default_factory=list)
+    # A derived Thing-view of the character's kit (weapons + armor) with
+    # affordances + carry-state, rebuilt from the loadout by
+    # ``loadout.materialize_things``. The unified manipulation dispatch
+    # (engine.manipulation) and affordance-aware grounding read this; the
+    # loadout fields above remain the source of truth.
+    things: list = field(default_factory=list)
     # Phase 3b: dormancy. "always" = active from turn 1 (default).
     # "zone_entry:<Zone Name>" = activate when an opposing-faction
     # character enters that zone. "door_open:<door_id>" = activate when
@@ -2906,54 +2912,6 @@ def _apply_loadout_intent(intent_text: str, cs: "CharacterSession",
             break
 
 
-def _find_carried_weapon(intent_text: str, cs: "CharacterSession"):
-    """The weapon in ``cs.weapons`` named in ``intent_text`` (by name token), or
-    None. Lets possession verbs act on a KIT weapon (which isn't a scene Item)."""
-    from engine.combat_resolver import _weapon_name_tokens
-    text = (intent_text or "").lower()
-    for w in (getattr(cs, "weapons", None) or []):
-        if any(re.search(rf"\b{re.escape(t)}\b", text) for t in _weapon_name_tokens(w)):
-            return w
-    return None
-
-
-def _drop_carried_weapon(cs: "CharacterSession", weapon, items, actor_pos,
-                         actor_zone: str, character_id: str, attack_log: list,
-                         recent_events: list, game_time, turn_num: int) -> None:
-    """Drop a KIT weapon to the ground: take it out of hand, remove it from the
-    character's kit, and materialize a loose, pickable scene ``Item`` where they
-    stand so it can be picked back up. Bridges the kit-weapon / scene-item gap
-    for 'drop' (until the item model is unified)."""
-    from engine import loadout
-    from models.item import Item
-    from models.space_time import Position
-    loadout.sheathe(cs, weapon)                                    # out of hand
-    cs.weapons = [w for w in (getattr(cs, "weapons", None) or []) if w.id != weapon.id]
-    ax, ay = float(actor_pos[0]), float(actor_pos[1])
-    it = (items or {}).get(weapon.id) if items is not None else None
-    if it is None:
-        it = Item(id=weapon.id, label=weapon.name,
-                  description=f"A {weapon.name.lower()} lies where it was dropped.",
-                  pickable=True, weapon=weapon,
-                  position=Position(ax, ay), zone=actor_zone, holder=None)
-        if items is not None:
-            items[weapon.id] = it
-    else:
-        it.holder = None
-        it.position = Position(ax, ay)
-        it.zone = actor_zone
-        it.weapon = weapon
-        it.pickable = True
-    it.discovered_by.add(character_id)
-    handle = _char_handle(cs, character_id)
-    ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
-    attack_log.append(
-        f"[ITEM-TRANSFER] {character_id} drops {weapon.name} on the ground in "
-        f"{(actor_zone or 'this zone').upper()}: {handle} sets it down. Narrate the drop.")
-    recent_events.append((turn_num, f"{ts} | {handle} drops the {weapon.name}."))
-    _append_memory_note(cs, f"Turn {turn_num}: you dropped your {weapon.name}.")
-
-
 def _find_takeable_weapon_item(intent_text: str, items, actor_zone: str):
     """A loose weapon item named in the intent and within reach (same zone,
     unheld), or None. Lets "pick up the mace and attack" ground the mace even
@@ -3825,10 +3783,11 @@ async def iter_session(
     # Phase 2: put a primary weapon in each character's hand at scene start so
     # nobody is empty-handed (no-op for characters already wielding or with only
     # natural weapons). Restored wielded state (resume) is left untouched.
-    from engine.loadout import default_wield, sync_held_weapons
+    from engine.loadout import default_wield, sync_held_weapons, materialize_things
     for _cs in characters.values():
         sync_held_weapons(_cs, items)  # re-register picked-up weapons on resume
         default_wield(_cs)
+        materialize_things(_cs)        # derived Thing-view of the kit for dispatch
 
     # Per-session puzzles. Each puzzle owns its own state machine; the loop
     # only delegates presses to the registry and applies the results. An
@@ -4841,43 +4800,35 @@ async def iter_session(
             # already reflects what they perceived; perception + action are
             # sufficient for the narrator.
 
-            # Kit-weapon possession (drop / stow / sheathe): the take/drop
-            # machinery only knows scene Items, and a kit weapon (cs.weapons)
-            # isn't one — so "drop my rapier" would silently no-op. Route it
-            # through loadout here (works out of combat too). Only when no scene
-            # item was targeted, so picked-up scene weapons keep the normal path.
+            # Kit possession verbs (draw / sheathe / drop / wear) on a weapon or
+            # armor. The scene take/drop machinery only knows scene Things, so a
+            # kit possession used to no-op silently. The unified affordance-gated
+            # dispatch resolves the named kit Thing and applies the verb; only
+            # when no scene item was targeted, so picked-up scene things keep the
+            # normal path.
             if (
                 adjudication.approved
                 and not use_resolver
                 and intent.intent
                 and not intent.interaction_target
             ):
-                from engine.verb_resolver import detect_transfer_verb
-                _cw = _find_carried_weapon(intent.intent, cs)
-                if _cw is not None:
-                    _tv = detect_transfer_verb(intent.intent)
-                    _wpos = current_positions.get(character_id, (0.0, 0.0, ""))
-                    if _tv == "drop":
-                        _drop_carried_weapon(
-                            cs, _cw, items, _wpos,
-                            _wpos[2] if len(_wpos) > 2 else "", character_id,
-                            attack_log, recent_events, game_time, turn_num)
-                    elif _tv == "stow" or _SHEATHE_VERB_RE.search(intent.intent):
-                        from engine import loadout
-                        _ll: list[str] = []
-                        loadout.sheathe(cs, _cw, _ll)
-                        if _ll:
-                            attack_log.append(
-                                f"[LOADOUT] {character_id}: " + ", ".join(_ll))
-                    elif _tv == "take" or _DRAW_VERB_RE.search(intent.intent):
-                        # Draw/get/unsheathe a kit weapon into hand (out of combat
-                        # too) — auto-sheathes a lower-value weapon to free a hand.
-                        from engine import loadout
-                        _ll = []
-                        loadout.draw(cs, _cw, _ll)
-                        if _ll:
-                            attack_log.append(
-                                f"[LOADOUT] {character_id}: " + ", ".join(_ll))
+                from engine import loadout, manipulation
+                loadout.materialize_things(cs)
+                _thing = manipulation.find_possessed_thing(cs, intent.intent)
+                if _thing is not None:
+                    _verb = manipulation.classify_verb(intent.intent, _thing)
+                    if _verb is not None:
+                        _wpos = current_positions.get(character_id, (0.0, 0.0, ""))
+                        _mr = manipulation.apply_manipulation(
+                            cs, _verb, _thing, items=items, actor_pos=_wpos,
+                            actor_zone=_wpos[2] if len(_wpos) > 2 else "",
+                            character_id=character_id, game_time=game_time,
+                            turn_num=turn_num)
+                        if _mr.applied:
+                            attack_log.extend(_mr.log)
+                            recent_events.extend(_mr.events)
+                            for _note in _mr.memory:
+                                _append_memory_note(cs, _note)
 
             # Phase 2b: resolve item interactions BEFORE narration so the
             # narrator sees DM-authoritative findings instead of inventing
