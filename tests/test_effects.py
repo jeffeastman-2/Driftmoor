@@ -86,6 +86,23 @@ def test_drink_applies_effects_and_consumes():
     assert any("heals 8 HP" in line for line in res.log)
 
 
+def test_eating_a_stack_depletes_one_at_a_time():
+    cs = _cs()
+    rations = _consumable("rations", "Rations", [Effect(kind="heal", payload={"amount": 1})])
+    rations.quantity = 3
+    cs.pack = [rations]
+    # First bite: quantity drops, the stack stays in the pack, effect applies once.
+    manipulation.apply_manipulation(cs, "eat", rations, items={}, actor_pos=(0, 0, "Z"),
+                                    actor_zone="Z", character_id="gil", game_time=None, turn_num=1)
+    assert rations.quantity == 2 and rations in cs.pack
+    assert cs.character.current_hp == 11
+    # Down to the last: eating it consumes and removes the stack.
+    rations.quantity = 1
+    manipulation.apply_manipulation(cs, "eat", rations, items={}, actor_pos=(0, 0, "Z"),
+                                    actor_zone="Z", character_id="gil", game_time=None, turn_num=2)
+    assert rations.carry.location == CONSUMED and cs.pack == []
+
+
 def test_eat_multi_effect_consumable():
     cs = _cs()
     # A stew: heals a little AND raises satiety AND bumps a neurochemical.

@@ -156,11 +156,14 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         from engine import effects
         from models.thing import CONSUMED
         notes = effects.apply_thing_effects(cs, thing)
-        thing.carry.location = CONSUMED
-        # Used up — drop it from the pack.
-        pack = getattr(cs, "pack", None)
-        if pack is not None:
-            cs.pack = [p for p in pack if p is not thing]
+        qty = int(getattr(thing, "quantity", 1) or 1)
+        if qty > 1:
+            thing.quantity = qty - 1           # deplete one from the stack; the rest remain
+        else:
+            thing.carry.location = CONSUMED    # last one — used up, leaves the pack
+            pack = getattr(cs, "pack", None)
+            if pack is not None:
+                cs.pack = [p for p in pack if p is not thing]
         detail = (" (" + ", ".join(notes) + ")") if notes else ""
         pres, past = ("drinks", "drank") if verb == "drink" else ("eats", "ate")
         res.log.append(
