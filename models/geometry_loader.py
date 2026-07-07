@@ -156,17 +156,9 @@ def parse_geometry_md(text: str) -> dict:
     boundaries_section = _extract_section(text, "Boundaries")
     result["boundaries"] = _parse_boundaries(boundaries_section)
 
-    # --- Starting Positions ---
-    starting_section = _extract_section(text, "Starting Positions")
-    start_rows = _parse_table_rows(starting_section)
-    starting: dict[str, Position] = {}
-    for row in start_rows:
-        if len(row) >= 3:
-            name = row[0].strip()
-            if name == "character":
-                continue
-            starting[name] = Position(float(row[1]), float(row[2]))
-    result["starting_positions"] = starting
+    # Character placement is a scene concern (authored in scenes/<scene>.md), not
+    # geometry: GEOMETRY.md is a pure stage. There is no "Starting Positions"
+    # table to parse here.
 
     # --- Visibility ---
     visibility_section = _extract_section(text, "Visibility")
@@ -277,16 +269,17 @@ def load_geometry(path: Path) -> SceneGeometry:
         impassable=data["impassable"],
         connections=data["connections"],
         visibility_rules=data.get("visibility", {}),
-        starting_positions=data.get("starting_positions", {}),
         boundaries=data.get("boundaries", []),
         ambient_visibility_ft=data.get("ambient_visibility_ft"),
         zone_visibility_ft=data.get("zone_visibility_ft", {}),
     )
 
-def load_geometry_full(path: Path) -> tuple[
-    SceneGeometry, list[MagicalBoundary], dict[str, Position]
-]:
-    """Load GEOMETRY.md returning geometry, boundaries, and starting positions."""
+def load_geometry_full(path: Path) -> tuple[SceneGeometry, list[MagicalBoundary]]:
+    """Load GEOMETRY.md returning geometry and its boundaries.
+
+    (Character placement is a scene concern now — see ``scenes/<scene>.md`` and
+    ``md_loader`` — so it is not returned here.)
+    """
     text = path.read_text(encoding="utf-8")
     data = parse_geometry_md(text)
     geometry = SceneGeometry(
@@ -301,4 +294,4 @@ def load_geometry_full(path: Path) -> tuple[
         impassable=data["impassable"],
         connections=data["connections"],
     )
-    return geometry, data["boundaries"], data["starting_positions"]
+    return geometry, data["boundaries"]

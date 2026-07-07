@@ -46,31 +46,37 @@ Characters may leave this scene. Recognise and permit these:
 - **type:** player
 - **soul_file:** scenario/people/players/kaelin/SOUL.md
 - **identity_file:** scenario/people/players/kaelin/IDENTITY.md
+- **position:** 16, 26
 
 ### cinnabar
 - **type:** player
 - **soul_file:** scenario/people/players/cinnabar/SOUL.md
 - **identity_file:** scenario/people/players/cinnabar/IDENTITY.md
+- **position:** 20, 22
 
 ### tess
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tess/SOUL.md
 - **identity_file:** scenario/people/npcs/tess/IDENTITY.md
+- **position:** 65, 26
 
 ### wilfred
 - **type:** npc
 - **soul_file:** scenario/people/npcs/wilfred/SOUL.md
 - **identity_file:** scenario/people/npcs/wilfred/IDENTITY.md
+- **position:** 56, 20
 
 ### bran
 - **type:** npc
 - **soul_file:** scenario/people/npcs/bran/SOUL.md
 - **identity_file:** scenario/people/npcs/bran/IDENTITY.md
+- **position:** 14, 52
 
 ### marda
 - **type:** npc
 - **soul_file:** scenario/people/npcs/marda/SOUL.md
 - **identity_file:** scenario/people/npcs/marda/IDENTITY.md
+- **position:** 11, 52
 
 ## Scene Introductions
 

@@ -82,10 +82,3 @@ sits behind the counter near the back wall.
 - **vertices:** (22,32) (45,32) (45,45) (22,45)
 
 ---
-
-## Starting Positions
-
-| character | x    | y    | zone      |
-|-----------|------|------|-----------|
-| seraphina | 16  | 19  | SHOPFRONT |
-| tavian    | 32 | 39 | BACK_AREA |

@@ -80,21 +80,25 @@ characters know, in-fiction, the following caver's wisdom:
 - **type:** player
 - **soul_file:** scenario/people/players/seraphina/SOUL.md
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
+- **position:** 155, 285
 
 ### thorgrim
 - **type:** player
 - **soul_file:** scenario/people/players/thorgrim/SOUL.md
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
+- **position:** 138, 295
 
 ### amara
 - **type:** player
 - **soul_file:** scenario/people/players/amara/SOUL.md
 - **identity_file:** scenario/people/players/amara/IDENTITY.md
+- **position:** 120, 305
 
 ### gilthaness
 - **type:** player
 - **soul_file:** scenario/people/players/gilthaness/SOUL.md
 - **identity_file:** scenario/people/players/gilthaness/IDENTITY.md
+- **position:** 145, 300
 
 ### giant_spider
 - **type:** creature
@@ -102,6 +106,7 @@ characters know, in-fiction, the following caver's wisdom:
 - **soul_file:** scenario/creatures/giant_spider_soul.md
 - **identity_file:** scenario/creatures/giant_spider_identity.md
 - **scene_handle:** the giant spider
+- **position:** 64, 195
 - **hp:** 26
 - **ac:** 14
 - **faction:** hostile

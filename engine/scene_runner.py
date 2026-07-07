@@ -37,28 +37,6 @@ def load_file(path: Path) -> str:
     return path.read_text(encoding="utf-8").strip() if path.exists() else ""
 
 
-def _parse_starting_positions(geometry_text: str) -> dict[str, tuple[float, float, str]]:
-    """Parse the '## Starting Positions' table from a GEOMETRY.md string.
-
-    Returns {character_id: (x, y, zone)}.
-    """
-    import re
-    positions: dict[str, tuple[float, float, str]] = {}
-    m = re.search(r"##\s+Starting Positions.*?(\|.+?)(?=\n##|\Z)", geometry_text, re.DOTALL)
-    if not m:
-        return positions
-    for line in m.group(1).splitlines():
-        cells = [c.strip() for c in line.split("|") if c.strip()]
-        if len(cells) >= 3 and cells[0] not in ("character", "---", "-"):
-            try:
-                char_id, x, y = cells[0], float(cells[1]), float(cells[2])
-                zone = cells[3] if len(cells) >= 4 else ""
-                positions[char_id] = (x, y, zone)
-            except ValueError:
-                pass
-    return positions
-
-
 @dataclass
 class SceneConfig:
     scene_name: str
@@ -270,22 +248,8 @@ def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> S
         if geo_path.exists():
             scene_geometry = load_geometry(geo_path)
 
-    # Inject starting positions into each character's initial_scene so the
-    # character agent knows exactly where it is (not just the DM).
-    if geometry_summary:
-        starting_positions = _parse_starting_positions(geometry_summary)
-        for char_id, cs in characters.items():
-            # Try exact match first, then strip trailing _<digits> (e.g. shadowbeast_1 → shadowbeast)
-            import re as _re
-            pos = starting_positions.get(char_id) or starting_positions.get(
-                _re.sub(r"_\d+$", "", char_id)
-            )
-            if pos:
-                x, y, zone = pos
-                cs.initial_scene = (
-                    cs.initial_scene
-                    + f"\n\nYour starting position: x={x}, y={y}, zone={zone}."
-                )
+    # (Character placement now lives on the scene file and is applied by the
+    # active MD loader; the legacy JSON path no longer injects positions.)
 
     # Game time — caller override takes precedence over JSON
     if game_time is None and "game_time" in data:
@@ -335,6 +299,7 @@ def _write_runtime_map(
     live: bool = False,
     start_characters: "list[str] | None" = None,
     item_details: dict | None = None,
+    start_positions: dict | None = None,
 ) -> None:
     """Write the runtime HTML map (full character paths from snapshots) into
     the checkpoint directory.
@@ -357,6 +322,7 @@ def _write_runtime_map(
             live_refresh_secs=8 if live else None,
             start_characters=start_characters,
             item_details=item_details,
+            start_positions=start_positions,
         )
         if not live:                       # per-turn live regen stays quiet
             print(f"  Written to {runtime_map_html}")
@@ -482,6 +448,14 @@ async def run_scene(
     # Regenerate the live map after every turn so an open browser tab (with the
     # page's self-refresh) follows the fog peeling back in real time.
     _geom = config.geometry_path
+    # Scene-authored placement seeds the turn-0 map markers (geometry is a pure
+    # stage). None for scenes without geometry — the renderer then falls back to
+    # any GEOMETRY table during migration.
+    _scene_starts = (
+        {cid: (p.x, p.y)
+         for cid, p in config.scene_geometry.starting_positions.items()}
+        if config.scene_geometry is not None else None
+    )
     _on_turn = None
     if _geom is not None and _geom.exists():
         _party = _start_characters(config.characters)
@@ -491,6 +465,7 @@ async def run_scene(
                 geometry_path=_geom, scene_name=scene_name,
                 checkpoint_dir=checkpoint_dir, live=True,
                 start_characters=_party, item_details=_items,
+                start_positions=_scene_starts,
             )
     try:
         result = await run_session(
@@ -572,4 +547,5 @@ async def run_scene(
             checkpoint_dir=checkpoint_dir,
             start_characters=_start_characters(config.characters),
             item_details=config.items or None,
+            start_positions=_scene_starts,
         )

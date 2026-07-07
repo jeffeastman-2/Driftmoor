@@ -277,6 +277,13 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
     """(Re)write the scene map. ``live_positions`` stamps the latest frame with
     mid-turn positions so the map shows where everyone is now. Best-effort."""
     cfg, cd, scene = app["config"], app["checkpoint_dir"], app["scene"]
+    # Turn-0 (and every) map seeds character markers from scene-authored
+    # placement, not the GEOMETRY: geometry is a pure stage now.
+    sg = getattr(cfg, "scene_geometry", None)
+    start_positions = (
+        {cid: (p.x, p.y) for cid, p in sg.starting_positions.items()}
+        if sg is not None else None
+    )
     try:
         render_turn_slider_html(
             cfg.geometry_path, cd / f"{scene}_map.html",
@@ -284,7 +291,8 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
             # Refresh faster than scene_runner's batch maps so per-initiative
             # moves are visible while watching live play.
             live_refresh_secs=4, start_characters=app["start_characters"],
-            item_details=cfg.items or None, live_positions=live_positions)
+            item_details=cfg.items or None, live_positions=live_positions,
+            start_positions=start_positions)
     except Exception:  # noqa: BLE001 — map is best-effort
         pass
 

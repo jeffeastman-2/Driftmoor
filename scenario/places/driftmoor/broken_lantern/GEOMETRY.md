@@ -100,14 +100,3 @@ building is timber with a sloping roof and ivy on the east wall.
 - **vertices:** (0,45) (81,45) (81,65) (0,65)
 
 ---
-
-## Starting Positions
-
-| character | x    | y    | zone      |
-|-----------|------|------|-----------|
-| kaelin    | 16  | 26  | BOOTHS    |
-| cinnabar  | 20  | 22  | BOOTHS    |
-| tess      | 65  | 26  | BAR       |
-| wilfred   | 56  | 20  | BAR       |
-| bran      | 14  | 52  | MEETING_ROOM |
-| marda     | 11  | 52  | MEETING_ROOM |

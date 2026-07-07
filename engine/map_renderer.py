@@ -157,14 +157,9 @@ def parse_geometry(text: str) -> dict:
                     label = last
             g["items"][cells[0]] = (x, y, label)
 
-    for cells in _table("Starting Positions"):
-        if cells[0].lower() == "character":
-            continue
-        if len(cells) >= 3:
-            try:
-                g["starting_positions"][cells[0]] = (float(cells[1]), float(cells[2]))
-            except ValueError:
-                pass
+    # Character placement is a scene concern: callers pass scene-resolved
+    # ``start_positions`` into the renderers (which override ``starting_positions``
+    # above). GEOMETRY is a pure stage and carries no positions to parse here.
 
     bm = re.search(r"##\s+Boundaries\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
     if bm:
@@ -259,6 +254,7 @@ def render_map(
     snapshot_dir: Path | None = None,
     title: str | None = None,
     char_colors: dict[str, str] | None = None,
+    start_positions: dict | None = None,
 ) -> None:
     """Render a static map image.
 
@@ -267,13 +263,19 @@ def render_map(
     geometry_path: scenario GEOMETRY.md
     output_path: where to write the image
     snapshot_dir: if given, plot each character's full path from its
-        ``day*.json`` snapshots.  If None, only the GEOMETRY's
-        ``Starting Positions`` are plotted.
+        ``day*.json`` snapshots.  If None, only the scene-provided
+        ``start_positions`` are plotted.
     title: figure title
     char_colors: optional override mapping character_id -> color
+    start_positions: scene-resolved {char_id: (x, y)} to seed turn-0 markers
+        (GEOMETRY is a pure stage and carries no placement)
     """
     text = geometry_path.read_text(encoding="utf-8")
     g = parse_geometry(text)
+    if start_positions is not None:                      # scene placement wins
+        g["starting_positions"] = {
+            cid: (float(p[0]), float(p[1])) for cid, p in start_positions.items()
+        }
 
     if snapshot_dir is not None and snapshot_dir.exists():
         paths = load_paths_from_snapshots(snapshot_dir)
@@ -479,6 +481,7 @@ def render_interactive_map_html(
     snapshot_dir: Path | None = None,
     title: str | None = None,
     char_colors: dict[str, str] | None = None,
+    start_positions: dict | None = None,
 ) -> None:
     """Render an interactive HTML map with hover tooltips for turn points.
 
@@ -487,6 +490,10 @@ def render_interactive_map_html(
     """
     text = geometry_path.read_text(encoding="utf-8")
     g = parse_geometry(text)
+    if start_positions is not None:                      # scene placement wins
+        g["starting_positions"] = {
+            cid: (float(p[0]), float(p[1])) for cid, p in start_positions.items()
+        }
     tracks = load_tracks_from_snapshots(snapshot_dir) if snapshot_dir is not None and snapshot_dir.exists() else {}
 
     if not tracks:
@@ -766,23 +773,33 @@ def render_turn_slider_html(
     start_characters: "Iterable[str] | None" = None,
     item_details: dict | None = None,
     live_positions: dict | None = None,
+    start_positions: dict | None = None,
 ) -> None:
     """Interactive turn-slider map with fog of war.
 
     One self-contained HTML page (SVG + a little vanilla JS, no libraries): a
     slider scrubs through the session's turns. At each turn only the zones the
     party has explored — entered — up to that turn are drawn, with every
-    character's marker at its position for that turn. Rebuilt entirely from the
-    per-turn snapshot JSONs in ``snapshot_dir`` plus the scenario GEOMETRY.md.
+    character's marker at its position for that turn. The stage (zones,
+    landmarks, items) comes from the scenario GEOMETRY.md; character placement
+    comes from ``start_positions`` (scene-resolved) plus the per-turn snapshot
+    JSONs in ``snapshot_dir``.
 
     ``start_characters`` is the set of characters present on the board at scene
     start (the party — those active from turn 1). Only these are seeded at turn 0
-    from GEOMETRY, so a *dormant* creature (a monster that activates on zone
-    entry) does NOT leak its position or un-fog its lair before the party finds
-    it. When omitted, only characters already recorded in the snapshots are
-    seeded (so a GEOMETRY-only entry never leaks by default).
+    from ``start_positions``, so a *dormant* creature (a monster that activates on
+    zone entry) does NOT leak its position or un-fog its lair before the party
+    finds it. When omitted, only characters already recorded in the snapshots are
+    seeded (so a scene-placed dormant entry never leaks by default).
     """
     g = parse_geometry(geometry_path.read_text(encoding="utf-8"))
+    # Character placement is a scene concern: the caller supplies the
+    # scene-resolved starting positions (GEOMETRY is a pure stage and carries no
+    # placement). Without them, only snapshot-recorded characters are plotted.
+    if start_positions is not None:
+        g["starting_positions"] = {
+            cid: (float(p[0]), float(p[1])) for cid, p in start_positions.items()
+        }
     tracks = (load_tracks_from_snapshots(snapshot_dir)
               if snapshot_dir is not None and snapshot_dir.exists() else {})
 

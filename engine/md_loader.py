@@ -38,7 +38,7 @@ from engine.weapon_loader import load_weapons, load_armors, parse_character_weap
 from models.character import PlayerCharacter, NPC, Creature
 from models.condition import CharacterCondition, NeurochemicalState, DimensionProfile
 from models.geometry_loader import load_geometry
-from models.space_time import GameTime, SceneGeometry
+from models.space_time import GameTime, Position, SceneGeometry
 from models.weapon import Armor
 
 
@@ -100,6 +100,38 @@ def _parse_all_char_sections(text: str) -> dict[str, dict[str, str]]:
         sub = _extract_subsection(chars_block, heading)
         result[heading] = _parse_meta(sub)
     return result
+
+
+def _resolve_start_position(
+    char_id: str,
+    pos_str: str,
+    scene_geometry: SceneGeometry | None,
+) -> tuple[Position, str] | None:
+    """Resolve a character's starting (Position, zone).
+
+    Placement lives on the scene: a ``- **position:** x, y[, z]`` bullet in the
+    character's ``### <char_id>`` block (GEOMETRY is a pure stage and no longer
+    carries placement). The **zone is always derived** from the coordinate via
+    ``zone_at`` — never authored — so it stays correct as ``zone_at`` becomes
+    volume-aware; the full ``(x, y, z)`` is passed. Returns ``(Position, ZONE)``,
+    or ``None`` when the character has no ``position``.
+    """
+    if not pos_str:
+        return None
+    nums: list[float] = []
+    for part in str(pos_str).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            nums.append(float(part))
+        except ValueError:
+            return None
+    if len(nums) < 2:
+        return None
+    pos = Position(nums[0], nums[1], nums[2] if len(nums) >= 3 else 0.0)
+    zone = scene_geometry.zone_at(pos) if scene_geometry is not None else None
+    return pos, (zone or "").upper()
 
 
 # ---------------------------------------------------------------------------
@@ -835,7 +867,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     The SceneConfig class is imported lazily from engine.scene_runner to avoid
     module-level circular imports.
     """
-    from engine.scene_runner import SceneConfig, _parse_starting_positions
+    from engine.scene_runner import SceneConfig
 
     text = _load(config_path)
 
@@ -888,7 +920,6 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         else:
             geo_path = None
 
-    starting_positions = _parse_starting_positions(geometry_summary) if geometry_summary else {}
     # ── Contents (items) ──────────────────────────────────────────
     # CONTENTS.md is expected as a sibling of GEOMETRY.md. Loading is
     # best-effort: a missing or malformed file leaves ``items`` empty so
@@ -973,6 +1004,10 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     characters: dict[str, CharacterSession] = {}
     roles: dict = {}
     character_pronouns: dict[str, str] = {}
+    # Placement resolved from the scene (authored `position` bullet), zone
+    # derived from the coordinate. Overrides the geometry-seeded dict below so
+    # every downstream consumer reads scene-authored placement.
+    scene_starting_positions: dict[str, Position] = {}
 
     for char_id, cfg in char_cfgs.items():
         # For player/NPC characters, pre-fill missing cfg fields from IDENTITY.md
@@ -1015,14 +1050,18 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
             session.character.ac = armor_class(
                 session.character, session.armor, session.pack)
 
-        # Append starting position to initial_scene so the LLM knows where to begin
-        pos = starting_positions.get(char_id) or starting_positions.get(
-            re.sub(r"_\d+$", "", char_id)
-        )
-        if pos:
-            x, y, zone = pos
+        # Resolve the starting position from the scene (authored `position`
+        # bullet), deriving the zone from the coordinate; fall back to the
+        # GEOMETRY table while scenes are being migrated. Record it so the turn-0
+        # seeding reads scene-authored placement, and tell the LLM where it opens.
+        resolved = _resolve_start_position(
+            char_id, cfg.get("position", ""), scene_geometry)
+        if resolved is not None:
+            pos_obj, zone = resolved
+            scene_starting_positions[char_id] = pos_obj
             session.initial_scene += (
-                f"\n\nYour starting position: x={x}, y={y}, zone={zone}."
+                f"\n\nYour starting position: x={pos_obj.x}, y={pos_obj.y}, "
+                f"zone={zone}."
             )
 
         # Phase 3b: per-character activation trigger (default "always").
@@ -1079,6 +1118,13 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
                 narrative_provider = cfg["provider"]
                 narrative_model = cfg.get("model", dm_model)
                 break
+
+    # Scene-authored placement is the source of truth: carry the resolved
+    # positions on the geometry object so turn-0 seeding (engine.session) and any
+    # other consumer of ``scene_geometry.starting_positions`` reads the scene.
+    # GEOMETRY is a pure stage and no longer seeds these.
+    if scene_geometry is not None:
+        scene_geometry.starting_positions = scene_starting_positions
 
     return SceneConfig(
         scene_name=scene_name,

@@ -81,11 +81,3 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 - **vertices:** (32,58) (65,58) (65,81) (32,81)
 
 ---
-
-## Starting Positions
-
-| character | x    | y    | zone    |
-|-----------|------|------|---------|
-| amara     | 48 | 13  | CHAPEL  |
-| father_elden | 48 | 52 | ALTAR  |
-| mira      | 32 | 26  | CHAPEL  |

@@ -79,11 +79,3 @@ the combined forge+stable footprint, excluding corral.
 - **vertices:** (0,71) (32,71) (32,113) (0,113)
 
 ---
-
-## Starting Positions
-
-| character | x    | y    | zone    |
-|-----------|------|------|---------|
-| thorgrim  | 26  | 78 | FORGE   |
-| darrin    | 19  | 65 | FORGE   |
-| kara      | 71 | 58 | STABLES |

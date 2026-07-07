@@ -202,7 +202,10 @@ class SceneGeometry:
     # Per-zone ambient override (zone name → range ft). Wins over the scene
     # default for an observer standing in that zone.
     zone_visibility_ft: dict[str, float] = field(default_factory=dict)
-    # character_id → starting Position parsed from GEOMETRY.md
+    # character_id → starting Position. Resolved from the scene file by
+    # md_loader (authored `position` bullet), with the zone derived from the
+    # coordinate. Geometry may still seed this as a migration fallback until the
+    # GEOMETRY `## Starting Positions` table is retired.
     starting_positions: dict[str, Position] = field(default_factory=dict)
     # magical and physical boundaries
     boundaries: list["MagicalBoundary"] = field(default_factory=list)

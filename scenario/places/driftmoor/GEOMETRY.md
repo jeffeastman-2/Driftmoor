@@ -140,13 +140,3 @@ Sub-zones (individual buildings) appear before their district zone.
 - **vertices:** (260,1072) (1625,1072) (1625,1202) (1267,1202) (260,1170)
 
 ---
-
-## Starting Positions
-
-| character  | x     | y     | zone            |
-|------------|-------|-------|-----------------|
-| thorgrim   | 1267 | 292  | SOUTH_QUARTER   |
-| kaelin     | 910 | 568 | SOUTH_ROW       |
-| seraphina  | 796 | 568 | SOUTH_ROW       |
-| lilar      | 1267 | 942 | EAST_QUARTER    |
-| aeliana    | 812 | 682 | VILLAGE_CENTER  |

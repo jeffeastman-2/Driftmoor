@@ -27,17 +27,20 @@
 - **type:** player
 - **soul_file:** scenario/people/players/aeliana/SOUL.md
 - **identity_file:** scenario/people/players/aeliana/IDENTITY.md
+- **position:** 256, 81
 
 ### fennel
 - **type:** player
 - **soul_file:** scenario/people/npcs/fennel/SOUL.md
 - **identity_file:** scenario/people/npcs/fennel/IDENTITY.md
+- **position:** 190, 162
 
 ### shadowbeast_1
 - **type:** creature
 - **creature_file:** scenario/creatures/shadowbeast.md
 - **soul_file:** scenario/creatures/shadowbeast_soul.md
 - **identity_file:** scenario/creatures/shadowbeast_identity.md
+- **position:** 65, 162
 - **faction:** hostile
 - **pronouns:** it/its
 - **weapons:** shadowbeast_claw+4

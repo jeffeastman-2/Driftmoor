@@ -82,10 +82,3 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 - **vertices:** (0,45) (71,45) (71,65) (0,65)
 
 ---
-
-## Starting Positions
-
-| character | x    | y    | zone       |
-|-----------|------|------|------------|
-| varrak    | 32 | 26  | SHOP_FLOOR |
-| jorgen    | 35 | 42 | COUNTER    |

@@ -118,11 +118,12 @@ def test_render_turn_slider_fog_and_slider(tmp_path):
         "current_positions": {"thorgrim": {"x": 137.0, "y": 265.0, "zone": "FIRST PASSAGE"}},
     }), encoding="utf-8")
     out = tmp_path / "slider.html"
-    render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="Echoing Caverns")
+    render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="Echoing Caverns",
+                            start_positions={"thorgrim": (138.0, 295.0)})
     t = out.read_text(encoding="utf-8")
     # Slider UI present.
     assert "id='sl'" in t and "const FRAMES=" in t and "id='play'" in t
-    # Turn-0 seeding from GEOMETRY: the starting zone (Entry Chamber) is revealed
+    # Turn-0 seeding from the scene: the starting zone (Entry Chamber) is revealed
     # from the start; First Passage is explored at turn 2.
     assert "data-reveal='0'" in t and "data-reveal='2'" in t
     # Fog of war: never-entered zones carry the sentinel (maxturn+1 = 3) -> hidden.
@@ -135,12 +136,15 @@ def test_render_turn_slider_fog_and_slider(tmp_path):
 
 def test_render_turn_slider_seeds_only_start_characters(tmp_path):
     """Turn-0 seeding is restricted to the named party; the dormant giant_spider
-    (present in GEOMETRY starting_positions) must NOT leak onto the map or
+    (present in the scene's start_positions) must NOT leak onto the map or
     un-fog its lair before the party finds it."""
     from engine.map_renderer import render_turn_slider_html
     out = tmp_path / "init.html"  # no snapshots: live initial render
     render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
-                            start_characters=["thorgrim", "gilthaness"])
+                            start_characters=["thorgrim", "gilthaness"],
+                            start_positions={"thorgrim": (138.0, 295.0),
+                                             "gilthaness": (145.0, 300.0),
+                                             "giant_spider": (64.0, 195.0)})
     t = out.read_text(encoding="utf-8")
     assert "thorgrim" in t and "gilthaness" in t
     assert "giant_spider" not in t            # dormant creature stays fogged
@@ -158,7 +162,8 @@ def test_render_turn_slider_has_trail_segments(tmp_path):
     }), encoding="utf-8")
     out = tmp_path / "slider.html"
     render_turn_slider_html(GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
-                            start_characters=["thorgrim"])
+                            start_characters=["thorgrim"],
+                            start_positions={"thorgrim": (138.0, 295.0)})
     t = out.read_text(encoding="utf-8")
     assert "data-trail='thorgrim'" in t
     assert t.count("data-trail=") == 1   # one segment per character, not a path
@@ -198,6 +203,7 @@ def test_render_turn_slider_live_positions_override(tmp_path):
     render_turn_slider_html(
         GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
         start_characters=["thorgrim"],
+        start_positions={"thorgrim": (138.0, 295.0)},
         live_positions={"thorgrim": (137.0, 243.5, "FIRST PASSAGE"),
                         "giant_spider": (64.0, 195.0, "SECRET CHAMBER")})
     t = out.read_text(encoding="utf-8")

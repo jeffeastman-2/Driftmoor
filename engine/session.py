@@ -3719,13 +3719,14 @@ async def iter_session(
     melee_rounds_remaining = MAX_MELEE_ROUNDS
     turn_num = start_turn
 
-    # Live position tracking — seeded from geometry starting positions then
+    # Live position tracking — seeded from the scene's starting positions then
     # updated each turn from DM-approved MOVEMENT TARGET.
     current_positions: dict[str, tuple[float, float, str]] = _parse_positions_table(
         game_state_summary
     )
-    # Fill any missing entries from the geometry's Starting Positions table
-    # so speed-clamping works from Turn 1 even for characters not in the
+    # Fill any missing entries from the scene-resolved starting positions
+    # (carried on scene_geometry.starting_positions by the loader) so
+    # speed-clamping works from Turn 1 even for characters not in the
     # game_state_summary position table.
     if scene_geometry is not None:
         for char_id in characters:

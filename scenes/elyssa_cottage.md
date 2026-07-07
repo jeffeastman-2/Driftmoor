@@ -38,11 +38,13 @@ observation.
 - **type:** player
 - **soul_file:** scenario/people/players/hendricks/SOUL.md
 - **identity_file:** scenario/people/players/hendricks/IDENTITY.md
+- **position:** 19, 4
 
 ### elyssa
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elyssa/SOUL.md
 - **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
+- **position:** 16, 16
 
 ## Scene Introductions
 

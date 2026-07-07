@@ -66,11 +66,3 @@ Willows line the riverbank. Fields stretch in every direction.
 | to_upper_floor     | 156 | 91 | places/greywater_river/old_mill/upper_floor  |
 
 ---
-
-## Starting Positions
-
-| character | x    | y    | zone          |
-|-----------|------|------|---------------|
-| lilar     | 65 | 48 | MILL_YARD     |
-| gregan    | 130 | 97 | MILL_INTERIOR |
-| tessa     | 156 | 91 | MILL_INTERIOR |

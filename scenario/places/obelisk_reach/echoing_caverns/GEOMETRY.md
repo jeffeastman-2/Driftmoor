@@ -117,13 +117,3 @@ here — sight is purely light-limited, so darkvision extends it fully.
 - **vertices:** (65,160) (243,160) (243,243) (65,243)
 
 ---
-
-## Starting Positions
-
-| character   | x   | y   | zone          |
-|-------------|-----|-----|---------------|
-| thorgrim    | 138 | 295 | Entry Chamber |
-| amara       | 120 | 305 | Entry Chamber |
-| seraphina   | 155 | 285 | Entry Chamber |
-| gilthaness  | 145 | 300 | Entry Chamber |
-| giant_spider | 64 | 195 | Secret Chamber |
