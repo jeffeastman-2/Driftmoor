@@ -25,5 +25,3 @@ proficiency.
 | dagger | Dagger | 1d4 | piercing | 5 | 20 | 60 | finesse,light,thrown | simple,dagger,blade |
 | belt_knife | Belt Knife | 1d4 | piercing | 5 | 0 | 0 | light | simple,dagger,blade |
 | improvised_spear | Improvised Spear | 1d8 | piercing | 5 | 0 | 0 | two_handed | simple,spear |
-| shadowbeast_claw | Claw | 1d6 | slashing | 5 | 0 | 0 | natural | natural |
-| spider_bite | Bite | 1d8+3 | piercing | 5 | 0 | 0 | natural | natural |

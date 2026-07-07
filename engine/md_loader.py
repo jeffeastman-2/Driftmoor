@@ -39,7 +39,7 @@ from models.character import PlayerCharacter, NPC, Creature
 from models.condition import CharacterCondition, NeurochemicalState, DimensionProfile
 from models.geometry_loader import load_geometry
 from models.space_time import GameTime, Position, SceneGeometry
-from models.weapon import Armor
+from models.weapon import Armor, Weapon
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -152,7 +152,7 @@ def parse_identity_stats(text: str) -> dict:
         "intelligence": 10, "wisdom": 10, "charisma": 10,
         "name": "", "race": "", "class_": "", "level": 1,
         "gender": "",
-        "weapons": "", "armor": "",
+        "weapons": "", "armor": "", "provisions": "",
         "provider": "", "model": "", "pronouns": "",
         "player_transport": "", "channel": "", "host": "",
         "inbox": "", "outbox": "", "scene_handle": "",
@@ -218,6 +218,44 @@ def parse_identity_stats(text: str) -> dict:
         pm = re.search(r"-\s*\*\*provisions:\*\*\s*(.+)", block, re.IGNORECASE)
         if pm:
             stats["provisions"] = pm.group(1).strip()
+
+    # Creature and refactored identities may declare weapons/armor directly in
+    # Combat Statistics (or elsewhere) rather than a legacy Combat Equipment
+    # block. Honor those declarations when the legacy block is absent.
+    if not stats["weapons"]:
+        wm = re.search(r"-\s*\*\*weapons:\*\*\s*(.+)", text, re.IGNORECASE)
+        if wm:
+            stats["weapons"] = wm.group(1).strip()
+    if not stats["armor"]:
+        am = re.search(r"-\s*\*\*armor:\*\*\s*(\S+)", text, re.IGNORECASE)
+        if am:
+            stats["armor"] = am.group(1).strip()
+    if not stats["provisions"]:
+        pm = re.search(r"-\s*\*\*provisions:\*\*\s*(.+)", text, re.IGNORECASE)
+        if pm:
+            stats["provisions"] = pm.group(1).strip()
+
+    # Native attack lines in creature identities, e.g.:
+    #   - Claw: +4, 1d6 slashing.
+    #   - Bite: +5, 1d8+3 piercing, plus ...
+    # Capture the concise combat payload so creatures can synthesize their own
+    # natural weapons without polluting the shared player/NPC weapon catalog.
+    native_attacks: dict[str, dict[str, str | int]] = {}
+    for m in re.finditer(
+        r"^\s*-\s*([A-Za-z][A-Za-z '\-]+):\s*\+?(\d+)\s*,\s*([0-9dD+\- ]+)\s+([a-zA-Z]+)",
+        text,
+        re.MULTILINE,
+    ):
+        attack_name = m.group(1).strip()
+        key = re.sub(r"[^a-z0-9]+", "_", attack_name.lower()).strip("_")
+        native_attacks[key] = {
+            "name": attack_name,
+            "attack_bonus": int(m.group(2)),
+            "damage_dice": m.group(3).strip().replace(" ", ""),
+            "damage_type": m.group(4).strip().lower(),
+        }
+    if native_attacks:
+        stats["native_attacks"] = native_attacks
 
     # Equipment section: a FLAT list of catalog id references (any order), each
     # ``id[+N][: Display Name]``, resolved against the catalogs at load time.
@@ -349,6 +387,50 @@ def _instantiate(lib, cid: str, name: str):
     return inst
 
 
+def _parse_weapon_entries(raw: str) -> list[tuple[str, int]]:
+    """Parse ``weapons:`` config text into ``[(id, bonus), ...]`` entries."""
+    out: list[tuple[str, int]] = []
+    for entry in (raw or "").split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        m = re.match(r"^(\w+)([+-]\d+)?$", entry)
+        if not m:
+            continue
+        out.append((m.group(1), int(m.group(2)) if m.group(2) else 0))
+    return out
+
+
+def _synthesize_native_weapon(
+    weapon_id: str,
+    bonus: int,
+    native_attacks: dict | None,
+) -> Weapon | None:
+    """Build a natural-weapon ``Weapon`` from creature identity attack lines.
+
+    The weapon id convention is ``<creature>_<attack_name>``, so the suffix
+    after the last underscore is used to match a parsed identity attack entry.
+    """
+    if not native_attacks:
+        return None
+    attack_key = weapon_id.rsplit("_", 1)[-1].strip().lower()
+    spec = native_attacks.get(attack_key)
+    if not spec:
+        return None
+    return Weapon(
+        id=weapon_id,
+        name=str(spec.get("name", attack_key.replace("_", " ").title())),
+        damage_dice=str(spec.get("damage_dice", "1d4")),
+        damage_type=str(spec.get("damage_type", "bludgeoning")),
+        attack_bonus=bonus if bonus else int(spec.get("attack_bonus", 0) or 0),
+        reach=5,
+        range_normal=0,
+        range_max=0,
+        properties=["natural"],
+        tags=["natural"],
+    )
+
+
 def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
                      consumable_library, gear_library) -> None:
     """Resolve a character's equipment onto the session. Structured weapons/armor
@@ -361,6 +443,17 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
     from models.thing import DRINKABLE, EDIBLE
     weapons = (parse_character_weapons(cfg["weapons"], weapon_library)
                if cfg.get("weapons") else [])
+    if cfg.get("type") == "creature" and cfg.get("weapons"):
+        resolved_ids = {w.id for w in weapons}
+        for weapon_id, bonus in _parse_weapon_entries(cfg.get("weapons", "")):
+            if weapon_id in resolved_ids:
+                continue
+            native = _synthesize_native_weapon(
+                weapon_id, bonus, id_stats.get("native_attacks")
+            )
+            if native is not None:
+                weapons.append(native)
+                resolved_ids.add(weapon_id)
     armor_id = cfg.get("armor")
     armor_name = ""
     pack: list = []
@@ -1010,9 +1103,11 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     scene_starting_positions: dict[str, Position] = {}
 
     for char_id, cfg in char_cfgs.items():
-        # For player/NPC characters, pre-fill missing cfg fields from IDENTITY.md
+        # Pre-fill missing cfg fields from IDENTITY.md. Creatures now also use
+        # this path because their combat stats may author weapons/armor and
+        # neurochemistry there.
         id_stats: dict = {}
-        if cfg.get("type") != "creature" and cfg.get("identity_file"):
+        if cfg.get("identity_file"):
             id_stats = parse_identity_stats(_load(ROOT / cfg["identity_file"]))
             _merge_identity_defaults(cfg, id_stats)
             for dim in _NEUROCHEMICALS:
@@ -1038,17 +1133,35 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
                          consumable_library, gear_library)
 
-        # For humanoids, the authored ## Combat Statistics AC is the character's
-        # NATURAL AC BASE (10 for most, higher for a natural-armor race/class);
-        # the effective AC = base + DEX, adjusted by equipment (worn armor
-        # replaces the base, a shield/ring/potion adds). Creatures/monsters have
-        # a FLAT AC (their stat-block value already includes everything), so they
-        # keep their authored AC unchanged.
-        if cfg.get("type") != "creature":
-            session.character.natural_ac = int(getattr(session.character, "ac", 0) or 0)
+        # AC semantics by actor type:
+        # - players: authored AC is the natural/unarmored base (usually 10)
+        # - NPCs: AC should also respond to removable armor; when unarmored we
+        #   infer the natural base from the authored effective AC minus DEX,
+        #   and when armored we fall back to the standard humanoid base of 10
+        #   unless a future explicit natural-ac field is authored.
+        # - creatures: authored AC is already the final intrinsic value.
+        authored_ac = int(getattr(session.character, "ac", 0) or 0)
+        dex_mod = (int(getattr(session.character, "dexterity", 10) or 10) - 10) // 2
+        has_real_armor = (
+            session.armor is not None
+            and int(getattr(session.armor, "ac_base", 10) or 10) > 10
+        )
+
+        if cfg.get("type") == "player":
+            session.character.natural_ac = authored_ac
             from engine.loadout import armor_class
             session.character.ac = armor_class(
                 session.character, session.armor, session.pack)
+        elif cfg.get("type") == "npc":
+            if has_real_armor:
+                session.character.natural_ac = 10
+            else:
+                session.character.natural_ac = max(10, authored_ac - dex_mod)
+            from engine.loadout import armor_class
+            session.character.ac = armor_class(
+                session.character, session.armor, session.pack)
+        else:
+            session.character.natural_ac = authored_ac
 
         # Resolve the starting position from the scene (authored `position`
         # bullet), deriving the zone from the coordinate; fall back to the

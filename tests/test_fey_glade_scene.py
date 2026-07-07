@@ -9,6 +9,7 @@ Run with:  python -m pytest tests/test_fey_glade_scene.py -s
 import pytest
 from pathlib import Path
 
+from engine.md_loader import configure_from_md
 from models.game_init import initialize_game_state
 from models.game_state import GameState
 from models.character import Character, Creature, PlayerCharacter, NPC
@@ -204,6 +205,18 @@ class TestFeyGladeSetup:
         assert sb.ac == 11
         assert sb.dexterity == 14
         assert sb.speed == "40 ft"
+
+    def test_player_ac_is_dynamic_but_npc_ac_is_authored(self, gs, fey_glade_characters):
+        cfg = configure_from_md(Path("scenes/fey_glade.md"))
+        aeliana = cfg.characters["aeliana"].character
+        fennel = fey_glade_characters["fennel"]
+
+        assert aeliana is not None
+        assert aeliana.natural_ac == 10
+        assert aeliana.ac == 14  # leather armor 11 + DEX 3
+
+        assert fennel.natural_ac == 10
+        assert fennel.ac == 11   # game-state template preserves authored AC
 
     def test_fennel_has_soul(self, fey_glade_characters):
         fennel = fey_glade_characters["fennel"]

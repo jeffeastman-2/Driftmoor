@@ -311,6 +311,7 @@ def load_player_character(directory: Path) -> PlayerCharacter:
         alignment=p["alignment"],
         hp=p["hp"],
         ac=p["ac"],
+        natural_ac=p["ac"],
         strength=p["strength"],
         dexterity=p["dexterity"],
         constitution=p["constitution"],
@@ -333,6 +334,7 @@ def load_npc(directory: Path, character_type: str = "npc") -> NPC:
     soul_raw = soul_path.read_text(encoding="utf-8") if soul_path.exists() else ""
 
     p = parse_npc_identity(identity_raw)
+    dex_mod = (int(p["dexterity"]) - 10) // 2
 
     return NPC(
         id=directory.name,
@@ -352,6 +354,7 @@ def load_npc(directory: Path, character_type: str = "npc") -> NPC:
         active_concerns=p["active_concerns"],
         hp=p["hp"],
         ac=p["ac"],
+        natural_ac=max(10, int(p["ac"]) - dex_mod) if p["ac"] else 10,
         strength=p["strength"],
         dexterity=p["dexterity"],
         constitution=p["constitution"],
@@ -414,7 +417,7 @@ def load_all_characters(people_dir: Path) -> list[Character]:
 
 
 # ---------------------------------------------------------------------------
-# Creature loading (scenario/creatures/*.md)
+# Creature loading (scenario/creatures/<id>/CREATURE.md)
 # ---------------------------------------------------------------------------
 
 def _parse_creature_stat(text: str, label: str) -> int:
@@ -551,10 +554,11 @@ def load_creature(filepath: Path) -> Creature:
     """Load a creature template from a single markdown stat-block file."""
     text = filepath.read_text(encoding="utf-8")
     p = parse_creature_md(text)
+    creature_id = filepath.parent.name if filepath.name.upper() == "CREATURE.MD" else filepath.stem
 
     return Creature(
-        id=filepath.stem,
-        name=p.get("name", filepath.stem),
+        id=creature_id,
+        name=p.get("name", creature_id),
         race=p.get("race", ""),
         character_type="creature",
         physical_description=p.get("physical_description", ""),
@@ -562,6 +566,7 @@ def load_creature(filepath: Path) -> Creature:
         alignment=p.get("alignment", ""),
         hp=p.get("hp", 0),
         ac=p.get("ac", 0),
+        natural_ac=p.get("ac", 0),
         speed=p.get("speed", ""),
         challenge=p.get("challenge", ""),
         strength=p.get("strength", 0),
@@ -582,9 +587,13 @@ def load_creature(filepath: Path) -> Creature:
 
 
 def load_all_creatures(creatures_dir: Path) -> list[Creature]:
-    """Load all creature templates from scenario/creatures/*.md."""
+    """Load all creature templates from scenario/creatures/<id>/CREATURE.md."""
     creatures: list[Creature] = []
     if creatures_dir.exists():
-        for md_file in sorted(creatures_dir.glob("*.md")):
-            creatures.append(load_creature(md_file))
+        for creature_dir in sorted(creatures_dir.iterdir()):
+            if not creature_dir.is_dir():
+                continue
+            creature_file = creature_dir / "CREATURE.md"
+            if creature_file.exists():
+                creatures.append(load_creature(creature_file))
     return creatures
