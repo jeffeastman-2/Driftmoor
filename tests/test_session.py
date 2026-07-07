@@ -732,6 +732,37 @@ class TestDrawKitWeapon:
         _apply_loadout_intent("hold still", cs, [])   # 'hold' but no weapon named
         assert cs.wielded == ["rapier"]
 
+    def test_compound_sheathe_generic_sword_then_draw_dagger(self):
+        from engine.session import _apply_loadout_intent
+        from types import SimpleNamespace as NS
+        from models.weapon import Weapon
+
+        longsword = Weapon(
+            id="longsword",
+            name="Longsword",
+            damage_dice="1d8",
+            damage_type="slashing",
+            tags=["martial", "melee", "sword"],
+        )
+        dagger = Weapon(
+            id="dagger",
+            name="Dagger",
+            damage_dice="1d4",
+            damage_type="piercing",
+            tags=["simple", "melee", "dagger"],
+        )
+        cs = NS(
+            character=NS(name="Gil", hands=2),
+            weapons=[longsword, dagger],
+            wielded=["longsword"],
+            held_items=[],
+        )
+
+        _apply_loadout_intent("I sheathe my sword and draw my dagger", cs, [])
+
+        assert "longsword" not in cs.wielded
+        assert "dagger" in cs.wielded
+
 
 class TestItemTransferHandModel:
     """take a non-weapon -> into a hand; stow -> pack (frees hand, keeps item);

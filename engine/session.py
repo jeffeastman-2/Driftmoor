@@ -2889,12 +2889,29 @@ def _apply_loadout_intent(intent_text: str, cs: "CharacterSession",
     from engine import loadout
     from engine.combat_resolver import _weapon_name_tokens
     weapons = getattr(cs, "weapons", None) or []
+    _GENERIC_TAGS = {
+        "simple", "martial", "melee", "ranged", "weapon",
+        "finesse", "light", "heavy", "reach", "thrown",
+        "ammunition", "loading", "two_handed", "versatile", "natural",
+    }
 
-    def _named(s: str):
+    def _name_tokens(w) -> set[str]:
+        toks = set(_weapon_name_tokens(w))
+        for tag in (getattr(w, "tags", None) or []):
+            t = (tag or "").strip().lower().replace("_", " ")
+            if t and t not in _GENERIC_TAGS:
+                toks.add(t)
+        return {t for t in toks if t}
+
+    def _named(s: str, *, prefer_wielded: bool = False):
         s_l = s.lower()
-        for w in weapons:
+        search_weapons = list(weapons)
+        if prefer_wielded:
+            wielded = set(getattr(cs, "wielded", None) or [])
+            search_weapons.sort(key=lambda w: (w.id not in wielded, w.id))
+        for w in search_weapons:
             if any(re.search(rf'\b{re.escape(t)}\b', s_l)
-                   for t in _weapon_name_tokens(w)):
+                   for t in _name_tokens(w)):
                 return w
         return None
 
@@ -2902,7 +2919,7 @@ def _apply_loadout_intent(intent_text: str, cs: "CharacterSession",
                        flags=re.IGNORECASE)
     for clause in clauses:
         if _SHEATHE_VERB_RE.search(clause):
-            w = _named(clause)
+            w = _named(clause, prefer_wielded=True)
             if w is not None:
                 loadout.sheathe(cs, w, log)
         elif _DRAW_VERB_RE.search(clause):
@@ -4820,11 +4837,21 @@ async def iter_session(
                 and not intent.interaction_target
             ):
                 from engine import loadout, manipulation
+                _loadout_log: list[str] = []
+                _apply_loadout_intent(intent.intent, cs, _loadout_log)
+                if _loadout_log:
+                    attack_log.append(
+                        f"[LOADOUT] {character_id}: " + ", ".join(_loadout_log)
+                    )
                 loadout.materialize_things(cs)
                 _thing = manipulation.find_possessed_thing(cs, intent.intent)
                 if _thing is not None:
                     _verb = manipulation.classify_verb(intent.intent, _thing)
-                    if _verb is not None:
+                    # Draw/sheathe can be compound ("sheathe sword and draw
+                    # dagger") and are already handled clause-by-clause above.
+                    if _verb is not None and not (
+                        _loadout_log and _verb in {"draw", "sheathe"}
+                    ):
                         _wpos = current_positions.get(character_id, (0.0, 0.0, ""))
                         _mr = manipulation.apply_manipulation(
                             cs, _verb, _thing, items=items, actor_pos=_wpos,
