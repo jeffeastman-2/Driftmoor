@@ -228,9 +228,12 @@ class Thing:
 
     # How many of this identical thing (10 torches, 10 days of rations). A stack.
     quantity: int = 1
-    # For a CONTAINER (a pack): its contents as (catalog_id, quantity) pairs.
-    # Expanded into the holder's possessions at load so the items are usable.
+    # --- Container facet (a pack/bag/chest; empty for everything else) -------
+    # Its contents as (catalog_id, quantity) pairs, expanded into the holder's
+    # possessions at load; and a free-text capacity (e.g. "30 lb"). Containers
+    # get their own catalog (CONTAINERS.md) since their attributes diverge.
     contents: list = field(default_factory=list)
+    capacity: str = ""
 
     # --- Market facet -------------------------------------------------------
     # Populated only for shop goods (models.thing_loader). A shop good is a

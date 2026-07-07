@@ -152,6 +152,7 @@ def load_catalog(path: Path, default_kind: str = "eat") -> dict[str, Thing]:
             cid, (row.get("name") or cid).strip(),
             (row.get("kind") or default_kind).strip(), parse_effects(row.get("effects", "")))
         thing.contents = parse_contents(row.get("contents", ""))
+        thing.capacity = (row.get("capacity", "") or "").strip()
         lib[cid] = thing
     return lib
 
@@ -164,3 +165,10 @@ def load_consumables(path: Path) -> dict[str, Thing]:
 def load_gear(path: Path) -> dict[str, Thing]:
     """Parse GEAR.md into id -> Thing templates (tools, wearables, trinkets)."""
     return load_catalog(path, default_kind="wearable")
+
+
+def load_containers(path: Path) -> dict[str, Thing]:
+    """Parse CONTAINERS.md into id -> Thing templates (packs, bags, chests).
+    Containers get their own catalog because their attributes (contents,
+    capacity, …) diverge from plain gear."""
+    return load_catalog(path, default_kind="container")

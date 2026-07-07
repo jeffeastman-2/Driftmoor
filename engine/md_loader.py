@@ -945,9 +945,12 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     armor_path   = ROOT / "scenario" / "things" / "ARMOR.md"
     weapon_library = load_weapons(weapons_path)
     armor_library  = load_armors(armor_path)
-    from engine.consumable_loader import load_consumables, load_gear
+    from engine.consumable_loader import load_consumables, load_gear, load_containers
     consumable_library = load_consumables(ROOT / "scenario" / "things" / "CONSUMABLES.md")
     gear_library = load_gear(ROOT / "scenario" / "things" / "GEAR.md")
+    # Containers get their own catalog; merge into the gear lib so a pack id
+    # resolves (and its contents expand) through the same path as plain gear.
+    gear_library.update(load_containers(ROOT / "scenario" / "things" / "CONTAINERS.md"))
 
     # Resolve pickable weapon items (``*Weapon:* mace+1``) into base Weapons now
     # that the library is loaded, so a picked-up item can be wielded in combat.

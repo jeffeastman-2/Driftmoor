@@ -140,3 +140,13 @@ def test_parse_contents():
     assert parse_contents("torch x10, rope, rations×5") == [
         ("torch", 10), ("rope", 1), ("rations", 5)]
     assert parse_contents("") == []
+
+
+def test_containers_catalog_has_capacity_and_contents():
+    from engine.consumable_loader import load_containers
+    from models.thing import CONTAINER
+    lib = load_containers(Path("scenario/things/CONTAINERS.md"))
+    pack = lib["explorers_pack"]
+    assert CONTAINER in pack.affordances
+    assert pack.capacity == "30 lb"
+    assert ("torch", 10) in pack.contents
