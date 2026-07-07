@@ -5,6 +5,9 @@
 - **Race:** Human, Female, age 42
 - **Location:** Warm building with perpetual chimney smoke
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Round-faced, flour-dusted clothes. Works with daughter Lottie.
 

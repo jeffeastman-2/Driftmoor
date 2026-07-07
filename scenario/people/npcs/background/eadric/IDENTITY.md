@@ -5,6 +5,9 @@
 - **Race:** Human, Male, age 50
 - **Location:** Stone-and-thatch cottage with colorful cloth on lines
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Wiry, ink-stained fingers from pattern sketching. Soft-spoken.
 

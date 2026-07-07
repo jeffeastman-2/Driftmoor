@@ -14,7 +14,7 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 
 ## Combat Statistics
 - **HP:** 9
-- **AC:** 11 (leather armor)
+- **AC:** 10
 - **STR:** 8 | **DEX:** 14 (+2) | **CON:** 12 (+1)
 - **INT:** 12 (+1) | **WIS:** 10 | **CHA:** 16 (+3)
 

@@ -5,6 +5,9 @@
 - **Race:** Human, Male, age 34
 - **Location:** The Rusty Razor, corner near village square
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Wiry, sandy blonde hair neatly parted and always well-groomed. Perpetual grin. Sharp, inquisitive eyes. Shop is warm and inviting — potbelly stove, mirrors, the smell of pine soap and pomade.
 

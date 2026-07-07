@@ -5,6 +5,9 @@
 - **Race:** Dwarf, Female, age 112
 - **Location:** Timber-framed workshop, open front
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Sharp eye for detail, quick temper. Usually covered in sawdust.
 

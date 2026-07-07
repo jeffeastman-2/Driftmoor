@@ -12,7 +12,7 @@ Weathered face, marks of a life in service. Broad-shouldered, sturdy. Graying br
 
 ## Combat Statistics
 - **HP:** 10
-- **AC:** 14 (studded leather + shield)
+- **AC:** 10
 - **STR:** 12 (+1) | **DEX:** 10 | **CON:** 14 (+2)
 - **INT:** 10 | **WIS:** 16 (+3) | **CHA:** 14 (+2)
 

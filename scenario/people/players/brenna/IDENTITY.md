@@ -14,7 +14,7 @@ Brenna is tall and broad-shouldered, built by decades of drill and road work. Pa
 
 ## Combat Statistics
 - **HP:** 28
-- **AC:** 16 (chain mail)
+- **AC:** 10
 - **STR:** 16 (+3) | **DEX:** 12 (+1) | **CON:** 14 (+2)
 - **INT:** 10 (+0) | **WIS:** 11 (+0) | **CHA:** 13 (+1)
 

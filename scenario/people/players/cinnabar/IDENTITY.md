@@ -14,7 +14,7 @@ Cinnabar is slight and quick, with copper-red hair cut unevenly short, freckled 
 
 ## Combat Statistics
 - **HP:** 24
-- **AC:** 15 (studded leather)
+- **AC:** 10
 - **STR:** 8 (-1) | **DEX:** 17 (+3) | **CON:** 14 (+2)
 - **INT:** 14 (+2) | **WIS:** 12 (+1) | **CHA:** 13 (+1)
 

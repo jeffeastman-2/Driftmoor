@@ -5,6 +5,9 @@
 - **Race:** Human, Male, mid-50s
 - **Location:** Mayor's Hall, village square
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Stout, broad-shouldered. Weathered skin, thinning gray hair, perpetually furrowed brow. Dresses practically — sturdy boots, wool coat, wide-brimmed hat. Looks more like a farmer or fisherman than a politician, which is entirely intentional.
 

@@ -5,6 +5,9 @@
 - **Race:** Half-Elf, Female, age 58
 - **Location:** Tidy building with needle-and-thread sign
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Tall, elegant, always impeccably dressed even while sewing.
 

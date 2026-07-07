@@ -191,14 +191,21 @@ def test_container_expands_into_contents_with_quantity():
     assert pack.contents == [("torch", 10), ("rope", 1)]      # template contents intact
 
 
-def test_armor_class_base_dex_and_shield():
+def test_armor_class_natural_plus_dex_armor_replaces_shield_adds():
     from engine.consumable_loader import make_thing
     from engine.loadout import armor_class
     from models.weapon import Armor
     chain = Armor(id="chain_mail", name="Chain Mail", ac_base=16, ac_dex_cap=0)
     leather = Armor(id="leather_armor", name="Leather", ac_base=11, ac_dex_cap=None)
+    clothing = Armor(id="clothing", name="Clothing", ac_base=10, ac_dex_cap=None)
     shield = make_thing("shield", "Shield", "shield", ["ac +2"])
-    assert armor_class(NS(dexterity=12), chain, []) == 16          # heavy: DEX capped at 0
-    assert armor_class(NS(dexterity=12), chain, [shield]) == 18    # + a held shield
-    assert armor_class(NS(dexterity=16), leather, []) == 14        # light: 11 + DEX(+3)
-    assert armor_class(NS(dexterity=10), None, []) == 10           # unarmored: 10 + 0
+    # Unarmored: natural BASE + DEX. Standard base 10; a Draconic Sorcerer's 13.
+    assert armor_class(NS(natural_ac=10, dexterity=16), None, []) == 13
+    assert armor_class(NS(natural_ac=13, dexterity=14), None, []) == 15
+    assert armor_class(NS(natural_ac=10, dexterity=14), clothing, []) == 12   # clothing == unarmored
+    # A shield is additive on top of the natural base.
+    assert armor_class(NS(natural_ac=10, dexterity=14), None, [shield]) == 14
+    # Worn armor REPLACES the base and caps DEX (chain on DEX-20 = 16, not 21).
+    assert armor_class(NS(natural_ac=10, dexterity=20), chain, []) == 16
+    assert armor_class(NS(natural_ac=10, dexterity=20), chain, [shield]) == 18
+    assert armor_class(NS(natural_ac=10, dexterity=16), leather, []) == 14    # light: 11 + DEX(+3)

@@ -13,7 +13,7 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 
 ## Combat Statistics
 - **HP:** 10
-- **AC:** 16 (chain mail)
+- **AC:** 10
 - **STR:** 14 (+2) | **DEX:** 10 | **CON:** 12 (+1)
 - **INT:** 10 | **WIS:** 16 (+3) | **CHA:** 14 (+2)
 

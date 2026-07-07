@@ -31,7 +31,7 @@ that curiosity has consequences.
 
 ## Combat Statistics
 - **HP:** 10
-- **AC:** 11 (no armor)
+- **AC:** 11
 - **Speed:** 30 ft
 - **STR:** 10 | **DEX:** 12 (+1) | **CON:** 11
 - **INT:** 14 (+2) | **WIS:** 13 (+1) | **CHA:** 13 (+1)
@@ -53,24 +53,14 @@ reasonably coordinated young man with no combat training.*
 *Not proficient with weapons. He proved this over three days.*
 
 ## Equipment
-- Improvised spear — fire-hardened deadfall branch, pointed at both ends (1d8 piercing, reach 5 ft). Fennel's technique: brace the butt in the ground and hold the shaft at an angle so a charging creature impales itself. Not trained — learned from desperation and three days of watching how the beast moves.
-- Hunting bow (1d6 piercing, range 80/320 ft) — still has it; 3 arrows remaining (9 of 12 spent over three days). Can be resupplied by others.
-- Belt knife (1d4 piercing) — for cutting plants, not people
-- Herb satchel containing:
-  - Moonlace (bunch, slightly crushed) — what he came for
-  - Partial collection of Mistwood herbs (days 1-2)
-  - Empty collection vials (4)
-  - Small field journal — three days of cramped observations
-    including sketches of the carved stone symbols
-- Waterskin (half full)
-- Flint and steel
-- Two days of rations remaining (eating minimally)
-- *(Full inventory to move to POSSESSIONS.md when created)*
-
-## Combat Equipment
-- **weapons:** shortbow+1, improvised_spear+1, belt_knife+1
-- **armor:** no_armor
-- **note:** Not proficient with weapons — attack bonuses are ability modifier only, no proficiency bonus.
+- improvised_spear: A fire-hardened branch, pointed at both ends
+- shortbow: Hunting bow 
+- belt_knife
+- fennels_sachel: Herb satchel 
+- water: Waterskin (half full)
+- flint_steel
+- rations
+- clothing: Belted tunic with pockets
 
 ## Runtime Defaults
 - **scene_handle:** the young gatherer

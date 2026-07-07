@@ -5,6 +5,9 @@
 - **Race:** Human, Male, age 45
 - **Location:** Stone building near the riverbank
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Burly, calloused hands, perpetual scowl. Smells of leather and curing hides.
 

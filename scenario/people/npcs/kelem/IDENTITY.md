@@ -5,6 +5,9 @@
 - **Race:** Half-Elf, Male, age 47
 - **Location:** Dustcloak's Curios, outskirts near Mistwood Hills
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Wiry. Dark hair in a messy ponytail. Sharp, calculating eyes that appraise everything. Patched hooded cloak he never removes, even indoors. Building leans slightly, looks cobbled together over years. Yard cluttered with organized chaos — rusty tools, wagon wheels, broken furniture.
 

@@ -5,6 +5,9 @@
 - **Race:** Dwarf, Male, age 140
 - **Location:** Squat stone tower in the center of town
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Stout, gray-bearded. Retired soldier. Sharp eyes despite his age.
 

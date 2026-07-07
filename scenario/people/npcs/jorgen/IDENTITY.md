@@ -7,7 +7,7 @@
 
 ## Combat Statistics
 - **HP:** 16
-- **AC:** 11
+- **AC:** 10
 
 ## Neurochemical Baseline
 - **dopamine:** 0.4

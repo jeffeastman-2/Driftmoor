@@ -5,6 +5,9 @@
 - **Race:** Human, Male, age 55
 - **Location:** Simple stone-and-wood general store with large garden behind
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Grizzled, bushy beard, booming laugh. Traveling merchant background.
 

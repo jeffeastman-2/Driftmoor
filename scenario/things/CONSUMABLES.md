@@ -19,3 +19,6 @@ Hunger/thirst use *need* framing (they drift up over time; consuming lowers them
 | rations | Rations | eat | hunger -0.3 |
 | water | Waterskin | drink | thirst -0.5 |
 | mead | Mead | drink | thirst -0.3, intoxication +0.3, dopamine +0.05 |
+| moonlace | Moonlace | eat | dopamine +0.05 |
+| mistwood_herbs | Mistwood Herbs | eat |  |
+

@@ -5,6 +5,9 @@
 - **Race:** Half-Elf, Female, age 53
 - **Location:** The Bitter Remedy, near Greywater River
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Tall and wiry. Streaks of gray in auburn hair, usually in a loose braid. Sharp, observant green eyes. Hands stained with various plant dyes. Simple practical apron over dark green tunic. Shop smells of lavender, mint, and something faintly bitter.
 

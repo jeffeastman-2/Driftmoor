@@ -14,7 +14,7 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 
 ## Combat Statistics
 - **HP:** 17
-- **AC:** 12 (robes)
+- **AC:** 10
 - **STR:** 8 (-1) | **DEX:** 14 (+2) | **CON:** 12 (+1)
 - **INT:** 17 (+3) | **WIS:** 15 (+2) | **CHA:** 11 (+0)
 
@@ -48,7 +48,7 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 - spellbook
 - pouch: Component pouch
 - scholars_pack
-- no_armor: Mended blue robes
+- clothing: Mended blue robes
 - notebook: Leather notebook with Ilse's last letters
 
 ## Dynamic State

@@ -5,6 +5,9 @@
 - **Race:** Halfling, Female, age 45
 - **Location:** Snug brick-walled shop with shoes in the window
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Plump, nimble fingers, infectious laugh.
 

@@ -5,6 +5,9 @@
 - **Race:** Halfling, Female, age 38
 - **Location:** Small weathered shack near the harbor
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Spry, sun-weathered skin, perpetual grin.
 

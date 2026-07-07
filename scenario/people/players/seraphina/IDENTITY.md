@@ -13,7 +13,7 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes. Dusky 
 
 ## Combat Statistics
 - **HP:** 9
-- **AC:** 11 (leather armor)
+- **AC:** 10
 - **STR:** 8 (-1) | **DEX:** 16 (+3) | **CON:** 12 (+1)
 - **INT:** 14 (+2) | **WIS:** 10 | **CHA:** 15 (+2)
 

@@ -13,7 +13,7 @@ Short but commanding. Fiery red beard braided and tucked into his belt. Steel-gr
 
 ## Combat Statistics
 - **HP:** 13
-- **AC:** 18 (plate) / 20 (with shield)
+- **AC:** 10
 - **STR:** 16 (+3) | **DEX:** 12 (+1) | **CON:** 16 (+3)
 - **INT:** 10 | **WIS:** 12 (+1) | **CHA:** 10
 

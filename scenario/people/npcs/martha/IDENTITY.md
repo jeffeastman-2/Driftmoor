@@ -5,6 +5,9 @@
 - **Race:** Human, Female, age 52
 - **Location:** The Weary Traveler, just off main square
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Stout, graying brown hair in a tight bun. Simple, well-maintained dresses. Carries a rolling pin with a naturalness that suggests it is not always used for baking. Moves briskly and with purpose.
 

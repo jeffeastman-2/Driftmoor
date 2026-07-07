@@ -5,6 +5,9 @@
 - **Race:** Human, Male, age 48
 - **Location:** Utilitarian shed near the harbor
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Lanky, strong arms, perpetual sawdust layer.
 

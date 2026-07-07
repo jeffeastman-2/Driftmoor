@@ -1003,15 +1003,17 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
                          consumable_library, gear_library)
 
-        # Compute AC for characters in real (non-"no_armor") worn armor: armor
-        # base + capped DEX + `ac` effects (a held shield stacks here). Casters /
-        # unarmored keep their authored AC (it comes from spells/features the
-        # engine doesn't model — mage armor, unarmored defense, natural armor).
-        _armor = session.armor
-        if (_armor is not None and getattr(_armor, "id", "") != "no_armor"
-                and int(getattr(_armor, "ac_base", 10) or 10) > 10):
+        # For humanoids, the authored ## Combat Statistics AC is the character's
+        # NATURAL AC BASE (10 for most, higher for a natural-armor race/class);
+        # the effective AC = base + DEX, adjusted by equipment (worn armor
+        # replaces the base, a shield/ring/potion adds). Creatures/monsters have
+        # a FLAT AC (their stat-block value already includes everything), so they
+        # keep their authored AC unchanged.
+        if cfg.get("type") != "creature":
+            session.character.natural_ac = int(getattr(session.character, "ac", 0) or 0)
             from engine.loadout import armor_class
-            session.character.ac = armor_class(session.character, _armor, session.pack)
+            session.character.ac = armor_class(
+                session.character, session.armor, session.pack)
 
         # Append starting position to initial_scene so the LLM knows where to begin
         pos = starting_positions.get(char_id) or starting_positions.get(

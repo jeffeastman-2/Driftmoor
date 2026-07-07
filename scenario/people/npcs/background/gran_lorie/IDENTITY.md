@@ -5,6 +5,9 @@
 - **Race:** Human, Female, age 67
 - **Location:** Cozy cottage with herb garden and painted door
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Gentle, gray-haired. Shelves full of herbal remedies and bandages.
 

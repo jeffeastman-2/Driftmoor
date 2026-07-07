@@ -114,17 +114,25 @@ def can_wield(cs, weapon: Weapon) -> bool:
 
 
 def armor_class(character, armor, things=()) -> int:
-    """Compute AC = base + sum of `ac` effects from equipped things. Base is the
-    worn armor's ``ac_base`` + DEX (capped per the armor), or 10 + DEX unarmored.
-    A held shield or a ring of protection contributes via its `ac` effect —
-    which is exactly why a shield is holdable-with-an-ac-effect, not worn armor."""
+    """Effective AC = base + sum of additive `ac` effects from equipped things.
+
+    Unarmored, the base is the character's NATURAL AC BASE
+    (``character.natural_ac`` — 10 for most, higher for a natural-armor
+    race/class like a Draconic Sorcerer's 13) PLUS the DEX modifier. Worn armor
+    REPLACES that base with the armor's ``ac_base`` + DEX (capped per the armor),
+    which is why a DEX-20 fighter in chain mail is AC 16, not 21. A shield / ring
+    / potion is a plain additive `ac +N` effect on top of whichever base."""
+    natural = int(getattr(character, "natural_ac", 0) or getattr(character, "ac", 10) or 10)
     dex_mod = (int(getattr(character, "dexterity", 10) or 10) - 10) // 2
-    if armor is not None:
+    # "Real" armor actually protects (ac_base > 10); plain clothes / no_armor
+    # (ac_base 10) count as unarmored, so the natural base + DEX applies.
+    real_armor = armor is not None and int(getattr(armor, "ac_base", 10) or 10) > 10
+    if real_armor:
         base = int(getattr(armor, "ac_base", 10) or 10)
         cap = getattr(armor, "ac_dex_cap", None)
         base += dex_mod if cap is None else min(dex_mod, int(cap))
     else:
-        base = 10 + dex_mod
+        base = natural + dex_mod            # unarmored: natural base + DEX
     bonus = 0
     for t in (things or []):
         for e in (getattr(t, "effects", None) or []):

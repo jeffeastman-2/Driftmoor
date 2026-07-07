@@ -34,6 +34,11 @@ class Character:
     # ``martial``), weapon groups (``sword``), or specific ids (``dagger``); a
     # weapon is proficient if its id or any of its tags is in this set.
     weapon_proficiencies: set[str] = field(default_factory=set)
+    # The individual's NATURAL AC (unarmored / intrinsic) — 10 + DEX for a
+    # humanoid, a fixed value for a creature with natural armor (a spider's 14).
+    # ``ac`` is then the EFFECTIVE AC = natural adjusted by equipment/effects
+    # (worn armor sets the base; a shield/ring/potion adds).
+    natural_ac: int = 0
 
 
 @dataclass

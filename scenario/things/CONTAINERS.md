@@ -21,3 +21,4 @@ in a character's IDENTITY `## Equipment` list, same as any other Thing.
 | musicians_pack | Musician's Pack | wearable, container | 30 lb | bedroll, costume x2, candle x5, rations x5, water, disguise_kit |
 | pouch | Pouch | wearable, container | 6 lb | |
 | sachel | Satchel | wearable, container | 10 lb | |
+| fennels_sachel | wearable, container | 2 lb | moonlace, mistwood_herbs x3, collection_vials x4, journal |

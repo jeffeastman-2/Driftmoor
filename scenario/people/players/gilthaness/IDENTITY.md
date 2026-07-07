@@ -14,7 +14,7 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 
 ## Combat Statistics
 - **HP:** 94
-- **AC:** 17 (studded leather)
+- **AC:** 10
 - **STR:** 10 (+0) | **DEX:** 20 (+5) | **CON:** 14 (+2)
 - **INT:** 16 (+3) | **WIS:** 14 (+2) | **CHA:** 12 (+1)
 - **Weapon Proficiencies:** dagger, light_crossbow, quarterstaff, longsword, shortsword, shortbow, longbow

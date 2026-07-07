@@ -14,7 +14,7 @@ Tobin is broad-shouldered and comfortably grounded, with brown hair gone silver 
 
 ## Combat Statistics
 - **HP:** 24
-- **AC:** 15 (chain shirt and shield)
+- **AC:** 10
 - **STR:** 12 (+1) | **DEX:** 10 (+0) | **CON:** 14 (+2)
 - **INT:** 11 (+0) | **WIS:** 16 (+3) | **CHA:** 14 (+2)
 

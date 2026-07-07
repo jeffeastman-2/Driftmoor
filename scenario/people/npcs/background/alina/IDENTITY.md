@@ -5,6 +5,9 @@
 - **Race:** Human, Female, age 30
 - **Location:** One-room schoolhouse with bell on roof
 
+## Combat Statistics
+- **AC:** 10
+
 ## Physical Description
 Young, enthusiastic, chalk-dusted apron, ink-stained fingers.
 

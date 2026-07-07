@@ -324,7 +324,7 @@ class TestLoadPlayerCharacter:
         assert pc.level == 1
         assert pc.player == "TBD"
         assert pc.hp == 9
-        assert pc.ac == 11
+        assert pc.ac == 10          # authored natural AC base (effective adds DEX/armor at load)
         assert pc.dexterity == 16
         assert pc.character_type == "player"
         assert isinstance(pc, PlayerCharacter)
@@ -334,7 +334,7 @@ class TestLoadPlayerCharacter:
         assert pc.name == "Thorgrim Stoneheart"
         assert pc.character_class == "Fighter"
         assert pc.hp == 13
-        assert pc.ac == 18
+        assert pc.ac == 10          # authored natural AC base (effective adds DEX/armor at load)
         assert pc.strength == 16
 
     def test_load_aeliana_has_spells(self):

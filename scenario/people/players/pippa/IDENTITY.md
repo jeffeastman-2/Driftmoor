@@ -14,7 +14,7 @@ Pippa is small even for a fairy, all quick wings and kinetic posture, with wild 
 
 ## Combat Statistics
 - **HP:** 17
-- **AC:** 15 (Mage Armor)
+- **AC:** 10
 - **STR:** 8 (-1) | **DEX:** 15 (+2) | **CON:** 13 (+1)
 - **INT:** 12 (+1) | **WIS:** 10 (+0) | **CHA:** 17 (+3)
 
@@ -49,7 +49,7 @@ Pippa is small even for a fairy, all quick wings and kinetic posture, with wild 
 - wand: Arcane focus (silver chain wand)
 - dagger
 - explorers_pack: Explorer's pack sized for Small creatures
-- no_armor: Patchwork tunic and scarf belt
+- clothing: Patchwork tunic and scarf belt
 - amulet: Locket with charred splinter
 
 ## Dynamic State

@@ -75,3 +75,4 @@ own catalog — see CONTAINERS.md.
 | bag_of_sand | Bag of Sand | tool | | |
 | small_knife | Small Knife | tool | | |
 | costume | Costume | wearable | | |
+| flint_steel | Flint & Steel | tool |  |
