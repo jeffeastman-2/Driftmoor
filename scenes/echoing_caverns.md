@@ -98,35 +98,21 @@ characters know, in-fiction, the following caver's wisdom:
 - **type:** player
 - **soul_file:** scenario/people/players/gilthaness/SOUL.md
 - **identity_file:** scenario/people/players/gilthaness/IDENTITY.md
+- **player_transport:** telegram
+- **channel:** telegram
+- **host:** ultra
+- **inbox:** ~/messages/from-gilthaness
+- **outbox:** ~/messages/to-gilthaness
 - **position:** 145, 300
 
 ### giant_spider
 - **type:** creature
-- **creature_file:** scenario/creatures/giant_spider.md
-- **soul_file:** scenario/creatures/giant_spider_soul.md
-- **identity_file:** scenario/creatures/giant_spider_identity.md
+- **creature_file:** scenario/creatures/giant_spider/CREATURE.md
+- **soul_file:** scenario/creatures/giant_spider/SOUL.md
+- **identity_file:** scenario/creatures/giant_spider/IDENTITY.md
 - **scene_handle:** the giant spider
-- **position:** 64, 195
-- **hp:** 26
-- **ac:** 14
-- **faction:** hostile
+- **position:** 64, 195, 10
 - **activation:** zone_entry:Secret Chamber
-- **pronouns:** it/its
-- **weapons:** spider_bite+5
-- **armor:** natural_armor_spider
-- **dopamine:** 0.6
-- **cortisol:** 0.2
-- **norepinephrine:** 0.7
-- **endorphins:** 0.5
-- **serotonin:** 0.4
-- **acetylcholine:** 0.85
-- **oxytocin:** 0.0
-- **dopamine_baseline:** 0.55
-- **dopamine_volatility:** 0.4
-- **cortisol_baseline:** 0.2
-- **cortisol_volatility:** 0.4
-- **oxytocin_baseline:** 0.0
-- **oxytocin_volatility:** 0.0
 
 ## Scene Introductions
 
@@ -173,6 +159,6 @@ Stillness. Eight feet braced against cold stone above. The web-strands hum faint
 ## Game State Sections
 - file: scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Creatures in Scene | file: scenario/creatures/giant_spider.md
+- header: Creatures in Scene | file: scenario/creatures/giant_spider/CREATURE.md
 - header: Mission Objective | file: scenes/echoing_caverns.md#Mission Objective
 - header: Scene Notes | file: scenes/echoing_caverns.md#Scene Notes

@@ -36,11 +36,6 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 
 ## Runtime Defaults
 - **scene_handle:** Gil, the elven magic-user
-- **player_transport:** telegram
-- **channel:** telegram
-- **host:** ultra
-- **inbox:** ~/messages/from-gilthaness
-- **outbox:** ~/messages/to-gilthaness
 
 ## Abilities and Proficiencies
 - Arcane Recovery (recover spell slots on a short rest)
