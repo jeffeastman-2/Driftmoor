@@ -1,7 +1,7 @@
 """Load scene configuration from CONFIG.md + source .md files.
 
-Replaces configure_from_json() for scenes that use the .md-based config format.
-A scene is identified by the presence of scenes/<name>.md.
+The only scene loader: a scene is identified by the presence of
+scenes/<name>.md, loaded by ``configure_from_md``.
 
 Stat parsing conventions
 ------------------------

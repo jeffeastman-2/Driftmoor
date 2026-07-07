@@ -1,6 +1,5 @@
 """Common scene runner — shared logic for all scene configurations."""
 
-import json
 import shutil
 import time
 from datetime import datetime
@@ -8,10 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from engine.llm_bridge import make_call_llm
 from engine.session import CharacterSession, run_session, load_resume_state, restore_item_ownership
-from engine.dm_agent import DMLeft, DMRight
-from engine.player_router import PlayerLeft, PlayerRight
 from engine.scene_manager import RoleSet
 from engine.transcript import elaborate_session_from_dir
 
@@ -28,7 +24,6 @@ from models.condition import (
     DimensionProfile,
 )
 from models.space_time import GameTime, SceneGeometry
-from models.geometry_loader import load_geometry
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -202,86 +197,6 @@ def _build_game_state(sections: list[dict]) -> str:
         if block:
             parts.append(block)
     return "\n\n".join(parts)
-
-
-def configure_from_json(json_path: Path, game_time: GameTime | None = None) -> SceneConfig:
-    """Load a scene configuration from a JSON file.
-
-    Args:
-        json_path: Path to the scene JSON file.
-        game_time: Optional override for the scene's game_time. When provided
-            (e.g. from run_all.py to synchronise all scenes to a single session
-            start time) it takes precedence over the ``game_time`` block in the
-            JSON file.
-    """
-    data = json.loads(json_path.read_text(encoding="utf-8"))
-
-    # Scene-level DM provider (all characters share the same DM)
-    dm_provider = data.get("dm_provider", "anthropic")
-    dm_model = data.get("dm_model", "claude-sonnet-4-20250514")
-    dm_delay = data.get("dm_call_delay", 2.0)
-    dm_llm = make_call_llm(dm_provider, dm_model, call_delay=dm_delay)
-
-    characters: dict[str, CharacterSession] = {}
-    roles: dict[str, RoleSet] = {}
-
-    for char_id, cdata in data["characters"].items():
-        session, provider, model = _build_character(char_id, cdata)
-        characters[char_id] = session
-
-        player_llm = make_call_llm(provider, model)
-        roles[char_id] = RoleSet(
-            player_left=PlayerLeft(call_llm=player_llm),
-            player_right=PlayerRight(call_llm=player_llm),
-            dm_left=DMLeft(call_llm=dm_llm),
-            dm_right=DMRight(call_llm=dm_llm),
-        )
-
-    game_state_summary = _build_game_state(data.get("game_state_sections", []))
-
-    geometry_summary = ""
-    scene_geometry: SceneGeometry | None = None
-    geo_path: Path | None = None
-    if data.get("geometry_file"):
-        geo_path = ROOT / data["geometry_file"]
-        geometry_summary = load_file(geo_path)
-        if geo_path.exists():
-            scene_geometry = load_geometry(geo_path)
-
-    # (Character placement now lives on the scene file and is applied by the
-    # active MD loader; the legacy JSON path no longer injects positions.)
-
-    # Game time — caller override takes precedence over JSON
-    if game_time is None and "game_time" in data:
-        gt = data["game_time"]
-        game_time = GameTime(
-            hour=gt["hour"],
-            minute=gt.get("minute", 0),
-            day=gt.get("day", 1),
-            season=gt.get("season", "spring"),
-            turn_duration=gt.get("turn_duration", 10),
-            absolute_turn=0,
-        )
-
-    return SceneConfig(
-        scene_name=data["scene_name"],
-        title=data["title"],
-        narrative_title=data["narrative_title"],
-        transcript_title=data["transcript_title"],
-        character_summary=data["character_summary"],
-        characters=characters,
-        roles=roles,
-        game_state_summary=game_state_summary,
-        geometry_summary=geometry_summary,
-        scene_geometry=scene_geometry,
-        geometry_path=geo_path,
-        default_turns=data.get("default_turns", 4),
-        game_time=game_time,
-        dm_provider=dm_provider,
-        dm_model=dm_model,
-        narrative_provider=data.get("narrative_provider", "anthropic"),
-        narrative_model=data.get("narrative_model", "claude-sonnet-4-20250514"),
-    )
 
 
 def _start_characters(characters: dict) -> list[str]:
