@@ -215,6 +215,7 @@ def _write_runtime_map(
     start_characters: "list[str] | None" = None,
     item_details: dict | None = None,
     start_positions: dict | None = None,
+    scene_geometry: "SceneGeometry | None" = None,
 ) -> None:
     """Write the runtime HTML map (full character paths from snapshots) into
     the checkpoint directory.
@@ -238,6 +239,7 @@ def _write_runtime_map(
             start_characters=start_characters,
             item_details=item_details,
             start_positions=start_positions,
+            scene_geometry=scene_geometry,
         )
         if not live:                       # per-turn live regen stays quiet
             print(f"  Written to {runtime_map_html}")
@@ -380,7 +382,7 @@ async def run_scene(
                 geometry_path=_geom, scene_name=scene_name,
                 checkpoint_dir=checkpoint_dir, live=True,
                 start_characters=_party, item_details=_items,
-                start_positions=_scene_starts,
+                start_positions=_scene_starts, scene_geometry=config.scene_geometry,
             )
     try:
         result = await run_session(
@@ -462,5 +464,5 @@ async def run_scene(
             checkpoint_dir=checkpoint_dir,
             start_characters=_start_characters(config.characters),
             item_details=config.items or None,
-            start_positions=_scene_starts,
+            start_positions=_scene_starts, scene_geometry=config.scene_geometry,
         )

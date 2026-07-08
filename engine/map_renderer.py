@@ -26,6 +26,49 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 
 
+# Wheel-to-zoom (toward the cursor) + drag-to-pan for the SVG maps, by mutating
+# the ``viewBox``. Requires the ``<svg id='map'>`` and an optional ``#fit`` reset
+# button. Shared verbatim by the interactive and turn-slider renderers.
+_PANZOOM_JS = (
+    r"(function(){var s=document.getElementById('map');if(!s)return;"
+    r"var b=s.getAttribute('viewBox').trim().split(/[ ,]+/).map(Number);"
+    r"var v={x:b[0],y:b[1],w:b[2],h:b[3]};var K='mapView';"
+    # Persist the view so the live-refresh reload keeps the reader's zoom/pan.
+    r"function sv(){try{sessionStorage.setItem(K,JSON.stringify({b:b,v:[v.x,v.y,v.w,v.h]}));}catch(_){}}"
+    # Keep labels a constant ON-SCREEN size: font-size is in viewBox units, so
+    # counter-scale it by the current zoom (view width / pixel width) so text
+    # neither shrinks at fit nor blows up when zoomed in.
+    r"function LS(){var r=s.getBoundingClientRect();if(!r.width)return;var k=v.w/r.width;"
+    r"s.style.setProperty('--zfs',(9*k).toFixed(2)+'px');"
+    r"s.style.setProperty('--lfs',(7.5*k).toFixed(2)+'px');"
+    r"s.style.setProperty('--ifs',(7*k).toFixed(2)+'px');"
+    r"s.style.setProperty('--cfs',(8.5*k).toFixed(2)+'px');}"
+    r"function A(){s.setAttribute('viewBox',v.x+' '+v.y+' '+v.w+' '+v.h);sv();LS();}"
+    # Mark interaction so the refresh loop can defer reloads while the user drags.
+    r"function I(){window.__mapLastInteract=Date.now();}"
+    # Restore a saved view across reload, only if it's the same map (same base box).
+    r"try{var st=JSON.parse(sessionStorage.getItem(K)||'null');"
+    r"if(st&&st.b&&st.v&&st.b.length===4&&st.b.every(function(n,i){return n===b[i];})){"
+    r"v.x=st.v[0];v.y=st.v[1];v.w=st.v[2];v.h=st.v[3];"
+    r"s.setAttribute('viewBox',v.x+' '+v.y+' '+v.w+' '+v.h);}}catch(_){}"
+    r"function P(e){var r=s.getBoundingClientRect();"
+    r"return{x:v.x+(e.clientX-r.left)/r.width*v.w,y:v.y+(e.clientY-r.top)/r.height*v.h};}"
+    r"s.addEventListener('wheel',function(e){e.preventDefault();I();var p=P(e);"
+    r"var f=e.deltaY<0?0.85:1.18;var nw=Math.max(b[2]/20,Math.min(b[2],v.w*f));f=nw/v.w;"
+    r"v.x=p.x-(p.x-v.x)*f;v.y=p.y-(p.y-v.y)*f;v.w*=f;v.h*=f;A();},{passive:false});"
+    r"var d=false,l=null;"
+    r"s.addEventListener('mousedown',function(e){d=true;I();l={x:e.clientX,y:e.clientY};"
+    r"s.style.cursor='grabbing';e.preventDefault();});"
+    r"window.addEventListener('mousemove',function(e){if(!d)return;I();"
+    r"var r=s.getBoundingClientRect();v.x-=(e.clientX-l.x)/r.width*v.w;"
+    r"v.y-=(e.clientY-l.y)/r.height*v.h;l={x:e.clientX,y:e.clientY};A();});"
+    r"window.addEventListener('mouseup',function(){d=false;s.style.cursor='grab';});"
+    r"s.style.cursor='grab';var ft=document.getElementById('fit');"
+    r"if(ft)ft.addEventListener('click',function(){v.x=b[0];v.y=b[1];v.w=b[2];v.h=b[3];A();});"
+    r"LS();window.addEventListener('resize',LS);})();"
+)
+
+
 # ---------------------------------------------------------------------------
 # Geometry parsing
 # ---------------------------------------------------------------------------
@@ -539,9 +582,10 @@ def render_interactive_map_html(
     view_w = max((max_x - min_x) + 2 * margin, 1.0)
     view_h = max((max_y - min_y) + 2 * margin, 1.0)
 
-    # SVG font sizes are in viewBox units; tune by map extent so compact
-    # indoor maps don't get oversized labels.
-    label_base = max(0.85, min(1.9, max(view_w, view_h) / 90.0))
+    # SVG font sizes are in viewBox units; scale with map extent so a big map fit
+    # to a fixed pixel width keeps legible labels (and a compact indoor map keeps
+    # small ones).
+    label_base = max(0.85, min(28.0, max(view_w, view_h) / 100.0))
     zone_label_size = round(label_base * 1.10, 2)
     landmark_label_size = round(label_base * 0.85, 2)
     item_label_size = round(label_base * 0.78, 2)
@@ -583,16 +627,18 @@ def render_interactive_map_html(
         "h1{font-size:16px;margin:0 0 8px 0;}"
         "p{margin:0 0 10px 0;font-size:13px;color:#333;}"
         "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;background:#fff;}"
-        f".zone-label{{font-size:{zone_label_size}px;font-weight:700;fill:#1f1f1f;opacity:.8;}}"
-        f".lm-label{{font-size:{landmark_label_size}px;fill:#333;}}"
-        f".item-label{{font-size:{item_label_size}px;fill:#5a4a10;font-style:italic;}}"
+        f".zone-label{{font-size:var(--zfs,{zone_label_size}px);font-weight:700;fill:#1f1f1f;opacity:.8;}}"
+        f".lm-label{{font-size:var(--lfs,{landmark_label_size}px);fill:#333;}}"
+        f".item-label{{font-size:var(--ifs,{item_label_size}px);fill:#5a4a10;font-style:italic;}}"
         "</style></head><body><div class='wrap'>"
     )
     safe_title = html.escape(title or geometry_path.parent.name.replace("_", " ").title())
     parts.append(f"<h1>{safe_title}</h1>")
-    parts.append("<p>Hover over dots to see turn number, coordinates, and zone.</p>")
+    parts.append("<p>Hover over dots to see turn number, coordinates, and zone. "
+                 "<button id='fit' title='Zoom to fit'>Fit</button> "
+                 "<span style='color:#888;'>scroll = zoom · drag = pan</span></p>")
     parts.append(
-        f"<svg viewBox='{view_x:.2f} {_flip_y(view_y + view_h):.2f} {view_w:.2f} {view_h:.2f}' "
+        f"<svg id='map' viewBox='{view_x:.2f} {_flip_y(view_y + view_h):.2f} {view_w:.2f} {view_h:.2f}' "
         "preserveAspectRatio='xMidYMid meet'>"
     )
     parts.append("<style>")
@@ -731,6 +777,7 @@ def render_interactive_map_html(
         "});"
         "});"
         "});"
+        + _PANZOOM_JS +
         "</script>"
     )
     parts.append("</body></html>")
@@ -774,6 +821,7 @@ def render_turn_slider_html(
     item_details: dict | None = None,
     live_positions: dict | None = None,
     start_positions: dict | None = None,
+    scene_geometry: "SceneGeometry | None" = None,
 ) -> None:
     """Interactive turn-slider map with fog of war.
 
@@ -847,6 +895,49 @@ def render_turn_slider_html(
             if zname is not None and t < reveal_zone.get(zname, never + 1):
                 reveal_zone[zname] = t
 
+    # Visibility-based reveal: a zone also reveals the first turn a party observer
+    # can SEE it — not only when someone stands in it. Mirrors the engine's
+    # perception rule (``SceneGeometry.can_see`` gated by ``ambient_sight_range``):
+    # an open, lit scene (ambient = None → unlimited) reveals the districts you can
+    # see across the square from turn 0, while a dark cavern (short ambient) still
+    # only reveals the chamber you're in plus whatever line-of-sight reaches. The
+    # entry-based reveal above stays a floor (you always "see" your own zone).
+    # Gated by ``start_characters`` so a dormant creature never reveals its lair.
+    sg = scene_geometry
+    if sg is None:
+        try:
+            from models.geometry_loader import load_geometry
+            sg = load_geometry(geometry_path)
+        except Exception:                          # best-effort: fall back to entry fog
+            sg = None
+    _reveal_seen_from = None
+    if sg is not None and sg.zones:
+        import math as _math
+        from models.space_time import Position as _Pos
+        # g-name → (sg-name, centroid Position); reveal_zone is keyed by g-name.
+        _centroids = {zone_by_upper.get(n.upper(), n): p.centroid()
+                      for n, p in sg.zones.items()}
+
+        def _reveal_seen_from(ox: float, oy: float, ozone: str, t: int) -> None:
+            visual = sg.ambient_sight_range(ozone or (sg.zone_at(_Pos(ox, oy)) or ""))
+            visual_ft = _math.inf if visual is None else visual
+            obs = _Pos(ox, oy)
+            for gname, c in _centroids.items():
+                if reveal_zone.get(gname, never + 1) <= t:
+                    continue                       # already revealed at/before t
+                if _math.hypot(c.x - ox, c.y - oy) <= visual_ft and sg.can_see(obs, c):
+                    reveal_zone[gname] = t
+
+        _vis_allowed = set(start_characters) if start_characters is not None else None
+        _vis_samples = sorted(
+            ((t, x, y, z) for cid, pts in tracks.items()
+             if _vis_allowed is None or cid in _vis_allowed
+             for (t, x, y, z) in pts),
+            key=lambda s: s[0],
+        )
+        for (t, x, y, z) in _vis_samples:
+            _reveal_seen_from(x, y, z, t)
+
     # Live (mid-turn) override: stamp the latest frame with the positions the turn
     # loop published while waiting on the human, so the map shows where everyone
     # is NOW — including NPCs who already acted this turn — rather than lagging to
@@ -865,6 +956,8 @@ def render_turn_slider_html(
             zname = zone_by_upper.get((zstr or "").upper()) or _containing_zone(x, y, g["zones"])
             if zname is not None:
                 reveal_zone[zname] = min(reveal_zone.get(zname, never), lt)
+            if _reveal_seen_from is not None:      # reveal what this observer sees now
+                _reveal_seen_from(x, y, zstr, lt)
 
     def _elem_reveal(x: float, y: float) -> int:
         z = _containing_zone(x, y, g["zones"])
@@ -893,7 +986,11 @@ def render_turn_slider_html(
     view_w = max((max_x - min_x) + 2 * margin, 1.0)
     view_h = max((max_y - min_y) + 2 * margin, 1.0)
     view_top = -(max_y + margin)
-    label_base = max(0.85, min(1.9, max(view_w, view_h) / 90.0))
+    # Text is kept a constant on-screen size by the pan/zoom JS (it counter-
+    # scales font-size against the zoom), so labels never shrink at fit nor blow
+    # up when zoomed. Markers/strokes keep their natural viewBox sizes (sc=1).
+    label_base = 1.9
+    sc = 1.0
 
     def fy(y: float) -> float:
         return -y
@@ -924,18 +1021,22 @@ def render_turn_slider_html(
              "font-size:13px;}.ctl input[type=range]{flex:1;}"
              "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;"
              "background:#0e0e12;}button{font:inherit;padding:3px 10px;cursor:pointer;}")
-    p.append(f".zlabel{{font-size:{label_base*1.10:.2f}px;font-weight:700;fill:#eee;opacity:.85;}}")
-    p.append(f".llabel{{font-size:{label_base*0.85:.2f}px;fill:#cfcfcf;}}")
-    p.append(f".ilabel{{font-size:{label_base*0.78:.2f}px;fill:#d9c98a;font-style:italic;}}")
-    p.append(f".clabel{{font-size:{label_base*0.90:.2f}px;font-weight:700;fill:#fff;"
+    # font-size is a JS-controlled var (constant on-screen size across zoom); the
+    # fallback keeps a sane value before the pan/zoom script runs.
+    p.append(".zlabel{font-size:var(--zfs,2.1px);font-weight:700;fill:#eee;opacity:.85;}")
+    p.append(".llabel{font-size:var(--lfs,1.7px);fill:#cfcfcf;}")
+    p.append(".ilabel{font-size:var(--ifs,1.6px);fill:#d9c98a;font-style:italic;}")
+    p.append(".clabel{font-size:var(--cfs,1.9px);font-weight:700;fill:#fff;"
              "paint-order:stroke;stroke:#000;stroke-width:0.3px;}")
     p.append("</style></head><body><div class='wrap'>")
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              f"<input id='sl' type='range' min='0' max='{len(turn_list)-1}' "
              f"value='{len(turn_list)-1}' step='1'>"
-             "<span id='rd' style='min-width:70px;'></span></div>")
-    p.append(f"<svg viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
+             "<span id='rd' style='min-width:70px;'></span>"
+             "<button id='fit' title='Zoom to fit'>Fit</button>"
+             "<span style='color:#888;'>scroll = zoom · drag = pan</span></div>")
+    p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
     for zname in zone_order:
@@ -948,7 +1049,8 @@ def render_turn_slider_html(
         cy = sum(y for _, y in verts) / len(verts)
         p.append(f"<g data-reveal='{reveal_zone.get(zname, never)}'>")
         p.append(f"<polygon points='{poly(verts)}' fill='{color}' "
-                 f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='0.6'/>")
+                 f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='{0.6*sc:.2f}'>"
+                 f"<title>{html.escape(zname)}</title></polygon>")
         p.append(f"<text x='{cx:.2f}' y='{fy(cy):.2f}' text-anchor='middle' "
                  f"dominant-baseline='middle' class='zlabel'>{html.escape(zname)}</text></g>")
 
@@ -958,7 +1060,7 @@ def render_turn_slider_html(
         cx = sum(x for x, _ in verts) / len(verts)
         cy = sum(y for _, y in verts) / len(verts)
         p.append(f"<g data-reveal='{_elem_reveal(cx, cy)}'><polygon points='{poly(verts)}' "
-                 "fill='#3a3a42' fill-opacity='0.7' stroke='#22222a' stroke-width='0.6'>"
+                 f"fill='#3a3a42' fill-opacity='0.7' stroke='#22222a' stroke-width='{0.6*sc:.2f}'>"
                  f"<title>{html.escape(iname)}</title></polygon></g>")
     for bname, verts in g["boundaries"]:
         if not verts:
@@ -966,32 +1068,33 @@ def render_turn_slider_html(
         cx = sum(x for x, _ in verts) / len(verts)
         cy = sum(y for _, y in verts) / len(verts)
         p.append(f"<g data-reveal='{_elem_reveal(cx, cy)}'><polygon points='{poly(verts)}' "
-                 "fill='none' stroke='gold' stroke-width='1.1' stroke-dasharray='2.5,2.5'>"
+                 f"fill='none' stroke='gold' stroke-width='{1.1*sc:.2f}' "
+                 f"stroke-dasharray='{2.5*sc:.2f},{2.5*sc:.2f}'>"
                  f"<title>{html.escape(bname)}</title></polygon></g>")
 
     for name, (x, y) in g["landmarks"].items():
         p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
-                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='1.1' fill='#b9b9b9'>"
+                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{1.1*sc:.2f}' fill='#b9b9b9'>"
                  f"<title>{html.escape(name)}</title></circle>"
-                 f"<text x='{x+1.5:.2f}' y='{fy(y):.2f}' class='llabel'>{html.escape(name)}</text></g>")
+                 f"<text x='{x+1.5*sc:.2f}' y='{fy(y):.2f}' class='llabel'>{html.escape(name)}</text></g>")
     for _iid, (x, y, label) in g["items"].items():
         tooltip = _item_tooltip(label, (item_details or {}).get(_iid))
         p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
-                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='0.9' fill='#d9c98a'>"
+                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{0.9*sc:.2f}' fill='#d9c98a'>"
                  f"<title>{html.escape(tooltip)}</title></circle>"
-                 f"<text x='{x+1.4:.2f}' y='{fy(y):.2f}' class='ilabel'>{html.escape(label)}</text></g>")
+                 f"<text x='{x+1.4*sc:.2f}' y='{fy(y):.2f}' class='ilabel'>{html.escape(label)}</text></g>")
 
     # Per-character "where you just came from" segment: previous turn -> current.
     # Drawn before the markers so the dot sits on top of its own trail tail.
     for cid in sorted(tracks):
         p.append(f"<line class='trail' data-trail='{html.escape(cid)}' "
-                 f"stroke='{cc[cid]}' stroke-width='0.7' stroke-opacity='0.65' "
-                 f"stroke-linecap='round' stroke-dasharray='1.6,1.3' "
+                 f"stroke='{cc[cid]}' stroke-width='{0.7*sc:.2f}' stroke-opacity='0.65' "
+                 f"stroke-linecap='round' stroke-dasharray='{1.6*sc:.2f},{1.3*sc:.2f}' "
                  f"style='display:none'/>")
     for cid in sorted(tracks):
         p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
-                 f"<circle r='1.5' fill='{cc[cid]}' stroke='#000' stroke-width='0.35'/>"
-                 f"<text x='2.0' y='-1.0' class='clabel'>{html.escape(cid)}</text></g>")
+                 f"<circle r='{1.5*sc:.2f}' fill='{cc[cid]}' stroke='#000' stroke-width='{0.35*sc:.2f}'/>"
+                 f"<text x='{2.0*sc:.2f}' y='{-1.0*sc:.2f}' class='clabel'>{html.escape(cid)}</text></g>")
     p.append("</svg>")
 
     frames_js = json.dumps({
@@ -1024,9 +1127,14 @@ def render_turn_slider_html(
     if live_refresh_secs:
         # Live-follow: while parked on the latest turn, reload to pick up new
         # turns; if the viewer has scrubbed back into history, leave them be.
+        # Skip the reload while the reader is actively panning/zooming (a recent
+        # interaction) so it doesn't yank the map out from under them; the saved
+        # viewBox is restored on the reloads that do fire.
         p.append(
-            f"setInterval(function(){{if(+sl.value>=TURNS.length-1)"
+            f"setInterval(function(){{if(+sl.value>=TURNS.length-1&&"
+            f"(Date.now()-(window.__mapLastInteract||0))>2500)"
             f"{{location.reload();}}}},{int(live_refresh_secs) * 1000});")
+    p.append(_PANZOOM_JS)
     p.append("</script></body></html>")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("".join(p), encoding="utf-8")

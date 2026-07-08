@@ -321,7 +321,7 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
             # moves are visible while watching live play.
             live_refresh_secs=4, start_characters=app["start_characters"],
             item_details=cfg.items or None, live_positions=live_positions,
-            start_positions=start_positions)
+            start_positions=start_positions, scene_geometry=sg)
     except Exception:  # noqa: BLE001 — map is best-effort
         pass
 

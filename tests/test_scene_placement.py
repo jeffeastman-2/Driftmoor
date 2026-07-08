@@ -59,12 +59,23 @@ def test_malformed_position_returns_none():
 
 
 def test_echoing_caverns_seeds_from_scene():
-    """End-to-end: the migrated scene places the whole cast; zones derive."""
-    cfg = configure_from_md(Path("scenes/echoing_caverns.md"))
+    """End-to-end: the migrated scene places exactly its authored cast, from the
+    scene's own ``position`` bullets (no hardcoded coords — they're read from the
+    file so re-authoring placement doesn't break this) and with no stray keys."""
+    from engine.md_loader import _load, _parse_all_char_sections
+    path = Path("scenes/echoing_caverns.md")
+    authored = {cid: m["position"]
+                for cid, m in _parse_all_char_sections(_load(path)).items()
+                if m.get("position")}
+    assert authored, "scene should author placement bullets"
+
+    cfg = configure_from_md(path)
     sp = cfg.scene_geometry.starting_positions
-    assert (sp["seraphina"].x, sp["seraphina"].y) == (155.0, 285.0)
-    assert (sp["giant_spider"].x, sp["giant_spider"].y) == (64.0, 195.0)
-    assert cfg.scene_geometry.zone_at(sp["seraphina"]) == "Entry Chamber"
-    assert cfg.scene_geometry.zone_at(sp["giant_spider"]) == "Secret Chamber"
-    # Geometry no longer seeds stray keys — only the authored cast is present.
-    assert set(sp) == {"seraphina", "thorgrim", "amara", "gilthaness", "giant_spider"}
+    # Only the authored cast is seeded — geometry no longer contributes keys.
+    assert set(sp) == set(authored)
+    for cid, pos_str in authored.items():
+        x, y = (float(n) for n in pos_str.split(",")[:2])
+        assert (sp[cid].x, sp[cid].y) == (x, y)               # scene coord seeded
+        # Zone is derived from the coordinate, not authored.
+        assert cfg.scene_geometry.zone_at(sp[cid]) == cfg.scene_geometry.zone_at(
+            Position(x, y))
