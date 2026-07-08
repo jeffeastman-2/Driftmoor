@@ -24,6 +24,7 @@ so the Driftmoor lexicon is active and non-CAD verbs survive Layer-4 grounding.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import List, Optional, Tuple
 
 from models.item import Interaction, Item
@@ -36,6 +37,38 @@ _INTERACTION_VERBS = {"examine", "search", "read", "press"}
 _TRANSFER_VERBS = {"take", "drop", "give"}
 # Locomotion verbs whose object/PP names a destination, not a thing to act on.
 _MOVEMENT_VERBS = {"move", "dash"}
+
+_LATN_NUM_WORDS: dict[str, float] = {
+    "zero": 0.0,
+    "one": 1.0,
+    "two": 2.0,
+    "three": 3.0,
+    "four": 4.0,
+    "five": 5.0,
+    "six": 6.0,
+    "seven": 7.0,
+    "eight": 8.0,
+    "nine": 9.0,
+    "ten": 10.0,
+    "eleven": 11.0,
+    "twelve": 12.0,
+    "thirteen": 13.0,
+    "fourteen": 14.0,
+    "fifteen": 15.0,
+    "sixteen": 16.0,
+    "seventeen": 17.0,
+    "eighteen": 18.0,
+    "nineteen": 19.0,
+    "twenty": 20.0,
+    "thirty": 30.0,
+    "forty": 40.0,
+    "fifty": 50.0,
+    "sixty": 60.0,
+    "seventy": 70.0,
+    "eighty": 80.0,
+    "ninety": 90.0,
+    "hundred": 100.0,
+}
 
 _TIE_MARGIN = 1e-9
 
@@ -272,6 +305,162 @@ def resolve_movement_target(intent_text: str, *, lexicon, adapter) -> Optional[I
             winner = _unique_winner(items)
             if winner is not None:
                 return winner.item
+    return None
+
+
+def _token_surface(word: str) -> str:
+    """Surface form for a LATN token word (unwraps NP(...))."""
+    w = (word or "").strip().lower()
+    m = re.match(r"np\((.+)\)$", w)
+    return (m.group(1) if m else w).strip()
+
+
+def _number_from_latn_token(tok) -> Optional[float]:
+    """Numeric value carried by a LATN token vector, when present."""
+    try:
+        if not tok.isa("number"):
+            return None
+    except Exception:
+        return None
+
+    # LATN prints non-zero dimensions like "..., number=10.00, ...".
+    dims = ""
+    try:
+        dims = tok.non_zero_dims() or ""
+    except Exception:
+        dims = ""
+    m = re.search(r"\bnumber=([0-9]+(?:\.[0-9]+)?)\b", dims)
+    if m is not None:
+        return float(m.group(1))
+
+    # Fallback: NP(10) style token surface.
+    s = _token_surface(getattr(tok, "word", ""))
+    if re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", s):
+        return float(s)
+    return _LATN_NUM_WORDS.get(s)
+
+
+def _parse_mixed_number_words(words: list[str]) -> Optional[float]:
+    """Parse mixed digit/word number phrases (e.g. "25", "twenty five")."""
+    if not words:
+        return None
+    if len(words) == 1 and re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", words[0]):
+        return float(words[0])
+
+    total = 0.0
+    current = 0.0
+    saw = False
+    for w in words:
+        if w == "and":
+            continue
+        if re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", w):
+            # Numeric token in phrase: treat as a complete current term.
+            current += float(w)
+            saw = True
+            continue
+        val = _LATN_NUM_WORDS.get(w)
+        if val is None:
+            return None
+        saw = True
+        if val == 100.0:
+            current = max(1.0, current) * 100.0
+        elif val >= 20.0 and (val % 10.0) == 0.0:
+            current += val
+        else:
+            current += val
+    total += current
+    return total if saw else None
+
+
+def resolve_movement_distance(intent_text: str, *, lexicon, adapter) -> Optional[float]:
+    """LATN-first extraction of explicit movement distance in feet.
+
+    Returns a distance when intent text expresses a movement with a feet-unit
+    quantity (e.g. "move north ten feet", "dash 15 ft"). Returns None when no
+    movement+distance can be derived from LATN output.
+    """
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+
+    # Accept movement either from full VP structure (preferred) or from layer-4
+    # tokenization when no sentence phrase survives policy.
+    is_movement = False
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        for vp in _predicate_vps(sp):
+            if _canonical_verb(vp) in _MOVEMENT_VERBS:
+                is_movement = True
+                break
+        if is_movement:
+            break
+
+    l4 = getattr(result, "layer4_result", None)
+    hypotheses = list(getattr(l4, "hypotheses", None) or [])
+    if not is_movement:
+        for hyp in hypotheses:
+            for tok in getattr(hyp, "tokens", None) or []:
+                w = _token_surface(getattr(tok, "word", ""))
+                if w in _MOVEMENT_VERBS:
+                    is_movement = True
+                    break
+            if is_movement:
+                break
+    if not is_movement:
+        return None
+
+    for hyp in hypotheses:
+        tokens = list(getattr(hyp, "tokens", None) or [])
+        # LATN may compose quantity+unit into one NP token
+        # (e.g., "NP(ten foot)" with number + unit_ft dims).
+        for tok in tokens:
+            try:
+                if tok.isa("unit_ft") and tok.isa("number"):
+                    direct = _number_from_latn_token(tok)
+                    if direct is not None:
+                        return direct
+            except Exception:
+                pass
+
+        for i, tok in enumerate(tokens):
+            unit = _token_surface(getattr(tok, "word", ""))
+            is_unit = False
+            try:
+                is_unit = tok.isa("unit_ft")
+            except Exception:
+                is_unit = False
+            if unit not in {"ft", "feet", "foot"} and not is_unit:
+                continue
+            phrase: list[str] = []
+            j = i - 1
+            while j >= 0:
+                prev = tokens[j]
+                surface = _token_surface(getattr(prev, "word", ""))
+                num = _number_from_latn_token(prev)
+                if num is not None:
+                    # Keep original lexical surface where possible so phrases
+                    # like "twenty five" stay compositional.
+                    if re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", surface):
+                        phrase.append(surface)
+                    else:
+                        phrase.append(surface)
+                    j -= 1
+                    continue
+                if surface in _LATN_NUM_WORDS or surface == "and":
+                    phrase.append(surface)
+                    j -= 1
+                    continue
+                break
+            if not phrase:
+                continue
+            parsed = _parse_mixed_number_words(list(reversed(phrase)))
+            if parsed is not None:
+                return parsed
     return None
 
 

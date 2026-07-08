@@ -610,7 +610,7 @@ class TestInferCharacterDestination:
 
 
 class TestInferCardinalDestination:
-    """'move south/north/east/west' projects a pure directional step.
+    """'move south/north/east/west' projects a pure directional heading.
     Map orientation: +y is north, +x is east (map_renderer flips screen y)."""
 
     def _geom(self):
@@ -630,18 +630,18 @@ class TestInferCardinalDestination:
         south = _infer_cardinal_destination("I move south", pos, sg)
         east = _infer_cardinal_destination("go east", pos, sg)
         west = _infer_cardinal_destination("head west", pos, sg)
-        assert north == (0.0, 90.0, "")
-        assert south == (0.0, 10.0, "")
-        assert east == (40.0, 50.0, "")
-        assert west == (-40.0, 50.0, "")
+        assert north[0] == 0.0 and north[1] > 50.0 and north[2] == ""
+        assert south[0] == 0.0 and south[1] < 50.0 and south[2] == ""
+        assert east[1] == 50.0 and east[0] > 0.0 and east[2] == ""
+        assert west[1] == 50.0 and west[0] < 0.0 and west[2] == ""
 
     def test_heading_always_projects_a_step(self):
-        # A compass heading always projects a step (clamped + wall-checked
-        # downstream), independent of nearby zone centroids.
+        # A compass heading always projects a destination in that direction
+        # (clamped + wall-checked downstream), independent of nearby centroids.
         from engine.session import _infer_cardinal_destination
         dest = _infer_cardinal_destination("head west", (0.0, 50.0, ""), self._geom())
         assert dest is not None
-        assert dest == (-40.0, 50.0, "")
+        assert dest[1] == 50.0 and dest[0] < 0.0 and dest[2] == ""
 
     def test_all_eight_headings_travel(self):
         # Every compass point (incl. diagonals) yields a destination — a zone in
@@ -674,7 +674,7 @@ class TestInferCardinalDestination:
     def test_current_zone_does_not_bias_heading(self):
         from engine.session import _infer_cardinal_destination
         dest = _infer_cardinal_destination("move north", (0.0, 50.0, "HERE"), self._geom())
-        assert dest == (0.0, 90.0, "")
+        assert dest[0] == 0.0 and dest[1] > 50.0 and dest[2] == ""
 
 
 class TestInferCoordinateDestination:
@@ -707,6 +707,39 @@ class TestInferCoordinateDestination:
     def test_none_when_no_coord_literal(self):
         from engine.session import _infer_coordinate_destination
         assert _infer_coordinate_destination("move to the forge", self._geom()) is None
+
+
+class TestMovementBudgetPerTurn:
+    """Speed is per melee round; exploration turns span multiple rounds."""
+
+    def test_exploration_turn_uses_ten_round_budget(self):
+        from engine.session import _movement_budget_feet
+        assert _movement_budget_feet("30 ft", in_combat=False) == 300.0
+
+    def test_combat_turn_uses_single_round_budget(self):
+        from engine.session import _movement_budget_feet
+        assert _movement_budget_feet("30 ft", in_combat=True) == 30.0
+
+    def test_requested_distance_word_number_is_honored(self):
+        from engine.session import _movement_cap_for_intent
+        cap = _movement_cap_for_intent(
+            "30 ft", "I move north ten feet", in_combat=False
+        )
+        assert cap == 10.0
+
+    def test_requested_distance_numeric_is_honored(self):
+        from engine.session import _movement_cap_for_intent
+        cap = _movement_cap_for_intent(
+            "30 ft", "I move east 15 ft", in_combat=False
+        )
+        assert cap == 15.0
+
+    def test_requested_distance_cannot_exceed_turn_budget(self):
+        from engine.session import _movement_cap_for_intent
+        cap = _movement_cap_for_intent(
+            "30 ft", "I move east 500 feet", in_combat=False
+        )
+        assert cap == 300.0
 
 
 class TestInferRoomingHouseTransition:

@@ -66,6 +66,27 @@ _FACTION_SYNONYMS: list[tuple[str, list[str]]] = [
     ("neutral", ["neutral"]),
 ]
 
+# Direction adverbs mapped to world-axis vectors.
+_DIRECTION_VOCAB: list[tuple[str, dict[str, float]]] = [
+    ("north", {"locy": 1.0}),
+    ("n", {"locy": 1.0}),
+    ("south", {"locy": -1.0}),
+    ("s", {"locy": -1.0}),
+    ("east", {"locx": 1.0}),
+    ("e", {"locx": 1.0}),
+    ("west", {"locx": -1.0}),
+    ("w", {"locx": -1.0}),
+    ("up", {"locz": 1.0}),
+    ("down", {"locz": -1.0}),
+]
+
+# Explicit linear distance units (feet).
+_DISTANCE_UNIT_VOCAB: list[tuple[str, dict[str, float]]] = [
+    ("ft", {"unit_ft": 1.0}),
+    ("feet", {"unit_ft": 1.0}),
+    ("foot", {"unit_ft": 1.0}),
+]
+
 
 def _vf(pos: str, **dims):
     # Local import so importing this module doesn't require the parser until a
@@ -115,6 +136,12 @@ def _build_rpg_layer() -> dict:
         dim = property_dim("faction", value)
         for word in words:
             layer[word.lower()] = _vf("adj", **{dim: 1.0})
+
+    # Movement direction adverbs and distance units.
+    for word, dims in _DIRECTION_VOCAB:
+        layer[word.lower()] = _vf("adv", **dims)
+    for word, dims in _DISTANCE_UNIT_VOCAB:
+        layer[word.lower()] = _vf("noun", **dims)
     return layer
 
 

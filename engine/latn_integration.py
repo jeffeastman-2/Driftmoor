@@ -174,3 +174,29 @@ def infer_movement_target(
         if pos is not None:
             return (pos.x, pos.y, pos.z)
     return None
+
+
+def infer_movement_distance(
+    intent_text: str,
+    items: Optional[dict],
+    characters: Optional[dict],
+    character_zone: Optional[str],
+    scene_geometry=None,
+) -> Optional[float]:
+    """LATN-first explicit movement distance in feet, or None.
+
+    Uses LATN layer output to read quantities such as "ten feet" in movement
+    intents. Returns None when LATN cannot derive a movement+distance pair.
+    """
+    from engine import latn_resolver
+
+    # Distance extraction is lexical/structural and does not require grounded
+    # entities, so build context even when items/characters are empty.
+    _items = items or {}
+    _characters = characters or {}
+    lexicon, adapter = build_context(
+        _items, _characters, character_zone or "", scene_geometry,
+    )
+    return latn_resolver.resolve_movement_distance(
+        intent_text or "", lexicon=lexicon, adapter=adapter,
+    )

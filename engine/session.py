@@ -57,6 +57,7 @@ if TYPE_CHECKING:
 COMBAT_EVENT = "combat_initiated"
 EXIT_EVENT = "exits_scene"
 MELEE_DURATION = 1  # minutes per combat turn
+EXPLORATION_ROUNDS_PER_TURN = 10  # one exploration turn spans ~10 melee rounds
 MAX_MELEE_ROUNDS = 20  # safety cap — melee rounds never count against num_turns
 
 
@@ -176,6 +177,137 @@ def _speed_to_feet(speed_str: str) -> float:
     """
     m = re.search(r'(\d+)', speed_str or "")
     return float(m.group(1)) if m else 30.0
+
+
+def _movement_budget_feet(speed_str: str, *, in_combat: bool) -> float:
+    """Movement cap in feet for the current turn.
+
+    Character speed is authored as feet per melee round. Outside combat, one
+    Driftmoor turn spans multiple rounds (10), so movement budget scales by
+    that factor. In combat, keep one-round movement.
+    """
+    per_round = _speed_to_feet(speed_str)
+    if in_combat:
+        return per_round
+    return per_round * EXPLORATION_ROUNDS_PER_TURN
+
+
+_NUMBER_WORDS: dict[str, int] = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+    "hundred": 100,
+}
+
+
+def _parse_number_words(text: str) -> Optional[float]:
+    """Parse a small English number phrase (e.g. "ten", "twenty five")."""
+    toks = [t for t in re.split(r"[^a-z]+", (text or "").lower()) if t]
+    if not toks:
+        return None
+
+    total = 0
+    current = 0
+    saw_number = False
+    for tok in toks:
+        if tok == "and":
+            continue
+        val = _NUMBER_WORDS.get(tok)
+        if val is None:
+            return None
+        saw_number = True
+        if val == 100:
+            current = max(1, current) * 100
+        elif val >= 20 and val % 10 == 0:
+            current += val
+        else:
+            current += val
+    total += current
+    return float(total) if saw_number else None
+
+
+def _requested_movement_feet(intent_text: str) -> Optional[float]:
+    """Return explicit requested movement distance in feet, if present.
+
+    Supports both numeric and word-number forms such as ``10 ft`` and
+    ``ten feet``. Returns None when no explicit distance is present.
+    """
+    text = (intent_text or "").lower()
+    if not text:
+        return None
+
+    # Numeric form: "10 ft", "10 feet", "10 foot".
+    m = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:ft\.?|feet|foot)\b", text)
+    if m is not None:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            return None
+
+    # Word form: "ten feet", "twenty five foot".
+    toks = [t for t in re.split(r"[^a-z]+", text) if t]
+    for i, tok in enumerate(toks):
+        if tok not in {"ft", "feet", "foot"}:
+            continue
+        phrase: list[str] = []
+        j = i - 1
+        while j >= 0:
+            t = toks[j]
+            if t in _NUMBER_WORDS or t == "and":
+                phrase.append(t)
+                j -= 1
+                continue
+            break
+        if not phrase:
+            continue
+        parsed = _parse_number_words(" ".join(reversed(phrase)))
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _movement_cap_for_intent(
+    speed_str: str,
+    intent_text: str,
+    *,
+    in_combat: bool,
+    requested_distance_ft: Optional[float] = None,
+) -> float:
+    """Turn movement cap, honoring explicit intent distance when provided."""
+    budget = _movement_budget_feet(speed_str, in_combat=in_combat)
+    requested = (
+        requested_distance_ft
+        if requested_distance_ft is not None
+        else _requested_movement_feet(intent_text)
+    )
+    if requested is None or requested <= 0:
+        return budget
+    return min(budget, requested)
 
 
 def _is_search_like_intent(intent_text: str) -> bool:
@@ -1454,10 +1586,11 @@ def _infer_cardinal_destination(
 
     The other movement backfills ground named zones, landmarks, items, and party
     members, but a bare compass heading ("I move south") matched nothing, so the
-    actor never moved. Map orientation: +y is north, +x is east. Returns a short
-    projected step along the requested heading (zone left blank so normal
-    clamping and wall/boundary checks downstream decide the final position).
-    Returns None when the intent names no single compass direction.
+    actor never moved. Map orientation: +y is north, +x is east. Returns a far
+    projected point along the requested heading (zone left blank), then the
+    normal downstream clamp applies the actual movement budget for the turn
+    (exploration vs combat) and all wall/boundary checks. Returns None when the
+    intent names no single compass direction.
     """
     if scene_geometry is None or my_pos is None:
         return None
@@ -1470,8 +1603,8 @@ def _infer_cardinal_destination(
     ux, uy = next(iter(dirs))
     px, py = float(my_pos[0]), float(my_pos[1])
     # Keep cardinals axis-true: "east" means +x with no implied north/south bias.
-    # Clamping and collision checks downstream keep movement legal.
-    return (px + ux * 40.0, py + uy * 40.0, "")
+    # Project far so downstream clamp decides actual per-turn travel distance.
+    return (px + ux * 10000.0, py + uy * 10000.0, "")
 
 
 def _point_inside_zone_near_gateway(
@@ -4766,7 +4899,22 @@ async def iter_session(
                 tx, ty = float(player_target[0]), float(player_target[1])
                 raw_pos: tuple[float, float, str] = (tx, ty, "")
                 char = characters[character_id].character
-                speed_ft = _speed_to_feet(getattr(char, "speed", "30 ft"))
+                requested_dist = None
+                if intent.intent:
+                    from engine.latn_integration import infer_movement_distance
+                    requested_dist = infer_movement_distance(
+                        intent.intent,
+                        items,
+                        characters,
+                        current_positions.get(character_id, ("", "", ""))[2],
+                        scene_geometry,
+                    )
+                speed_ft = _movement_cap_for_intent(
+                    getattr(char, "speed", "30 ft"),
+                    intent.intent or "",
+                    in_combat=in_combat,
+                    requested_distance_ft=requested_dist,
+                )
                 origin = current_positions.get(character_id)
                 if origin is not None:
                     raw_pos = _clamp_position(raw_pos, origin, speed_ft)

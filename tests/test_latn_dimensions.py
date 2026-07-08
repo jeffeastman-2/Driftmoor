@@ -10,6 +10,7 @@ import pytest
 
 from engine.latn_dimensions import (
     FACTION_VALUES,
+    SPATIAL_DIMS,
     VERB_DIMS,
     _norm,
     derive_character_property_dims,
@@ -62,7 +63,11 @@ def test_full_list_is_static_first_and_deduped():
 
 def test_empty_characters_yields_only_static():
     dims = driftmoor_rpg_dimensions()
-    assert set(dims) == set(VERB_DIMS) | {f"faction_{f}" for f in FACTION_VALUES}
+    assert set(dims) == (
+        set(VERB_DIMS)
+        | set(SPATIAL_DIMS)
+        | {f"faction_{f}" for f in FACTION_VALUES}
+    )
 
 
 def test_registration_round_trip_if_engraf_available():

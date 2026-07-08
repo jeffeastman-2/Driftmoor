@@ -69,6 +69,12 @@ VERB_DIMS: tuple[str, ...] = (
     "examine", "read", "press", "take", "drop", "give", "stow",
 )
 
+# World-axis direction semantics for adverbial movement words (north/east/etc.)
+# and explicit linear-distance units (ft/feet/foot).
+SPATIAL_DIMS: tuple[str, ...] = (
+    "locx", "locy", "locz", "unit_ft",
+)
+
 # Character.faction is a closed set (see models/character.py:24).
 FACTION_VALUES: tuple[str, ...] = ("party", "hostile", "neutral")
 
@@ -151,7 +157,7 @@ def driftmoor_rpg_dimensions(characters: Iterable = ()) -> list[str]:
     De-duplicated, static-first. Registration is order-insensitive (Engraf
     appends by name), so order is purely cosmetic.
     """
-    static = list(VERB_DIMS) + _namespaced("faction", FACTION_VALUES)
+    static = list(VERB_DIMS) + list(SPATIAL_DIMS) + _namespaced("faction", FACTION_VALUES)
     derived = derive_character_property_dims(characters)
     seen: set[str] = set()
     out: list[str] = []
