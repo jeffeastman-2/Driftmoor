@@ -1259,19 +1259,18 @@ def _build_points_of_interest(
     my_pos: Optional[tuple[float, float, str]],
     visited_zones: Optional[set[str]] = None,
 ) -> str:
-    """List named landmarks (and zone centers) with absolute coords and
+    """List named landmarks with absolute coords and
     distance from the character's current position.
 
     Player-Left LLMs need explicit coords to write a meaningful MOVEMENT
     target; otherwise they emit small offsets from their current spot and
     appear stuck.
 
-    Visibility filter: a landmark/zone center is shown only if it lies in
-    the character's current zone OR a previously visited zone. Junction
-    landmarks (on a zone seam) are shown if either adjacent zone is
-    visible. Landmarks not associated with any zone (e.g. a scene-edge
-    crack) are always shown — they're effectively "outside" the chamber
-    map.
+    Visibility filter: a landmark is shown only if it lies in the character's
+    current zone OR a previously visited zone. Junction landmarks (on a zone
+    seam) are shown if either adjacent zone is visible. Landmarks not
+    associated with any zone (e.g. a scene-edge crack) are always shown —
+    they're effectively "outside" the chamber map.
     """
     if scene_geometry is None or my_pos is None:
         return ""
@@ -1303,21 +1302,6 @@ def _build_points_of_interest(
             f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away){onward}"
         )
 
-    # Zone centers (helpful when the goal is "move into the GLADE") —
-    # only for visible zones.
-    for zname, polygon in scene_geometry.zones.items():
-        if zname.upper() not in visible_zones:
-            continue
-        verts = polygon.vertices
-        if not verts:
-            continue
-        cx = sum(v[0] for v in verts) / len(verts)
-        cy = sum(v[1] for v in verts) / len(verts)
-        dist = ((cx - px) ** 2 + (cy - py) ** 2) ** 0.5
-        lines.append(
-            f"- {zname} zone center: x={cx:.0f}, y={cy:.0f} (~{dist:.0f} ft away)"
-        )
-
     if not lines:
         return ""
     here = current_zone.title() if current_zone else "an unmarked area"
@@ -1346,13 +1330,72 @@ _MOVE_CUE_WORDS = {
 _DESTINATION_GENERIC = {
     "chamber", "passage", "zone", "center", "centre", "mouth", "descent",
     "squeeze", "threshold", "opening", "rubble", "arch", "crack", "tunnel",
-    "cavern", "area", "the", "a", "an",
+    "cavern", "area", "room", "rooms", "the", "a", "an",
 }
+
+_CONNECTOR_NAME_TOKENS = {
+    "stair", "stairs", "staircase", "door", "gate", "arch", "hall",
+    "corridor", "entry", "entrance", "exit", "threshold", "landing",
+}
+
+
+_ROOMING_HOUSE_NAME_RE = re.compile(
+    r"\b(rooming\s+house|weary\s+traveler|weary\s+traveller)\b",
+    re.IGNORECASE,
+)
+_ENTER_SCENE_RE = re.compile(
+    r"\b(enter|enters|entering|go\s+inside|go\s+in|head\s+inside|step\s+inside|walk\s+inside)\b",
+    re.IGNORECASE,
+)
+_LEAVE_SCENE_RE = re.compile(
+    r"\b(leave|leaves|leaving|exit|exits|exiting|go\s+outside|go\s+out|head\s+out|step\s+outside)\b",
+    re.IGNORECASE,
+)
+
+
+def _infer_rooming_house_transition(
+    intent_text: str,
+    current_place_path: str,
+    actor_zone: str,
+) -> Optional[str]:
+    """MVP transition detector for Driftmoor town <-> Weary Traveler.
+
+    Returns target scene name (``weary_traveler`` or ``driftmoor``), or None.
+    """
+    text = (intent_text or "").strip().lower()
+    place = (current_place_path or "").strip().lower()
+    zone = (actor_zone or "").strip().upper()
+    if not text:
+        return None
+
+    in_driftmoor = place.endswith("places/driftmoor")
+    in_weary = place.endswith("places/driftmoor/weary_traveler")
+
+    if in_driftmoor and _ENTER_SCENE_RE.search(text):
+        # Require either an explicit rooming-house mention or being in the
+        # rooming-house footprint already.
+        if _ROOMING_HOUSE_NAME_RE.search(text) or zone == "ROOMING_HOUSE":
+            return "weary_traveler"
+
+    if in_weary and _LEAVE_SCENE_RE.search(text):
+        # Leaving the interior returns to Driftmoor.
+        if (not _ROOMING_HOUSE_NAME_RE.search(text)) or ("rooming" in text):
+            return "driftmoor"
+
+    return None
 
 
 def _dest_tokens(s: str) -> set[str]:
     """Word tokens for destination matching (keeps ordinals like 'first')."""
-    return {tok for tok in re.split(r"[^a-z0-9]+", s.lower()) if tok}
+    out: set[str] = set()
+    for tok in re.split(r"[^a-z0-9]+", s.lower()):
+        if not tok:
+            continue
+        out.add(tok)
+        # Small plural normalization so "guest room" can match "GUEST_ROOMS".
+        if len(tok) > 3 and tok.endswith("s"):
+            out.add(tok[:-1])
+    return out
 
 
 # Compass directions as world-space unit vectors. Map orientation (see
@@ -1547,13 +1590,14 @@ def _infer_movement_destination(
     Player-Left sometimes names where it is going in the free-text INTENT
     (e.g. "Move to the first passage") but leaves MOVEMENT empty, so the
     structured ``movement_target`` is None and the actor never moves. This
-    backfills the coordinate by matching the intent text against the same
-    landmarks and zone centers the actor can see in "Points of interest".
+    backfills the coordinate by matching the intent text against landmarks and
+    zone names.
 
     Matching requires a movement cue word AND a shared *discriminating*
     token (an ordinal/name word like "first" or "echo", not a generic noun
     like "chamber"), so an ambiguous phrase resolves to nothing rather than
-    an arbitrary pick. Landmarks win over zone centers; ties yield None.
+    an arbitrary pick. Landmarks win over zones; ties break by nearest
+    distance from the actor (remaining exact ties yield None).
     Distance is clamped to walking speed downstream, so this only sets a
     direction of travel — it never teleports.
     """
@@ -1571,6 +1615,7 @@ def _infer_movement_destination(
 
     def _best(candidates: list[tuple[str, float, float, str]]):
         best = None
+        best_dist = float("inf")
         best_score = 0
         tied = False
         for name, cx, cy, zone in candidates:
@@ -1580,10 +1625,17 @@ def _infer_movement_destination(
             if not shared:
                 continue
             score = len(shared)
+            dist = ((cx - px) ** 2 + (cy - py) ** 2) ** 0.5
             if score > best_score:
-                best_score, best, tied = score, (name, cx, cy, zone), False
+                best_score, best_dist = score, dist
+                best, tied = (name, cx, cy, zone), False
             elif score == best_score:
-                tied = True
+                if dist < best_dist - 1e-6:
+                    best_dist = dist
+                    best = (name, cx, cy, zone)
+                    tied = False
+                elif abs(dist - best_dist) <= 1e-6:
+                    tied = True
         return None if (best is None or tied) else best
 
     def _zone_center(zname: str) -> Optional[tuple[float, float]]:
@@ -1633,11 +1685,15 @@ def _infer_movement_destination(
                 hx, hy = crossed
         return (hx, hy, "")
 
-    # Fall back to visible zone centers.
+    # Fall back to named zones. Zone names may be known before a zone is
+    # visited (e.g., upstairs guest rooms), so evaluate all authored zones.
+    # When crossing from one zone to another, route through a connector
+    # waypoint (stairs/doors) first to avoid ambiguous "jump to center"
+    # behavior; once close to that waypoint, continue to a target-zone anchor.
+    # If no connector exists, prefer a nearest authored landmark in the target
+    # zone; use centroid only if no landmark exists there.
     zone_candidates: list[tuple[str, float, float, str]] = []
     for zname, polygon in scene_geometry.zones.items():
-        if zname.upper() not in visible_zones:
-            continue
         verts = polygon.vertices
         if not verts:
             continue
@@ -1648,6 +1704,55 @@ def _infer_movement_destination(
     if zhit is None:
         return None
     _, zx, zy, zzone = zhit
+
+    current_zone = (my_pos[2] or "").upper()
+    if current_zone and zzone.upper() != current_zone:
+        connector_candidates: list[tuple[float, float, float, float]] = []
+
+        def _add_connector_candidate(cx: float, cy: float) -> None:
+            to_target = ((cx - zx) ** 2 + (cy - zy) ** 2) ** 0.5
+            from_actor = ((cx - px) ** 2 + (cy - py) ** 2) ** 0.5
+            connector_candidates.append((to_target, from_actor, cx, cy))
+
+        # Authored scene connections are explicit traversal waypoints.
+        for _name, pos in (getattr(scene_geometry, "connections", {}) or {}).items():
+            conn_zones = _zones_for_point(pos, scene_geometry.zones)
+            if conn_zones and current_zone not in conn_zones:
+                continue
+            _add_connector_candidate(float(pos.x), float(pos.y))
+
+        # Connector-like landmark names in the current zone are also good
+        # waypoints (e.g., staircase, archway) for moving between zones.
+        for name, pos in scene_geometry.landmarks.items():
+            name_toks = _dest_tokens(name.replace("_", " "))
+            if not (name_toks & _CONNECTOR_NAME_TOKENS):
+                continue
+            lm_zones = _zones_for_point(pos, scene_geometry.zones)
+            if lm_zones and current_zone not in lm_zones:
+                continue
+            _add_connector_candidate(float(pos.x), float(pos.y))
+
+        if connector_candidates:
+            connector_candidates.sort(key=lambda t: (t[0], t[1]))
+            _to_target, _from_actor, cx, cy = connector_candidates[0]
+            # Only use connector-first while we are still approaching it;
+            # once near it, continue onward into the destination zone.
+            if _from_actor > 8.0:
+                return (cx, cy, current_zone)
+
+    nearest_zone_landmark: Optional[tuple[float, float]] = None
+    nearest_dist = float("inf")
+    for _name, pos in scene_geometry.landmarks.items():
+        lm_zones = _zones_for_point(pos, scene_geometry.zones)
+        if zzone.upper() not in lm_zones:
+            continue
+        dist = ((pos.x - px) ** 2 + (pos.y - py) ** 2) ** 0.5
+        if dist < nearest_dist:
+            nearest_dist = dist
+            nearest_zone_landmark = (pos.x, pos.y)
+
+    if nearest_zone_landmark is not None:
+        return (nearest_zone_landmark[0], nearest_zone_landmark[1], zzone)
     return (zx, zy, zzone)
 
 
@@ -1697,6 +1802,24 @@ def _events_from_cr(
         out.append(f"{ts} — {actor} was killed")
 
     return out
+
+
+def _history_entry(handle: str, spoken: str, action: str, prose: str) -> str:
+    """Render one speaker's contribution to running scene history.
+
+    Entries are separated by a blank line so RECENT CONTEXT remains scannable
+    when multiple characters speak and act in sequence.
+    """
+    parts: list[str] = []
+    if spoken.strip() and spoken.strip().lower() not in ("(silent)", "(silence)"):
+        parts.append(f'{handle} says: "{spoken.strip()}"')
+    if action.strip():
+        parts.append(f"{handle} acts: {action.strip()}")
+    if prose.strip():
+        parts.append(prose.strip())
+    if not parts:
+        return ""
+    return "\n\n" + "\n".join(parts)
 
 
 def _reseed_discovered_from_examination_state(
@@ -2510,12 +2633,9 @@ def load_resume_state(
         for cr_data in data.get("character_results", []):
             char_id = cr_data["character_id"]
             spoken = (cr_data["output"].get("spoken") or "").strip()
+            action = (cr_data["output"].get("action") or "").strip()
             prose = (cr_data["narration"].get("prose") or "").strip()
-            entry = ""
-            if spoken and spoken.lower() not in ("(silent)", "(silence)"):
-                entry += f'\n{char_id} says: "{spoken}"'
-            if prose:
-                entry += f"\n{prose}"
+            entry = _history_entry(char_id, spoken, action, prose)
             scene_history += entry
 
     # Restore conditions from the last checkpoint
@@ -3089,10 +3209,14 @@ def _render_transport_prompt(
             _maxhp = cs.character.hp
             _curhp = getattr(cs.character, "current_hp", _maxhp)
             hp_suffix = f" with {_curhp}/{_maxhp} HP"
+        ac_suffix = ""
+        if getattr(cs.character, "ac", None) is not None:
+            ac_suffix = f", AC {int(cs.character.ac)}"
         coord_line = (
             f"You are at [{float(actor_pos[0]):.1f}, {float(actor_pos[1]):.1f}, {actor_z:.1f}]"
             + (f" in {zone}" if zone else "")
             + hp_suffix
+            + ac_suffix
         )
     if current_position.strip() or coord_line:
         body = "\n".join(p for p in (coord_line, current_position.strip()) if p)
@@ -3699,6 +3823,7 @@ async def iter_session(
     initial_party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
     initial_spell_runtime: Optional[SpellRuntimeState] = None,
     on_character_acted: "Callable[[str, int, dict, CharacterTurnResult], None] | None" = None,
+    on_scene_transition: "Callable[[str, object], None] | None" = None,
 ) -> AsyncIterator[TurnResult]:
     """Async generator — yields one TurnResult per turn.
 
@@ -3840,6 +3965,7 @@ async def iter_session(
     # immediate backtracking into already-visited zones.
     party_focus_zone: Optional[str] = None
     party_focus_until_turn: int = 0
+    pending_scene_transition: tuple[str, str, tuple[float, float, str]] | None = None
 
     while True:
         combat_at_start = in_combat
@@ -3869,6 +3995,7 @@ async def iter_session(
         # characters who acted earlier in the same turn.
         turn_result = TurnResult(turn=turn_num, initiative_order=order)
         within_turn_history = ""
+        pending_scene_transition = None
 
         for character_id in order:
             if character_id not in active_characters:
@@ -5126,6 +5253,23 @@ async def iter_session(
             )
             turn_result.character_results.append(cr)
 
+            # MVP scene transition hook: Driftmoor town <-> Weary Traveler.
+            # Keep it conservative: one transition request per turn (first wins).
+            if pending_scene_transition is None:
+                _cur_place = getattr(scene_geometry, "place_path", "") if scene_geometry else ""
+                _cur_zone = current_positions.get(character_id, (0.0, 0.0, ""))[2]
+                _target_scene = _infer_rooming_house_transition(
+                    intent.intent or "",
+                    _cur_place,
+                    _cur_zone,
+                )
+                if _target_scene is not None:
+                    pending_scene_transition = (
+                        character_id,
+                        _target_scene,
+                        current_positions.get(character_id, (0.0, 0.0, "")),
+                    )
+
             if adjudication.approved:
                 _record_recent_interaction(cs, intent.interaction_target)
 
@@ -5190,23 +5334,16 @@ async def iter_session(
                 # Apply swap after the post-turn advance, below.
 
             # Build history entry: dialogue + narration
-            history_entry = ""
             spoken = cr.output.spoken or ""
             action = (cr.output.action or "").strip()
-            if spoken.strip() and spoken.strip().lower() not in (
-                "(silent)", "(silence)",
-            ):
-                cs = characters[cr.character_id]
-                handle = cs.scene_handle or cr.character_id
-                history_entry += (
-                    f'\n{handle} says: "{spoken.strip()}"'
-                )
-            if action:
-                cs = characters[cr.character_id]
-                handle = cs.scene_handle or cr.character_id
-                history_entry += f"\n{handle} acts: {action}"
-            if cr.narration.prose:
-                history_entry += f"\n{cr.narration.prose}"
+            cs = characters[cr.character_id]
+            handle = cs.scene_handle or cr.character_id
+            history_entry = _history_entry(
+                handle,
+                spoken,
+                action,
+                cr.narration.prose or "",
+            )
             if history_entry:
                 within_turn_history += history_entry
 
@@ -5242,26 +5379,141 @@ async def iter_session(
             # Accumulate dialogue + narration for next turn's context
             spoken = cr.output.spoken or ""
             action = (cr.output.action or "").strip()
-            history_entry = ""
-            if spoken.strip() and spoken.strip().lower() not in (
-                "(silent)", "(silence)",
-            ):
-                cs = characters[cr.character_id]
-                handle = cs.scene_handle or cr.character_id
-                history_entry += (
-                    f'\n{handle} says: "{spoken.strip()}"'
-                )
-            if action:
-                cs = characters[cr.character_id]
-                handle = cs.scene_handle or cr.character_id
-                history_entry += f"\n{handle} acts: {action}"
-            if cr.narration.prose:
-                history_entry += f"\n{cr.narration.prose}"
+            cs = characters[cr.character_id]
+            handle = cs.scene_handle or cr.character_id
+            history_entry = _history_entry(
+                handle,
+                spoken,
+                action,
+                cr.narration.prose or "",
+            )
             if history_entry:
                 scene_history += history_entry
 
         # Move current-turn ledger entries into the sliding window
         ledger.flush_turn()
+
+        # Apply deferred scene transition after the turn's narration is emitted.
+        # The next turn runs in the destination scene with its own geometry,
+        # items, and active cast while preserving the acting player's state.
+        if pending_scene_transition is not None:
+            actor_id, target_scene_name, actor_from_pos = pending_scene_transition
+            actor_cs = characters.get(actor_id)
+            if actor_cs is not None:
+                from engine.md_loader import configure_from_md
+                from engine.activation import initial_dormant_set
+                from engine.puzzles import PuzzleRegistry
+
+                scene_file = (
+                    Path(__file__).resolve().parent.parent
+                    / "scenes"
+                    / f"{target_scene_name}.md"
+                )
+                if scene_file.exists():
+                    cfg = configure_from_md(scene_file)
+
+                    # Preserve return anchor when entering the rooming house.
+                    if target_scene_name == "weary_traveler":
+                        setattr(actor_cs, "_mvp_return_scene", "driftmoor")
+                        setattr(actor_cs, "_mvp_return_pos", actor_from_pos)
+
+                    # Update the actor's scene intro from destination config while
+                    # preserving runtime state (condition/inventory/loadout/memory).
+                    tmpl_actor = cfg.characters.get(actor_id)
+                    if tmpl_actor is not None:
+                        actor_cs.initial_scene = tmpl_actor.initial_scene
+
+                    # Replace cast with destination scene cast + preserved actor.
+                    new_characters: dict[str, CharacterSession] = {actor_id: actor_cs}
+                    for cid, cs2 in cfg.characters.items():
+                        if cid == actor_id:
+                            continue
+                        new_characters[cid] = cs2
+                    characters.clear()
+                    characters.update(new_characters)
+
+                    character_roles.clear()
+                    character_roles.update(cfg.roles)
+                    turn_cycle.character_roles = character_roles
+
+                    game_state_summary = cfg.game_state_summary
+                    geometry_summary = cfg.geometry_summary
+                    scene_geometry = cfg.scene_geometry
+                    items = cfg.items or {}
+                    puzzle_registry = cfg.puzzles if cfg.puzzles is not None else PuzzleRegistry()
+                    cfg.characters = characters
+                    cfg.roles = character_roles
+                    cfg.items = items
+                    cfg.game_time = game_time
+
+                    # Rebuild active set for the destination scene.
+                    dormant = initial_dormant_set(characters)
+                    active_characters = set(characters.keys()) - dormant
+
+                    # Position everyone at destination starts; actor uses their
+                    # saved return anchor when stepping back out to Driftmoor.
+                    current_positions = {}
+                    for cid, cs2 in characters.items():
+                        if scene_geometry is None:
+                            current_positions[cid] = (0.0, 0.0, "")
+                            continue
+
+                        if (
+                            cid == actor_id
+                            and target_scene_name == "driftmoor"
+                            and getattr(actor_cs, "_mvp_return_scene", "") == "driftmoor"
+                            and isinstance(getattr(actor_cs, "_mvp_return_pos", None), tuple)
+                        ):
+                            rx, ry, rz = getattr(actor_cs, "_mvp_return_pos")
+                            current_positions[cid] = (float(rx), float(ry), str(rz).upper())
+                            continue
+
+                        start = scene_geometry.starting_positions.get(cid)
+                        if start is None:
+                            # Prefix match for creature ids with suffixes.
+                            start = next(
+                                (p for k, p in scene_geometry.starting_positions.items()
+                                 if cid.startswith(k) or k.startswith(cid)),
+                                None,
+                            )
+                        if start is not None:
+                            z = (scene_geometry.zone_at(start) or "").upper()
+                            current_positions[cid] = (float(start.x), float(start.y), z)
+                        else:
+                            current_positions[cid] = (0.0, 0.0, "")
+
+                    # Reset scene-local visibility progression for the new map.
+                    visited_zones = {}
+                    for _cid, _pos in current_positions.items():
+                        if _pos and _pos[2]:
+                            visited_zones.setdefault(_cid, set()).add(_pos[2].upper())
+                            if _cid in characters:
+                                characters[_cid].last_zone_seen = _pos[2].upper()
+
+                    party_focus_zone = None
+                    party_focus_until_turn = 0
+                    scene_history = ""
+
+                    _actor_handle = (
+                        characters[actor_id].scene_handle
+                        or characters[actor_id].character.name
+                        or actor_id
+                    )
+                    _ts = (
+                        f"{game_time.hour}:{game_time.minute:02d}"
+                        if game_time else f"t{turn_num}"
+                    )
+                    _dest_title = target_scene_name.replace("_", " ").title()
+                    recent_events.append((turn_num, f"{_ts} | {_actor_handle} transitions to {_dest_title}."))
+                    _append_memory_note(
+                        characters[actor_id],
+                        f"Turn {turn_num}: you transitioned to {_dest_title}.",
+                    )
+                    if on_scene_transition is not None:
+                        try:
+                            on_scene_transition(target_scene_name, cfg)
+                        except Exception:
+                            pass
 
         # Advance scene-level spell effect durations once per completed turn.
         spell_resolver.tick_effects(spell_runtime, rounds=1)
@@ -5348,6 +5600,7 @@ async def run_session(
     initial_spell_runtime: Optional[SpellRuntimeState] = None,
     on_turn: "Callable[[TurnResult], None] | None" = None,
     on_character_acted: "Callable[[str, int, dict, CharacterTurnResult], None] | None" = None,
+    on_scene_transition: "Callable[[str, object], None] | None" = None,
 ) -> SessionResult:
     """Run a complete game session and return all results.
 
@@ -5379,6 +5632,7 @@ async def run_session(
         initial_party_examination_state=initial_party_examination_state,
         initial_spell_runtime=initial_spell_runtime,
         on_character_acted=on_character_acted,
+        on_scene_transition=on_scene_transition,
     ):
         turns.append(turn_result)
         if on_turn is not None:

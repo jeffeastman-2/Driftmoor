@@ -364,31 +364,34 @@ async def run_scene(
     start = time.monotonic()
     # Regenerate the live map after every turn so an open browser tab (with the
     # page's self-refresh) follows the fog peeling back in real time.
-    _geom = config.geometry_path
-    # Scene-authored placement seeds the turn-0 map markers (geometry is a pure
-    # stage). None for scenes without geometry — the renderer then falls back to
-    # any GEOMETRY table during migration.
-    _scene_starts = (
-        {cid: (p.x, p.y)
-         for cid, p in config.scene_geometry.starting_positions.items()}
-        if config.scene_geometry is not None else None
-    )
+    _runtime = {"config": config, "scene_name": config.scene_name}
     _on_turn = None
-    if _geom is not None and _geom.exists():
-        _party = _start_characters(config.characters)
-        _items = config.items or None
+    if config.geometry_path is not None and config.geometry_path.exists():
         def _on_turn(_turn_result):
-            _write_runtime_map(
-                geometry_path=_geom, scene_name=scene_name,
-                checkpoint_dir=checkpoint_dir, live=True,
-                start_characters=_party, item_details=_items,
-                start_positions=_scene_starts, scene_geometry=config.scene_geometry,
+            _cfg = _runtime["config"]
+            _geom = _cfg.geometry_path
+            if _geom is None or not _geom.exists():
+                return
+            _scene_starts = (
+                {cid: (p.x, p.y)
+                 for cid, p in _cfg.scene_geometry.starting_positions.items()}
+                if _cfg.scene_geometry is not None else None
             )
+            _write_runtime_map(
+                geometry_path=_geom, scene_name=_runtime["scene_name"],
+                checkpoint_dir=checkpoint_dir, live=True,
+                start_characters=_start_characters(_cfg.characters), item_details=_cfg.items or None,
+                start_positions=_scene_starts, scene_geometry=_cfg.scene_geometry,
+            )
+        def _on_scene_transition(new_scene_name: str, new_cfg) -> None:
+            _runtime["scene_name"] = new_scene_name
+            _runtime["config"] = new_cfg
     try:
         result = await run_session(
             config.characters, config.roles,
             num_turns=num_turns,
             on_turn=_on_turn,
+            on_scene_transition=_on_scene_transition if _on_turn is not None else None,
             game_state_summary=config.game_state_summary,
             geometry_summary=config.geometry_summary,
             scene_geometry=config.scene_geometry,

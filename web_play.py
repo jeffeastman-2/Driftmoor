@@ -259,14 +259,14 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     })
     await resp.prepare(request)
     cd, player = request.app["checkpoint_dir"], request.app["player"]
-    cfg = request.app["config"]
-    items = cfg.items
-    player_cs = cfg.characters.get(player)
     sent: set[int] = set()
     last_inv: dict | None = None
     last_turn_active: bool | None = None
     try:
         while True:
+            cfg = request.app["config"]
+            items = cfg.items
+            player_cs = cfg.characters.get(player)
             for msg in web_transport.drain_outbound(player):
                 await resp.write(
                     f"data: {json.dumps({'type': 'dm', 'text': msg})}\n\n".encode())
@@ -344,6 +344,15 @@ async def _session_task(app: web.Application) -> None:
             web_transport.publish_action(
                 {"turn": turn, "cid": cid, "prose": prose, "spoken": spoken})
 
+    def _on_scene_transition(scene_name: str, new_cfg) -> None:
+        app["scene"] = scene_name
+        app["config"] = new_cfg
+        app["start_characters"] = [
+            cid for cid, cs in new_cfg.characters.items()
+            if (getattr(cs, "activation", "always") or "always") == "always"
+        ]
+        _render_map(app)
+
     await run_session(
         cfg.characters, cfg.roles, num_turns=app["turns"],
         game_state_summary=cfg.game_state_summary,
@@ -354,6 +363,7 @@ async def _session_task(app: web.Application) -> None:
         character_pronouns=cfg.character_pronouns or None,
         on_turn=lambda _tr: _render_map(app),
         on_character_acted=_on_character_acted,
+        on_scene_transition=_on_scene_transition,
     )
 
 
@@ -429,6 +439,7 @@ const turnBlocks={};
 const NAME_PATTERN=__NAME_PATTERN__;
 const NAME_RE=NAME_PATTERN?new RegExp(NAME_PATTERN,'gi'):null;
 function hi(s){return NAME_RE?s.replace(NAME_RE,'<span class="name">$1</span>'):s;}
+function qhi(s){return esc(s);}
 function nameOf(cid){return (cid||'').split('_').map(w=>w?w[0].toUpperCase()+w.slice(1):w).join(' ');}
 // One unified line per character:  "spoken" narration  — every player/monster
 // name is highlighted, and the narration already opens with the actor's name,
@@ -436,7 +447,7 @@ function nameOf(cid){return (cid||'').split('_').map(w=>w?w[0].toUpperCase()+w.s
 // to name the speaker, still gets a name prefix so the quote is attributed.)
 function lineHTML(l){
   let body='';
-  if(l.spoken)body+='<span class="spoken">“'+hi(esc(l.spoken))+'”</span> ';
+    if(l.spoken)body+='<span class="spoken">“'+qhi(l.spoken)+'”</span> ';
   if(l.prose)body+=hi(esc(l.prose));
   else if(l.spoken)body='<span class="name">'+esc(nameOf(l.cid))+'</span>: '+body;
   return '<p class="line">'+body+'</p>';

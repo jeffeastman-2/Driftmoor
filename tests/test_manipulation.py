@@ -19,7 +19,7 @@ def _cs(wielded=("rapier",)):
     cs = NS(scene_handle="Gil", episodic_memory=[],
             character=NS(id="gil", name="Gil", inventory=[], hands=2),
             weapons=[rapier, dagger], wielded=list(wielded), held_items=[],
-            armor=armor, things=[])
+            armor=armor, things=[], pack=[])
     loadout.materialize_things(cs)
     return cs
 
@@ -74,6 +74,13 @@ def test_classify_verb_from_affordances():
     assert manipulation.classify_verb("unsheathe the rapier", rapier) == "draw"
     assert manipulation.classify_verb("get my rapier", rapier) == "draw"
     assert manipulation.classify_verb("remove the studded leather", armor) == "remove"
+
+
+def test_find_structured_armor_by_generic_armor_name():
+    cs = _cs()
+    thing = manipulation.find_possessed_thing(cs, "remove my armor")
+    assert thing is not None
+    assert thing.id == "studded_leather"
 
 
 def test_draw_a_sheathed_weapon_wields_it():
@@ -155,6 +162,48 @@ def test_remove_sets_pack_thing_back_to_carried():
 
     assert res.applied
     assert bracelet.carry.location == CARRIED
+
+
+def test_remove_structured_armor_moves_it_to_pack_and_drops_ac():
+    cs = _cs(wielded=[])
+    cs.character.dexterity = 14
+    cs.character.natural_ac = 10
+    cs.character.ac = loadout.armor_class(cs.character, cs.armor, cs.pack)
+
+    armor = manipulation.find_possessed_thing(cs, "remove my leather")
+    assert armor is not None
+    res = manipulation.apply_manipulation(
+        cs, "remove", armor, items={}, actor_pos=(0.0, 0.0, "Z"), actor_zone="Z",
+        character_id="gil", game_time=None, turn_num=1)
+
+    assert res.applied
+    assert cs.armor is None
+    assert any(getattr(t, "id", "") == "studded_leather" for t in cs.pack)
+    assert cs.character.ac == 12
+
+
+def test_wear_removed_structured_armor_restores_it_and_ac():
+    cs = _cs(wielded=[])
+    cs.character.dexterity = 14
+    cs.character.natural_ac = 10
+    cs.character.ac = loadout.armor_class(cs.character, cs.armor, cs.pack)
+
+    armor = manipulation.find_possessed_thing(cs, "remove my armor")
+    manipulation.apply_manipulation(
+        cs, "remove", armor, items={}, actor_pos=(0.0, 0.0, "Z"), actor_zone="Z",
+        character_id="gil", game_time=None, turn_num=1)
+    loadout.materialize_things(cs)
+
+    packed_armor = manipulation.find_possessed_thing(cs, "wear my armor")
+    assert packed_armor is not None
+    res = manipulation.apply_manipulation(
+        cs, "wear", packed_armor, items={}, actor_pos=(0.0, 0.0, "Z"), actor_zone="Z",
+        character_id="gil", game_time=None, turn_num=2)
+
+    assert res.applied
+    assert cs.armor is not None
+    assert all(getattr(t, "id", "") != "studded_leather" for t in cs.pack)
+    assert cs.character.ac == 14
 
 
 def test_hold_pack_item_puts_it_in_hand():

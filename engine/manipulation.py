@@ -29,6 +29,10 @@ from models.thing import DRINKABLE, EDIBLE, HOLDABLE, WEAPON, WEARABLE
 _DRAW_RE = re.compile(
     r"\b(draw|draws|ready|readies|wield|wields|unsheath\w*|brandish\w*"
     r"|get|gets|hold|holds|carry|carries|carrying|pull out|pulls out|produce|produces)\b", re.IGNORECASE)
+_HOLD_RE = re.compile(
+    r"\b(get|gets|hold|holds|carry|carries|carrying|pull out|pulls out|produce|produces)\b",
+    re.IGNORECASE,
+)
 _SHEATHE_RE = re.compile(
     r"\b(sheath\w*|holster\w*|put away|puts away|put down)\b", re.IGNORECASE)
 _WEAR_RE = re.compile(r"\b(wear|wears|don|dons|put on|puts on|equip\w*)\b", re.IGNORECASE)
@@ -65,6 +69,8 @@ def _name_tokens(thing) -> list[str]:
     else:
         text = " ".join(filter(None, [getattr(thing, "label", ""), getattr(thing, "id", "")]))
         toks += [t for t in re.split(r"[^a-z0-9]+", text.lower()) if len(t) > 1]
+        if getattr(thing, "armor", None) is not None:
+            toks += ["armor"]
         low = text.lower()
         if any(k in low for k in ("pack", "backpack")):
             toks += ["pack", "backpack", "bag", "satchel"]
@@ -182,7 +188,8 @@ def classify_verb(intent_text: str, thing) -> Optional[str]:
             return "drop"
         if tv == "stow" or _SHEATHE_RE.search(intent_text):
             return "stow"
-        if tv == "take" or _DRAW_RE.search(intent_text):
+        # Non-weapons should not answer to weapon verbs like "wield/draw".
+        if tv == "take" or _HOLD_RE.search(intent_text):
             return "hold"
     if WEAPON in aff:  # draw/sheathe are weapon verbs (a potion won't wield)
         if tv == "stow" or _SHEATHE_RE.search(intent_text):
@@ -283,12 +290,18 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         res.memory.append(f"Turn {turn_num}: you {past} the {name}{detail}.")
         res.applied = True
     elif verb == "wear":
-        from models.thing import CARRIED, WORN
+        from models.thing import WORN
         if thing_id:
             loadout.stow_item(cs, thing_id)  # if it was in hand, free the hand
-        carry = getattr(thing, "carry", None)
-        if carry is not None:
-            carry.location = WORN
+        if getattr(thing, "armor", None) is not None:
+            cs.armor = thing.armor
+            cs.pack = [p for p in (getattr(cs, "pack", None) or []) if p is not thing]
+        else:
+            carry = getattr(thing, "carry", None)
+            if carry is not None:
+                carry.location = WORN
+        if getattr(getattr(cs, "character", None), "ac", None) is not None:
+            cs.character.ac = loadout.armor_class(cs.character, cs.armor, cs.pack)
         res.log.append(
             f"[ITEM] {character_id} wears {name}: {handle} puts it on. Narrate it."
         )
@@ -297,9 +310,21 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         res.applied = True
     elif verb == "remove":
         from models.thing import CARRIED
-        carry = getattr(thing, "carry", None)
-        if carry is not None:
-            carry.location = CARRIED
+        if getattr(thing, "armor", None) is not None:
+            cs.armor = None
+            carry = getattr(thing, "carry", None)
+            if carry is not None:
+                carry.location = CARRIED
+            if thing not in (getattr(cs, "pack", None) or []):
+                if getattr(cs, "pack", None) is None:
+                    cs.pack = []
+                cs.pack.append(thing)
+        else:
+            carry = getattr(thing, "carry", None)
+            if carry is not None:
+                carry.location = CARRIED
+        if getattr(getattr(cs, "character", None), "ac", None) is not None:
+            cs.character.ac = loadout.armor_class(cs.character, cs.armor, cs.pack)
         res.log.append(
             f"[ITEM] {character_id} removes {name}: {handle} takes it off. Narrate it."
         )

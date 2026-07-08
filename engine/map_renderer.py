@@ -32,7 +32,8 @@ import matplotlib.pyplot as plt
 _PANZOOM_JS = (
     r"(function(){var s=document.getElementById('map');if(!s)return;"
     r"var b=s.getAttribute('viewBox').trim().split(/[ ,]+/).map(Number);"
-    r"var v={x:b[0],y:b[1],w:b[2],h:b[3]};var K='mapView';"
+    r"var v={x:b[0],y:b[1],w:b[2],h:b[3]};"
+    r"var MK=s.getAttribute('data-map-key')||('vb:'+b.join(','));var K='mapView:'+MK;"
     # Persist the view so the live-refresh reload keeps the reader's zoom/pan.
     r"function sv(){try{sessionStorage.setItem(K,JSON.stringify({b:b,v:[v.x,v.y,v.w,v.h]}));}catch(_){}}"
     # Keep labels a constant ON-SCREEN size: font-size is in viewBox units, so

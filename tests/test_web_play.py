@@ -53,6 +53,11 @@ def test_inventory_default_markup_shows_empty_in_hand_group():
     assert "chip hand empty" in web_play._PAGE
 
 
+def test_page_highlights_names_only_in_narration_not_quoted_speech():
+    assert "function qhi(s){return esc(s);}" in web_play._PAGE
+    assert "if(l.spoken)body+='<span class=\"spoken\">“'+qhi(l.spoken)+'”</span> ';" in web_play._PAGE
+
+
 def test_inventory_weapons_split_by_wielded():
     cs = _cs(weapons=[_weapon("rapier", "Rapier"), _weapon("dagger", "Dagger"),
                       _weapon("light_crossbow", "Light Crossbow")],

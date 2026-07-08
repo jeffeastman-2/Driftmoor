@@ -349,7 +349,7 @@ class TestTransportPromptAndPacketFormatting:
             actor_pos=(64.0, 195.0, "SECRET CHAMBER"), actor_z=0.0,
         )
         assert (
-            "You are at [64.0, 195.0, 0.0] in SECRET CHAMBER with 7/12 HP"
+            "You are at [64.0, 195.0, 0.0] in SECRET CHAMBER with 7/12 HP, AC 0"
             in packet
         ), packet
 
@@ -707,6 +707,123 @@ class TestInferCoordinateDestination:
     def test_none_when_no_coord_literal(self):
         from engine.session import _infer_coordinate_destination
         assert _infer_coordinate_destination("move to the forge", self._geom()) is None
+
+
+class TestInferRoomingHouseTransition:
+    """MVP Driftmoor <-> Weary Traveler scene transition trigger detection."""
+
+    def test_enter_rooming_house_from_driftmoor_zone(self):
+        from engine.session import _infer_rooming_house_transition
+        out = _infer_rooming_house_transition(
+            "I enter the rooming house",
+            "places/driftmoor",
+            "ROOMING_HOUSE",
+        )
+        assert out == "weary_traveler"
+
+    def test_enter_weary_traveler_by_name(self):
+        from engine.session import _infer_rooming_house_transition
+        out = _infer_rooming_house_transition(
+            "go inside the Weary Traveler",
+            "places/driftmoor",
+            "TOWN_COMMON",
+        )
+        assert out == "weary_traveler"
+
+    def test_leave_interior_returns_to_driftmoor(self):
+        from engine.session import _infer_rooming_house_transition
+        out = _infer_rooming_house_transition(
+            "I leave the rooming house",
+            "places/driftmoor/weary_traveler",
+            "COMMON_ROOM",
+        )
+        assert out == "driftmoor"
+
+    def test_no_transition_for_non_enter_phrase(self):
+        from engine.session import _infer_rooming_house_transition
+        out = _infer_rooming_house_transition(
+            "I look around the rooming house",
+            "places/driftmoor",
+            "ROOMING_HOUSE",
+        )
+        assert out is None
+
+
+class TestMovementInferenceWithoutZoneCenterHints:
+    """Movement/POI behavior should rely on authored landmarks and zone names."""
+
+    def _weary_geom(self):
+        from types import SimpleNamespace as NS
+        from models.space_time import Polygon, Position
+
+        zones = {
+            "GUEST_ROOMS": Polygon(vertices=[(0, 26), (65, 26), (65, 52), (0, 52)]),
+            "COMMON_ROOM": Polygon(vertices=[(0, 0), (65, 0), (65, 26), (0, 26)]),
+            "STORAGE_SHED": Polygon(vertices=[(65, 0), (84, 0), (84, 26), (65, 26)]),
+            "EXTERIOR": Polygon(vertices=[(-9, -9), (94, -9), (94, 61), (-9, 61)]),
+        }
+        return NS(
+            zones=zones,
+            landmarks={
+                "front_door": Position(32, 0),
+                "hearth": Position(9, 13),
+                "staircase": Position(55, 19),
+                "guest_room_1": Position(13, 39),
+                "guest_room_2": Position(32, 45),
+                "guest_room_3": Position(52, 39),
+            },
+        )
+
+    def test_points_of_interest_omit_generated_zone_centers(self):
+        from engine.session import _build_points_of_interest
+
+        out = _build_points_of_interest(
+            self._weary_geom(),
+            my_pos=(32.0, 13.0, "COMMON_ROOM"),
+            visited_zones={"COMMON_ROOM"},
+        )
+        assert "zone center" not in out.lower(), out
+        assert "staircase" in out, out
+
+    def test_move_to_guest_room_targets_guest_zone_anchor(self):
+        from engine.session import _infer_movement_destination
+
+        dest = _infer_movement_destination(
+            "I move to the guest room",
+            self._weary_geom(),
+            my_pos=(32.0, 13.0, "COMMON_ROOM"),
+            visited_zones={"COMMON_ROOM"},
+        )
+        assert dest is not None
+        x, y, zone = dest
+        # First leg of cross-zone travel prefers a connector waypoint.
+        assert (x, y) == (55, 19)
+        assert zone == "COMMON_ROOM"
+
+    def test_move_to_guest_room_advances_past_staircase_when_already_near(self):
+        from engine.session import _infer_movement_destination
+
+        dest = _infer_movement_destination(
+            "I move to the guest room",
+            self._weary_geom(),
+            my_pos=(55.0, 19.0, "COMMON_ROOM"),
+            visited_zones={"COMMON_ROOM"},
+        )
+        assert dest is not None
+        x, y, zone = dest
+        # After reaching the connector, next leg targets an authored anchor
+        # in the destination zone.
+        assert (x, y) == (52, 39)
+        assert zone == "GUEST_ROOMS"
+
+
+class TestHistoryEntryFormatting:
+    def test_history_entry_inserts_blank_line_prefix_and_lines(self):
+        from engine.session import _history_entry
+        out = _history_entry("Gil", "Hello there", "waves", "The innkeeper watches him.")
+        assert out.startswith("\n\nGil says: \"Hello there\"")
+        assert "\nGil acts: waves\n" in out
+        assert out.endswith("The innkeeper watches him.")
 
 
 # Dropping/drawing a KIT weapon out of combat is now the unified

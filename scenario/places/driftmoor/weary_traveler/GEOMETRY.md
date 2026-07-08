@@ -26,9 +26,9 @@ Martha Greaves runs it.
 | bar_counter     | 45 | 13  |
 | staircase       | 55 | 19  |
 | upstairs_hall   | 32 | 39 |
-| guest_room_3.25    | 13  | 39 |
-| guest_room_6.5    | 32 | 45 |
-| guest_room_9.75    | 52 | 39 |
+| guest_room_1    | 13  | 39 |
+| guest_room_2    | 32 | 45 |
+| guest_room_3    | 52 | 39 |
 | storage_shed    | 71 | 13  |
 
 ---
