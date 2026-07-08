@@ -610,7 +610,7 @@ class TestInferCharacterDestination:
 
 
 class TestInferCardinalDestination:
-    """'move south/north/east/west' grounds to the nearest zone that way.
+    """'move south/north/east/west' projects a pure directional step.
     Map orientation: +y is north, +x is east (map_renderer flips screen y)."""
 
     def _geom(self):
@@ -622,32 +622,26 @@ class TestInferCardinalDestination:
             "East Room": NS(vertices=[(90, 40), (110, 40), (110, 60), (90, 60)]),
         })
 
-    def test_resolves_each_present_heading(self):
+    def test_projects_axis_true_steps(self):
         from engine.session import _infer_cardinal_destination
         pos = (0.0, 50.0, "")
         sg = self._geom()
-        assert _infer_cardinal_destination("move north", pos, sg)[2] == "North Room"
-        assert _infer_cardinal_destination("I move south", pos, sg)[2] == "South Room"
-        assert _infer_cardinal_destination("go east", pos, sg)[2] == "East Room"
+        north = _infer_cardinal_destination("move north", pos, sg)
+        south = _infer_cardinal_destination("I move south", pos, sg)
+        east = _infer_cardinal_destination("go east", pos, sg)
+        west = _infer_cardinal_destination("head west", pos, sg)
+        assert north == (0.0, 90.0, "")
+        assert south == (0.0, 10.0, "")
+        assert east == (40.0, 50.0, "")
+        assert west == (-40.0, 50.0, "")
 
-    def test_picks_nearest_zone_in_the_cone(self):
-        from engine.session import _infer_cardinal_destination
-        from types import SimpleNamespace as NS
-        sg = NS(zones={
-            "Near South": NS(vertices=[(-5, 20), (5, 20), (5, 30), (-5, 30)]),   # (0,25)
-            "Far South": NS(vertices=[(-5, -30), (5, -30), (5, -20), (-5, -20)]),  # (0,-25)
-        })
-        assert _infer_cardinal_destination(
-            "move south", (0.0, 50.0, ""), sg)[2] == "Near South"
-
-    def test_no_zone_that_way_projects_a_step(self):
-        # No zone lies west, but all 8 compass points are valid travel: it
-        # projects a step westward (clamped + wall-checked downstream) instead of
-        # giving up. So the x drops below the actor's and it's off-zone ('').
+    def test_heading_always_projects_a_step(self):
+        # A compass heading always projects a step (clamped + wall-checked
+        # downstream), independent of nearby zone centroids.
         from engine.session import _infer_cardinal_destination
         dest = _infer_cardinal_destination("head west", (0.0, 50.0, ""), self._geom())
         assert dest is not None
-        assert dest[0] < 0 and abs(dest[1] - 50.0) < 1.0 and dest[2] == ""
+        assert dest == (-40.0, 50.0, "")
 
     def test_all_eight_headings_travel(self):
         # Every compass point (incl. diagonals) yields a destination — a zone in
@@ -677,15 +671,42 @@ class TestInferCardinalDestination:
         assert _infer_cardinal_destination(
             "move north and south", (0.0, 50.0, ""), self._geom()) is None
 
-    def test_excludes_current_zone(self):
+    def test_current_zone_does_not_bias_heading(self):
         from engine.session import _infer_cardinal_destination
+        dest = _infer_cardinal_destination("move north", (0.0, 50.0, "HERE"), self._geom())
+        assert dest == (0.0, 90.0, "")
+
+
+class TestInferCoordinateDestination:
+    """Explicit [x,y] / (x,y) movement destinations should resolve directly."""
+
+    def _geom(self):
         from types import SimpleNamespace as NS
-        sg = NS(zones={
-            "Here": NS(vertices=[(-5, 45), (5, 45), (5, 55), (-5, 55)]),
-            "North Room": NS(vertices=[(-10, 90), (10, 90), (10, 110), (-10, 110)]),
-        })
-        dest = _infer_cardinal_destination("move north", (0.0, 50.0, "HERE"), sg)
-        assert dest[2] == "North Room"
+        from models.space_time import Polygon
+        return NS(
+            zones={
+                "FORGE": Polygon(vertices=[(1205, 244), (1329, 244), (1329, 340), (1205, 340)]),
+            },
+            zone_at=lambda p: "FORGE" if (1205 <= p.x <= 1329 and 244 <= p.y <= 340) else "",
+        )
+
+    def test_move_to_bracket_coords(self):
+        from engine.session import _infer_coordinate_destination
+        dest = _infer_coordinate_destination("I move to [1267, 292]", self._geom())
+        assert dest == (1267.0, 292.0, "FORGE")
+
+    def test_move_towards_paren_coords(self):
+        from engine.session import _infer_coordinate_destination
+        dest = _infer_coordinate_destination("move towards (1267,292)", self._geom())
+        assert dest == (1267.0, 292.0, "FORGE")
+
+    def test_requires_movement_cue(self):
+        from engine.session import _infer_coordinate_destination
+        assert _infer_coordinate_destination("[1267,292]", self._geom()) is None
+
+    def test_none_when_no_coord_literal(self):
+        from engine.session import _infer_coordinate_destination
+        assert _infer_coordinate_destination("move to the forge", self._geom()) is None
 
 
 # Dropping/drawing a KIT weapon out of combat is now the unified

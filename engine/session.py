@@ -1371,25 +1371,53 @@ _CARDINAL_VECTORS: dict[str, tuple[float, float]] = {
 }
 
 
+_COORD_DEST_RE = re.compile(
+    r"[\[(]\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*[\])]"
+)
+
+
+def _infer_coordinate_destination(
+    intent_text: str,
+    scene_geometry: Optional["SceneGeometry"],
+) -> Optional[tuple[float, float, str]]:
+    """Resolve explicit coordinate destinations in movement intent text.
+
+    Supports forms like ``move to [1267, 292]`` or ``move towards (1267,292)``.
+    Returns ``(x, y, zone)`` when found (zone from ``zone_at`` when geometry is
+    available), else ``None``.
+    """
+    if not intent_text:
+        return None
+    words = _dest_tokens(intent_text)
+    if not words or not (words & _MOVE_CUE_WORDS):
+        return None
+    m = _COORD_DEST_RE.search(intent_text)
+    if m is None:
+        return None
+    x = float(m.group(1))
+    y = float(m.group(2))
+    zone = ""
+    if scene_geometry is not None:
+        zone = (scene_geometry.zone_at(Position(x, y)) or "").upper()
+    return (x, y, zone)
+
+
 def _infer_cardinal_destination(
     intent_text: str,
     my_pos: Optional[tuple[float, float, str]],
     scene_geometry: Optional["SceneGeometry"],
 ) -> Optional[tuple[float, float, str]]:
-    """Resolve "move south/north/east/west" to the nearest zone that way.
+    """Resolve a bare compass heading to a pure directional travel step.
 
     The other movement backfills ground named zones, landmarks, items, and party
     members, but a bare compass heading ("I move south") matched nothing, so the
-    actor never moved. Map orientation: +y is north, +x is east. Picks the
-    *nearest* other zone whose centroid lies within ~60° of the requested
-    heading and returns its centroid (x, y, zone) — clamped to walking speed and
-    routed through gateways downstream, so walls are handled like any cross-zone
-    move. Returns None when the intent names no single compass direction or no
-    zone lies that way.
+    actor never moved. Map orientation: +y is north, +x is east. Returns a short
+    projected step along the requested heading (zone left blank so normal
+    clamping and wall/boundary checks downstream decide the final position).
+    Returns None when the intent names no single compass direction.
     """
     if scene_geometry is None or my_pos is None:
         return None
-    import math
     words = _dest_tokens(intent_text)
     if not words or not (words & _MOVE_CUE_WORDS):
         return None
@@ -1398,30 +1426,8 @@ def _infer_cardinal_destination(
         return None
     ux, uy = next(iter(dirs))
     px, py = float(my_pos[0]), float(my_pos[1])
-    cur_zone = (my_pos[2] or "").upper()
-    best: Optional[tuple[float, float, str]] = None
-    best_dist = 0.0
-    for zname, polygon in scene_geometry.zones.items():
-        verts = getattr(polygon, "vertices", None)
-        if not verts or zname.upper() == cur_zone:
-            continue
-        cx = sum(v[0] for v in verts) / len(verts)
-        cy = sum(v[1] for v in verts) / len(verts)
-        dx, dy = cx - px, cy - py
-        dist = math.hypot(dx, dy)
-        if dist < 1e-6:
-            continue
-        if (dx * ux + dy * uy) / dist < 0.5:  # outside a ~60° cone of the heading
-            continue
-        if best is None or dist < best_dist:
-            best, best_dist = (cx, cy, zname), dist
-    if best is not None:
-        return best
-    # No zone lies that way — but a compass heading is still a valid travel
-    # command. Project a step in that direction so the actor moves that way
-    # (clamped to walking speed + wall/boundary-checked downstream; a wall right
-    # there simply stops them). This is what makes all eight compass points
-    # travelable, even from an edge zone with no room beyond.
+    # Keep cardinals axis-true: "east" means +x with no implied north/south bias.
+    # Clamping and collision checks downstream keep movement legal.
     return (px + ux * 40.0, py + uy * 40.0, "")
 
 
@@ -4461,17 +4467,22 @@ async def iter_session(
                 _move_zone = current_positions.get(
                     character_id, ("", "", "")
                 )[2]
-                # Compass FIRST: a bare heading ("move south") is an unambiguous
-                # direction. _infer_cardinal_destination returns None unless the
-                # text names a single compass word, so trying it first never
-                # hijacks a normal "move to the <item/place>" — but it does stop
-                # LATN from mis-grounding the word "south" to a nearby item (which
-                # could lie the *opposite* way).
-                _dest = _infer_cardinal_destination(
+                # Explicit coordinates FIRST: "move to [x,y]" is an exact
+                # destination and should override looser heading/item inference.
+                _dest = _infer_coordinate_destination(
                     intent.intent,
-                    current_positions.get(character_id),
                     scene_geometry,
                 )
+                # Compass next: a bare heading ("move south") is an unambiguous
+                # direction. _infer_cardinal_destination returns None unless the
+                # text names a single compass word, so trying it before LATN item
+                # grounding prevents "south" from attaching to an unrelated item.
+                if _dest is None:
+                    _dest = _infer_cardinal_destination(
+                        intent.intent,
+                        current_positions.get(character_id),
+                        scene_geometry,
+                    )
                 # LATN: ground "move to the <item>" to a scene item's position,
                 # so a feature/landmark named in free text becomes a destination.
                 if _dest is None:
