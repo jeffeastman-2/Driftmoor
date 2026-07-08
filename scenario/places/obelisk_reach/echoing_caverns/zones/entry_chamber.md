@@ -83,6 +83,7 @@ The room is full of evidence. A snapped torch lies near the south passage mouth.
 - pickable: true
 - wearable: false
 - flavor_only: false
+- contents: rope, tin_cup, reach_map
 - description: A brittle leather expedition pack half-buried under older rockfall.
 - appearance by distance:
   - intermediate: a slumped bundle against the west wall

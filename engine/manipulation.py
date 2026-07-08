@@ -28,7 +28,7 @@ from models.thing import DRINKABLE, EDIBLE, HOLDABLE, WEAPON, WEARABLE
 # path keeps its own copies in session._apply_loadout_intent).
 _DRAW_RE = re.compile(
     r"\b(draw|draws|ready|readies|wield|wields|unsheath\w*|brandish\w*"
-    r"|get|gets|hold|holds|pull out|pulls out|produce|produces)\b", re.IGNORECASE)
+    r"|get|gets|hold|holds|carry|carries|carrying|pull out|pulls out|produce|produces)\b", re.IGNORECASE)
 _SHEATHE_RE = re.compile(
     r"\b(sheath\w*|holster\w*|put away|puts away|put down)\b", re.IGNORECASE)
 _WEAR_RE = re.compile(r"\b(wear|wears|don|dons|put on|puts on|equip\w*)\b", re.IGNORECASE)
@@ -65,8 +65,38 @@ def _name_tokens(thing) -> list[str]:
     else:
         text = " ".join(filter(None, [getattr(thing, "label", ""), getattr(thing, "id", "")]))
         toks += [t for t in re.split(r"[^a-z0-9]+", text.lower()) if len(t) > 1]
+        low = text.lower()
+        if any(k in low for k in ("pack", "backpack")):
+            toks += ["pack", "backpack", "bag", "satchel"]
+        elif any(k in low for k in ("bag", "satchel")):
+            toks += ["bag", "satchel", "pack"]
+        elif "pouch" in low:
+            toks += ["pouch"]
     toks += [t.lower() for t in (getattr(thing, "tags", None) or [])]  # Thing-level categories
     return toks
+
+
+def _is_accessible_possession(cs, thing) -> bool:
+    """True when ``thing`` is currently reachable for direct manipulation.
+
+    Container children (pack contents expanded from a parent container) are
+    only directly usable while that parent container is in hand. This keeps
+    grounding/manipulation aligned with inventory visibility semantics.
+    """
+    parent_id = str(getattr(thing, "parent_container_id", "") or "").strip()
+    if not parent_id:
+        return True
+    held = set(getattr(cs, "held_items", None) or [])
+    return parent_id in held
+
+
+def _is_pack_like_container(thing) -> bool:
+    """Heuristic: pack/bag-like containers are wearable even when authored as
+    generic scene props (e.g. a dropped/picked backpack)."""
+    text = " ".join(
+        filter(None, [str(getattr(thing, "label", "")), str(getattr(thing, "id", ""))])
+    ).lower()
+    return any(k in text for k in ("pack", "backpack", "bag", "pouch", "satchel"))
 
 
 def find_possessed_thing(cs, intent_text: str):
@@ -76,6 +106,35 @@ def find_possessed_thing(cs, intent_text: str):
     current kit. Lets a possession verb act on a kit weapon/armor by name."""
     text = (intent_text or "").lower()
     for thing in (getattr(cs, "things", None) or []):
+        if not _is_accessible_possession(cs, thing):
+            continue
+        if any(re.search(rf"\b{re.escape(tok)}\b", text) for tok in _name_tokens(thing)):
+            return thing
+    return None
+
+
+def find_possessed_scene_thing(cs, intent_text: str, items: Optional[dict],
+                               interaction_target: Optional[str] = None):
+    """A held scene item named in intent/target text, or None.
+
+    This is the fallback when an item is carried from the scene registry but is
+    not part of ``cs.things`` (kit/materialized possessions).
+    """
+    if not items:
+        return None
+    actor_id = getattr(getattr(cs, "character", None), "id", "")
+    if not actor_id:
+        return None
+    text = " ".join(filter(None, [(intent_text or "").lower(), (interaction_target or "").lower()]))
+    held = set(getattr(cs, "held_items", None) or [])
+    for thing in items.values():
+        if getattr(thing, "holder", None) != actor_id:
+            continue
+        tid = str(getattr(thing, "id", "") or "")
+        if tid and tid not in held:
+            continue
+        if not _is_accessible_possession(cs, thing):
+            continue
         if any(re.search(rf"\b{re.escape(tok)}\b", text) for tok in _name_tokens(thing)):
             return thing
     return None
@@ -103,11 +162,28 @@ def classify_verb(intent_text: str, thing) -> Optional[str]:
             return "eat"
         if DRINKABLE in aff:
             return "drink"
+    carry = getattr(thing, "carry", None)
+    carry_loc = getattr(carry, "location", "") if carry is not None else ""
+    if WEAPON not in aff and _REMOVE_RE.search(intent_text) and (
+        WEARABLE in aff or carry_loc == "worn" or _is_pack_like_container(thing)
+    ):
+        return "remove"
+    if WEAPON not in aff and _WEAR_RE.search(intent_text) and (
+        WEARABLE in aff or _is_pack_like_container(thing)
+    ):
+        return "wear"
     if WEARABLE in aff and WEAPON not in aff:
         if _REMOVE_RE.search(intent_text):
             return "remove"
         if _WEAR_RE.search(intent_text):
             return "wear"
+    if HOLDABLE in aff and WEAPON not in aff:
+        if tv == "drop":
+            return "drop"
+        if tv == "stow" or _SHEATHE_RE.search(intent_text):
+            return "stow"
+        if tv == "take" or _DRAW_RE.search(intent_text):
+            return "hold"
     if WEAPON in aff:  # draw/sheathe are weapon verbs (a potion won't wield)
         if tv == "stow" or _SHEATHE_RE.search(intent_text):
             return "sheathe"
@@ -128,6 +204,11 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
     name = getattr(thing, "label", None) or getattr(thing, "id", "")
     weapon = getattr(thing, "weapon", None)
     ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
+    thing_id = getattr(thing, "id", "")
+
+    if not _is_accessible_possession(cs, thing):
+        loadout.materialize_things(cs)
+        return res
 
     if verb == "draw" and weapon is not None:
         log: list = []
@@ -148,6 +229,35 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
             f"{(actor_zone or 'this zone').upper()}: {handle} sets it down. Narrate the drop.")
         res.events.append((turn_num, f"{ts} | {handle} drops the {weapon.name}."))
         res.memory.append(f"Turn {turn_num}: you dropped your {weapon.name}.")
+        res.applied = True
+    elif verb == "hold" and weapon is None and thing_id:
+        if loadout.hold_item(cs, thing_id):
+            res.log.append(
+                f"[ITEM] {character_id} holds {name}: {handle} takes it in hand. Narrate it."
+            )
+            res.events.append((turn_num, f"{ts} | {handle} takes up {name}."))
+            res.memory.append(f"Turn {turn_num}: you took {name} in hand.")
+            res.applied = True
+    elif verb == "stow" and weapon is None and thing_id:
+        if loadout.stow_item(cs, thing_id):
+            carry = getattr(thing, "carry", None)
+            if carry is not None:
+                from models.thing import CARRIED
+                carry.location = CARRIED
+            res.log.append(
+                f"[ITEM] {character_id} stows {name}: {handle} puts it away. Narrate it."
+            )
+            res.events.append((turn_num, f"{ts} | {handle} stows {name}."))
+            res.memory.append(f"Turn {turn_num}: you put away {name}.")
+            res.applied = True
+    elif verb == "drop" and weapon is None:
+        _drop_pack_thing_to_ground(cs, thing, items, actor_pos, actor_zone, character_id)
+        res.log.append(
+            f"[ITEM-TRANSFER] {character_id} drops {name} on the ground in "
+            f"{(actor_zone or 'this zone').upper()}: {handle} sets it down. Narrate the drop."
+        )
+        res.events.append((turn_num, f"{ts} | {handle} drops the {name}."))
+        res.memory.append(f"Turn {turn_num}: you dropped your {name}.")
         res.applied = True
     elif verb in ("eat", "drink"):
         # Consume a holdable consumable: it leaves play and its effects transfer
@@ -172,8 +282,30 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         res.events.append((turn_num, f"{ts} | {handle} {pres} the {name}."))
         res.memory.append(f"Turn {turn_num}: you {past} the {name}{detail}.")
         res.applied = True
-    # wear/remove for kit armor is a carry-state change only in the bridge
-    # (cs.armor is unchanged); left minimal until equipment wearables are Things.
+    elif verb == "wear":
+        from models.thing import CARRIED, WORN
+        if thing_id:
+            loadout.stow_item(cs, thing_id)  # if it was in hand, free the hand
+        carry = getattr(thing, "carry", None)
+        if carry is not None:
+            carry.location = WORN
+        res.log.append(
+            f"[ITEM] {character_id} wears {name}: {handle} puts it on. Narrate it."
+        )
+        res.events.append((turn_num, f"{ts} | {handle} wears {name}."))
+        res.memory.append(f"Turn {turn_num}: you put on {name}.")
+        res.applied = True
+    elif verb == "remove":
+        from models.thing import CARRIED
+        carry = getattr(thing, "carry", None)
+        if carry is not None:
+            carry.location = CARRIED
+        res.log.append(
+            f"[ITEM] {character_id} removes {name}: {handle} takes it off. Narrate it."
+        )
+        res.events.append((turn_num, f"{ts} | {handle} removes {name}."))
+        res.memory.append(f"Turn {turn_num}: you took off {name}.")
+        res.applied = True
 
     loadout.materialize_things(cs)
     return res
@@ -205,3 +337,26 @@ def _drop_weapon_to_ground(cs, weapon, items, actor_pos, actor_zone: str,
         it.pickable = True
     derive_affordances(it)
     it.discovered_by.add(character_id)
+
+
+def _drop_pack_thing_to_ground(cs, thing, items, actor_pos, actor_zone: str,
+                               character_id: str) -> None:
+    """Remove a non-weapon kit possession from the pack and place it in-world."""
+    from engine import loadout
+    from models.thing import IN_WORLD, derive_affordances
+    from models.space_time import Position
+
+    thing_id = getattr(thing, "id", "")
+    if thing_id:
+        loadout.stow_item(cs, thing_id)
+    cs.pack = [p for p in (getattr(cs, "pack", None) or []) if p is not thing]
+    ax, ay = float(actor_pos[0]), float(actor_pos[1])
+    thing.holder = None
+    thing.position = Position(ax, ay)
+    thing.zone = actor_zone
+    thing.carry.location = IN_WORLD
+    thing.carry.hands = 0
+    if items is not None and thing_id:
+        items[thing_id] = thing
+    derive_affordances(thing)
+    thing.discovered_by.add(character_id)

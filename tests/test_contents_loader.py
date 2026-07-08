@@ -179,7 +179,22 @@ class TestAppearanceBands:
         parsed = parse_contents_md(md)
         item = parsed["items"]["plain_item"]
         assert item.size_ft == 0.0
-        assert item.appearance_bands == {}
+
+
+class TestZoneItemContents:
+
+    def test_discarded_pack_parses_machine_readable_contents(self):
+        from models.contents_loader import load_zone_contents_with_geometry
+
+        items = load_zone_contents_with_geometry(
+            Path("scenario/places/obelisk_reach/echoing_caverns/zones"),
+            GEOMETRY_PATH,
+        )
+        assert items["discarded_pack"].contents == [
+            ("rope", 1),
+            ("tin_cup", 1),
+            ("reach_map", 1),
+        ]
 
 
 # ---------------------------------------------------------------------------

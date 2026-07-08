@@ -3804,13 +3804,12 @@ async def iter_session(
     # re-seed that section silently empties out whenever a session is resumed.
     _reseed_discovered_from_examination_state(items, party_examination_state)
 
-    # Phase 2: put a primary weapon in each character's hand at scene start so
-    # nobody is empty-handed (no-op for characters already wielding or with only
-    # natural weapons). Restored wielded state (resume) is left untouched.
-    from engine.loadout import default_wield, sync_held_weapons, materialize_things
+    # Phase 2: preserve explicit/restored wielded state only (no auto-draw at
+    # scene start). Re-register picked-up weapons on resume and rebuild the
+    # derived Thing-view used by manipulation/grounding.
+    from engine.loadout import sync_held_weapons, materialize_things
     for _cs in characters.values():
         sync_held_weapons(_cs, items)  # re-register picked-up weapons on resume
-        default_wield(_cs)
         materialize_things(_cs)        # derived Thing-view of the kit for dispatch
 
     # Per-session puzzles. Each puzzle owns its own state machine; the loop
@@ -4823,6 +4822,7 @@ async def iter_session(
             # into the acting character's narration. The character's own action
             # already reflects what they perceived; perception + action are
             # sufficient for the narrator.
+            _kit_manip_applied = False
 
             # Kit possession verbs (draw / sheathe / drop / wear) on a weapon or
             # armor. The scene take/drop machinery only knows scene Things, so a
@@ -4834,7 +4834,6 @@ async def iter_session(
                 adjudication.approved
                 and not use_resolver
                 and intent.intent
-                and not intent.interaction_target
             ):
                 from engine import loadout, manipulation
                 _loadout_log: list[str] = []
@@ -4845,6 +4844,13 @@ async def iter_session(
                     )
                 loadout.materialize_things(cs)
                 _thing = manipulation.find_possessed_thing(cs, intent.intent)
+                if _thing is None:
+                    _thing = manipulation.find_possessed_scene_thing(
+                        cs,
+                        intent.intent,
+                        items,
+                        intent.interaction_target,
+                    )
                 if _thing is not None:
                     _verb = manipulation.classify_verb(intent.intent, _thing)
                     # Draw/sheathe can be compound ("sheathe sword and draw
@@ -4859,6 +4865,7 @@ async def iter_session(
                             character_id=character_id, game_time=game_time,
                             turn_num=turn_num)
                         if _mr.applied:
+                            _kit_manip_applied = True
                             attack_log.extend(_mr.log)
                             recent_events.extend(_mr.events)
                             for _note in _mr.memory:
@@ -4871,6 +4878,7 @@ async def iter_session(
             if (
                 adjudication.approved
                 and not use_resolver
+                and not _kit_manip_applied
                 and items
                 and intent.interaction_target
             ):
@@ -4881,6 +4889,7 @@ async def iter_session(
                 )
                 # LATN-first, drop-in compatible with a shallow fallback.
                 from engine.latn_integration import resolve_item_interaction
+                transfer_verb = detect_transfer_verb(intent.intent or "")
                 actor_zone = current_positions.get(character_id, ("", "", ""))[2]
                 # Geometry-rendered zones come uppercase; items carry the
                 # canonical-cased zone from CONTENTS.md. Match case-insensitive.
@@ -4892,7 +4901,11 @@ async def iter_session(
                     character_zone=actor_zone,
                     scene_geometry=scene_geometry,
                 )
-                if resolved is None and intent.interaction_target.strip():
+                if (
+                    transfer_verb is None
+                    and resolved is None
+                    and intent.interaction_target.strip()
+                ):
                     # Phase 3b.1: actor named a target but the verb
                     # resolver could not match it in their current zone.
                     # Check whether the item exists in *some other* zone

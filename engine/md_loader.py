@@ -401,6 +401,69 @@ def _parse_weapon_entries(raw: str) -> list[tuple[str, int]]:
     return out
 
 
+def _parse_id_list(raw: str) -> list[str]:
+    """Parse a scene-authored id list (comma/semicolon/pipe/newline separated).
+
+    Values are normalized for matching: lower-cased, trimmed, and internal
+    spaces converted to underscores (so "mug of ale" can match ``mug_of_ale``).
+    """
+    out: list[str] = []
+    for part in re.split(r"[,;|\n]+", str(raw or "")):
+        token = "_".join(part.strip().lower().split())
+        if token:
+            out.append(token)
+    return out
+
+
+def _apply_scene_carry_overrides(session, cfg: dict[str, str]) -> None:
+    """Apply scene-authored starting carry-state overrides.
+
+    Supported scene keys in each ``### <char_id>`` block:
+    - ``in_hand`` / ``held_items``: comma-separated ids currently in hand
+    - ``worn`` / ``worn_items``: comma-separated ids currently worn
+
+    Weapon ids in ``in_hand`` are drawn; non-weapons are held as items. Worn
+    overrides mark pack Things as WORN (display/state), and resolve conflicts by
+    removing a worn item from ``held_items``.
+    """
+    hand_ids = _parse_id_list(cfg.get("in_hand") or cfg.get("held_items") or "")
+    worn_ids = _parse_id_list(cfg.get("worn") or cfg.get("worn_items") or "")
+    if not hand_ids and not worn_ids:
+        return
+
+    from engine import loadout
+    from models.thing import WORN
+
+    by_weapon_id = {str(getattr(w, "id", "")).lower(): w for w in (session.weapons or [])}
+    by_weapon_name = {
+        "_".join(str(getattr(w, "name", "")).lower().split()): w
+        for w in (session.weapons or [])
+        if getattr(w, "name", "")
+    }
+    by_pack_id = {str(getattr(t, "id", "")).lower(): t for t in (session.pack or [])}
+    by_pack_label = {
+        "_".join(str(getattr(t, "label", "")).lower().split()): t
+        for t in (session.pack or [])
+        if getattr(t, "label", "")
+    }
+
+    for ref in hand_ids:
+        w = by_weapon_id.get(ref) or by_weapon_name.get(ref)
+        if w is not None:
+            loadout.draw(session, w)
+            continue
+        t = by_pack_id.get(ref) or by_pack_label.get(ref)
+        if t is not None and getattr(t, "id", ""):
+            loadout.hold_item(session, t.id)
+
+    for ref in worn_ids:
+        t = by_pack_id.get(ref) or by_pack_label.get(ref)
+        if t is not None:
+            t.carry.location = WORN
+            if getattr(t, "id", "") in (session.held_items or []):
+                loadout.stow_item(session, t.id)
+
+
 def _synthesize_native_weapon(
     weapon_id: str,
     bonus: int,
@@ -501,6 +564,7 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
                 continue
             inst = copy.deepcopy(src)
             inst.quantity = qty
+            inst.parent_container_id = getattr(container, "id", "")
             pack.append(inst)
     session.pack = pack
     if free_text:
@@ -1132,6 +1196,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         # ## Equipment id list) onto weapons / armor / pack / free-text.
         _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
                          consumable_library, gear_library)
+        _apply_scene_carry_overrides(session, cfg)
 
         # AC semantics by actor type:
         # - players: authored AC is the natural/unarmored base (usually 10)

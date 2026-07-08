@@ -640,6 +640,8 @@ def _size_to_feet(size_value: str) -> float:
 
 def _parse_zone_item_body(body: str) -> Item:
     """Parse one zone-file item body (schema bullets) into an :class:`Item`."""
+    from engine.consumable_loader import parse_contents as _parse_container_contents
+
     fields: dict[str, str] = {}
     appearance: dict[str, str] = {}
     interactions: list[Interaction] = []
@@ -705,6 +707,7 @@ def _parse_zone_item_body(body: str) -> Item:
         size_ft=_size_to_feet(fields.get("size", "")),
         appearance_bands=appearance,
         interactions=interactions,
+        contents=_parse_container_contents(fields.get("contents", "")),
     )
 
 

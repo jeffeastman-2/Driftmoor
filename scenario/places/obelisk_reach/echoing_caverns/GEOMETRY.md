@@ -102,7 +102,7 @@ here — sight is purely light-limited, so darkvision extends it fully.
 
 | name              | x    | y     | destination                              |
 |-------------------|------|-------|------------------------------------------|
-| entrance_crack    | 97   | 341   | places/obelisk_reach                     |
+| entrance_crack    | 110  | 325   | places/obelisk_reach                     |
 | to_obelisk_above  | 162  | 308   | places/obelisk_reach/shattered_obelisk   |
 
 ---

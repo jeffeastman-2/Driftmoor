@@ -830,6 +830,28 @@ class TestItemTransferHandModel:
         assert "torch" not in cs.character.inventory
         assert loadout.held_items(cs) == []          # hand freed
 
+    def test_drop_backpack_stays_item_transfer_not_movement(self):
+        from engine.session import _handle_item_transfer
+        from engine import loadout
+        from types import SimpleNamespace as NS
+
+        cs = NS(character=NS(id="gil", name="Gil", inventory=[], hands=2,
+                             current_hp=10, hp=10),
+                scene_handle="Gil", weapons=[], wielded=[], held_items=["gils_pack"],
+                episodic_memory=[])
+        item = NS(id="gils_pack", label="Gil's Pack", weapon=None, holder="gil",
+                  description="A sturdy backpack.", discovered_by=set(),
+                  position=None, zone="ROOM")
+        _handle_item_transfer(
+            transfer_verb="drop", item_obj=item, label="Gil's Pack",
+            character_id="gil", characters={"gil": cs}, active_characters={"gil"},
+            current_positions={"gil": (1.0, 2.0, "ROOM")}, intent_text="drop the backpack",
+            actor_zone="ROOM", turn_num=1, game_time=None, attack_log=[],
+            recent_events=[], cs=cs, authored_response=None,
+        )
+        assert item.holder is None
+        assert loadout.held_items(cs) == []
+
 
 class TestSyncCarriedItemPositions:
     """Carried items follow their holder so possession verbs resolve in the

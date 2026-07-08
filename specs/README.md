@@ -13,6 +13,7 @@ expected to conform.
 | Spec | Subject | Status |
 |---|---|---|
 | [CONTENTS.md](CONTENTS.md) | Perceptible items in a scene | implemented |
+| [SCENE.md](SCENE.md) | Scene configuration (cast, placement, routing, carry state) | implemented |
 | [GEOMETRY.md](GEOMETRY.md) | Zone graph and coordinates | implemented |
 | [IDENTITY.md](IDENTITY.md) | Character sheet (PC + NPC) | implemented |
 | [SOUL.md](SOUL.md) | Character inner-life context (LLM blob) | convention only |

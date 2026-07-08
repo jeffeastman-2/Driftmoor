@@ -84,13 +84,8 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - dagger
 - light_crossbow
 - studded_leather: Green and brown studded leather
-- pemmican
-- hard_tack
-- water
-- mead
 - bracelet: Wooden vine-carved bracelet
-- thieves_tools
-- disguise_kit
+- gils_pack: A backpack
 
 ## Dynamic State
 *(Updated by monitor agent each round)*

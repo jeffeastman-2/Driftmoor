@@ -80,19 +80,19 @@ characters know, in-fiction, the following caver's wisdom:
 - **type:** player
 - **soul_file:** scenario/people/players/seraphina/SOUL.md
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
-- **position:** 155, 285
+- **position:** 105, 315
 
 ### thorgrim
 - **type:** player
 - **soul_file:** scenario/people/players/thorgrim/SOUL.md
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
-- **position:** 138, 295
+- **position:** 110, 310
 
 ### amara
 - **type:** player
 - **soul_file:** scenario/people/players/amara/SOUL.md
 - **identity_file:** scenario/people/players/amara/IDENTITY.md
-- **position:** 120, 305
+- **position:** 115, 315
 
 ### gilthaness
 - **type:** player
@@ -103,7 +103,14 @@ characters know, in-fiction, the following caver's wisdom:
 - **host:** ultra
 - **inbox:** ~/messages/from-gilthaness
 - **outbox:** ~/messages/to-gilthaness
-- **position:** 145, 300
+- **position:** 110, 320
+
+<!-- Authoring quick reference:
+- Optional start carry-state fields in character blocks:
+  - **in_hand:** snapped_torch, mug of ale
+  - **worn:** wooden_vine_carved_bracelet
+- Aliases: **held_items** == **in_hand**, **worn_items** == **worn**
+-->
 
 ### giant_spider
 - **type:** creature

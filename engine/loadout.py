@@ -262,6 +262,7 @@ def materialize_things(cs) -> None:
     )
     holder = getattr(getattr(cs, "character", None), "id", None)
     wielded = set(getattr(cs, "wielded", None) or [])
+    held = set(getattr(cs, "held_items", None) or [])
     things: list = []
     for w in (getattr(cs, "weapons", None) or []):
         in_hand = w.id in wielded
@@ -286,8 +287,14 @@ def materialize_things(cs) -> None:
     for prov in (getattr(cs, "pack", None) or []):
         if getattr(prov, "holder", None) is None:
             prov.holder = holder
-        if prov.carry.location in ("", IN_WORLD):
+        if getattr(prov, "id", "") in held:
+            prov.carry.location = IN_HAND
+            prov.carry.hands = 1
+        elif prov.carry.location == WORN:
+            prov.carry.hands = 0
+        else:
             prov.carry.location = CARRIED
+            prov.carry.hands = 0
         things.append(prov)
     cs.things = things
 

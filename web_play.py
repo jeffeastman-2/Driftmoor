@@ -114,9 +114,13 @@ def _player_inventory(cs, items: dict | None) -> dict:
     inv = list(getattr(char, "inventory", None) or [])
     equipment = list(getattr(char, "equipment", None) or [])
     armor = getattr(cs, "armor", None)
+    pack = list(getattr(cs, "pack", None) or [])
+    pack_by_id = {getattr(p, "id", ""): p for p in pack}
 
     def item_chip(iid: str) -> dict:
         it = (items or {}).get(iid)
+        if it is None:
+            it = pack_by_id.get(iid)
         label = (getattr(it, "label", "") or "").strip() or iid.replace("_", " ")
         return {"icon": _item_icon(label), "label": label}
 
@@ -124,9 +128,17 @@ def _player_inventory(cs, items: dict | None) -> dict:
         label = re.sub(r"\s*\([^)]*\)", "", text).strip()  # drop "(1d8 piercing)"
         return {"icon": _item_icon(label), "label": label}
 
+    def content_chip(content_id: str, qty: int) -> dict:
+        it = (items or {}).get(content_id)
+        label = (getattr(it, "label", "") or "").strip() or content_id.replace("_", " ")
+        if qty > 1:
+            label = f"{label} ×{qty}"
+        return {"icon": _item_icon(label), "label": label}
+
     hand: list[dict] = []
     worn: list[dict] = []
     carried: list[dict] = []
+    seen_content_ids: set[str] = set()
     for w in weapons:                      # wielded -> in hand; else carried
         chip = {"icon": _item_icon(w.name), "label": w.name}
         (hand if w.id in wielded else carried).append(chip)
@@ -151,15 +163,32 @@ def _player_inventory(cs, items: dict | None) -> dict:
         if chip["label"].lower() in worn_labels:
             continue
         (worn if _is_worn(entry) else carried).append(chip)
-    for prov in (getattr(cs, "pack", None) or []):   # food, drink, tools, wearables
-        from models.thing import WEARABLE
+    for prov in pack:   # food, drink, tools, wearables
+        from models.thing import WORN
+        if getattr(prov, "id", "") in held_set:
+            continue
+        parent_container_id = getattr(prov, "parent_container_id", "")
+        if parent_container_id and parent_container_id not in held_set:
+            continue
+        if parent_container_id:
+            seen_content_ids.add(getattr(prov, "id", ""))
         label = getattr(prov, "label", None) or getattr(prov, "id", "")
         qty = int(getattr(prov, "quantity", 1) or 1)
         if qty > 1:
             label = f"{label} ×{qty}"
         chip = {"icon": _item_icon(label), "label": label}
-        (worn if WEARABLE in (getattr(prov, "affordances", None) or set())
-         else carried).append(chip)
+        state = getattr(getattr(prov, "carry", None), "location", "")
+        (worn if state == WORN else carried).append(chip)
+
+    # Held scene-item containers may author their own contents directly; surface
+    # those contents only while the container is in hand, matching the pack rule.
+    for iid in held:
+        it = (items or {}).get(iid)
+        for content_id, qty in (getattr(it, "contents", None) or []):
+            if content_id in seen_content_ids:
+                continue
+            seen_content_ids.add(content_id)
+            carried.append(content_chip(content_id, int(qty or 1)))
     return {"hand": hand, "worn": worn, "carried": carried}
 
 
@@ -374,6 +403,7 @@ button:disabled{opacity:.5;cursor:not-allowed;}
   background:#1a1a22;border:1px solid #3a3a44;}
 .chip.hand{border-color:#4a90d9;background:#15212e;}
 .chip.worn{border-color:#7a6a3a;background:#1e1a10;}
+.chip.empty{opacity:.8;font-style:italic;}
 .chip .ic{font-size:15px;line-height:1;}
 </style></head><body>
 <header>__TITLE__ — you are playing in the browser</header>
@@ -381,7 +411,10 @@ button:disabled{opacity:.5;cursor:not-allowed;}
   <div class='log' id='log'></div>
   <div class='map'><iframe id='mapframe' src='/map'></iframe></div>
 </div>
-<div class='inv' id='inv'><span class='lbl'>No possessions yet</span></div>
+<div class='inv' id='inv'>
+    <span class='grp'><span class='lbl'>In hand</span>
+        <span class='chip hand empty'>Nothing in hand</span></span>
+</div>
 <div class='status' id='turnstatus'>Waiting for your turn…</div>
 <form id='f'><input id='in' autocomplete='off' disabled
   placeholder='Waiting for your turn…'>
@@ -442,9 +475,15 @@ function renderInv(m){
   const inv=document.getElementById('inv');
   const chips=(arr,cls)=>arr.map(x=>'<span class="chip '+cls+'"><span class="ic">'
     +x.icon+'</span>'+esc(x.label)+'</span>').join('');
-  const grp=(label,arr,cls)=>(arr&&arr.length)
-    ?'<span class="grp"><span class="lbl">'+label+'</span>'+chips(arr,cls)+'</span>':'';
-  const h=grp('In hand',m.hand,'hand')+grp('Worn',m.worn,'worn')
+    const grp=(label,arr,cls,opts={})=>{
+        const items=(arr&&arr.length)?chips(arr,cls):'';
+        const empty=(opts.emptyText)
+            ?'<span class="chip '+cls+' empty">'+esc(opts.emptyText)+'</span>':'';
+        if(!items && !empty && !opts.always)return '';
+        return '<span class="grp"><span class="lbl">'+label+'</span>'+(items||empty)+'</span>';
+    };
+    const h=grp('In hand',m.hand,'hand',{always:true,emptyText:'Nothing in hand'})
+        +grp('Worn',m.worn,'worn')
     +grp('Carried',m.carried,'carried');  // (+ grp('Ingested',m.ingested,...) someday)
   inv.innerHTML=h||'<span class="lbl">No possessions yet</span>';
 }
