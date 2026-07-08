@@ -1471,28 +1471,92 @@ _CONNECTOR_NAME_TOKENS = {
 }
 
 
-_ROOMING_HOUSE_NAME_RE = re.compile(
-    r"\b(rooming\s+house|weary\s+traveler|weary\s+traveller)\b",
-    re.IGNORECASE,
-)
 _ENTER_SCENE_RE = re.compile(
-    r"\b(enter|enters|entering|go\s+inside|go\s+in|head\s+inside|step\s+inside|walk\s+inside)\b",
+    r"\b(enter|enters|entering|go\s+inside|go\s+in|head\s+inside|step\s+inside|walk\s+inside|go\s+to|head\s+to|walk\s+to|visit|arrive\s+at|arrive\s+in)\b",
     re.IGNORECASE,
 )
 _LEAVE_SCENE_RE = re.compile(
-    r"\b(leave|leaves|leaving|exit|exits|exiting|go\s+outside|go\s+out|head\s+out|step\s+outside)\b",
+    r"\b(leave|leaves|leaving|exit|exits|exiting|go\s+outside|go\s+out|head\s+out|step\s+outside|walk\s+out|head\s+back\s+out)\b",
     re.IGNORECASE,
 )
 
+_DRIFTMOOR_VENUES: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    (
+        "weary_traveler",
+        (
+            "weary traveler",
+            "weary traveller",
+            "rooming house",
+            "the traveler",
+            "traveler",
+            "traveller",
+        ),
+        "places/driftmoor/weary_traveler",
+    ),
+    (
+        "broken_lantern",
+        (
+            "broken lantern",
+            "the lantern",
+            "lantern tavern",
+            "tavern",
+        ),
+        "places/driftmoor/broken_lantern",
+    ),
+    (
+        "gilded_trinket",
+        (
+            "gilded trinket",
+            "the trinket",
+            "pawnshop",
+            "shop",
+        ),
+        "places/driftmoor/gilded_trinket",
+    ),
+    (
+        "salt_and_iron",
+        (
+            "salt and iron",
+            "salt & iron",
+            "mercantile",
+            "general store",
+            "store",
+        ),
+        "places/driftmoor/salt_and_iron",
+    ),
+    (
+        "beacon_church",
+        (
+            "beacon church",
+            "the church",
+            "church",
+        ),
+        "places/driftmoor/beacon_church",
+    ),
+    (
+        "elyssa_cottage",
+        (
+            "elyssa cottage",
+            "elyssa's cottage",
+            "the cottage",
+            "cottage",
+        ),
+        "places/driftmoor/elyssa_cottage",
+    ),
+)
 
-def _infer_rooming_house_transition(
+
+def _infer_driftmoor_venue_transition(
     intent_text: str,
     current_place_path: str,
     actor_zone: str,
 ) -> Optional[str]:
-    """MVP transition detector for Driftmoor town <-> Weary Traveler.
+    """Detect Driftmoor town <-> venue transitions for authored interiors.
 
-    Returns target scene name (``weary_traveler`` or ``driftmoor``), or None.
+    From Driftmoor town, entry-ish intents that name a venue transition to the
+    corresponding scene. From inside a venue, leave/exit intents return to the
+    town scene. Returns the target scene name, or None when no authored venue
+    matches.
     """
     text = (intent_text or "").strip().lower()
     place = (current_place_path or "").strip().lower()
@@ -1501,20 +1565,34 @@ def _infer_rooming_house_transition(
         return None
 
     in_driftmoor = place.endswith("places/driftmoor")
-    in_weary = place.endswith("places/driftmoor/weary_traveler")
+    current_venue = next(
+        (scene_name for scene_name, _, suffix in _DRIFTMOOR_VENUES if place.endswith(suffix)),
+        None,
+    )
 
     if in_driftmoor and _ENTER_SCENE_RE.search(text):
-        # Require either an explicit rooming-house mention or being in the
-        # rooming-house footprint already.
-        if _ROOMING_HOUSE_NAME_RE.search(text) or zone == "ROOMING_HOUSE":
-            return "weary_traveler"
+        for scene_name, aliases, _suffix in _DRIFTMOOR_VENUES:
+            if any(re.search(rf"\b{re.escape(alias)}\b", text) for alias in aliases):
+                # If the actor is already standing inside the footprint of the
+                # venue, zone context can disambiguate a generic mention.
+                if scene_name == "weary_traveler" and zone == "ROOMING_HOUSE":
+                    return scene_name
+                return scene_name
 
-    if in_weary and _LEAVE_SCENE_RE.search(text):
-        # Leaving the interior returns to Driftmoor.
-        if (not _ROOMING_HOUSE_NAME_RE.search(text)) or ("rooming" in text):
-            return "driftmoor"
+    if current_venue is not None and _LEAVE_SCENE_RE.search(text):
+        # Leaving any authored interior returns to Driftmoor town.
+        return "driftmoor"
 
     return None
+
+
+def _infer_rooming_house_transition(
+    intent_text: str,
+    current_place_path: str,
+    actor_zone: str,
+) -> Optional[str]:
+    """Backward-compatible alias for the generalized Driftmoor venue hook."""
+    return _infer_driftmoor_venue_transition(intent_text, current_place_path, actor_zone)
 
 
 def _dest_tokens(s: str) -> set[str]:
@@ -5401,12 +5479,12 @@ async def iter_session(
             )
             turn_result.character_results.append(cr)
 
-            # MVP scene transition hook: Driftmoor town <-> Weary Traveler.
+            # Scene transition hook: Driftmoor town <-> authored interior venues.
             # Keep it conservative: one transition request per turn (first wins).
             if pending_scene_transition is None:
                 _cur_place = getattr(scene_geometry, "place_path", "") if scene_geometry else ""
                 _cur_zone = current_positions.get(character_id, (0.0, 0.0, ""))[2]
-                _target_scene = _infer_rooming_house_transition(
+                _target_scene = _infer_driftmoor_venue_transition(
                     intent.intent or "",
                     _cur_place,
                     _cur_zone,

@@ -742,39 +742,57 @@ class TestMovementBudgetPerTurn:
         assert cap == 300.0
 
 
-class TestInferRoomingHouseTransition:
-    """MVP Driftmoor <-> Weary Traveler scene transition trigger detection."""
+class TestInferDriftmoorVenueTransition:
+    """Driftmoor town <-> venue transition trigger detection."""
 
-    def test_enter_rooming_house_from_driftmoor_zone(self):
-        from engine.session import _infer_rooming_house_transition
-        out = _infer_rooming_house_transition(
-            "I enter the rooming house",
+    def test_enter_broken_lantern_from_driftmoor(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
+            "I enter the Broken Lantern",
             "places/driftmoor",
-            "ROOMING_HOUSE",
+            "TOWN_COMMON",
         )
-        assert out == "weary_traveler"
+        assert out == "broken_lantern"
 
     def test_enter_weary_traveler_by_name(self):
-        from engine.session import _infer_rooming_house_transition
-        out = _infer_rooming_house_transition(
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
             "go inside the Weary Traveler",
             "places/driftmoor",
             "TOWN_COMMON",
         )
         assert out == "weary_traveler"
 
+    def test_enter_church_by_general_name(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
+            "head to the church",
+            "places/driftmoor",
+            "TOWN_COMMON",
+        )
+        assert out == "beacon_church"
+
     def test_leave_interior_returns_to_driftmoor(self):
-        from engine.session import _infer_rooming_house_transition
-        out = _infer_rooming_house_transition(
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
             "I leave the rooming house",
             "places/driftmoor/weary_traveler",
             "COMMON_ROOM",
         )
         assert out == "driftmoor"
 
+    def test_leave_other_venue_returns_to_driftmoor(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
+            "go outside",
+            "places/driftmoor/broken_lantern",
+            "COMMON_ROOM",
+        )
+        assert out == "driftmoor"
+
     def test_no_transition_for_non_enter_phrase(self):
-        from engine.session import _infer_rooming_house_transition
-        out = _infer_rooming_house_transition(
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
             "I look around the rooming house",
             "places/driftmoor",
             "ROOMING_HOUSE",
