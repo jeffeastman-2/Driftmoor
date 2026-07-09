@@ -1,0 +1,35 @@
+<svg viewBox="24 40 156 168" xmlns="http://www.w3.org/2000/svg">
+<style>
+.o{fill:none;stroke:#2c2118;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round;}
+.pl{fill:#e4d9c2;stroke:#2c2118;stroke-width:1.4;stroke-linejoin:round;}
+.rf{fill:#8a7a64;stroke:#2c2118;stroke-width:1.4;stroke-linejoin:round;}
+.rf2{fill:#726251;stroke:#2c2118;stroke-width:1.4;stroke-linejoin:round;}
+.tb{stroke:#6f5236;stroke-width:2.4;fill:none;stroke-linecap:round;}
+.gl{fill:#aebfb8;stroke:#2c2118;stroke-width:1;}
+.dk{fill:#251f17;stroke:#2c2118;stroke-width:1.2;stroke-linejoin:round;}
+.mt{fill:#9aa0a6;stroke:#2c2118;stroke-width:1;stroke-linejoin:round;}
+.lf{fill:#6f7a4e;stroke:none;}
+.thin{fill:none;stroke:#2c2118;stroke-width:0.7;opacity:.55;}
+.sm{fill:none;stroke:#2c2118;stroke-width:1.3;opacity:.5;stroke-linecap:round;}
+</style>
+<path class="sm" d="M150,46 q-7,-7 -1,-14"/>
+<rect class="st" x="144" y="46" width="13" height="26" fill="#cec3a9" stroke="#2c2118" stroke-width="1.4"/>
+<polygon class="rf" points="42,86 108,44 174,86"/>
+<polygon class="rf2" points="108,44 174,86 108,86"/>
+<line class="thin" x1="70" y1="74" x2="146" y2="74"/><line class="thin" x1="82" y1="66" x2="134" y2="66"/>
+<line class="o" x1="42" y1="86" x2="174" y2="86"/>
+<rect class="pl" x="50" y="86" width="116" height="38"/>
+<path class="tb" d="M78,88 V122 M108,88 V122 M138,88 V122 M52,105 H164"/>
+<rect class="gl" x="94" y="94" width="26" height="22"/><path class="o" d="M107,94 V116 M94,105 H120" stroke-width="0.9"/>
+<rect class="pl" x="56" y="124" width="104" height="78"/>
+<polygon class="gl" points="60,140 104,140 98,186 66,186"/>
+<line class="o" x1="66" y1="186" x2="98" y2="186"/>
+<path class="o" d="M76,140 V186 M89,140 V186" stroke-width="0.8"/>
+<rect class="dk" x="69" y="164" width="6" height="20" rx="2"/><rect class="dk" x="80" y="158" width="6" height="26" rx="2"/><rect class="dk" x="91" y="168" width="5" height="16" rx="2"/>
+<path class="dk" d="M120,202 V150 q0,-2 2,-2 H150 q2,0 2,2 V202 Z"/>
+<line class="o" x1="118" y1="148" x2="154" y2="148"/>
+<path class="o" d="M50,98 H32 M36,98 V104"/>
+<path class="mt" d="M28,110 h16 a8,7 0 0 1 -16,0 Z"/><line class="o" x1="40" y1="99" x2="33" y2="110"/>
+<path class="o" d="M56,124 q-6,20 2,40 q6,16 -2,36" stroke-width="1"/>
+<circle class="lf" cx="52" cy="140" r="4"/><circle class="lf" cx="60" cy="156" r="4"/><circle class="lf" cx="50" cy="172" r="4"/><circle class="lf" cx="60" cy="188" r="4"/>
+</svg>

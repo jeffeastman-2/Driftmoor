@@ -1,4 +1,4 @@
-# PLACE.md — The Weary Traveler (Rooming House)
+# PLACE.md — The Weary Traveler
 
 ## Description and Atmosphere
 A sturdy two-story timber building just off the main square, near the mercantile. A sign depicting a worn boot hangs above the entrance. The common room downstairs serves as dining area and gathering space — large hearth, mismatched wooden chairs and tables. Upstairs: small, clean guest rooms. Out back: a storage shed used as overflow housing.

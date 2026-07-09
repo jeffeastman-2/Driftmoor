@@ -16,6 +16,7 @@ no intermediate CSV.
 """
 from __future__ import annotations
 
+import base64
 import html
 import json
 import re
@@ -76,6 +77,64 @@ _PANZOOM_JS = (
 
 _BAND_ORDER = ("near", "intermediate", "far", "distant")
 
+# Cache of building icon data-URIs, keyed by file path (encoded once per process).
+_ICON_CACHE: dict = {}
+_PLACE_TITLE_CACHE: dict = {}
+
+
+def _icon_data_uri(path: "Path") -> "str | None":
+    """Return an ``<image href>`` data-URI for a building ``icon.svg``/png, or
+    None if absent. Cached so per-turn map regeneration doesn't re-encode."""
+    key = str(path)
+    if key in _ICON_CACHE:
+        return _ICON_CACHE[key]
+    uri = None
+    try:
+        if path.exists():
+            mime = "image/svg+xml" if path.suffix == ".svg" else f"image/{path.suffix.lstrip('.')}"
+            uri = f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+    except Exception:  # noqa: BLE001 — art is best-effort
+        uri = None
+    _ICON_CACHE[key] = uri
+    return uri
+
+
+def _zone_icon_dirs(g: dict) -> dict:
+    """Map each zone name -> the place dir a connection inside it leads to,
+    so a zone can find its ``icon.svg``. Reuses ``## Connections``."""
+    out: dict = {}
+    for (_name, cx, cy, dest) in g.get("connections", []):
+        if not dest or not dest.startswith("places/"):
+            continue
+        z = _containing_zone(cx, cy, g["zones"])
+        if z is not None and z not in out:
+            out[z] = dest
+    return out
+
+
+def _zone_tooltip(zname: str, dest: str | None, scenario_root: Path | None) -> str:
+    """Format a building tooltip as ``<zone>: <place title>`` when available."""
+    if not dest or scenario_root is None:
+        return f"Building: {zname}"
+    key = str(scenario_root / dest)
+    if key in _PLACE_TITLE_CACHE:
+        title = _PLACE_TITLE_CACHE[key]
+    else:
+        title = ""
+        try:
+            place_md = scenario_root / dest / "PLACE.md"
+            if place_md.exists():
+                txt = place_md.read_text(encoding="utf-8")
+                m = re.search(r"^#\s*PLACE\.md\s*[\-\u2014]\s*(.+)$", txt, re.MULTILINE)
+                if m:
+                    title = m.group(1).strip()
+        except Exception:  # noqa: BLE001 - tooltip enrichment is best-effort
+            title = ""
+        _PLACE_TITLE_CACHE[key] = title
+    if title:
+        return f"{zname}: {title}"
+    return f"Building: {zname}"
+
 
 def _item_tooltip(label: str, detail: object | None) -> str:
     """Hover text for a map item: its label, full description, and the
@@ -122,6 +181,7 @@ def parse_geometry(text: str) -> dict:
     g: dict = {
         "zones": {}, "zone_z": {}, "landmarks": {}, "impassable": [],
         "boundaries": [], "starting_positions": {}, "items": {},
+        "connections": [],
     }
 
     def _table(section: str) -> list[list[str]]:
@@ -200,6 +260,18 @@ def parse_geometry(text: str) -> dict:
                 except ValueError:
                     label = last
             g["items"][cells[0]] = (x, y, label)
+
+    # Connections: `name | x | y | destination`. Used to resolve a building
+    # zone's art directory (the place a connection inside the zone leads to).
+    for cells in _table("Connections"):
+        if cells[0].lower() == "name":
+            continue
+        if len(cells) >= 4:
+            try:
+                g["connections"].append(
+                    (cells[0], float(cells[1]), float(cells[2]), cells[3]))
+            except ValueError:
+                continue
 
     # Character placement is a scene concern: callers pass scene-resolved
     # ``start_positions`` into the renderers (which override ``starting_positions``
@@ -345,6 +417,8 @@ def render_map(
     )
     unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
     z_rank = {z: i for i, z in enumerate(unique_z)}
+    _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
+    _zone_dest = _zone_icon_dirs(g)
 
     zone_pts = [p for n in zone_order for p in g["zones"].get(n, ())]
     if zone_pts:
@@ -616,6 +690,8 @@ def render_interactive_map_html(
     )
     unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
     z_rank = {z: i for i, z in enumerate(unique_z)}
+    _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
+    _zone_dest = _zone_icon_dirs(g)
 
     parts: list[str] = []
     parts.append(
@@ -656,15 +732,11 @@ def render_interactive_map_html(
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
         points = _fmt_poly(verts)
+        zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
         parts.append(
             f"<polygon points='{points}' fill='{color}' fill-opacity='{alpha:.3f}' "
-            "stroke='#222' stroke-width='0.6'/>"
-        )
-        cx = sum(x for x, _ in verts) / len(verts)
-        cy = sum(y for _, y in verts) / len(verts)
-        parts.append(
-            f"<text x='{cx:.2f}' y='{_flip_y(cy):.2f}' text-anchor='middle' "
-            f"dominant-baseline='middle' class='zone-label'>{html.escape(zname)}</text>"
+            "stroke='#222' stroke-width='0.6'>"
+            f"<title>{html.escape(zone_tip)}</title></polygon>"
         )
 
     # Boundaries
@@ -691,12 +763,10 @@ def render_interactive_map_html(
 
     # Landmarks
     for name, (x, y) in g["landmarks"].items():
+        tip = _landmark_tooltip(name, x, y, g["zones"])
         parts.append(
             f"<circle cx='{x:.2f}' cy='{_flip_y(y):.2f}' r='1.2' fill='#3b3b3b'>"
-            f"<title>{html.escape(name)}</title></circle>"
-        )
-        parts.append(
-            f"<text x='{x + 1.7:.2f}' y='{_flip_y(y) - 1.3:.2f}' class='lm-label'>{html.escape(name)}</text>"
+            f"<title>{html.escape(tip)}</title></circle>"
         )
 
     # Character paths and turn points
@@ -808,6 +878,14 @@ def _containing_zone(x: float, y: float, zones: dict) -> str | None:
         if _point_in_poly(x, y, verts):
             return name
     return None
+
+
+def _landmark_tooltip(name: str, x: float, y: float, zones: dict) -> str:
+    """Build landmark hover text with the containing building name."""
+    zone = _containing_zone(x, y, zones)
+    if zone:
+        return f"{name}\nBuilding: {zone}"
+    return name
 
 
 def render_turn_slider_html(
@@ -1040,20 +1118,41 @@ def render_turn_slider_html(
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
+    # Building art: a zone whose connection leads to a place dir with an
+    # icon.svg is drawn as that illustration (clipped to its footprint) instead
+    # of a flat rectangle; others keep the palette fill.
+    _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
+    _zone_dest = _zone_icon_dirs(g)
+
     for zname in zone_order:
         verts = g["zones"].get(zname)
         if not verts:
             continue
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
-        cx = sum(x for x, _ in verts) / len(verts)
-        cy = sum(y for _, y in verts) / len(verts)
+        zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
+        icon = None
+        if _scenario_root is not None and zname in _zone_dest:
+            for ext in (".svg", ".png", ".webp"):
+                icon = _icon_data_uri(_scenario_root / _zone_dest[zname] / f"icon{ext}")
+                if icon:
+                    break
         p.append(f"<g data-reveal='{reveal_zone.get(zname, never)}'>")
-        p.append(f"<polygon points='{poly(verts)}' fill='{color}' "
-                 f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='{0.6*sc:.2f}'>"
-                 f"<title>{html.escape(zname)}</title></polygon>")
-        p.append(f"<text x='{cx:.2f}' y='{fy(cy):.2f}' text-anchor='middle' "
-                 f"dominant-baseline='middle' class='zlabel'>{html.escape(zname)}</text></g>")
+        if icon:
+            xs = [x for x, _ in verts]
+            ys = [y for _, y in verts]
+            p.append(f"<polygon points='{poly(verts)}' fill='none' "
+                     f"stroke='#888' stroke-width='{0.6*sc:.2f}'>"
+                     f"<title>{html.escape(zone_tip)}</title></polygon>")
+            p.append(f"<image href='{icon}' x='{min(xs):.1f}' y='{fy(max(ys)):.1f}' "
+                     f"width='{max(xs)-min(xs):.1f}' height='{max(ys)-min(ys):.1f}' "
+                     "preserveAspectRatio='xMidYMid meet'>"
+                     f"<title>{html.escape(zone_tip)}</title></image>")
+        else:
+            p.append(f"<polygon points='{poly(verts)}' fill='{color}' "
+                     f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='{0.6*sc:.2f}'>"
+                     f"<title>{html.escape(zone_tip)}</title></polygon>")
+        p.append("</g>")
 
     for iname, verts in g["impassable"]:
         if not verts:
@@ -1074,10 +1173,10 @@ def render_turn_slider_html(
                  f"<title>{html.escape(bname)}</title></polygon></g>")
 
     for name, (x, y) in g["landmarks"].items():
+        tip = _landmark_tooltip(name, x, y, g["zones"])
         p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
                  f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{1.1*sc:.2f}' fill='#b9b9b9'>"
-                 f"<title>{html.escape(name)}</title></circle>"
-                 f"<text x='{x+1.5*sc:.2f}' y='{fy(y):.2f}' class='llabel'>{html.escape(name)}</text></g>")
+                 f"<title>{html.escape(tip)}</title></circle></g>")
     for _iid, (x, y, label) in g["items"].items():
         tooltip = _item_tooltip(label, (item_details or {}).get(_iid))
         p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"

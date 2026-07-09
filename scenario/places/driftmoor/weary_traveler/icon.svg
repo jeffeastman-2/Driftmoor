@@ -1,0 +1,46 @@
+<svg viewBox="0 0 138 150" xmlns="http://www.w3.org/2000/svg">
+<style>
+.o{fill:none;stroke:#2c2118;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;}
+.pl{fill:#e4d9c2;stroke:#2c2118;stroke-width:1.5;stroke-linejoin:round;}
+.st{fill:#cec3a9;stroke:#2c2118;stroke-width:1.5;stroke-linejoin:round;}
+.rf{fill:#8a7a64;stroke:#2c2118;stroke-width:1.5;stroke-linejoin:round;}
+.rf2{fill:#726251;stroke:#2c2118;stroke-width:1.5;stroke-linejoin:round;}
+.tb{stroke:#6f5236;stroke-width:2.6;fill:none;stroke-linecap:round;}
+.gw{fill:#e6c47c;stroke:#2c2118;stroke-width:1;}
+.dk{fill:#251f17;stroke:#2c2118;stroke-width:1.3;stroke-linejoin:round;}
+.mt{fill:#d9c489;stroke:#2c2118;stroke-width:1;}
+.thin{fill:none;stroke:#2c2118;stroke-width:0.8;opacity:.5;}
+.sm{fill:none;stroke:#2c2118;stroke-width:1.4;opacity:.5;stroke-linecap:round;}
+</style>
+<!-- chimney + smoke -->
+<path class="sm" d="M104,34 q-7,-7 -1,-14 q6,-7 -1,-14"/>
+<rect class="st" x="98" y="36" width="13" height="28"/>
+<!-- roof -->
+<polygon class="rf" points="26,66 72,28 118,66"/>
+<polygon class="rf2" points="72,28 118,66 72,66"/>
+<line class="thin" x1="46" y1="55" x2="98" y2="55"/><line class="thin" x1="55" y1="47" x2="89" y2="47"/>
+<line class="o" x1="26" y1="66" x2="118" y2="66"/>
+<!-- dormers (extra guest rooms) -->
+<polygon class="rf2" points="40,60 50,48 60,60"/><rect class="gw" x="45" y="54" width="10" height="8"/>
+<polygon class="rf2" points="84,58 94,46 104,58"/><rect class="gw" x="89" y="52" width="10" height="8"/>
+<!-- upper storey: jettied half-timber, row of guest windows -->
+<rect class="pl" x="28" y="66" width="90" height="28"/>
+<path class="tb" d="M53,68 V92 M80,68 V92 M107,68 V92 M30,80 H116"/>
+<rect class="gw" x="36" y="72" width="14" height="15"/><path class="o" d="M43,72 V87 M36,79 H50" stroke-width="0.8"/>
+<rect class="gw" x="65" y="72" width="14" height="15"/><path class="o" d="M72,72 V87 M65,79 H79" stroke-width="0.8"/>
+<rect class="gw" x="94" y="72" width="14" height="15"/><path class="o" d="M101,72 V87 M94,79 H108" stroke-width="0.8"/>
+<!-- ground floor stone -->
+<rect class="st" x="34" y="94" width="78" height="44"/>
+<line class="thin" x1="34" y1="116" x2="112" y2="116"/>
+<line class="thin" x1="58" y1="94" x2="58" y2="116"/><line class="thin" x1="88" y1="116" x2="88" y2="138"/>
+<!-- welcoming door -->
+<path class="dk" d="M63,138 V112 q0,-8 10,-8 q10,0 10,8 V138 Z"/>
+<line class="o" x1="60" y1="104" x2="86" y2="104"/>
+<!-- flanking windows -->
+<rect class="gw" x="40" y="106" width="16" height="18"/><path class="o" d="M48,106 V124 M40,115 H56" stroke-width="0.8"/>
+<rect class="gw" x="90" y="106" width="16" height="18"/><path class="o" d="M98,106 V124 M90,115 H106" stroke-width="0.8"/>
+<!-- hanging moon sign -->
+<path class="o" d="M28,74 H15 M18,74 V79"/>
+<rect class="o" x="7" y="79" width="20" height="16" rx="2"/>
+<path class="mt" d="M20,82 a5.5,5.5 0 1 0 0,10 a4.2,4.2 0 1 1 0,-10 Z"/>
+</svg>
