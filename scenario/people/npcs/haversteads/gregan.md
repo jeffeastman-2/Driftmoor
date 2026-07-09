@@ -20,11 +20,11 @@ Broad-shouldered, weathered, graying hair and thick beard, usually dusted with f
 ## What He Knows
 - Strange symbols carved into the mill's beams — he suspects sabotage but doesn't know by whom or why
 - Shadowbeast sightings near the mill have been increasing
-- Tessa has been slipping off to explore near the obelisk area — he knows more than he lets on
+- Tessa will not leave the strange symbols alone — picking at the beams, badgering travelers with questions about the far-off obelisk — he knows more than he lets on
 
 ## Adventure Hooks
 1. Riverbank erosion threatening the mill structure — needs help shoring it up
-2. Tessa missing near the obelisk — family will pay or barter for her return
+2. Tessa slips off into the Mistwood chasing the symbols — family will pay or barter for her safe return
 3. Sabotage symbols on the beams — wants answers
 4. Shadowbeast attack on a grain-delivery farmer — needs protection
 

@@ -21,3 +21,22 @@ Kind-faced, auburn hair tied in a scarf, flour smudged on her apron. Moves warml
 - More about Tessa's wandering than she has told Gregan
 - The mood of the river and surrounding fields has changed — she can't name it but she notices it
 - Baby Isla has been unusually fussy near the mill's outer walls since the symbols appeared
+
+## Combat Statistics
+- **HP:** 10
+- **AC:** 10
+
+## Neurochemical Baseline
+- **dopamine:** 0.45
+- **cortisol:** 0.5
+- **norepinephrine:** 0.5
+- **endorphins:** 0.4
+- **serotonin:** 0.55
+- **acetylcholine:** 0.6
+- **oxytocin:** 0.7
+- **oxytocin_baseline:** 0.6
+- **oxytocin_volatility:** 0.45
+- **cortisol_baseline:** 0.45
+- **cortisol_volatility:** 0.5
+- **serotonin_baseline:** 0.55
+- **serotonin_volatility:** 0.25

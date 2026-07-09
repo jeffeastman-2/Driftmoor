@@ -19,4 +19,23 @@ Lanky, mop of dark hair, friendly open face. Looks younger than 18, which frustr
 
 ## What He Knows
 - He has been listening to the farmers who come to the mill. He has heard more shadowbeast accounts than his parents realize.
-- He knows which farmers have seen things near the obelisk and which are just repeating rumors.
+- He knows which farmers have actually seen the shadowbeast out in the Mistwood or along the river road and which are just repeating rumors.
+
+## Combat Statistics
+- **HP:** 8
+- **AC:** 10
+
+## Neurochemical Baseline
+- **dopamine:** 0.65
+- **cortisol:** 0.35
+- **norepinephrine:** 0.6
+- **endorphins:** 0.55
+- **serotonin:** 0.45
+- **acetylcholine:** 0.6
+- **oxytocin:** 0.5
+- **dopamine_baseline:** 0.6
+- **dopamine_volatility:** 0.8
+- **norepinephrine_baseline:** 0.55
+- **norepinephrine_volatility:** 0.7
+- **endorphins_baseline:** 0.5
+- **endorphins_volatility:** 0.5

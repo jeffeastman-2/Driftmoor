@@ -18,12 +18,12 @@ Wiry, freckled, infectious laugh. Moves quickly and with purpose. Usually has so
 - Fear: getting in serious trouble and losing the freedom her parents currently allow her.
 
 ## What She Knows
-- She has been near the obelisk area. She has seen things.
-- The symbols on the beams match something she saw carved in the riverbank stones.
+- She cannot stop asking about the obelisk — miles off through the Mistwood, though she has never laid eyes on it — badgering travelers and farmers with questions no child should be asking.
+- The symbols on the beams match something she found carved in the riverbank stones close to the mill.
 - She has not told anyone this.
 
 ## Note for DM
-Tessa is the family member most likely to have actionable information about the obelisk. Earning her trust (separately from the parents) is the key.
+Tessa is the family member most likely to have pieced together what the symbols mean and how they point to the distant obelisk. Earning her trust (separately from the parents) is the key.
 
 ## Combat Statistics
 - **HP:** 6
