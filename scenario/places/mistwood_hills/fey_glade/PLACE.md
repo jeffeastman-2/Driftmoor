@@ -65,13 +65,6 @@ TRAIL → TREELINE → GLADE → POOL
 
 ## Scene Introductions
 
-### aeliana
-It is dusk. You are on the trail approaching the Fey Glade. The forest
-ahead has gone unnaturally quiet — no birdsong, no rustling. The air
-carries a faint luminous warmth from somewhere deeper in the trees. You have been tracking a creature ahead of you on the trail. You are alert and wary 
-of the possibility of attack as you move up the trail towards the luminous
-warmth ahead.
-
 ### fennel
 It is dusk. Three days you have learned the pattern: dusk is when it
 tries, and dawn is a second window. Not midnight — during full dark the
