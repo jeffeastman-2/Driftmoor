@@ -99,12 +99,19 @@ def _icon_data_uri(path: "Path") -> "str | None":
     return uri
 
 
-def _zone_icon_dirs(g: dict) -> dict:
+def _zone_icon_dirs(g: dict, place_rel: str | None = None) -> dict:
     """Map each zone name -> the place dir a connection inside it leads to,
-    so a zone can find its ``icon.svg``. Reuses ``## Connections``."""
+    so a zone can find its ``icon.svg``. Reuses ``## Connections``.
+
+    ``place_rel`` is the current place's path relative to ``scenario/`` (e.g.
+    ``places/driftmoor``); when given, only connections leading to a *sub-place*
+    of it count — so a "leave to region" or exit connection that happens to sit
+    inside a building footprint (e.g. ``to_region`` -> ``places/``) can't hijack
+    that building's icon."""
+    prefix = (place_rel.rstrip("/") + "/") if place_rel else "places/"
     out: dict = {}
     for (_name, cx, cy, dest) in g.get("connections", []):
-        if not dest or not dest.startswith("places/"):
+        if not dest or not dest.startswith(prefix):
             continue
         z = _containing_zone(cx, cy, g["zones"])
         if z is not None and z not in out:
@@ -418,7 +425,9 @@ def render_map(
     unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
     z_rank = {z: i for i, z in enumerate(unique_z)}
     _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
-    _zone_dest = _zone_icon_dirs(g)
+    _place_rel = (geometry_path.parent.relative_to(_scenario_root).as_posix()
+                  if _scenario_root else None)
+    _zone_dest = _zone_icon_dirs(g, _place_rel)
 
     zone_pts = [p for n in zone_order for p in g["zones"].get(n, ())]
     if zone_pts:
@@ -691,7 +700,9 @@ def render_interactive_map_html(
     unique_z = sorted({g["zone_z"].get(n, 0.0) for n in zone_order})
     z_rank = {z: i for i, z in enumerate(unique_z)}
     _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
-    _zone_dest = _zone_icon_dirs(g)
+    _place_rel = (geometry_path.parent.relative_to(_scenario_root).as_posix()
+                  if _scenario_root else None)
+    _zone_dest = _zone_icon_dirs(g, _place_rel)
 
     parts: list[str] = []
     parts.append(
@@ -1122,7 +1133,9 @@ def render_turn_slider_html(
     # icon.svg is drawn as that illustration (clipped to its footprint) instead
     # of a flat rectangle; others keep the palette fill.
     _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
-    _zone_dest = _zone_icon_dirs(g)
+    _place_rel = (geometry_path.parent.relative_to(_scenario_root).as_posix()
+                  if _scenario_root else None)
+    _zone_dest = _zone_icon_dirs(g, _place_rel)
 
     for zname in zone_order:
         verts = g["zones"].get(zname)

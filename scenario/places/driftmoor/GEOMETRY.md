@@ -150,10 +150,23 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | to_broken_lantern      | 910 | 568 | places/driftmoor/broken_lantern          |
 | to_salt_and_iron       | 1040 | 568 | places/driftmoor/salt_and_iron           |
 | to_forge               | 1267 | 292  | places/driftmoor/ironhoof_forge          |
-| to_elyssa_house        | 1446 | 536 | places/driftmoor/elyssa_residence        |
+| to_elyssa_house        | 1446 | 536 | places/driftmoor/elyssa_cottage           |
 | to_apothecary          | 1040 | 780 | places/driftmoor/bitter_remedy           |
 | to_gilded_trinket      | 796 | 568 | places/driftmoor/gilded_trinket          |
 | to_rooming_house       | 926 | 780 | places/driftmoor/weary_traveler          |
+| to_bakery              | 682 | 568 | places/driftmoor/bakery                  |
+| to_cobbler             | 747 | 780 | places/driftmoor/cobblers_shop           |
+| to_barber              | 828 | 780 | places/driftmoor/rusty_razor             |
+| to_cooper              | 585 | 828 | places/driftmoor/coopers_shed            |
+| to_carpenter           | 601 | 942 | places/driftmoor/carpenters_workshop     |
+| to_weaver              | 958 | 942 | places/driftmoor/weavers_cottage         |
+| to_tailor              | 828 | 942 | places/driftmoor/tailors_shop            |
+| to_tannery             | 698 | 991 | places/driftmoor/tannery                 |
+| to_fishmonger          | 455 | 682 | places/driftmoor/fishmongers_shack       |
+| to_schoolhouse         | 1365 | 747 | places/driftmoor/schoolhouse            |
+| to_midwife             | 1462 | 1007 | places/driftmoor/midwifes_home         |
+| to_watchtower          | 633 | 698 | places/driftmoor/watchtower              |
+| to_general_store       | 552 | 260 | places/driftmoor/general_store           |
 
 ---
 
