@@ -99,6 +99,21 @@ def _icon_data_uri(path: "Path") -> "str | None":
     return uri
 
 
+def _char_icon_uri(scenario_root: "Path | None", cid: str) -> "str | None":
+    """Data-URI for a character token ``<char dir>/icon.svg`` if present. Looks
+    in the conventional people/creature dirs, by id then base id (drops _N)."""
+    if scenario_root is None:
+        return None
+    base = re.sub(r"_\d+$", "", cid)
+    for who in (cid, base):
+        for area in ("people/players", "people/npcs", "creatures"):
+            for ext in (".svg", ".png", ".webp"):
+                uri = _icon_data_uri(scenario_root / area / who / f"icon{ext}")
+                if uri:
+                    return uri
+    return None
+
+
 def _zone_icon_dirs(g: dict, place_rel: str | None = None) -> dict:
     """Map each zone name -> the place dir a connection inside it leads to,
     so a zone can find its ``icon.svg``. Reuses ``## Connections``.
@@ -1205,9 +1220,18 @@ def render_turn_slider_html(
                  f"stroke-linecap='round' stroke-dasharray='{1.6*sc:.2f},{1.3*sc:.2f}' "
                  f"style='display:none'/>")
     for cid in sorted(tracks):
+        ci = _char_icon_uri(_scenario_root, cid)
+        if ci:
+            z = 12.0 * sc
+            marker = (f"<image href='{ci}' x='{-z/2:.2f}' y='{-z/2:.2f}' "
+                      f"width='{z:.2f}' height='{z:.2f}' preserveAspectRatio='xMidYMid meet'/>")
+        else:
+            marker = (f"<circle r='{1.5*sc:.2f}' fill='{cc[cid]}' "
+                      f"stroke='#000' stroke-width='{0.35*sc:.2f}'/>")
+        # Name shows only on hover (a <title> tooltip), not as a printed label.
+        name = html.escape(cid.replace("_", " ").title())
         p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
-                 f"<circle r='{1.5*sc:.2f}' fill='{cc[cid]}' stroke='#000' stroke-width='{0.35*sc:.2f}'/>"
-                 f"<text x='{2.0*sc:.2f}' y='{-1.0*sc:.2f}' class='clabel'>{html.escape(cid)}</text></g>")
+                 f"{marker}<title>{name}</title></g>")
     p.append("</svg>")
 
     frames_js = json.dumps({
