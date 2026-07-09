@@ -17,14 +17,15 @@
 <g clip-path='url(#t)'>
   <path class='cloak' d='M8,100 q4,-36 42,-36 q38,0 42,36 Z'/>
   <rect class='skin' x='44' y='58' width='12' height='14'/>
-  <path class='hair' d='M35,54 q-7,8 -6,23 q1,10 7,12 q5,-4 5,-12 q0,-13 -6,-23 Z'/>
+  <path class='hair' d='M34,54 q-8,9 -6,24 q1,11 8,13 q5,-4 5,-13 q0,-13 -7,-24 Z'/>
   <ellipse class='skin' cx='50' cy='45' rx='12' ry='15'/>
   
-  <path class='hair' d='M34,48 q-2,-28 16,-28 q18,0 16,28 q-5,-14 -16,-14 q-11,0 -16,14 Z'/>
+  <path class='hair' d='M33,48 q-1,-24 17,-24 q18,0 17,24 q-3,-7 -8,-9 q-2,4 -5,4 q-3,0 -5,-4 q-5,2 -8,9 Z'/>
   <circle class='eye' cx='44' cy='45' r='1.65'/><circle class='eye' cx='56' cy='45' r='1.65'/>
   <path class='ln' d='M41,41 q3,-2 6,-1 M53,40 q3,-1 6,1' stroke-width='.9'/>
   <line class='ln' x1='50' y1='47' x2='49' y2='51' stroke-width='.8'/>
   <path class='ln' d='M46,54 q4,2 8,0' stroke-width='.92'/>
+  <circle cx='31.5' cy='44' r='2.5' fill='#7a4330' stroke='#2c2118' stroke-width='.6'/><circle cx='68.5' cy='42' r='2.3' fill='#7a4330' stroke='#2c2118' stroke-width='.6'/><circle cx='64.5' cy='31.8' r='2.1' fill='#7a4330' stroke='#2c2118' stroke-width='.6'/>
   
 </g>
 <circle class='gold' cx='50' cy='50' r='42'/>

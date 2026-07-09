@@ -20,11 +20,13 @@
   
   <ellipse class='skin' cx='50' cy='45' rx='17' ry='19'/>
   
-  <path class='hair' d='M34,48 q-2,-28 16,-28 q18,0 16,28 q-5,-14 -16,-14 q-11,0 -16,14 Z'/>
+  <path class='hair' d='M35,46 q1,-18 15,-18 q14,0 15,18 q-6,-5 -15,-5 q-9,0 -15,5 Z'/>
   <circle class='eye' cx='44' cy='45' r='1.65'/><circle class='eye' cx='56' cy='45' r='1.65'/>
   <path class='ln' d='M41,41 q3,-2 6,-1 M53,40 q3,-1 6,1' stroke-width='.9'/>
   <line class='ln' x1='50' y1='47' x2='49' y2='51' stroke-width='.8'/>
   <path class='ln' d='M46,54 q4,2 8,0' stroke-width='.92'/>
+  <circle cx='50' cy='68.8' r='2.3' fill='#d7c177' stroke='#2c2118' stroke-width='.55'/>
+  <path class='ln' d='M50,66.8 v4 M48,68.8 h4' stroke='#8a7742' stroke-width='.7'/>
   
 </g>
 <circle class='gold' cx='50' cy='50' r='42'/>

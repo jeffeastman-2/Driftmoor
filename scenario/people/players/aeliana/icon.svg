@@ -17,10 +17,10 @@
 <g clip-path='url(#t)'>
   <path class='cloak' d='M8,100 q4,-36 42,-36 q38,0 42,36 Z'/>
   <rect class='skin' x='44' y='58' width='12' height='14'/>
-  <path class='hair' d='M39,52 q-9,10 -8,32 q1,11 5,13 q4,-2 6,-12 q1,-16 -3,-33 Z'/><line class='hl' x1='34' y1='66' x2='39' y2='65'/><line class='hl' x1='33' y1='75' x2='39' y2='74'/><line class='hl' x1='34' y1='84' x2='40' y2='84'/>
+  <path class='hair' d='M40,52 q-10,11 -9,34 q1,11 6,13 q4,-2 6,-12 q2,-19 -3,-35 Z'/><line class='hl' x1='34' y1='66' x2='40' y2='64'/><line class='hl' x1='33' y1='75' x2='40' y2='73'/><line class='hl' x1='34' y1='84' x2='41' y2='83'/><circle cx='35.6' cy='70.4' r='1.2' fill='#8ea16e' stroke='#2c2118' stroke-width='.35'/><circle cx='36.5' cy='79.2' r='1.1' fill='#be9b68' stroke='#2c2118' stroke-width='.35'/>
   <ellipse class='skin' cx='50' cy='45' rx='15' ry='18'/>
   <path class='skin' d='M63,43 l9,-7 -4,12 Z'/><path class='skin' d='M37,43 l-9,-7 4,12 Z'/>
-  <path class='hair' d='M34,48 q-2,-28 16,-28 q18,0 16,28 q-5,-14 -16,-14 q-11,0 -16,14 Z'/>
+  <path class='hair' d='M33,49 q0,-29 17,-29 q17,0 17,29 q-4,-9 -10,-12 q-3,7 -7,11 q-4,-5 -7,-11 q-6,3 -10,12 Z'/>
   <circle class='eye' cx='44' cy='45' r='1.65'/><circle class='eye' cx='56' cy='45' r='1.65'/>
   <path class='ln' d='M41,41 q3,-2 6,-1 M53,40 q3,-1 6,1' stroke-width='.9'/>
   <line class='ln' x1='50' y1='47' x2='49' y2='51' stroke-width='.8'/>

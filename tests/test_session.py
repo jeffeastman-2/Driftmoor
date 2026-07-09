@@ -763,6 +763,15 @@ class TestInferDriftmoorVenueTransition:
         )
         assert out == "weary_traveler"
 
+    def test_enter_weary_traveler_by_rooming_house_alias(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
+            "I enter the rooming house",
+            "places/driftmoor",
+            "ROOMING_HOUSE",
+        )
+        assert out == "weary_traveler"
+
     def test_enter_church_by_general_name(self):
         from engine.session import _infer_driftmoor_venue_transition
         out = _infer_driftmoor_venue_transition(

@@ -1545,13 +1545,75 @@ def _scene_node_from_place_file(place_file: Path) -> _SceneNode:
 
 
 @lru_cache(maxsize=1)
+def _driftmoor_connection_aliases() -> dict[str, tuple[str, ...]]:
+    """Destination-place aliases derived from authored connection names.
+
+    Example: ``to_rooming_house -> places/driftmoor/weary_traveler`` adds
+    ``rooming house`` aliases so natural enter-phrasing resolves correctly.
+    """
+    out: dict[str, set[str]] = {}
+    if not _DRIFTMOOR_PLACES_ROOT.exists():
+        return {}
+
+    for geom_file in sorted(_DRIFTMOOR_PLACES_ROOT.glob("**/GEOMETRY.md")):
+        try:
+            text = geom_file.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        m = re.search(r"##\s+Connections\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
+        if not m:
+            continue
+
+        for raw in m.group(1).splitlines():
+            line = raw.strip()
+            if not line.startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 4:
+                continue
+            name, dest = cells[0], cells[3]
+            if not name or not dest:
+                continue
+            if name.lower() == "name" or dest.lower() == "destination":
+                continue
+            if re.fullmatch(r"-+", name.replace(" ", "")):
+                continue
+
+            dest_norm = dest.lower().strip().strip("/")
+            if not dest_norm.startswith("places/driftmoor/"):
+                continue
+
+            hint = re.sub(r"^to_", "", name.lower().strip()).replace("_", " ")
+            if not hint:
+                continue
+
+            # Connection hints are best kept phrase-level (e.g. "rooming house").
+            # Token-level expansion can introduce ambiguous one-word aliases like
+            # "house" that incorrectly match unrelated child venues.
+            out.setdefault(dest_norm, set()).add(hint)
+
+    return {k: tuple(sorted(v)) for k, v in out.items()}
+
+
+@lru_cache(maxsize=1)
 def _driftmoor_place_registry() -> tuple[_SceneNode, ...]:
     nodes: list[_SceneNode] = []
     if not _DRIFTMOOR_PLACES_ROOT.exists():
         return tuple(nodes)
+    conn_aliases = _driftmoor_connection_aliases()
     for place_file in sorted(_DRIFTMOOR_PLACES_ROOT.glob("**/PLACE.md")):
         node = _scene_node_from_place_file(place_file)
         if node.place_path:
+            extra = conn_aliases.get(node.place_path.lower().strip("/"), ())
+            if extra:
+                aliases = tuple(dict.fromkeys(node.aliases + extra))
+                node = _SceneNode(
+                    node.scene_name,
+                    node.place_path,
+                    node.parent_place_path,
+                    aliases,
+                )
             nodes.append(node)
     return tuple(nodes)
 

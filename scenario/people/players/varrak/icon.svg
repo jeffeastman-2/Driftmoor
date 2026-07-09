@@ -1,34 +1,49 @@
 <svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='varrak token'>
 <style>
 .ring{fill:#ded2b8;stroke:#2c2118;stroke-width:3;}
-.gold{fill:none;stroke:hsl(332 58% 58%);stroke-width:1.5;opacity:.72;}
-.cloak{fill:#4f5662;stroke:#2c2118;stroke-width:1.3;stroke-linejoin:round;}
-.skin{fill:#cfa886;stroke:#2c2118;stroke-width:1.05;stroke-linejoin:round;}
-.hair{fill:#4a3a31;stroke:#2c2118;stroke-width:1;stroke-linejoin:round;}
+.gold{fill:none;stroke:#c35f3f;stroke-width:1.5;opacity:.72;}
+.robe{fill:#4e5563;stroke:#2c2118;stroke-width:1.3;stroke-linejoin:round;}
+.scale{fill:#8f3c31;stroke:#2c2118;stroke-width:1.05;stroke-linejoin:round;}
+.darkscale{fill:#5a241f;stroke:#2c2118;stroke-width:1;stroke-linejoin:round;}
 .ln{fill:none;stroke:#2c2118;stroke-width:1;stroke-linecap:round;}
-.hl{fill:none;stroke:#d7d0c2;stroke-width:.8;opacity:.84;}
-.eye{fill:#9e7d38;}
-.horn{fill:#75615a;stroke:#2c2118;stroke-width:.9;}
-.tooth{fill:#dfd9cc;stroke:#2c2118;stroke-width:.6;}
-.scale{fill:#6f7b8d;stroke:#2c2118;stroke-width:.7;opacity:.8;}
+.eye{fill:#d29a34;}
+.pupil{fill:#20130e;}
+.horn{fill:#6f5f57;stroke:#2c2118;stroke-width:.9;}
+.satchel{fill:#6a5744;stroke:#2c2118;stroke-width:.9;stroke-linejoin:round;}
+.satstrap{fill:none;stroke:#6a5744;stroke-width:2;stroke-linecap:round;}
+.glow{fill:none;stroke:#e0a257;stroke-width:.8;opacity:.35;}
 </style>
 <circle class='ring' cx='50' cy='50' r='46.5'/>
 <clipPath id='t'><circle cx='50' cy='50' r='45'/></clipPath>
 <g clip-path='url(#t)'>
-  <path class='cloak' d='M8,100 q4,-36 42,-36 q38,0 42,36 Z'/>
-  <rect class='skin' x='44' y='58' width='12' height='14'/>
-  <path class='hair' d='M37,53 q-6,8 -5,20 q1,9 6,10 q4,-3 4,-10 q0,-11 -5,-20 Z'/>
-  <ellipse class='skin' cx='50' cy='45' rx='14' ry='18'/>
-  <path class='scale' d='M50,31 l3,5 l-3,4 l-3,-4 Z'/><path class='scale' d='M44,33 l2,4 l-2,3 l-2,-3 Z'/><path class='scale' d='M56,33 l2,4 l-2,3 l-2,-3 Z'/>
-  <path class='hair' d='M34,48 q-2,-28 16,-28 q18,0 16,28 q-5,-14 -16,-14 q-11,0 -16,14 Z'/>
-  <circle class='eye' cx='44' cy='45' r='1.65'/><circle class='eye' cx='56' cy='45' r='1.65'/>
-  <path class='ln' d='M41,41 q3,-2 6,-1 M53,40 q3,-1 6,1' stroke-width='.9'/>
-  <line class='ln' x1='50' y1='47' x2='49' y2='51' stroke-width='.8'/>
-  <path class='ln' d='M46,54 q4,2 8,0' stroke-width='.92'/>
-  
+  <path class='robe' d='M8,100 q4,-36 42,-36 q38,0 42,36 Z'/>
+  <path class='satstrap' d='M35,64 q8,4 13,12'/>
+  <rect class='satchel' x='45' y='73' width='12' height='9' rx='1.8'/>
+
+  <path class='scale' d='M39,63 q11,4 22,0 v10 h-22 Z'/>
+  <path class='scale' d='M50,22 q17,0 20,21 q2,18 -9,28 q-5,5 -11,5 q-6,0 -11,-5 q-11,-10 -9,-28 q3,-21 20,-21 Z'/>
+  <path class='darkscale' d='M50,20 l4,6 l-4,6 l-4,-6 Z'/>
+  <path class='darkscale' d='M50,27 l3.3,5 l-3.3,5 l-3.3,-5 Z'/>
+  <path class='darkscale' d='M50,34 l3,4.6 l-3,4.6 l-3,-4.6 Z'/>
+  <path class='darkscale' d='M50,41 l2.7,4.2 l-2.7,4.2 l-2.7,-4.2 Z'/>
+  <path class='darkscale' d='M50,48 l2.5,3.8 l-2.5,3.8 l-2.5,-3.8 Z'/>
+
+  <path class='horn' d='M34,34 q-7,3 -8,10 q7,-1 11,-6 Z'/>
+  <path class='horn' d='M66,34 q7,3 8,10 q-7,-1 -11,-6 Z'/>
+
+  <path class='darkscale' d='M39,45 q11,-9 22,0 q-1,7 -11,7 q-10,0 -11,-7 Z'/>
+  <ellipse class='eye' cx='44' cy='45' rx='2.2' ry='1.4'/>
+  <ellipse class='eye' cx='56' cy='45' rx='2.2' ry='1.4'/>
+  <rect class='pupil' x='43.5' y='43.9' width='1' height='2.2' rx='.5'/>
+  <rect class='pupil' x='55.5' y='43.9' width='1' height='2.2' rx='.5'/>
+
+  <path class='scale' d='M44,53 q6,3 12,0 q-1,6 -6,8 q-5,-2 -6,-8 Z'/>
+  <path class='ln' d='M41,57 q9,4 18,0' stroke-width='.95'/>
+  <path class='ln' d='M40,50 q10,-4 20,0' stroke-width='.7' opacity='.75'/>
+  <path class='glow' d='M35,30 q15,-10 30,0'/>
 </g>
 <circle class='gold' cx='50' cy='50' r='42'/>
-<circle cx='50' cy='50' r='45' fill='none' stroke='hsl(306 44% 72%)' stroke-opacity='.26' stroke-width='1.1'/>
+<circle cx='50' cy='50' r='45' fill='none' stroke='hsl(12 44% 62%)' stroke-opacity='.26' stroke-width='1.1'/>
   <!-- name-label -->
   <rect x='16' y='84' width='68' height='11' rx='5.5' fill='#05070b' fill-opacity='0.84'/>
   <text x='50' y='91.3' text-anchor='middle' font-family='Verdana, sans-serif' font-size='6.5' font-weight='700' letter-spacing='0.25' fill='#ffffff'>Varrak</text>
