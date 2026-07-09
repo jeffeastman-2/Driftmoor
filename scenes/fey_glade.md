@@ -29,19 +29,6 @@
 - **identity_file:** scenario/people/players/aeliana/IDENTITY.md
 - **position:** 256, 81
 
-### fennel
-- **type:** npc
-- **soul_file:** scenario/people/npcs/fennel/SOUL.md
-- **identity_file:** scenario/people/npcs/fennel/IDENTITY.md
-- **position:** 190, 162
-
-### shadowbeast_1
-- **type:** creature
-- **creature_file:** scenario/creatures/shadowbeast/CREATURE.md
-- **soul_file:** scenario/creatures/shadowbeast/SOUL.md
-- **identity_file:** scenario/creatures/shadowbeast/IDENTITY.md
-- **position:** 65, 162
-
 ## Game State Sections
 - header: Creatures in Scene | file: scenario/creatures/shadowbeast/CREATURE.md
 - header: The Fey Glade Pool (DM Only) | file: scenario/places/mistwood_hills/fey_glade/LORE.md

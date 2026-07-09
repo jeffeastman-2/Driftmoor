@@ -54,30 +54,6 @@ Characters may leave this scene. Recognise and permit these:
 - **identity_file:** scenario/people/players/cinnabar/IDENTITY.md
 - **position:** 20, 22
 
-### tess
-- **type:** npc
-- **soul_file:** scenario/people/npcs/tess/SOUL.md
-- **identity_file:** scenario/people/npcs/tess/IDENTITY.md
-- **position:** 65, 26
-
-### wilfred
-- **type:** npc
-- **soul_file:** scenario/people/npcs/wilfred/SOUL.md
-- **identity_file:** scenario/people/npcs/wilfred/IDENTITY.md
-- **position:** 56, 20
-
-### bran
-- **type:** npc
-- **soul_file:** scenario/people/npcs/bran/SOUL.md
-- **identity_file:** scenario/people/npcs/bran/IDENTITY.md
-- **position:** 14, 52
-
-### marda
-- **type:** npc
-- **soul_file:** scenario/people/npcs/marda/SOUL.md
-- **identity_file:** scenario/people/npcs/marda/IDENTITY.md
-- **position:** 11, 52
-
 ## Scene Introductions
 
 ### kaelin
@@ -90,18 +66,6 @@ of listening opportunities. A halfling bard is already set up by the fire,
 working the room for food and coin. Behind the bar, Tess Malwin is watching
 everyone at once and pretending not to. You came here to listen before you act.
 If Driftmoor is fraying, taverns hear it first.
-
-### tess
-Evening crowd. The usual faces. Wilfred is three ales deep and talking about shadow giants again. Then the door opens and a halfling walks in — wild hair, patched clothes, lute across their back, and the particular confidence of someone who has talked their way into a meal before. They have already found the stool by the fire. No coin visible. You have seen this act. The question is whether this one is worth feeding.
-
-### wilfred
-You are already halfway through a story no one asked for and one-third through another ale someone else paid for. You keep saying the same thing: you saw shapes near the obelisk cliffs that were too tall and too wrong to be men. Most people in the room roll their eyes when you start, but Tess listens just enough to make you think you are not entirely mad.
-
-### bran
-You are at a side table with Marda, arguing about a fishing payout that came up short after gear repairs. You think someone in town is skimming. Marda thinks you are counting wrong and picking fights because you hate being embarrassed in public. The ale has not improved either of your tempers.
-
-### marda
-You are at a side table with Bran, trying to keep a straightforward accounting argument from becoming a tavern scene. Bran is loud and stubborn. You are tired, annoyed, and very aware that everyone can hear at least half of this. You do not mind an audience if it helps settle the point.
 
 ## Game State Sections
 - header: Scene: The Broken Lantern (Tavern) | file: scenario/places/driftmoor/broken_lantern/PLACE.md

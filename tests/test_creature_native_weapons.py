@@ -4,7 +4,11 @@ from engine.md_loader import configure_from_md
 
 
 def test_shadowbeast_native_weapon_synthesizes_from_identity():
-    session = configure_from_md(Path("scenes/fey_glade.md")).characters["shadowbeast_1"]
+    config = configure_from_md(Path("scenes/fey_glade.md"))
+    # Creatures are loaded from place file and merged into characters
+    session = config.characters.get("shadowbeast_1")
+    assert session is not None, "shadowbeast_1 should be loaded from place file"
+    
     weapons = getattr(session, "weapons", []) or []
 
     assert any(w.id == "shadowbeast_claw" for w in weapons)
@@ -16,7 +20,11 @@ def test_shadowbeast_native_weapon_synthesizes_from_identity():
 
 
 def test_giant_spider_native_weapon_synthesizes_from_identity():
-    session = configure_from_md(Path("scenes/echoing_caverns.md")).characters["giant_spider"]
+    config = configure_from_md(Path("scenes/echoing_caverns.md"))
+    # Creatures are loaded from place file and merged into characters
+    session = config.characters.get("giant_spider")
+    assert session is not None, "giant_spider should be loaded from place file"
+    
     weapons = getattr(session, "weapons", []) or []
 
     assert any(w.id == "spider_bite" for w in weapons)

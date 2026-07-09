@@ -92,8 +92,16 @@ def _parse_meta(section_text: str) -> dict[str, str]:
 
 
 def _parse_all_char_sections(text: str) -> dict[str, dict[str, str]]:
-    """Parse every ``### char_id`` subsection under ``## Characters``."""
+    """Parse every ``### char_id`` subsection under ``## Characters`` or
+    ``## Resident NPCs and Creatures`` (for PLACE.md files)."""
     chars_block = _extract_section(text, "Characters")
+    # Also check for PLACE.md resident NPCs/creatures section
+    residents_block = _extract_section(text, "Resident NPCs and Creatures")
+    if residents_block and not chars_block:
+        chars_block = residents_block
+    elif residents_block:
+        # Merge both sections
+        chars_block = chars_block + "\n" + residents_block
     result: dict[str, dict[str, str]] = {}
     headings = re.findall(r"^###\s+(\S+)", chars_block, re.MULTILINE)
     for heading in headings:
@@ -1061,9 +1069,15 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
 
     # ── Scene introductions — CONFIG.md first, PLACE.md as fallback ─────────
     introductions: dict[str, str] = parse_scene_introductions(text)
-    if not introductions and place_file:
+    place_text = ""
+    if place_file:
         place_text = _load(ROOT / place_file)
-        introductions = parse_scene_introductions(place_text)
+        if not introductions:
+            introductions = parse_scene_introductions(place_text)
+        elif place_text:
+            # Merge place introductions (NPCs) with scene introductions (players)
+            place_intros = parse_scene_introductions(place_text)
+            introductions.update(place_intros)
 
     # ── Geometry ─────────────────────────────────────────────────────────────
     geometry_summary = ""
@@ -1157,7 +1171,16 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         derive_affordances(_it)
 
     # ── Characters ───────────────────────────────────────────────────────────
+    # Parse characters from both scene CONFIG.md and place_file (if present).
+    # NPCs come from place_file; players come from scene CONFIG.md.
+    # When both define the same character, scene CONFIG.md takes precedence.
     char_cfgs = _parse_all_char_sections(text)
+    if place_text:
+        place_char_cfgs = _parse_all_char_sections(place_text)
+        # Merge: place NPCs first, then overlay scene config (scene takes precedence)
+        merged = {**place_char_cfgs, **char_cfgs}
+        char_cfgs = merged
+    
     characters: dict[str, CharacterSession] = {}
     roles: dict = {}
     character_pronouns: dict[str, str] = {}

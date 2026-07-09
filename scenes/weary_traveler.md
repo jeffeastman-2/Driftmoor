@@ -42,19 +42,10 @@ Characters may leave this scene.
 - **host:** ultra
 - **position:** 32, 6
 
-### martha
-- **type:** npc
-- **soul_file:** scenario/people/npcs/martha/SOUL.md
-- **identity_file:** scenario/people/npcs/martha/IDENTITY.md
-- **position:** 45, 13
-
 ## Scene Introductions
 
 ### gilthaness
 You step inside the Weary Traveler. Warm stew-scented air rolls over you from the hearth. Martha Greaves is already watching the room and your entrance at the same time.
-
-### martha
-The door opens and a traveler steps in from the evening square. You clock them in a heartbeat: gear, posture, how they scan the room. House rules, first. Then hospitality.
 
 ## Game State Sections
 - header: Scene: The Weary Traveler | file: scenario/places/driftmoor/weary_traveler/PLACE.md

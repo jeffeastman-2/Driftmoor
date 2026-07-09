@@ -19,6 +19,7 @@ import random
 import shlex
 import subprocess
 import time
+from functools import lru_cache
 from collections import deque
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -1480,70 +1481,79 @@ _LEAVE_SCENE_RE = re.compile(
     re.IGNORECASE,
 )
 
-_DRIFTMOOR_VENUES: tuple[tuple[str, tuple[str, ...], str], ...] = (
-    (
-        "weary_traveler",
-        (
-            "weary traveler",
-            "weary traveller",
-            "rooming house",
-            "the traveler",
-            "traveler",
-            "traveller",
-        ),
-        "places/driftmoor/weary_traveler",
-    ),
-    (
-        "broken_lantern",
-        (
-            "broken lantern",
-            "the lantern",
-            "lantern tavern",
-            "tavern",
-        ),
-        "places/driftmoor/broken_lantern",
-    ),
-    (
-        "gilded_trinket",
-        (
-            "gilded trinket",
-            "the trinket",
-            "pawnshop",
-            "shop",
-        ),
-        "places/driftmoor/gilded_trinket",
-    ),
-    (
-        "salt_and_iron",
-        (
-            "salt and iron",
-            "salt & iron",
-            "mercantile",
-            "general store",
-            "store",
-        ),
-        "places/driftmoor/salt_and_iron",
-    ),
-    (
-        "beacon_church",
-        (
-            "beacon church",
-            "the church",
-            "church",
-        ),
-        "places/driftmoor/beacon_church",
-    ),
-    (
-        "elyssa_cottage",
-        (
-            "elyssa cottage",
-            "elyssa's cottage",
-            "the cottage",
-            "cottage",
-        ),
-        "places/driftmoor/elyssa_cottage",
-    ),
-)
+
+@dataclass(frozen=True)
+class _SceneNode:
+    scene_name: str
+    place_path: str
+    parent_place_path: str
+    aliases: tuple[str, ...]
+
+
+def _scene_aliases(*texts: str) -> tuple[str, ...]:
+    stop_words = {"the", "and", "of", "a", "an", "to", "in", "at", "on", "for", "with", "scene"}
+    out: list[str] = []
+    seen: set[str] = set()
+    for text in texts:
+        if not text:
+            continue
+        norm = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+        if norm and norm not in seen:
+            seen.add(norm)
+            out.append(norm)
+        for word in norm.split():
+            if len(word) > 2 and word not in stop_words and word not in seen:
+                seen.add(word)
+                out.append(word)
+    return tuple(out)
+
+
+_DRIFTMOOR_PLACES_ROOT = Path(__file__).resolve().parent.parent / "scenario" / "places" / "driftmoor"
+
+
+def _scene_header_aliases(place_file: Path) -> tuple[str, ...]:
+    aliases: list[str] = []
+    try:
+        text = place_file.read_text(encoding="utf-8")
+    except OSError:
+        return ()
+    m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
+    if m:
+        aliases.extend(_scene_aliases(m.group(1)))
+    return tuple(aliases)
+
+
+def _place_path_from_place_file(place_file: Path) -> str:
+    try:
+        rel_parent = place_file.parent.relative_to(_DRIFTMOOR_PLACES_ROOT)
+    except ValueError:
+        return ""
+    suffix = "" if rel_parent == Path(".") else f"/{rel_parent.as_posix()}"
+    return f"places/driftmoor{suffix}"
+
+
+def _scene_node_from_place_file(place_file: Path) -> _SceneNode:
+    place_path = _place_path_from_place_file(place_file)
+    parent_place_path = place_path.rsplit("/", 1)[0] if "/" in place_path else ""
+    scene_name = Path(place_path).name or "driftmoor"
+    scene_aliases = _scene_aliases(
+        scene_name.replace("_", " "),
+        place_path.split("/")[-1].replace("_", " "),
+    )
+    scene_aliases += _scene_header_aliases(place_file)
+    return _SceneNode(scene_name, place_path, parent_place_path, scene_aliases)
+
+
+@lru_cache(maxsize=1)
+def _driftmoor_place_registry() -> tuple[_SceneNode, ...]:
+    nodes: list[_SceneNode] = []
+    if not _DRIFTMOOR_PLACES_ROOT.exists():
+        return tuple(nodes)
+    for place_file in sorted(_DRIFTMOOR_PLACES_ROOT.glob("**/PLACE.md")):
+        node = _scene_node_from_place_file(place_file)
+        if node.place_path:
+            nodes.append(node)
+    return tuple(nodes)
 
 
 def _infer_driftmoor_venue_transition(
@@ -1551,37 +1561,39 @@ def _infer_driftmoor_venue_transition(
     current_place_path: str,
     actor_zone: str,
 ) -> Optional[str]:
-    """Detect Driftmoor town <-> venue transitions for authored interiors.
+    """Detect hierarchy-based Driftmoor scene transitions.
 
-    From Driftmoor town, entry-ish intents that name a venue transition to the
-    corresponding scene. From inside a venue, leave/exit intents return to the
-    town scene. Returns the target scene name, or None when no authored venue
-    matches.
+    The authored ``scenario/places/driftmoor`` directory defines the tree:
+    you can enter any child place from its parent, and exit a child place back
+    to the nearest parent place. The resolver is data-driven from the place
+    hierarchy rather than a hand-maintained venue list.
     """
     text = (intent_text or "").strip().lower()
-    place = (current_place_path or "").strip().lower()
+    place = (current_place_path or "").strip().lower().strip("/")
     zone = (actor_zone or "").strip().upper()
-    if not text:
+    if not text or not place:
         return None
 
-    in_driftmoor = place.endswith("places/driftmoor")
-    current_venue = next(
-        (scene_name for scene_name, _, suffix in _DRIFTMOOR_VENUES if place.endswith(suffix)),
-        None,
-    )
+    registry = _driftmoor_place_registry()
+    by_place = {node.place_path: node for node in registry}
+    current = by_place.get(place)
+    if current is None:
+        return None
 
-    if in_driftmoor and _ENTER_SCENE_RE.search(text):
-        for scene_name, aliases, _suffix in _DRIFTMOOR_VENUES:
-            if any(re.search(rf"\b{re.escape(alias)}\b", text) for alias in aliases):
-                # If the actor is already standing inside the footprint of the
-                # venue, zone context can disambiguate a generic mention.
-                if scene_name == "weary_traveler" and zone == "ROOMING_HOUSE":
-                    return scene_name
-                return scene_name
+    # Exit: any authored child scene returns to its immediate parent scene.
+    if _LEAVE_SCENE_RE.search(text) and current.parent_place_path:
+        parent = by_place.get(current.parent_place_path)
+        if parent is not None:
+            return parent.scene_name
 
-    if current_venue is not None and _LEAVE_SCENE_RE.search(text):
-        # Leaving any authored interior returns to Driftmoor town.
-        return "driftmoor"
+    # Entry: from a parent scene, descend to a named child scene.
+    if _ENTER_SCENE_RE.search(text):
+        children = [node for node in registry if node.parent_place_path == place]
+        if not children:
+            return None
+        for node in children:
+            if any(re.search(rf"\b{re.escape(alias)}\b", text) for alias in node.aliases):
+                return node.scene_name
 
     return None
 

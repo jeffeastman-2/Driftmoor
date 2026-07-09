@@ -43,18 +43,10 @@ Characters may leave this scene. Recognise and permit these:
 - **soul_file:** scenario/people/players/varrak/SOUL.md
 - **identity_file:** scenario/people/players/varrak/IDENTITY.md
 
-### jorgen
-- **type:** npc
-- **soul_file:** scenario/people/npcs/jorgen/SOUL.md
-- **identity_file:** scenario/people/npcs/jorgen/IDENTITY.md
-
 ## Scene Introductions
 
 ### varrak
 You came to Salt & Iron because Kelem Dustcloak told you to start here. The mercantile is large, organized, iron-banded timber. Shelves of rope, tools, salt barrels, weapons. A long counter runs the center. Behind it stands a broad man with a salt-and-pepper beard and a scowl. He looked at you — a red dragonborn in robes with no armor — and has not spoken yet. Your satchel holds your obelisk notes. Something in this town is connected to the fragments. You can feel it in the base of your skull, the way you always feel it near shard-touched places.
-
-### jorgen
-A dragonborn just walked into your shop. Red scales, amber eyes, robes, no armor. Carrying a leather satchel and a quarterstaff. He is looking at the shelves the way someone looks when they are not shopping — he is scanning. A sorcerer, almost certainly. You have not decided yet if he is Kelem's man or something else. The supply caravan is three days late and you are in no mood for trouble.
 
 ## Game State Sections
 - header: Scene: Salt & Iron Mercantile | file: scenario/places/driftmoor/salt_and_iron/PLACE.md

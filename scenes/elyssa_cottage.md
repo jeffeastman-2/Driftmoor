@@ -40,12 +40,6 @@ observation.
 - **identity_file:** scenario/people/players/hendricks/IDENTITY.md
 - **position:** 19, 4
 
-### elyssa
-- **type:** npc
-- **soul_file:** scenario/people/npcs/elyssa/SOUL.md
-- **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
-- **position:** 16, 16
-
 ## Scene Introductions
 
 ### hendricks
@@ -56,15 +50,6 @@ and a scholar who has not slept enough but has not stopped working either.
 You came to test claims against evidence. If Elyssa's reports are grounded,
 you need the details. If they are not, you need to know that before anyone
 starts making plans around bad assumptions.
-
-### elyssa
-You hear measured footsteps on the front path and look up from a spread of
-annotated maps. A serious traveler stands at your door: poised,
-alert, and clearly not here by accident. You have enough problems that you do
-not turn away capable minds.
-
-You invite Hendricks in and prepare to compare notes on the obelisk, the
-shadows, and what Driftmoor is not yet admitting out loud.
 
 ## Game State Sections
 - header: Scene: Elyssa Cottage | file: scenario/places/driftmoor/elyssa_cottage/PLACE.md

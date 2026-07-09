@@ -28,6 +28,21 @@ The gazer's mind is filled with scenes from their past and visions of their hypo
 ## Adjacency
 TRAIL → TREELINE → GLADE → POOL 
 
+## Resident NPCs and Creatures
+
+### fennel
+- **type:** npc
+- **soul_file:** scenario/people/npcs/fennel/SOUL.md
+- **identity_file:** scenario/people/npcs/fennel/IDENTITY.md
+- **position:** 190, 162
+
+### shadowbeast_1
+- **type:** creature
+- **creature_file:** scenario/creatures/shadowbeast/CREATURE.md
+- **soul_file:** scenario/creatures/shadowbeast/SOUL.md
+- **identity_file:** scenario/creatures/shadowbeast/IDENTITY.md
+- **position:** 65, 162
+
 ## Who Is Normally Here
 - Fey presence (level and nature at DM's discretion)
 - Fennel (Lytha's apprentice) — sheltering in GLADE for three days

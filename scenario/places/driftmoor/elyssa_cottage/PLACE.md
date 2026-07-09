@@ -13,8 +13,27 @@ Inside: part library, part laboratory, part living space. Every surface serves a
 ## Bedroom
 Small, sparsely furnished. Narrow bed, wardrobe, table with single candle. Elyssa rarely uses it — she falls asleep at her desk more often than not.
 
+## Resident NPCs and Creatures
+
+### elyssa
+- **type:** npc
+- **soul_file:** scenario/people/npcs/elyssa/SOUL.md
+- **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
+- **position:** 16, 16
+
 ## Who Is Normally Here
 - **Elyssa Moonglow** — almost always, usually at her desk
+
+## Scene Introductions
+
+### elyssa
+You hear measured footsteps on the front path and look up from a spread of
+annotated maps. A serious traveler stands at your door: poised,
+alert, and clearly not here by accident. You have enough problems that you do
+not turn away capable minds.
+
+You invite Hendricks in and prepare to compare notes on the obelisk, the
+shadows, and what Driftmoor is not yet admitting out loud.
 
 ## Connections
 - Low hill above Greywater River (outside, outskirts of Driftmoor)

@@ -43,26 +43,10 @@ Characters may leave this scene. Recognise and permit these:
 - **soul_file:** scenario/people/players/amara/SOUL.md
 - **identity_file:** scenario/people/players/amara/IDENTITY.md
 
-### elden
-- **type:** npc
-- **soul_file:** scenario/people/npcs/elden/SOUL.md
-- **identity_file:** scenario/people/npcs/elden/IDENTITY.md
-
-### mira
-- **type:** npc
-- **soul_file:** scenario/people/npcs/mira/SOUL.md
-- **identity_file:** scenario/people/npcs/mira/IDENTITY.md
-
 ## Scene Introductions
 
 ### amara
 You climbed the rise to the Beacon Church at dusk. Your order sent you to investigate disturbances in Driftmoor. The church is modest stone, wooden steeple. The lantern at the top is lit — but the light coming from it is wrong. Dark threads in what should be pure flame. Inside: simple, clean, beeswax and herbs. An old priest leans on an oak staff near the altar. A young woman with red braids is arranging candles and watched you come through the door before the priest did.
-
-### elden
-A cleric of Lathander has come to your church. Young, chain mail, silver sunrise symbol at her throat. She saw the lantern on her way up — you could tell by her face. She knows the light is wrong. Mira is watching from the candle rack, already assessing. You have been waiting for someone to come. You did not expect it to be someone from another order.
-
-### mira
-A stranger just walked in. Cleric. Lathander, not Pelor — you can tell from the symbol. Chain mail and a mace. She looked at the lantern on the way up. She knows. Father Elden is already leaning toward her with that look he gets when he wants to trust someone before he should. You have not told him what you saw at the lantern three nights ago. You are not sure you should tell this woman either. Not yet.
 
 ## Game State Sections
 - header: Scene: The Beacon Church | file: scenario/places/driftmoor/beacon_church/PLACE.md

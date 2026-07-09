@@ -41,18 +41,10 @@ Characters may leave this scene. Recognise and permit these:
 - **soul_file:** scenario/people/players/seraphina/SOUL.md
 - **identity_file:** scenario/people/players/seraphina/IDENTITY.md
 
-### tavian
-- **type:** npc
-- **soul_file:** scenario/people/npcs/tavian/SOUL.md
-- **identity_file:** scenario/people/npcs/tavian/IDENTITY.md
-
 ## Scene Introductions
 
 ### seraphina
 You push open the door of The Gilded Trinket. A bell chimes. Narrow, cluttered, dim oil lamp light. Shelves of rusty tools, old weapons, curios. A locked glass display case at the counter holds the more interesting items — you notice a tarnished silver ring with a dark stone that seems to catch the lamplight oddly. Behind the counter stands a tall, lean figure with faintly shimmering bronze scales and piercing green eyes that are already weighing you. Smells of dust and polish.
-
-### tavian
-The bell above the door chimes. A half-elf woman steps in — raven-black hair, dark leather armor, green eyes that are already scanning every shelf. She moves with the quiet economy of someone who knows how to move without being heard. Rogue, almost certainly. A faint scar on her right cheek. Silver crescent moon pendant at her throat. Her gaze lingers on the display case — specifically on the ring. The ring with the dark stone you have been trying to decide what to do with.
 
 ## Game State Sections
 - header: Scene: The Gilded Trinket (Pawnshop) | file: scenario/places/driftmoor/gilded_trinket/PLACE.md

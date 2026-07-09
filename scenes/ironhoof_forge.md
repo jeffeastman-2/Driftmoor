@@ -42,26 +42,10 @@ Characters may leave this scene. Recognise and permit these:
 - **soul_file:** scenario/people/players/thorgrim/SOUL.md
 - **identity_file:** scenario/people/players/thorgrim/IDENTITY.md
 
-### darrin
-- **type:** npc
-- **soul_file:** scenario/people/npcs/darrin/SOUL.md
-- **identity_file:** scenario/people/npcs/darrin/IDENTITY.md
-
-### kara
-- **type:** npc
-- **soul_file:** scenario/people/npcs/kara/SOUL.md
-- **identity_file:** scenario/people/npcs/kara/IDENTITY.md
-
 ## Scene Introductions
 
 ### thorgrim
 Early morning at the forge. You slept poorly in the lean-to — bad dreams again, the ambush, the screaming. You are standing at the forge fire, examining the shadowy symbols carved into the stone wall. They were not here a week ago. The marks are unlike any mason's work you know. Darrin is at the anvil, hammering, pretending not to watch you. His daughter Kara is in the stables — you can hear her talking to the horses.
-
-### darrin
-Morning at the forge. You are hammering a set of horseshoes, but your mind is elsewhere. The dwarf — Thorgrim — is standing by the wall again, studying those marks. You have not asked him directly what he thinks. You are not sure you want to know. The marks appeared a week ago and they are cold to the touch even with the forge burning. From the stables you hear Kara talking to the remaining horses. One is still missing.
-
-### kara
-You are in the stables brushing down the bay mare. She is still jittery — all the horses have been since the night the gelding vanished. You found the tracks yourself. Claws, not hooves, heading into the Mistwood tree line. Your father told you to forget about it. You have not forgotten about it. Through the stable wall you can hear the forge hammer and the dwarf moving around. He has been studying those marks on the wall. You want to ask him what he thinks.
 
 ## Game State Sections
 - header: Scene: Ironhoof Forge | file: scenario/places/driftmoor/ironhoof_forge/PLACE.md

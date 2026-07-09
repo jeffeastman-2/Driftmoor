@@ -112,15 +112,6 @@ characters know, in-fiction, the following caver's wisdom:
 - Aliases: **held_items** == **in_hand**, **worn_items** == **worn**
 -->
 
-### giant_spider
-- **type:** creature
-- **creature_file:** scenario/creatures/giant_spider/CREATURE.md
-- **soul_file:** scenario/creatures/giant_spider/SOUL.md
-- **identity_file:** scenario/creatures/giant_spider/IDENTITY.md
-- **scene_handle:** the giant spider
-- **position:** 64, 195, 10
-- **activation:** zone_entry:Secret Chamber
-
 ## Scene Introductions
 
 ### seraphina
@@ -159,9 +150,6 @@ dark.
 
 You are here because old wounds in Driftmoor have started speaking again, and
 you are done ignoring voices that carry this kind of resonance.
-
-### giant_spider
-Stillness. Eight feet braced against cold stone above. The web-strands hum faint with the small things that live in the dark — but no warmth, no heavy tread, not for a long time. The chamber-mouth has been silent. The hairline in the far stone has not parted. You wait. You have waited longer than this. The webs hold. The vault below is cold and unmoving. Should warmth come — should the wall part and feet enter — drop. Bite the soft thing first. Wrap what does not die fast.
 
 ## Game State Sections
 - file: scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md

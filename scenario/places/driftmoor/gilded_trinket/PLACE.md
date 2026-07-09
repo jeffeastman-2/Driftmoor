@@ -5,8 +5,20 @@ A narrow, weathered wooden building. Faded gold-painted sign above the door — 
 
 Smells of dust and polish.
 
+## Resident NPCs and Creatures
+
+### tavian
+- **type:** npc
+- **soul_file:** scenario/people/npcs/tavian/SOUL.md
+- **identity_file:** scenario/people/npcs/tavian/IDENTITY.md
+
 ## Who Is Normally Here
 - **Tavian "Tav" Drakescale** — behind the counter
+
+## Scene Introductions
+
+### tavian
+The bell above the door chimes. A half-elf woman steps in — raven-black hair, dark leather armor, green eyes that are already scanning every shelf. She moves with the quiet economy of someone who knows how to move without being heard. Rogue, almost certainly. A faint scar on her right cheek. Silver crescent moon pendant at her throat. Her gaze lingers on the display case — specifically on the ring. The ring with the dark stone you have been trying to decide what to do with.
 
 ## Connections
 - Village (outside)

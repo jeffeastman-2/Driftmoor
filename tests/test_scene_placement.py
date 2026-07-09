@@ -69,13 +69,26 @@ def test_echoing_caverns_seeds_from_scene():
                 if m.get("position")}
     assert authored, "scene should author placement bullets"
 
+    # Also collect positions from the linked place file (for creatures loaded there)
+    from engine.md_loader import _parse_meta, _extract_section
+    scene_text = _load(path)
+    scene_meta = _parse_meta(_extract_section(scene_text, "Scene"))
+    place_file = scene_meta.get("place_file", "")
+    if place_file:
+        from engine.md_loader import ROOT
+        place_text = _load(ROOT / place_file)
+        place_authored = {cid: m["position"]
+                         for cid, m in _parse_all_char_sections(place_text).items()
+                         if m.get("position")}
+        authored.update(place_authored)
+
     cfg = configure_from_md(path)
     sp = cfg.scene_geometry.starting_positions
-    # Only the authored cast is seeded — geometry no longer contributes keys.
+    # The full cast (players from scene + creatures from place) is seeded.
     assert set(sp) == set(authored)
     for cid, pos_str in authored.items():
         x, y = (float(n) for n in pos_str.split(",")[:2])
-        assert (sp[cid].x, sp[cid].y) == (x, y)               # scene coord seeded
+        assert (sp[cid].x, sp[cid].y) == (x, y)               # coord seeded
         # Zone is derived from the coordinate, not authored.
         assert cfg.scene_geometry.zone_at(sp[cid]) == cfg.scene_geometry.zone_at(
             Position(x, y))
