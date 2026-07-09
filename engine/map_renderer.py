@@ -90,13 +90,7 @@ _PANZOOM_JS = (
     r"var r=s.getBoundingClientRect();v.x-=(e.clientX-l.x)/r.width*v.w;"
     r"v.y-=(e.clientY-l.y)/r.height*v.h;l={x:e.clientX,y:e.clientY};A();});"
     r"window.addEventListener('mouseup',function(){d=false;s.style.cursor='grab';});"
-    r"s.style.cursor='grab';var ft=document.getElementById('fit');"
-    r"if(ft)ft.addEventListener('click',function(){v.x=b[0];v.y=b[1];v.w=b[2];v.h=b[3];A();});"
-    r"var im=document.getElementById('icon-minus'),ip=document.getElementById('icon-plus');"
-    r"var ir=document.getElementById('icon-reset');"
-    r"if(im)im.addEventListener('click',function(){I();if(ii.length||id.length)SIS(-1);});"
-    r"if(ip)ip.addEventListener('click',function(){I();if(ii.length||id.length)SIS(1);});"
-    r"if(ir)ir.addEventListener('click',function(){I();if(ii.length||id.length)SI(1);});"
+    r"s.style.cursor='grab';"
     r"window.addEventListener('keydown',function(e){"
     r"if(!(ii.length||id.length))return;var t=e.target&&e.target.tagName?e.target.tagName.toLowerCase():'';"
     r"if(t==='input'||t==='textarea')return;"
@@ -774,7 +768,7 @@ def render_interactive_map_html(
         "body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;"
         "margin:0;background:#f7f7f5;color:#111;}"
         ".wrap{padding:12px 14px;}"
-        "h1{font-size:16px;margin:0 0 8px 0;}"
+        "h1{font-size:14px;margin:0 0 8px 0;}"
         "p{margin:0 0 10px 0;font-size:13px;color:#333;}"
         "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;background:#fff;}"
         f".zone-label{{font-size:var(--zfs,{zone_label_size}px);font-weight:700;fill:#1f1f1f;opacity:.8;}}"
@@ -784,9 +778,7 @@ def render_interactive_map_html(
     )
     safe_title = html.escape(title or geometry_path.parent.name.replace("_", " ").title())
     parts.append(f"<h1>{safe_title}</h1>")
-    parts.append("<p>Hover over dots to see turn number, coordinates, and zone. "
-                 "<button id='fit' title='Zoom to fit'>Fit</button> "
-                 "<span style='color:#888;'>scroll = zoom · drag = pan</span></p>")
+    parts.append("<p>Hover over dots to see turn number, coordinates, and zone.</p>")
     parts.append(
         f"<svg id='map' viewBox='{view_x:.2f} {_flip_y(view_y + view_h):.2f} {view_w:.2f} {view_h:.2f}' "
         "preserveAspectRatio='xMidYMid meet'>"
@@ -1168,7 +1160,7 @@ def render_turn_slider_html(
     p.append(f"<title>{safe_title} — turn map</title><style>")
     p.append("body{font-family:ui-sans-serif,system-ui,sans-serif;margin:0;"
              "background:#f7f7f5;color:#111;}.wrap{padding:12px 14px;}"
-             "h1{font-size:16px;margin:0 0 6px;}"
+             "h1{font-size:14px;margin:0 0 6px;}"
              ".ctl{display:flex;align-items:center;gap:10px;margin:6px 0 10px;"
              "font-size:13px;}.ctl input[type=range]{flex:1;}"
              "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;"
@@ -1186,12 +1178,7 @@ def render_turn_slider_html(
              f"<input id='sl' type='range' min='0' max='{len(turn_list)-1}' "
              f"value='{len(turn_list)-1}' step='1'>"
              "<span id='rd' style='min-width:70px;'></span>"
-             "<button id='icon-minus' title='Smaller icons'>Icon -</button>"
-             "<button id='icon-plus' title='Larger icons'>Icon +</button>"
-             "<button id='icon-reset' title='Reset icon size'>Icon 1x</button>"
-             "<span id='iconScaleVal' style='min-width:42px;color:#666;'>1.00x</span>"
-             "<button id='fit' title='Zoom to fit'>Fit</button>"
-             "<span style='color:#888;'>scroll = zoom · drag = pan · shift+scroll or Icon +/- or [ ] keys = icon zoom</span></div>")
+             "</div>")
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
