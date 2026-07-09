@@ -20,6 +20,6 @@
 <circle class='gold' cx='50' cy='50' r='42'/>
 <text x='50' y='90' text-anchor='middle' font-family='Verdana, sans-serif' font-size='7' fill='#2d231b'>background</text>
   <!-- name-label -->
-  <rect x='16' y='84' width='68' height='11' rx='5.5' fill='#0f1116' fill-opacity='0.48'/>
-  <text x='50' y='91.3' text-anchor='middle' font-family='Verdana, sans-serif' font-size='6.5' font-weight='700' letter-spacing='0.25' fill='#f1f4fb'>Background</text>
+  <rect x='16' y='84' width='68' height='11' rx='5.5' fill='#05070b' fill-opacity='0.84'/>
+  <text x='50' y='91.3' text-anchor='middle' font-family='Verdana, sans-serif' font-size='6.5' font-weight='700' letter-spacing='0.25' fill='#ffffff' stroke='#05070b' stroke-width='0.55' paint-order='stroke'>Background</text>
 </svg>
