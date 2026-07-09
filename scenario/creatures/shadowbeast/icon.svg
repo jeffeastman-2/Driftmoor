@@ -15,4 +15,7 @@
   <path class='ln' d='M39,44 q5,-3 10,-1 M51,43 q5,-2 10,1'/>
 </g>
 <circle class='gold' cx='50' cy='50' r='42'/>
+  <!-- name-label -->
+  <rect x='16' y='84' width='68' height='11' rx='5.5' fill='#0f1116' fill-opacity='0.48'/>
+  <text x='50' y='91.3' text-anchor='middle' font-family='Verdana, sans-serif' font-size='6.5' font-weight='700' letter-spacing='0.25' fill='#f1f4fb'>Shadowbeast</text>
 </svg>
