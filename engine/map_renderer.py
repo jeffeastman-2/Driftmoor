@@ -55,13 +55,28 @@ _PANZOOM_JS = (
     r"s.setAttribute('viewBox',v.x+' '+v.y+' '+v.w+' '+v.h);}}catch(_){}"
     r"function P(e){var r=s.getBoundingClientRect();"
     r"return{x:v.x+(e.clientX-r.left)/r.width*v.w,y:v.y+(e.clientY-r.top)/r.height*v.h};}"
-    r"var ic=document.getElementById('icon-scale-group');"
+    r"var ii=Array.prototype.slice.call(document.querySelectorAll('.char-icon-img'));"
+    r"var id=Array.prototype.slice.call(document.querySelectorAll('.char-icon-dot'));"
+    r"var IK=K+':iconScale';var iconScale=1.0;"
+    r"function SI(n){iconScale=Math.max(0.2,Math.min(8,Number(n)||1));"
+    r"for(var i=0;i<ii.length;i++){var bz=Number(ii[i].getAttribute('data-base-z'))||6;"
+    r"var z=bz*iconScale;ii[i].setAttribute('x',(-z/2).toFixed(2));ii[i].setAttribute('y',(-z/2).toFixed(2));"
+    r"ii[i].setAttribute('width',z.toFixed(2));ii[i].setAttribute('height',z.toFixed(2));}"
+    r"for(var j=0;j<id.length;j++){var br=Number(id[j].getAttribute('data-base-r'))||0.75;"
+    r"var bw=Number(id[j].getAttribute('data-base-sw'))||0.35;"
+    r"id[j].setAttribute('r',(br*iconScale).toFixed(2));id[j].setAttribute('stroke-width',(bw*iconScale).toFixed(2));}"
+    r"var iv=document.getElementById('iconScaleVal');if(iv)iv.textContent=iconScale.toFixed(2)+'x';"
+    r"try{sessionStorage.setItem(IK,String(iconScale));}catch(_){}}"
+    r"function SIS(d){SI(iconScale*(d>0?1.18:0.85));}"
+    r"try{var isv=parseFloat(sessionStorage.getItem(IK)||'1');"
+    r"if(isFinite(isv))SI(isv);else SI(1);}catch(_){SI(1);}"
+    r"function WD(e){var dx=Number(e.deltaX)||0,dy=Number(e.deltaY)||0;"
+    r"return Math.abs(dy)>=Math.abs(dx)?dy:dx;}"
     r"s.addEventListener('wheel',function(e){e.preventDefault();I();if(e.shiftKey){"
-    r"var is=parseFloat(s.style.getPropertyValue('--icon-scale')||1);"
-    r"var nis=Math.max(0.3,Math.min(4,is*(e.deltaY<0?1.18:0.85)));"
-    r"s.style.setProperty('--icon-scale',nis.toFixed(2));if(ic)ic.style.transform='scale('+nis.toFixed(2)+')';"
+    r"if(!(ii.length||id.length))return;var wd=WD(e);if(!wd)return;"
+    r"SIS(wd<0?1:-1);"
     r"return;}var p=P(e);var f=e.deltaY<0?0.85:1.18;"
-    r"var nw=Math.max(b[2]/50,Math.min(b[2],v.w*f));f=nw/v.w;"
+    r"var nw=Math.max(b[2]/20,v.w*f);f=nw/v.w;"
     r"v.x=p.x-(p.x-v.x)*f;v.y=p.y-(p.y-v.y)*f;v.w*=f;v.h*=f;A();},{passive:false});"
     r"var d=false,l=null;"
     r"s.addEventListener('mousedown',function(e){d=true;I();l={x:e.clientX,y:e.clientY};"
@@ -77,6 +92,17 @@ _PANZOOM_JS = (
     r"window.addEventListener('mouseup',function(){d=false;s.style.cursor='grab';});"
     r"s.style.cursor='grab';var ft=document.getElementById('fit');"
     r"if(ft)ft.addEventListener('click',function(){v.x=b[0];v.y=b[1];v.w=b[2];v.h=b[3];A();});"
+    r"var im=document.getElementById('icon-minus'),ip=document.getElementById('icon-plus');"
+    r"var ir=document.getElementById('icon-reset');"
+    r"if(im)im.addEventListener('click',function(){I();if(ii.length||id.length)SIS(-1);});"
+    r"if(ip)ip.addEventListener('click',function(){I();if(ii.length||id.length)SIS(1);});"
+    r"if(ir)ir.addEventListener('click',function(){I();if(ii.length||id.length)SI(1);});"
+    r"window.addEventListener('keydown',function(e){"
+    r"if(!(ii.length||id.length))return;var t=e.target&&e.target.tagName?e.target.tagName.toLowerCase():'';"
+    r"if(t==='input'||t==='textarea')return;"
+    r"if(e.key==='+'||e.key==='='||e.key===']'){I();SIS(1);e.preventDefault();}"
+    r"else if(e.key==='-'||e.key==='_'||e.key==='['){I();SIS(-1);e.preventDefault();}"
+    r"else if(e.key==='0'){I();SI(1);e.preventDefault();}});"
     r"LS();window.addEventListener('resize',LS);})();"
 )
 
@@ -1154,15 +1180,18 @@ def render_turn_slider_html(
     p.append(".ilabel{font-size:var(--ifs,1.6px);fill:#d9c98a;font-style:italic;}")
     p.append(".clabel{font-size:var(--cfs,1.9px);font-weight:700;fill:#fff;"
              "paint-order:stroke;stroke:#000;stroke-width:0.3px;}")
-    p.append("#icon-scale-group{transform-origin:0 0;transform:scale(var(--icon-scale,1));}")
     p.append("</style></head><body><div class='wrap'>")
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              f"<input id='sl' type='range' min='0' max='{len(turn_list)-1}' "
              f"value='{len(turn_list)-1}' step='1'>"
              "<span id='rd' style='min-width:70px;'></span>"
+             "<button id='icon-minus' title='Smaller icons'>Icon -</button>"
+             "<button id='icon-plus' title='Larger icons'>Icon +</button>"
+             "<button id='icon-reset' title='Reset icon size'>Icon 1x</button>"
+             "<span id='iconScaleVal' style='min-width:42px;color:#666;'>1.00x</span>"
              "<button id='fit' title='Zoom to fit'>Fit</button>"
-             "<span style='color:#888;'>scroll = zoom · drag = pan · shift+scroll = icon zoom</span></div>")
+             "<span style='color:#888;'>scroll = zoom · drag = pan · shift+scroll or Icon +/- or [ ] keys = icon zoom</span></div>")
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
@@ -1241,22 +1270,23 @@ def render_turn_slider_html(
                  f"stroke='{cc[cid]}' stroke-width='{0.7*sc:.2f}' stroke-opacity='0.65' "
                  f"stroke-linecap='round' stroke-dasharray='{1.6*sc:.2f},{1.3*sc:.2f}' "
                  f"style='display:none'/>")
-    # Wrapper group for independent icon scaling via Shift+scroll.
-    p.append("<g id='icon-scale-group' style='transform-origin:0 0;transform:scale(1);'>")
     for cid in sorted(tracks):
         ci = _char_icon_uri(_scenario_root, cid)
         if ci:
             z = 6.0 * sc
-            marker = (f"<image href='{ci}' x='{-z/2:.2f}' y='{-z/2:.2f}' "
-                      f"width='{z:.2f}' height='{z:.2f}' preserveAspectRatio='xMidYMid meet'/>")
+            marker = (f"<image class='char-icon-img' data-base-z='{z:.2f}' href='{ci}' "
+                      f"x='{-z/2:.2f}' y='{-z/2:.2f}' width='{z:.2f}' height='{z:.2f}' "
+                      "preserveAspectRatio='xMidYMid meet'/>")
         else:
-            marker = (f"<circle r='{0.75*sc:.2f}' fill='{cc[cid]}' "
-                      f"stroke='#000' stroke-width='{0.35*sc:.2f}'/>")
-        # Name shows only on hover (a <title> tooltip), not as a printed label.
+            r_base = 0.75 * sc
+            sw_base = 0.35 * sc
+            marker = (f"<circle class='char-icon-dot' data-base-r='{r_base:.2f}' "
+                      f"data-base-sw='{sw_base:.2f}' r='{r_base:.2f}' fill='{cc[cid]}' "
+                      f"stroke='#000' stroke-width='{sw_base:.2f}'/>")
         name = html.escape(cid.replace("_", " ").title())
         p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
-                 f"{marker}<title>{name}</title></g>")
-    p.append("</g>")
+                 f"<g class='char-marker'>{marker}</g>"
+                 f"<title>{name}</title></g>")
     p.append("</svg>")
 
     frames_js = json.dumps({

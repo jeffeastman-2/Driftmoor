@@ -27,5 +27,5 @@
 <circle cx='50' cy='50' r='45' fill='none' stroke='hsl(32 42% 72%)' stroke-opacity='.25' stroke-width='1.2'/>
   <!-- name-label -->
   <rect x='16' y='84' width='68' height='11' rx='5.5' fill='#05070b' fill-opacity='0.84'/>
-  <text x='50' y='91.3' text-anchor='middle' font-family='Verdana, sans-serif' font-size='6.5' font-weight='700' letter-spacing='0.25' fill='#ffffff' stroke='#05070b' stroke-width='0.55' paint-order='stroke'>Lytha</text>
+  <text x='50' y='91.3' text-anchor='middle' font-family='Verdana, sans-serif' font-size='6.5' font-weight='700' letter-spacing='0.25' fill='#ffffff'>Lytha</text>
 </svg>
