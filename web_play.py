@@ -501,6 +501,23 @@ function renderInv(m){
 const f=document.getElementById('f'),inp=document.getElementById('in'),
       sendBtn=document.getElementById('send'),
       turnStatus=document.getElementById('turnstatus');
+window.addEventListener('message',ev=>{
+    const m=ev.data||{};
+    if(!m||m.type!=='driftmoor-map-dblclick')return;
+    if(inp.disabled)return; // only draft moves during your active turn
+    const x=Number(m.x),y=Number(m.y);
+    if(!Number.isFinite(x)||!Number.isFinite(y))return;
+    const pt='['+x.toFixed(1)+','+y.toFixed(1)+']';
+    const cmd='I move to '+pt;
+    const prev=inp.value.trim();
+    if(!prev)inp.value=cmd;
+    else if(m.shift)inp.value=prev+' -> '+pt;
+    else if(/I move to \\[[^\\]]+\\]/i.test(prev))
+        inp.value=prev.replace(/I move to \\[[^\\]]+\\]/i,cmd);
+    else inp.value=prev+(/[.!?]\\s*$/.test(prev)?' ':'. ')+cmd;
+    inp.focus();
+    inp.setSelectionRange(inp.value.length,inp.value.length);
+});
 // Single source of truth for the input's live/idle state. A 'dm' SSE event
 // (turn prompt or DM answer) flips us live; submitting an intent flips us idle
 // until the next prompt arrives, so out-of-turn input is impossible.
