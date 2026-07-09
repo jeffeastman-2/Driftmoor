@@ -43,7 +43,7 @@ Characters may leave this scene.
 ## Scene Introductions
 
 ### gilthaness
-You've arrived in the town from afar. You want to explore a bit and interact with some of the inhabitants.
+You've arrived in the town from afar. You're tired and dirty from several day's travel so your first priority is a bath, food and a place to rest. You want to explore a bit later and interact with some of the inhabitants.
 
 ## Game State Sections
 - header: Scene: Driftmoor Town | file: scenario/places/driftmoor/PLACE.md
