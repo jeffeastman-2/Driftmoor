@@ -77,7 +77,8 @@ _PANZOOM_JS = (
 
 _BAND_ORDER = ("near", "intermediate", "far", "distant")
 
-# Cache of building icon data-URIs, keyed by file path (encoded once per process).
+# Cache of icon data-URIs keyed by file path with freshness metadata.
+# Value: (mtime_ns, size_bytes, data_uri)
 _ICON_CACHE: dict = {}
 _PLACE_TITLE_CACHE: dict = {}
 
@@ -86,16 +87,26 @@ def _icon_data_uri(path: "Path") -> "str | None":
     """Return an ``<image href>`` data-URI for a building ``icon.svg``/png, or
     None if absent. Cached so per-turn map regeneration doesn't re-encode."""
     key = str(path)
-    if key in _ICON_CACHE:
-        return _ICON_CACHE[key]
+    if not path.exists():
+        _ICON_CACHE.pop(key, None)
+        return None
+
+    stat = path.stat()
+    mtime_ns = int(stat.st_mtime_ns)
+    size = int(stat.st_size)
+    cached = _ICON_CACHE.get(key)
+    if cached is not None:
+        c_mtime_ns, c_size, c_uri = cached
+        if c_mtime_ns == mtime_ns and c_size == size:
+            return c_uri
+
     uri = None
     try:
-        if path.exists():
-            mime = "image/svg+xml" if path.suffix == ".svg" else f"image/{path.suffix.lstrip('.')}"
-            uri = f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+        mime = "image/svg+xml" if path.suffix == ".svg" else f"image/{path.suffix.lstrip('.')}"
+        uri = f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
     except Exception:  # noqa: BLE001 — art is best-effort
         uri = None
-    _ICON_CACHE[key] = uri
+    _ICON_CACHE[key] = (mtime_ns, size, uri)
     return uri
 
 

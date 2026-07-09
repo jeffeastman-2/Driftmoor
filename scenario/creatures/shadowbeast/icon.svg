@@ -1,0 +1,18 @@
+<svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>
+<style>
+.ring{fill:#13151b;stroke:#2a2f3b;stroke-width:3;}
+.gold{fill:none;stroke:hsl(4 60% 70%);stroke-width:1.5;opacity:.72;}
+.fur{fill:#202634;stroke:#0e1016;stroke-width:1.2;stroke-linejoin:round;}
+.ln{fill:none;stroke:#3e4b64;stroke-width:1;stroke-linecap:round;opacity:.7;}
+.eye{fill:#7fd3de;}
+</style>
+<circle class='ring' cx='50' cy='50' r='46.5'/>
+<clipPath id='t'><circle cx='50' cy='50' r='45'/></clipPath>
+<g clip-path='url(#t)'>
+  <path class='fur' d='M12,92 q4,-30 24,-36 l6,-10 l8,7 l8,-7 l6,10 q20,6 24,36 Z'/>
+  <path class='fur' d='M34,54 l8,-20 l8,9 l8,-9 l8,20 q-6,8 -16,8 q-10,0 -16,-8 Z'/>
+  <circle class='eye' cx='44' cy='48' r='1.8'/><circle class='eye' cx='56' cy='48' r='1.8'/>
+  <path class='ln' d='M39,44 q5,-3 10,-1 M51,43 q5,-2 10,1'/>
+</g>
+<circle class='gold' cx='50' cy='50' r='42'/>
+</svg>

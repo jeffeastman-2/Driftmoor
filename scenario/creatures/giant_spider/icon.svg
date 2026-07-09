@@ -1,0 +1,25 @@
+<svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>
+<style>
+.ring{fill:#26222a;stroke:#4a3f4d;stroke-width:3;}
+.gold{fill:none;stroke:hsl(60 55% 68%);stroke-width:1.5;opacity:.7;}
+.body{fill:#2f2a2e;stroke:#110f12;stroke-width:1.2;}
+.leg{fill:none;stroke:#6a5f6e;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;opacity:.95;}
+.eye{fill:#bf5e49;}
+</style>
+<circle class='ring' cx='50' cy='50' r='46.5'/>
+<clipPath id='t'><circle cx='50' cy='50' r='45'/></clipPath>
+<g clip-path='url(#t)'>
+  <path class='leg' d='M34 45 L16 30 L8 22'/>
+  <path class='leg' d='M34 50 L14 42 L6 38'/>
+  <path class='leg' d='M34 56 L14 56 L6 58'/>
+  <path class='leg' d='M34 62 L16 70 L8 76'/>
+  <path class='leg' d='M66 45 L84 30 L92 22'/>
+  <path class='leg' d='M66 50 L86 42 L94 38'/>
+  <path class='leg' d='M66 56 L86 56 L94 58'/>
+  <path class='leg' d='M66 62 L84 70 L92 76'/>
+  <ellipse class='body' cx='50' cy='53' rx='17' ry='14'/>
+  <ellipse class='body' cx='50' cy='38' rx='11' ry='10'/>
+  <circle class='eye' cx='46' cy='36' r='1.7'/><circle class='eye' cx='54' cy='36' r='1.7'/>
+</g>
+<circle class='gold' cx='50' cy='50' r='42'/>
+</svg>
