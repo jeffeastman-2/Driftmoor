@@ -1233,11 +1233,11 @@ def render_turn_slider_html(
     for cid in sorted(tracks):
         ci = _char_icon_uri(_scenario_root, cid)
         if ci:
-            z = 12.0 * sc
+            z = 6.0 * sc
             marker = (f"<image href='{ci}' x='{-z/2:.2f}' y='{-z/2:.2f}' "
                       f"width='{z:.2f}' height='{z:.2f}' preserveAspectRatio='xMidYMid meet'/>")
         else:
-            marker = (f"<circle r='{1.5*sc:.2f}' fill='{cc[cid]}' "
+            marker = (f"<circle r='{0.75*sc:.2f}' fill='{cc[cid]}' "
                       f"stroke='#000' stroke-width='{0.35*sc:.2f}'/>")
         # Name shows only on hover (a <title> tooltip), not as a printed label.
         name = html.escape(cid.replace("_", " ").title())
