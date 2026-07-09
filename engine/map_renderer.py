@@ -55,8 +55,13 @@ _PANZOOM_JS = (
     r"s.setAttribute('viewBox',v.x+' '+v.y+' '+v.w+' '+v.h);}}catch(_){}"
     r"function P(e){var r=s.getBoundingClientRect();"
     r"return{x:v.x+(e.clientX-r.left)/r.width*v.w,y:v.y+(e.clientY-r.top)/r.height*v.h};}"
-    r"s.addEventListener('wheel',function(e){e.preventDefault();I();var p=P(e);"
-    r"var f=e.deltaY<0?0.85:1.18;var nw=Math.max(b[2]/20,Math.min(b[2],v.w*f));f=nw/v.w;"
+    r"var ic=document.getElementById('icon-scale-group');"
+    r"s.addEventListener('wheel',function(e){e.preventDefault();I();if(e.shiftKey){"
+    r"var is=parseFloat(s.style.getPropertyValue('--icon-scale')||1);"
+    r"var nis=Math.max(0.3,Math.min(4,is*(e.deltaY<0?1.18:0.85)));"
+    r"s.style.setProperty('--icon-scale',nis.toFixed(2));if(ic)ic.style.transform='scale('+nis.toFixed(2)+')';"
+    r"return;}var p=P(e);var f=e.deltaY<0?0.85:1.18;"
+    r"var nw=Math.max(b[2]/50,Math.min(b[2],v.w*f));f=nw/v.w;"
     r"v.x=p.x-(p.x-v.x)*f;v.y=p.y-(p.y-v.y)*f;v.w*=f;v.h*=f;A();},{passive:false});"
     r"var d=false,l=null;"
     r"s.addEventListener('mousedown',function(e){d=true;I();l={x:e.clientX,y:e.clientY};"
@@ -1149,6 +1154,7 @@ def render_turn_slider_html(
     p.append(".ilabel{font-size:var(--ifs,1.6px);fill:#d9c98a;font-style:italic;}")
     p.append(".clabel{font-size:var(--cfs,1.9px);font-weight:700;fill:#fff;"
              "paint-order:stroke;stroke:#000;stroke-width:0.3px;}")
+    p.append("#icon-scale-group{transform-origin:0 0;transform:scale(var(--icon-scale,1));}")
     p.append("</style></head><body><div class='wrap'>")
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
@@ -1156,7 +1162,7 @@ def render_turn_slider_html(
              f"value='{len(turn_list)-1}' step='1'>"
              "<span id='rd' style='min-width:70px;'></span>"
              "<button id='fit' title='Zoom to fit'>Fit</button>"
-             "<span style='color:#888;'>scroll = zoom · drag = pan</span></div>")
+             "<span style='color:#888;'>scroll = zoom · drag = pan · shift+scroll = icon zoom</span></div>")
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
@@ -1235,6 +1241,8 @@ def render_turn_slider_html(
                  f"stroke='{cc[cid]}' stroke-width='{0.7*sc:.2f}' stroke-opacity='0.65' "
                  f"stroke-linecap='round' stroke-dasharray='{1.6*sc:.2f},{1.3*sc:.2f}' "
                  f"style='display:none'/>")
+    # Wrapper group for independent icon scaling via Shift+scroll.
+    p.append("<g id='icon-scale-group' style='transform-origin:0 0;transform:scale(1);'>")
     for cid in sorted(tracks):
         ci = _char_icon_uri(_scenario_root, cid)
         if ci:
@@ -1248,6 +1256,7 @@ def render_turn_slider_html(
         name = html.escape(cid.replace("_", " ").title())
         p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
                  f"{marker}<title>{name}</title></g>")
+    p.append("</g>")
     p.append("</svg>")
 
     frames_js = json.dumps({
