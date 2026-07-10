@@ -209,27 +209,47 @@ def _zone_icon_dirs(g: dict, place_rel: str | None = None) -> dict:
 
 
 def _zone_tooltip(zname: str, dest: str | None, scenario_root: Path | None) -> str:
-    """Format a building tooltip as ``<zone>: <place title>`` when available."""
-    if not dest or scenario_root is None:
-        return f"Building: {zname}"
-    key = str(scenario_root / dest)
-    if key in _PLACE_TITLE_CACHE:
-        title = _PLACE_TITLE_CACHE[key]
-    else:
-        title = ""
-        try:
-            place_md = scenario_root / dest / "PLACE.md"
-            if place_md.exists():
-                txt = place_md.read_text(encoding="utf-8")
-                m = re.search(r"^#\s*PLACE\.md\s*[\-\u2014]\s*(.+)$", txt, re.MULTILINE)
-                if m:
-                    title = m.group(1).strip()
-        except Exception:  # noqa: BLE001 - tooltip enrichment is best-effort
+    """Tooltip for a zone. A building zone (one wired to a place that has a
+    PLACE.md) reads ``<zone>: <place title>``; every other zone \u2014 terrain,
+    water, commons, un-enterable feature zones \u2014 just shows its humanized name.
+    (Nothing is labeled "Building:" unless it actually is one.)"""
+    if zname.startswith("EXIT_"):
+        return "To " + zname[len("EXIT_"):].replace("_", " ").title()
+    label = zname.replace("_", " ").title()
+    if dest and scenario_root is not None:
+        key = str(scenario_root / dest)
+        if key in _PLACE_TITLE_CACHE:
+            title = _PLACE_TITLE_CACHE[key]
+        else:
             title = ""
-        _PLACE_TITLE_CACHE[key] = title
-    if title:
-        return f"{zname}: {title}"
-    return f"Building: {zname}"
+            try:
+                place_md = scenario_root / dest / "PLACE.md"
+                if place_md.exists():
+                    txt = place_md.read_text(encoding="utf-8")
+                    m = re.search(r"^#\s*PLACE\.md\s*[\-\u2014]\s*(.+)$", txt, re.MULTILINE)
+                    if m:
+                        title = m.group(1).strip()
+            except Exception:  # noqa: BLE001 - tooltip enrichment is best-effort
+                title = ""
+            _PLACE_TITLE_CACHE[key] = title
+        if title:
+            return f"{zname}: {title}"
+    return label
+
+
+_WATER_FILL = "#7c9db0"  # matches the water in the dock/bridge icons
+_WATER_WORDS = frozenset({
+    "SEA", "RIVER", "OCEAN", "LAKE", "HARBOR", "HARBOUR", "BAY", "POND",
+    "CREEK", "STREAM", "LAGOON", "MARSH", "WATER", "SHALLOWS",
+})
+
+
+def _is_water_zone(zname: str) -> bool:
+    """True for zones that read as open water (river, sea, harbor, …) so the
+    map fills them the same blue the dock/bridge icons use, rather than a
+    z-rank palette colour."""
+    toks = zname.upper().replace("-", "_").split("_")
+    return any(t in _WATER_WORDS or "WATER" in t for t in toks)
 
 
 def _item_tooltip(label: str, detail: object | None) -> str:
@@ -559,6 +579,8 @@ def render_map(
             continue
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
+        if _is_water_zone(zname):
+            color, alpha = _WATER_FILL, 0.85
         ax.add_patch(patches.Polygon(
             verts,
             closed=True,
@@ -829,6 +851,8 @@ def render_interactive_map_html(
             continue
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
+        if _is_water_zone(zname):
+            color, alpha = _WATER_FILL, 0.85
         points = _fmt_poly(verts)
         zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
         parts.append(
@@ -1231,12 +1255,27 @@ def render_turn_slider_html(
                   if _scenario_root else None)
     _zone_dest = _zone_icon_dirs(g, _place_rel)
 
+    # Exclusion (impassable) overlays are drawn *under* the zone layer so that
+    # illustrated zones (e.g. a bridge spanning the river) paint on top of the
+    # water wash instead of being muddied by it. Open water between zones still
+    # shows through wherever no zone sits above it.
+    for iname, verts in g["impassable"]:
+        if not verts:
+            continue
+        cx = sum(x for x, _ in verts) / len(verts)
+        cy = sum(y for _, y in verts) / len(verts)
+        p.append(f"<g data-reveal='{_elem_reveal(cx, cy)}'><polygon points='{poly(verts)}' "
+                 f"fill='#3a3a42' fill-opacity='0.7' stroke='#22222a' stroke-width='{0.6*sc:.2f}'>"
+                 f"<title>{html.escape(iname)}</title></polygon></g>")
+
     for zname in zone_order:
         verts = g["zones"].get(zname)
         if not verts:
             continue
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
+        if _is_water_zone(zname):
+            color, alpha = _WATER_FILL, 0.85
         zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
         icon = _zone_icon_uri(_scenario_root, geometry_path.parent, zname,
                               _zone_dest.get(zname))
@@ -1257,14 +1296,6 @@ def render_turn_slider_html(
                      f"<title>{html.escape(zone_tip)}</title></polygon>")
         p.append("</g>")
 
-    for iname, verts in g["impassable"]:
-        if not verts:
-            continue
-        cx = sum(x for x, _ in verts) / len(verts)
-        cy = sum(y for _, y in verts) / len(verts)
-        p.append(f"<g data-reveal='{_elem_reveal(cx, cy)}'><polygon points='{poly(verts)}' "
-                 f"fill='#3a3a42' fill-opacity='0.7' stroke='#22222a' stroke-width='{0.6*sc:.2f}'>"
-                 f"<title>{html.escape(iname)}</title></polygon></g>")
     for bname, verts in g["boundaries"]:
         if not verts:
             continue
