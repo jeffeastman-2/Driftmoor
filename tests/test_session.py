@@ -772,6 +772,15 @@ class TestInferDriftmoorVenueTransition:
         )
         assert out == "weary_traveler"
 
+    def test_enter_phrase_handles_missing_space_typo(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
+            "I enterthe bitter remedy",
+            "places/driftmoor",
+            "TOWN_COMMON",
+        )
+        assert out == "bitter_remedy"
+
     def test_enter_church_by_general_name(self):
         from engine.session import _infer_driftmoor_venue_transition
         out = _infer_driftmoor_venue_transition(

@@ -5,9 +5,22 @@ A small weathered stone structure with a crooked chimney and green vines up the 
 
 A small back room holds personal experiments and more volatile ingredients. Its door is usually closed.
 
+## Resident NPCs and Creatures
+
+### lytha
+- **type:** npc
+- **soul_file:** scenario/people/npcs/lytha/SOUL.md
+- **identity_file:** scenario/people/npcs/lytha/IDENTITY.md
+- **position:** 23, 19
+
 ## Who Is Normally Here
 - **Lytha Varrow** — almost always present
 - The back room is off-limits to customers
+
+## Scene Introductions
+
+### lytha
+The door opens and a traveler steps in from the evening square. You clock them in a heartbeat: gear, posture, how they scan the room. House rules, first. Then hospitality.
 
 ## Connections
 - Near Greywater River (outside)

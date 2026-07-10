@@ -1482,6 +1482,22 @@ _LEAVE_SCENE_RE = re.compile(
 )
 
 
+def _normalize_venue_intent_text(text: str) -> str:
+    """Normalize common typo seams in venue-enter/exit phrases.
+
+    Example: ``enterthe bitter remedy`` -> ``enter the bitter remedy``.
+    """
+    t = (text or "").strip().lower()
+    if not t:
+        return ""
+    t = re.sub(
+        r"\b(enter|enters|entering|leave|leaves|leaving|exit|exits|exiting)(the|a|an)\b",
+        r"\1 \2",
+        t,
+    )
+    return t
+
+
 @dataclass(frozen=True)
 class _SceneNode:
     scene_name: str
@@ -1630,7 +1646,7 @@ def _infer_driftmoor_venue_transition(
     to the nearest parent place. The resolver is data-driven from the place
     hierarchy rather than a hand-maintained venue list.
     """
-    text = (intent_text or "").strip().lower()
+    text = _normalize_venue_intent_text(intent_text)
     place = (current_place_path or "").strip().lower().strip("/")
     zone = (actor_zone or "").strip().upper()
     if not text or not place:
@@ -4250,7 +4266,7 @@ async def iter_session(
     # immediate backtracking into already-visited zones.
     party_focus_zone: Optional[str] = None
     party_focus_until_turn: int = 0
-    pending_scene_transition: tuple[str, str, tuple[float, float, str]] | None = None
+    pending_scene_transition: tuple[str, str, tuple[float, float, str], str] | None = None
 
     while True:
         combat_at_start = in_combat
@@ -4292,6 +4308,7 @@ async def iter_session(
                 party_focus_until_turn = 0
 
             cs = characters[character_id]
+            actor_pos_before_action = current_positions.get(character_id, (0.0, 0.0, ""))
             memory_count_before = len(cs.episodic_memory)
             # Snapshot the active set so we can detect deaths that happen
             # during damage application this turn.
@@ -5558,6 +5575,7 @@ async def iter_session(
             if pending_scene_transition is None:
                 _cur_place = getattr(scene_geometry, "place_path", "") if scene_geometry else ""
                 _cur_zone = current_positions.get(character_id, (0.0, 0.0, ""))[2]
+                _source_scene = Path(_cur_place).name if _cur_place else ""
                 _target_scene = _infer_driftmoor_venue_transition(
                     intent.intent or "",
                     _cur_place,
@@ -5567,7 +5585,8 @@ async def iter_session(
                     pending_scene_transition = (
                         character_id,
                         _target_scene,
-                        current_positions.get(character_id, (0.0, 0.0, "")),
+                        actor_pos_before_action,
+                        _source_scene,
                     )
 
             if adjudication.approved:
@@ -5697,24 +5716,33 @@ async def iter_session(
         # The next turn runs in the destination scene with its own geometry,
         # items, and active cast while preserving the acting player's state.
         if pending_scene_transition is not None:
-            actor_id, target_scene_name, actor_from_pos = pending_scene_transition
+            actor_id, target_scene_name, actor_from_pos, source_scene_name = pending_scene_transition
             actor_cs = characters.get(actor_id)
             if actor_cs is not None:
-                from engine.md_loader import configure_from_md
+                from engine.md_loader import configure_from_place_path
                 from engine.activation import initial_dormant_set
                 from engine.puzzles import PuzzleRegistry
 
-                scene_file = (
-                    Path(__file__).resolve().parent.parent
-                    / "scenes"
-                    / f"{target_scene_name}.md"
-                )
-                if scene_file.exists():
-                    cfg = configure_from_md(scene_file)
+                # Place-driven transition loading: scene transitions derive from
+                # authored place paths (scenario/places/...), not scenes/*.md.
+                target_place_path = ""
+                for _node in _driftmoor_place_registry():
+                    if _node.scene_name == target_scene_name:
+                        target_place_path = _node.place_path
+                        break
+                if not target_place_path and target_scene_name == "driftmoor":
+                    target_place_path = "places/driftmoor"
 
-                    # Preserve return anchor when entering the rooming house.
-                    if target_scene_name == "weary_traveler":
-                        setattr(actor_cs, "_mvp_return_scene", "driftmoor")
+                if target_place_path:
+                    cfg = configure_from_place_path(
+                        target_place_path,
+                        game_time=game_time,
+                    )
+
+                    # Preserve return anchor when entering any authored child
+                    # scene so exiting returns to where the actor came from.
+                    if source_scene_name and target_scene_name != source_scene_name:
+                        setattr(actor_cs, "_mvp_return_scene", source_scene_name)
                         setattr(actor_cs, "_mvp_return_pos", actor_from_pos)
 
                     # Update the actor's scene intro from destination config while
@@ -5760,8 +5788,7 @@ async def iter_session(
 
                         if (
                             cid == actor_id
-                            and target_scene_name == "driftmoor"
-                            and getattr(actor_cs, "_mvp_return_scene", "") == "driftmoor"
+                            and target_scene_name == getattr(actor_cs, "_mvp_return_scene", "")
                             and isinstance(getattr(actor_cs, "_mvp_return_pos", None), tuple)
                         ):
                             rx, ry, rz = getattr(actor_cs, "_mvp_return_pos")

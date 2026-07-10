@@ -196,6 +196,11 @@ _NAME_TITLES = {"sister", "brother", "father", "mother", "lord", "lady",
                 "the", "of", "ser", "sir", "captain"}
 
 
+def _rt(app: web.Application) -> dict:
+    """Mutable runtime state container (safe to mutate post-startup)."""
+    return app["runtime"]
+
+
 def _highlight_names(characters) -> list[str]:
     """Names of every player and monster to highlight in the log — each
     character's id tokens plus the distinctive words of its name (titles
@@ -216,8 +221,9 @@ def _highlight_names(characters) -> list[str]:
 
 
 async def handle_index(request: web.Request) -> web.Response:
-    scene = request.app["scene"].replace("_", " ").title()
-    names = _highlight_names(request.app["config"].characters)
+    rt = _rt(request.app)
+    scene = rt["scene"].replace("_", " ").title()
+    names = _highlight_names(rt["config"].characters)
     # Build the highlight regex source in Python (re.escape + json.dumps handle
     # all escaping) so the page JS needs no fragile backslash literals.
     pattern = (r"\b(" + "|".join(re.escape(n) for n in names) + r")\b") if names else ""
@@ -233,7 +239,8 @@ async def handle_map(request: web.Request) -> web.Response:
     # no-cache so the iframe's periodic reload always gets the freshly-rendered
     # map (with the latest mid-turn positions), never a stale cached copy.
     headers = {"Cache-Control": "no-cache, no-store, must-revalidate"}
-    f = request.app["checkpoint_dir"] / f"{request.app['scene']}_map.html"
+    rt = _rt(request.app)
+    f = request.app["checkpoint_dir"] / f"{rt['scene']}_map.html"
     if not f.exists():
         return web.Response(text="<p>No map yet — waiting for the first turn…</p>",
                             content_type="text/html", headers=headers)
@@ -264,7 +271,7 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     last_turn_active: bool | None = None
     try:
         while True:
-            cfg = request.app["config"]
+            cfg = _rt(request.app)["config"]
             items = cfg.items
             player_cs = cfg.characters.get(player)
             for msg in web_transport.drain_outbound(player):
@@ -305,7 +312,8 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
 def _render_map(app: web.Application, live_positions: dict | None = None) -> None:
     """(Re)write the scene map. ``live_positions`` stamps the latest frame with
     mid-turn positions so the map shows where everyone is now. Best-effort."""
-    cfg, cd, scene = app["config"], app["checkpoint_dir"], app["scene"]
+    rt = _rt(app)
+    cfg, cd, scene = rt["config"], app["checkpoint_dir"], rt["scene"]
     # Turn-0 (and every) map seeds character markers from scene-authored
     # placement, not the GEOMETRY: geometry is a pure stage now.
     sg = getattr(cfg, "scene_geometry", None)
@@ -319,7 +327,7 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
             snapshot_dir=cd, title=scene.replace("_", " ").title(),
             # Refresh faster than scene_runner's batch maps so per-initiative
             # moves are visible while watching live play.
-            live_refresh_secs=4, start_characters=app["start_characters"],
+            live_refresh_secs=4, start_characters=rt["start_characters"],
             item_details=cfg.items or None, live_positions=live_positions,
             start_positions=start_positions, scene_geometry=sg)
     except Exception:  # noqa: BLE001 — map is best-effort
@@ -327,7 +335,8 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
 
 
 async def _session_task(app: web.Application) -> None:
-    cfg, cd = app["config"], app["checkpoint_dir"]
+    rt = _rt(app)
+    cfg, cd = rt["config"], app["checkpoint_dir"]
 
     def _on_character_acted(cid: str, turn: int, positions: dict, cr) -> None:
         # Runs synchronously inside the turn loop's own window, right after each
@@ -345,9 +354,9 @@ async def _session_task(app: web.Application) -> None:
                 {"turn": turn, "cid": cid, "prose": prose, "spoken": spoken})
 
     def _on_scene_transition(scene_name: str, new_cfg) -> None:
-        app["scene"] = scene_name
-        app["config"] = new_cfg
-        app["start_characters"] = [
+        rt["scene"] = scene_name
+        rt["config"] = new_cfg
+        rt["start_characters"] = [
             cid for cid, cs in new_cfg.characters.items()
             if (getattr(cs, "activation", "always") or "always") == "always"
         ]
@@ -566,14 +575,16 @@ def main():
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     app = web.Application()
-    app["config"] = cfg
-    app["scene"] = args.scene
+    app["runtime"] = {
+        "config": cfg,
+        "scene": args.scene,
+    }
     app["player"] = args.player
     app["checkpoint_dir"] = checkpoint_dir
     app["turns"] = args.turns or cfg.default_turns or 40
     # Party = characters active from turn 1; only these seed the turn-0 map, so
     # dormant creatures (e.g. a lurking spider) stay fogged until discovered.
-    app["start_characters"] = [
+    app["runtime"]["start_characters"] = [
         cid for cid, cs in cfg.characters.items()
         if (getattr(cs, "activation", "always") or "always") == "always"
     ]

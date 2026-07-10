@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 
 from engine.md_loader import (
+    configure_from_place_path,
+    _build_player_or_npc,
     parse_identity_stats,
     _merge_identity_defaults,
     _warn_unarmed_combatants,
@@ -148,3 +150,26 @@ def test_merge_identity_defaults_fills_missing_and_preserves_scene_override():
 
     # Scene value remains authoritative.
     assert cfg["channel"] == "telegram"
+
+
+def test_configure_from_place_path_loads_resident_npc_without_intro_block():
+    cfg = configure_from_place_path("places/driftmoor/bitter_remedy")
+
+    assert "lytha" in cfg.characters
+    lytha = cfg.characters["lytha"]
+    assert lytha.character.character_type == "npc"
+
+
+def test_build_npc_allows_missing_scene_introduction():
+    cs = _build_player_or_npc(
+        "lytha",
+        {
+            "type": "npc",
+            "identity_file": "scenario/people/npcs/lytha/IDENTITY.md",
+            "soul_file": "scenario/people/npcs/lytha/SOUL.md",
+        },
+        introductions={},
+    )
+
+    assert cs.character.character_type == "npc"
+    assert "currently present in this location" in cs.initial_scene

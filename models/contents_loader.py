@@ -31,7 +31,10 @@ from models.puzzle import PuzzleEffect, PuzzleSpec
 
 def _extract_section(text: str, heading: str) -> str:
     """Extract content under a ``## heading`` up to the next ``##`` or EOF."""
-    pattern = rf"^##\s+{re.escape(heading)}[^\n]*\n(.*?)(?=^##\s|\Z)"
+    # Match the heading exactly (plus optional trailing spaces). This avoids
+    # accidentally treating narrative headings like ``## Items Present`` as the
+    # machine-readable ``## Items`` block.
+    pattern = rf"^##\s+{re.escape(heading)}\s*$\n(.*?)(?=^##\s|\Z)"
     match = re.search(pattern, text, re.MULTILINE | re.DOTALL)
     return match.group(1).strip() if match else ""
 
