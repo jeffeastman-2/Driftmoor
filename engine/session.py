@@ -1435,6 +1435,31 @@ def _build_points_of_interest(
             f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away){onward}"
         )
 
+    # Enterable venues appear as POIs via their authored doorway (the connection
+    # point), which is why the redundant per-building *_center landmarks were
+    # retired. Only sub-place doorways are folded in — region exits stay
+    # represented by their road landmarks. Skipped for non-Driftmoor scenes.
+    _lm_pts = [(p.x, p.y) for p in scene_geometry.landmarks.values()]
+    for _child, _conn, dx, dy in _driftmoor_source_doorways(
+        getattr(scene_geometry, "place_path", "") or ""
+    ):
+        door = Position(dx, dy)
+        door_zones = _zones_for_point(door, scene_geometry.zones)
+        if door_zones and not (door_zones & visible_zones):
+            continue
+        # A landmark already marking this spot wins (no double-listing).
+        if any(abs(dx - lx) < 2.0 and abs(dy - ly) < 2.0 for lx, ly in _lm_pts):
+            continue
+        label = re.sub(r"^to[ _]+", "", _conn).replace("_", " ").strip() or _child
+        dist = ((dx - px) ** 2 + (dy - py) ** 2) ** 0.5
+        onward = ""
+        new_zones = door_zones - visible_zones
+        if new_zones:
+            onward = " — enter to go inside"
+        lines.append(
+            f"- {label}: x={dx:.0f}, y={dy:.0f} (~{dist:.0f} ft away){onward}"
+        )
+
     if not lines:
         return ""
     here = current_zone.title() if current_zone else "an unmarked area"
@@ -1472,8 +1497,13 @@ _CONNECTOR_NAME_TOKENS = {
 }
 
 
+# True "cross the threshold" verbs only. "go to / head to / walk to / move to"
+# are deliberately NOT here: those are movement to the venue's door (which stops
+# there), while these carry the actor inside to the sub-scene. Keeping them
+# distinct is what makes "go to the apothecary" (front door) and "enter the
+# apothecary" (inside) different actions.
 _ENTER_SCENE_RE = re.compile(
-    r"\b(enter|enters|entering|go\s+inside|go\s+in|head\s+inside|step\s+inside|walk\s+inside|go\s+to|head\s+to|walk\s+to|visit|arrive\s+at|arrive\s+in)\b",
+    r"\b(enter|enters|entering|go\s+inside|go\s+in|head\s+inside|step\s+inside|walk\s+inside|step\s+into|go\s+into|visit)\b",
     re.IGNORECASE,
 )
 _LEAVE_SCENE_RE = re.compile(
@@ -1700,12 +1730,13 @@ _DOORWAY_ARRIVAL_FT = 8.0
 
 
 @lru_cache(maxsize=8)
-def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, float, float], ...]:
-    """``(child_scene_name, x, y)`` for each authored connection in the *source*
-    place's GEOMETRY Connections table — i.e. where each child venue's front door
-    sits in this scene's coordinates. Empty when the source isn't a Driftmoor
-    place. Only connections whose destination is a sub-place of the source count
-    (region/exit connections lead out of the scene and have no doorway here)."""
+def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, float, float], ...]:
+    """``(child_scene_name, connection_name, x, y)`` for each authored connection
+    in the *source* place's GEOMETRY Connections table — i.e. where each child
+    venue's front door sits in this scene's coordinates. Empty when the source
+    isn't a Driftmoor place. Only connections whose destination is a sub-place of
+    the source count (region/exit connections lead out of the scene, no doorway
+    here)."""
     source = (source_place_path or "").strip().lower().strip("/")
     if not source.startswith("places/driftmoor"):
         return ()
@@ -1721,7 +1752,7 @@ def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, float
     m = re.search(r"##\s+Connections\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
     if not m:
         return ()
-    out: list[tuple[str, float, float]] = []
+    out: list[tuple[str, str, float, float]] = []
     for raw in m.group(1).splitlines():
         line = raw.strip()
         if not line.startswith("|"):
@@ -1737,7 +1768,7 @@ def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, float
             continue
         child = dest_norm.rsplit("/", 1)[-1]
         try:
-            out.append((child, float(x_s), float(y_s)))
+            out.append((child, name, float(x_s), float(y_s)))
         except ValueError:
             continue
     return tuple(out)
@@ -1768,7 +1799,7 @@ def _driftmoor_enter_doorway(
     )
     if not is_child:
         return None
-    for child, x, y in _driftmoor_source_doorways(place):
+    for child, _conn, x, y in _driftmoor_source_doorways(place):
         if child == target_scene:
             zone = ""
             if scene_geometry is not None:

@@ -784,11 +784,20 @@ class TestInferDriftmoorVenueTransition:
     def test_enter_church_by_general_name(self):
         from engine.session import _infer_driftmoor_venue_transition
         out = _infer_driftmoor_venue_transition(
-            "head to the church",
+            "I enter the church",
             "places/driftmoor",
             "TOWN_COMMON",
         )
         assert out == "beacon_church"
+
+    def test_go_to_venue_is_not_entry(self):
+        # "go to / head to / walk to" walk you to the door; they do not cross
+        # inside. Only true "enter" verbs trigger the sub-scene transition.
+        from engine.session import _infer_driftmoor_venue_transition
+        for phrase in ("I go to the apothecary", "head to the church",
+                       "walk to the bakery"):
+            assert _infer_driftmoor_venue_transition(
+                phrase, "places/driftmoor", "TOWN_COMMON") is None
 
     def test_leave_interior_returns_to_driftmoor(self):
         from engine.session import _infer_driftmoor_venue_transition
@@ -820,7 +829,7 @@ class TestInferDriftmoorVenueTransition:
     def test_source_doorways_maps_children_to_connection_points(self):
         from engine.session import _driftmoor_source_doorways
         doors = dict(
-            (child, (x, y)) for child, x, y in
+            (child, (x, y)) for child, _conn, x, y in
             _driftmoor_source_doorways("places/driftmoor")
         )
         # authored `to_apothecary | 1040 | 780 | .../bitter_remedy`
