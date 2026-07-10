@@ -140,6 +140,26 @@ def _icon_data_uri(path: "Path") -> "str | None":
     return uri
 
 
+def _zone_icon_uri(scenario_root: "Path | None", place_dir: "Path | None",
+                   zname: str, dest: str | None) -> "str | None":
+    """Resolve a zone's icon data-URI: first the connected sub-place's icon
+    (``<scenario>/<dest>/icon.*``), else the name convention
+    ``<place_dir>/<zone-lowercased>/icon.*``. The convention lets non-enterable
+    feature zones (graveyard, well, garden, …) carry art without a PLACE.md or a
+    ## Connections entry. None if neither has one."""
+    dirs = []
+    if scenario_root is not None and dest:
+        dirs.append(scenario_root / dest)
+    if place_dir is not None:
+        dirs.append(place_dir / zname.lower())
+    for d in dirs:
+        for ext in (".svg", ".png", ".webp"):
+            uri = _icon_data_uri(d / f"icon{ext}")
+            if uri:
+                return uri
+    return None
+
+
 def _char_icon_uri(scenario_root: "Path | None", cid: str) -> "str | None":
     """Data-URI for a character token ``<char dir>/icon.svg`` if present. Looks
     in the conventional people/creature dirs, by id then base id (drops _N)."""
@@ -1197,12 +1217,8 @@ def render_turn_slider_html(
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
         zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
-        icon = None
-        if _scenario_root is not None and zname in _zone_dest:
-            for ext in (".svg", ".png", ".webp"):
-                icon = _icon_data_uri(_scenario_root / _zone_dest[zname] / f"icon{ext}")
-                if icon:
-                    break
+        icon = _zone_icon_uri(_scenario_root, geometry_path.parent, zname,
+                              _zone_dest.get(zname))
         p.append(f"<g data-reveal='{reveal_zone.get(zname, never)}'>")
         if icon:
             xs = [x for x, _ in verts]
