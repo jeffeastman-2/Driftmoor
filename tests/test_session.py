@@ -817,6 +817,39 @@ class TestInferDriftmoorVenueTransition:
         )
         assert out is None
 
+    def test_source_doorways_maps_children_to_connection_points(self):
+        from engine.session import _driftmoor_source_doorways
+        doors = dict(
+            (child, (x, y)) for child, x, y in
+            _driftmoor_source_doorways("places/driftmoor")
+        )
+        # authored `to_apothecary | 1040 | 780 | .../bitter_remedy`
+        assert doors.get("bitter_remedy") == (1040.0, 780.0)
+        # region/exit connections (to_region, to_harbor_water, …) are not venues
+        assert "" not in doors
+        assert "azure_sea" not in doors
+
+    def test_enter_doorway_resolves_venue_and_door(self):
+        from engine.session import _driftmoor_enter_doorway
+        out = _driftmoor_enter_doorway(
+            "I enter the apothecary", "places/driftmoor", "TOWN_COMMON", None)
+        assert out is not None
+        scene, (x, y, _zone) = out
+        assert scene == "bitter_remedy"
+        assert (x, y) == (1040.0, 780.0)
+
+    def test_enter_doorway_none_for_exit(self):
+        from engine.session import _driftmoor_enter_doorway
+        # leaving a child back to the parent is not doorway-gated
+        assert _driftmoor_enter_doorway(
+            "I leave the rooming house",
+            "places/driftmoor/weary_traveler", "COMMON_ROOM", None) is None
+
+    def test_enter_doorway_none_for_non_enter(self):
+        from engine.session import _driftmoor_enter_doorway
+        assert _driftmoor_enter_doorway(
+            "I look around the square", "places/driftmoor", "TOWN_COMMON", None) is None
+
 
 class TestMovementInferenceWithoutZoneCenterHints:
     """Movement/POI behavior should rely on authored landmarks and zone names."""

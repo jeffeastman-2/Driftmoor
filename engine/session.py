@@ -1691,6 +1691,92 @@ def _entry_point_from_target_geometry(
     return None
 
 
+# An actor must be within this many feet of a venue's authored doorway (its
+# Connections-table point) for an "enter" to cross into the sub-scene. Farther
+# away, "enter X" just walks the actor toward that door — clamped to the turn's
+# movement budget, exactly like "go to X" — and the crossing happens on the turn
+# a clamped move finally lands them at the door.
+_DOORWAY_ARRIVAL_FT = 8.0
+
+
+@lru_cache(maxsize=8)
+def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, float, float], ...]:
+    """``(child_scene_name, x, y)`` for each authored connection in the *source*
+    place's GEOMETRY Connections table — i.e. where each child venue's front door
+    sits in this scene's coordinates. Empty when the source isn't a Driftmoor
+    place. Only connections whose destination is a sub-place of the source count
+    (region/exit connections lead out of the scene and have no doorway here)."""
+    source = (source_place_path or "").strip().lower().strip("/")
+    if not source.startswith("places/driftmoor"):
+        return ()
+    rel = source.removeprefix("places/driftmoor").strip("/")
+    geom_path = (_DRIFTMOOR_PLACES_ROOT / rel / "GEOMETRY.md") if rel \
+        else (_DRIFTMOOR_PLACES_ROOT / "GEOMETRY.md")
+    if not geom_path.exists():
+        return ()
+    try:
+        text = geom_path.read_text(encoding="utf-8")
+    except OSError:
+        return ()
+    m = re.search(r"##\s+Connections\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
+    if not m:
+        return ()
+    out: list[tuple[str, float, float]] = []
+    for raw in m.group(1).splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        name, x_s, y_s, dest = cells[0], cells[1], cells[2], cells[3]
+        if not name or name.lower() == "name":
+            continue
+        dest_norm = dest.lower().strip().strip("/")
+        if not dest_norm.startswith(source + "/"):
+            continue
+        child = dest_norm.rsplit("/", 1)[-1]
+        try:
+            out.append((child, float(x_s), float(y_s)))
+        except ValueError:
+            continue
+    return tuple(out)
+
+
+def _driftmoor_enter_doorway(
+    intent_text: str,
+    current_place_path: str,
+    actor_zone: str,
+    scene_geometry: "SceneGeometry | None",
+) -> Optional[tuple[str, tuple[float, float, str]]]:
+    """For an "enter <child>" intent, return ``(target_scene, (x, y, zone))`` of
+    the child venue's authored doorway in the current scene, so the turn loop can
+    both walk the actor there (clamped) and gate the sub-scene crossing on
+    arrival. Returns None when the intent isn't a doorway-gated entry — an exit,
+    a non-Driftmoor scene, or a child with no authored doorway (those keep the
+    legacy immediate transition)."""
+    target_scene = _infer_driftmoor_venue_transition(
+        intent_text, current_place_path, actor_zone)
+    if target_scene is None:
+        return None
+    # Only descents (entering a child of the current place) are doorway-gated;
+    # exits back to a parent pass straight through.
+    place = (current_place_path or "").strip().lower().strip("/")
+    is_child = any(
+        n.scene_name == target_scene and n.parent_place_path == place
+        for n in _driftmoor_place_registry()
+    )
+    if not is_child:
+        return None
+    for child, x, y in _driftmoor_source_doorways(place):
+        if child == target_scene:
+            zone = ""
+            if scene_geometry is not None:
+                zone = (scene_geometry.zone_at(Position(x, y, 0.0)) or "").upper()
+            return (target_scene, (x, y, zone))
+    return None
+
+
 def _infer_driftmoor_venue_transition(
     intent_text: str,
     current_place_path: str,
@@ -4938,6 +5024,24 @@ async def iter_session(
             # Skipped when CombatResolver already applied movement.
             player_target = intent.movement_target  # (x, y, z) or None
 
+            # "enter <venue>" is a distance-clamped walk to that venue's front
+            # door (its authored connection point), not a teleport. Resolve the
+            # doorway once; force it as this turn's movement target so the actor
+            # heads there (clamped), and reuse it below to gate the crossing on
+            # arrival. None for exits / non-venue intents, which are unchanged.
+            _enter_info = None
+            if scene_geometry is not None and intent.intent:
+                _enter_info = _driftmoor_enter_doorway(
+                    intent.intent,
+                    getattr(scene_geometry, "place_path", "") or "",
+                    current_positions.get(character_id, ("", "", ""))[2],
+                    scene_geometry,
+                )
+            if _enter_info is not None and adjudication.approved:
+                _door = _enter_info[1]
+                player_target = (_door[0], _door[1], _door[2] or "")
+                intent.movement_target = player_target
+
             # The model sometimes names its destination only in the free-text
             # INTENT ("Move to the first passage") and leaves MOVEMENT empty,
             # so movement_target is None and the actor never relocates.
@@ -5638,6 +5742,24 @@ async def iter_session(
                     _cur_place,
                     _cur_zone,
                 )
+                # Entering a child venue is doorway-gated: cross in only once
+                # this turn's clamped move has brought the actor to the venue's
+                # front door. Farther off, the move just closed the distance and
+                # the actor re-issues "enter" next turn. Exits and venues without
+                # an authored doorway (_enter_info is None) transition as before.
+                if (
+                    _target_scene is not None
+                    and _enter_info is not None
+                    and _enter_info[0] == _target_scene
+                ):
+                    _now = current_positions.get(character_id, (0.0, 0.0, ""))
+                    _door = _enter_info[1]
+                    _dist = (
+                        (float(_now[0]) - _door[0]) ** 2
+                        + (float(_now[1]) - _door[1]) ** 2
+                    ) ** 0.5
+                    if _dist > _DOORWAY_ARRIVAL_FT:
+                        _target_scene = None
                 if _target_scene is not None:
                     pending_scene_transition = (
                         character_id,
