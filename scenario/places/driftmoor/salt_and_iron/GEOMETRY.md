@@ -79,6 +79,6 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 - **type:** physical
 - **blocks:** all
 - **effect:** locked door; Jorgen's private stock and staircase to quarters; DC 48.75 Thieves' Tools to pick
-- **vertices:** (0,45) (71,45) (71,65) (0,65)
+- **vertices:** (0,48) (71,48) (71,65) (0,65)
 
 ---
