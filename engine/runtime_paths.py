@@ -162,8 +162,12 @@ def print_startup_banner() -> None:
     ollama_host = os.environ.get("OLLAMA_HOST", "").strip() or "http://localhost:11434 (default)"
     forced = os.environ.get("LLM_FORCE_OLLAMA_MODEL", "").strip()
     state_root = get_state_root()
+    env_selector = os.environ.get("DRIFTMOOR_ENV_FILE", "").strip() or "(auto)"
+    env_loaded = os.environ.get("DRIFTMOOR_ENV_FILES_LOADED", "").strip() or "(none found)"
 
     print("Driftmoor configuration:")
+    print(f"  DRIFTMOOR_ENV_FILE     = {env_selector}")
+    print(f"  env files loaded       = {env_loaded}")
     print(f"  OLLAMA_HOST            = {ollama_host}")
     if forced:
         print(f"  LLM_FORCE_OLLAMA_MODEL = {forced}  (every agent forced)")

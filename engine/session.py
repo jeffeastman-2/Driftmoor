@@ -1634,6 +1634,63 @@ def _driftmoor_place_registry() -> tuple[_SceneNode, ...]:
     return tuple(nodes)
 
 
+def _entry_point_from_target_geometry(
+    target_place_path: str,
+    source_place_path: str,
+    scene_geometry: SceneGeometry | None,
+) -> tuple[float, float, str] | None:
+    """Best doorway spawn in ``target_place_path`` for an arrival from source.
+
+    Reads the destination place's ``GEOMETRY.md`` Connections table and returns
+    the ``(x, y, zone)`` of the first row whose destination equals
+    ``source_place_path``. ``None`` when no authored match exists.
+    """
+    if scene_geometry is None:
+        return None
+    target = (target_place_path or "").strip().lower().strip("/")
+    source = (source_place_path or "").strip().lower().strip("/")
+    if not target or not source:
+        return None
+    if not target.startswith("places/driftmoor"):
+        return None
+
+    rel = target.removeprefix("places/driftmoor").strip("/")
+    geom_path = _DRIFTMOOR_PLACES_ROOT / rel / "GEOMETRY.md" if rel else _DRIFTMOOR_PLACES_ROOT / "GEOMETRY.md"
+    if not geom_path.exists():
+        return None
+
+    try:
+        text = geom_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    m = re.search(r"##\s+Connections\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
+    if not m:
+        return None
+
+    for raw in m.group(1).splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        name, x_s, y_s, dest = cells[0], cells[1], cells[2], cells[3]
+        if not name or name.lower() == "name":
+            continue
+        if dest.lower().strip().strip("/") != source:
+            continue
+        try:
+            x = float(x_s)
+            y = float(y_s)
+        except ValueError:
+            continue
+        z = (scene_geometry.zone_at(Position(x, y, 0.0)) or "").upper()
+        return (x, y, z)
+
+    return None
+
+
 def _infer_driftmoor_venue_transition(
     intent_text: str,
     current_place_path: str,
@@ -4266,7 +4323,7 @@ async def iter_session(
     # immediate backtracking into already-visited zones.
     party_focus_zone: Optional[str] = None
     party_focus_until_turn: int = 0
-    pending_scene_transition: tuple[str, str, tuple[float, float, str], str] | None = None
+    pending_scene_transition: tuple[str, str, tuple[float, float, str], str, str] | None = None
 
     while True:
         combat_at_start = in_combat
@@ -5587,6 +5644,7 @@ async def iter_session(
                         _target_scene,
                         actor_pos_before_action,
                         _source_scene,
+                        _cur_place,
                     )
 
             if adjudication.approved:
@@ -5716,7 +5774,7 @@ async def iter_session(
         # The next turn runs in the destination scene with its own geometry,
         # items, and active cast while preserving the acting player's state.
         if pending_scene_transition is not None:
-            actor_id, target_scene_name, actor_from_pos, source_scene_name = pending_scene_transition
+            actor_id, target_scene_name, actor_from_pos, source_scene_name, source_place_path = pending_scene_transition
             actor_cs = characters.get(actor_id)
             if actor_cs is not None:
                 from engine.md_loader import configure_from_place_path
@@ -5807,6 +5865,15 @@ async def iter_session(
                             z = (scene_geometry.zone_at(start) or "").upper()
                             current_positions[cid] = (float(start.x), float(start.y), z)
                         else:
+                            if cid == actor_id:
+                                doorway = _entry_point_from_target_geometry(
+                                    target_place_path,
+                                    source_place_path,
+                                    scene_geometry,
+                                )
+                                if doorway is not None:
+                                    current_positions[cid] = doorway
+                                    continue
                             current_positions[cid] = (0.0, 0.0, "")
 
                     # Reset scene-local visibility progression for the new map.

@@ -269,6 +269,7 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     sent: set[int] = set()
     last_inv: dict | None = None
     last_turn_active: bool | None = None
+    error_reported = False
     try:
         while True:
             cfg = _rt(request.app)["config"]
@@ -302,6 +303,18 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
                 last_inv = inv
                 await resp.write(
                     f"data: {json.dumps({'type': 'inventory', **inv})}\n\n".encode())
+
+            # If the background session task crashed, surface it in-band so the
+            # browser does not look frozen with input disabled.
+            task = request.app.get("session_task")
+            if task is not None and task.done() and not error_reported:
+                err = task.exception()
+                if err is not None:
+                    error_reported = True
+                    await resp.write(
+                        f"data: {json.dumps({'type': 'dm', 'text': f'[web_play error] {err}'})}\n\n".encode())
+                    await resp.write(
+                        f"data: {json.dumps({'type': 'turnstate', 'active': False})}\n\n".encode())
             await resp.write(b": keep-alive\n\n")
             await asyncio.sleep(0.8)
     except (ConnectionResetError, asyncio.CancelledError):
@@ -396,8 +409,11 @@ body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:#0e0e12;
   display:flex;flex-direction:column;height:100vh;}
 header{padding:8px 14px;font-size:15px;font-weight:700;border-bottom:1px solid #2a2a33;}
 .cols{display:flex;flex:1;min-height:0;}
-.log{flex:1;overflow-y:auto;padding:10px 14px;border-right:1px solid #2a2a33;}
-.map{flex:1.3;}.map iframe{width:100%;height:100%;border:0;background:#0e0e12;}
+.cols{display:grid;grid-template-columns:48% 8px minmax(320px,1fr);}
+.log{overflow-y:auto;padding:10px 14px;border-right:1px solid #2a2a33;min-width:260px;}
+.split{cursor:col-resize;background:#1a1a22;border-left:1px solid #2a2a33;border-right:1px solid #2a2a33;}
+.split:hover{background:#252532;}
+.map{min-width:320px;}.map iframe{width:100%;height:100%;border:0;background:#0e0e12;}
 .turn{margin:0 0 12px;}.turn h3{margin:0 0 4px;font-size:12px;color:#8a8a99;
   letter-spacing:.05em;text-transform:uppercase;}
 .line{margin:0 0 6px;font-size:14px;line-height:1.45;}
@@ -426,8 +442,9 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 .chip .ic{font-size:15px;line-height:1;}
 </style></head><body>
 <header>__TITLE__ — you are playing in the browser</header>
-<div class='cols'>
+<div class='cols' id='cols'>
   <div class='log' id='log'></div>
+    <div class='split' id='split' title='Drag to resize narration/map panes'></div>
   <div class='map'><iframe id='mapframe' src='/map'></iframe></div>
 </div>
 <div class='inv' id='inv'>
@@ -510,6 +527,32 @@ function renderInv(m){
 const f=document.getElementById('f'),inp=document.getElementById('in'),
       sendBtn=document.getElementById('send'),
       turnStatus=document.getElementById('turnstatus');
+const cols=document.getElementById('cols'),split=document.getElementById('split');
+const SPLIT_KEY='driftmoor:webplay:split:px';
+function setSplit(px){
+    const w=cols.clientWidth||1200;
+    const minL=260, minR=320;
+    const clamped=Math.max(minL,Math.min(w-minR,Math.round(px)));
+    cols.style.gridTemplateColumns=clamped+'px 8px minmax('+minR+'px,1fr)';
+    try{localStorage.setItem(SPLIT_KEY,String(clamped));}catch(_){}}
+try{
+    const saved=parseInt(localStorage.getItem(SPLIT_KEY)||'',10);
+    if(Number.isFinite(saved))setSplit(saved);
+}catch(_){}
+let drag=false;
+split.addEventListener('pointerdown',ev=>{
+    drag=true;split.setPointerCapture(ev.pointerId);ev.preventDefault();
+});
+split.addEventListener('pointermove',ev=>{
+    if(!drag)return;
+    const r=cols.getBoundingClientRect();
+    setSplit(ev.clientX-r.left);
+});
+split.addEventListener('pointerup',()=>{drag=false;});
+split.addEventListener('pointercancel',()=>{drag=false;});
+window.addEventListener('keydown',ev=>{
+    if(ev.key==='Escape'&&drag){drag=false;}
+});
 window.addEventListener('message',ev=>{
     const m=ev.data||{};
     if(!m||m.type!=='driftmoor-map-dblclick')return;

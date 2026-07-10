@@ -5,4 +5,5 @@ aiohttp
 matplotlib
 pyyaml
 python-dotenv
+requests
 pytest

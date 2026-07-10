@@ -35,6 +35,7 @@ _PANZOOM_JS = (
     r"var b=s.getAttribute('viewBox').trim().split(/[ ,]+/).map(Number);"
     r"var v={x:b[0],y:b[1],w:b[2],h:b[3]};"
     r"var MK=s.getAttribute('data-map-key')||('vb:'+b.join(','));var K='mapView:'+MK;"
+    r"var ZK=K+':zoomStep';var zoomStep=0.15;"
     # Persist the view so the live-refresh reload keeps the reader's zoom/pan.
     r"function sv(){try{sessionStorage.setItem(K,JSON.stringify({b:b,v:[v.x,v.y,v.w,v.h]}));}catch(_){}}"
     # Keep labels a constant ON-SCREEN size: font-size is in viewBox units, so
@@ -45,6 +46,13 @@ _PANZOOM_JS = (
     r"s.style.setProperty('--lfs',(7.5*k).toFixed(2)+'px');"
     r"s.style.setProperty('--ifs',(7*k).toFixed(2)+'px');"
     r"s.style.setProperty('--cfs',(8.5*k).toFixed(2)+'px');}"
+    r"function RF(){v.x=b[0];v.y=b[1];v.w=b[2];v.h=b[3];A();}"
+    r"function SZ(n){zoomStep=Math.max(0.05,Math.min(0.40,Number(n)||0.15));"
+    r"var zv=document.getElementById('zoomSpeedVal');if(zv)zv.textContent=Math.round(zoomStep*100)+'%';"
+    r"var zs=document.getElementById('zoomSpeed');if(zs&&String(zs.value)!==String(Math.round(zoomStep*100)))"
+    r"zs.value=String(Math.round(zoomStep*100));"
+    r"try{sessionStorage.setItem(ZK,String(zoomStep));}catch(_){}}"
+    r"function ZF(d){return d<0?(1-zoomStep):(1+zoomStep);}"
     r"function A(){s.setAttribute('viewBox',v.x+' '+v.y+' '+v.w+' '+v.h);sv();LS();}"
     # Mark interaction so the refresh loop can defer reloads while the user drags.
     r"function I(){window.__mapLastInteract=Date.now();}"
@@ -70,12 +78,14 @@ _PANZOOM_JS = (
     r"function SIS(d){SI(iconScale*(d>0?1.18:0.85));}"
     r"try{var isv=parseFloat(sessionStorage.getItem(IK)||'1');"
     r"if(isFinite(isv))SI(isv);else SI(1);}catch(_){SI(1);}"
+    r"try{var zsv=parseFloat(sessionStorage.getItem(ZK)||'0.15');"
+    r"if(isFinite(zsv))SZ(zsv);else SZ(0.15);}catch(_){SZ(0.15);}"
     r"function WD(e){var dx=Number(e.deltaX)||0,dy=Number(e.deltaY)||0;"
     r"return Math.abs(dy)>=Math.abs(dx)?dy:dx;}"
     r"s.addEventListener('wheel',function(e){e.preventDefault();I();if(e.shiftKey){"
     r"if(!(ii.length||id.length))return;var wd=WD(e);if(!wd)return;"
     r"SIS(wd<0?1:-1);"
-    r"return;}var p=P(e);var f=e.deltaY<0?0.85:1.18;"
+    r"return;}var p=P(e);var wd=WD(e);if(!wd)return;var f=ZF(wd);"
     r"var nw=Math.max(b[2]/20,v.w*f);f=nw/v.w;"
     r"v.x=p.x-(p.x-v.x)*f;v.y=p.y-(p.y-v.y)*f;v.w*=f;v.h*=f;A();},{passive:false});"
     r"var d=false,l=null;"
@@ -96,7 +106,10 @@ _PANZOOM_JS = (
     r"if(t==='input'||t==='textarea')return;"
     r"if(e.key==='+'||e.key==='='||e.key===']'){I();SIS(1);e.preventDefault();}"
     r"else if(e.key==='-'||e.key==='_'||e.key==='['){I();SIS(-1);e.preventDefault();}"
-    r"else if(e.key==='0'){I();SI(1);e.preventDefault();}});"
+    r"else if(e.key==='0'){I();SI(1);RF();e.preventDefault();}"
+    r"else if(e.key==='f'||e.key==='F'){I();RF();e.preventDefault();}});"
+    r"var fb=document.getElementById('fit');if(fb)fb.addEventListener('click',function(){I();RF();});"
+    r"var zs=document.getElementById('zoomSpeed');if(zs)zs.addEventListener('input',function(){SZ((+zs.value)/100);});"
     r"LS();window.addEventListener('resize',LS);})();"
 )
 
@@ -1182,7 +1195,10 @@ def render_turn_slider_html(
              "background:#f7f7f5;color:#111;}.wrap{padding:12px 14px;}"
              "h1{font-size:14px;margin:0 0 6px;}"
              ".ctl{display:flex;align-items:center;gap:10px;margin:6px 0 10px;"
-             "font-size:13px;}.ctl input[type=range]{flex:1;}"
+             "font-size:13px;}.ctl #sl{flex:1;}"
+             ".zctl{display:inline-flex;align-items:center;gap:6px;}"
+             ".zctl input{width:88px;}"
+             ".hint{color:#555;font-size:12px;white-space:nowrap;}"
              "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;"
              "background:#0e0e12;}button{font:inherit;padding:3px 10px;cursor:pointer;}")
     # font-size is a JS-controlled var (constant on-screen size across zoom); the
@@ -1195,9 +1211,14 @@ def render_turn_slider_html(
     p.append("</style></head><body><div class='wrap'>")
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
+             "<button id='fit' title='Reset map view (key: F)'>Fit</button>"
+             "<span class='zctl'><span class='hint'>Zoom</span>"
+             "<input id='zoomSpeed' type='range' min='5' max='40' value='15' step='1'>"
+             "<span class='hint' id='zoomSpeedVal'>15%</span></span>"
              f"<input id='sl' type='range' min='0' max='{len(turn_list)-1}' "
              f"value='{len(turn_list)-1}' step='1'>"
              "<span id='rd' style='min-width:70px;'></span>"
+             "<span class='hint'>wheel=zoom, drag=pan, F=fit</span>"
              "</div>")
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
