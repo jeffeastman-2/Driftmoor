@@ -172,7 +172,7 @@ class TestLoadFromScenario:
         assert gs.get_character("seraphina") is not None
         assert gs.get_place("driftmoor") is not None
         assert len(gs.get_players()) >= 7
-        assert len(gs.places) == 54
+        assert len(gs.places) == sum(1 for _ in (base / "places").rglob("PLACE.md"))
 
     def test_all_character_locations_valid(self):
         """If a character has a location set, it should be a known place."""

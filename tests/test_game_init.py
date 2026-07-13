@@ -26,7 +26,8 @@ class TestInitialization:
         assert len(state.characters) >= 37
 
     def test_all_places_loaded(self, state: GameState):
-        assert len(state.places) == 54
+        expected = sum(1 for _ in (SCENARIO_DIR / "places").rglob("PLACE.md"))
+        assert len(state.places) == expected
 
     def test_all_players_loaded(self, state: GameState):
         expected = len([d for d in (SCENARIO_DIR / "people" / "players").iterdir() if d.is_dir()])

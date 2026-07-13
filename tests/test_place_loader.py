@@ -200,7 +200,11 @@ class TestLoadPlace:
 class TestLoadAllPlaces:
     def test_load_all(self):
         places = load_all_places(PLACES_DIR)
-        assert len(places) == 54
+        # Derive the expected count from the PLACE.md files on disk so the test
+        # verifies "every place loads" without breaking each time one is
+        # added/removed (matches test_game_init.test_all_players_loaded).
+        expected = sum(1 for _ in PLACES_DIR.rglob("PLACE.md"))
+        assert len(places) == expected
 
     def test_no_duplicate_ids(self):
         places = load_all_places(PLACES_DIR)
