@@ -14,7 +14,7 @@ class Character:
     id: str
     name: str
     race: str
-    character_type: str  # "player", "npc", "family", "background"
+    character_type: str  # "player", "npc", "family"
     physical_description: str = ""
     location: str | None = None
     identity_raw: str = ""

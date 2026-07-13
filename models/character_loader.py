@@ -401,12 +401,7 @@ def load_all_characters(people_dir: Path) -> list[Character]:
             if not entry.is_dir() or entry.name.startswith("."):
                 continue
 
-            if entry.name == "background":
-                for bg_dir in sorted(entry.iterdir()):
-                    if bg_dir.is_dir() and (bg_dir / "IDENTITY.md").exists():
-                        characters.append(load_npc(bg_dir, character_type="background"))
-
-            elif entry.name == "haversteads":
+            if entry.name == "haversteads":
                 for md_file in sorted(entry.glob("*.md")):
                     characters.append(load_family_npc(md_file))
 

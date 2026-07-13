@@ -409,10 +409,11 @@ class TestLoadNPC:
         npc = load_npc(SCENARIO_DIR / "npcs" / "aldren")
         assert len(npc.knowledge) > 0
 
-    def test_load_background_npc(self):
-        npc = load_npc(SCENARIO_DIR / "npcs" / "background" / "alina", character_type="background")
+    def test_load_promoted_npc(self):
+        # The former "background" tier was promoted to full NPCs at the top level.
+        npc = load_npc(SCENARIO_DIR / "npcs" / "alina", character_type="npc")
         assert npc.id == "alina"
-        assert npc.character_type == "background"
+        assert npc.character_type == "npc"
         assert isinstance(npc, NPC)
 
 
@@ -445,7 +446,7 @@ class TestLoadAllCharacters:
         player_dir = SCENARIO_DIR / "players"
         expected_players = len([d for d in player_dir.iterdir() if d.is_dir() and (d / "IDENTITY.md").exists()])
         assert len(players) == expected_players
-        assert len(npcs) >= 25  # 13 named + 5 family + 12 background
+        assert len(npcs) >= 25  # named NPCs (incl. former background tier) + family
 
     def test_no_duplicate_ids(self):
         characters = load_all_characters(SCENARIO_DIR)
@@ -458,7 +459,6 @@ class TestLoadAllCharacters:
         assert "player" in types
         assert "npc" in types
         assert "family" in types
-        assert "background" in types
 
     def test_every_character_has_name(self):
         characters = load_all_characters(SCENARIO_DIR)
