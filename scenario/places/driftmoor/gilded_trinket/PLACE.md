@@ -11,6 +11,7 @@ Smells of dust and polish.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tavian/SOUL.md
 - **identity_file:** scenario/people/npcs/tavian/IDENTITY.md
+- **position:** 26,26
 
 ## Who Is Normally Here
 - **Tavian "Tav" Drakescale** — behind the counter
