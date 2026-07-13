@@ -71,6 +71,7 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "jedrin": "general_store",
     "kessla": "fishmongers_shack",
     "maribel": "bakery",
+    "lottie": "bakery",
     "marta": "cobblers_shop",
     "tomas": "coopers_shed",
     "vindra": "tailors_shop",
