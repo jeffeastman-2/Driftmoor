@@ -121,7 +121,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | to_dustcloaks_house    | 503 | 1283 | places/driftmoor/dustcloaks_curios       |
 | to_church              | 1153 | 1300 | places/driftmoor/beacon_church           |
 | to_mayors_hall         | 1365 | 942 | places/driftmoor/mayors_hall             |
-| to_broken_lantern      | 910 | 568 | places/driftmoor/broken_lantern          |
+| to_tavern              | 910 | 568 | places/driftmoor/broken_lantern          |
 | to_salt_and_iron       | 1040 | 568 | places/driftmoor/salt_and_iron           |
 | to_forge               | 1267 | 292  | places/driftmoor/ironhoof_forge          |
 | to_elyssa_house        | 1446 | 536 | places/driftmoor/elyssa_cottage           |
