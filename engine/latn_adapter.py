@@ -112,6 +112,25 @@ class _CharacterEntity:
         return "character"
 
 
+class _VenueEntity:
+    """GroundedEntity wrapper for an enterable child venue (a sub-scene the
+    actor can cross into). String-matched against its cleaned aliases; carries
+    the target ``scene_name`` the transition needs."""
+
+    def __init__(self, scene_name, aliases, vector):
+        self.scene_name = scene_name
+        self.name = scene_name
+        self.object_id = scene_name
+        self.entity_id = scene_name
+        self.aliases = tuple(a.lower() for a in (aliases or ()) if a)
+        self.vector = vector
+        self.position = _xyz(0.0, 0.0)
+
+    @property
+    def kind(self) -> str:
+        return "venue"
+
+
 class DriftmoorSceneAdapter:
     def __init__(
         self,
@@ -121,6 +140,7 @@ class DriftmoorSceneAdapter:
         actor_zone: str = "",
         current_positions: Optional[dict] = None,
         recent: Optional[Iterable] = None,
+        venues: Optional[Iterable] = None,
     ):
         # Ensure the property dims exist before building character vectors.
         register_driftmoor_dimensions(
@@ -143,6 +163,11 @@ class DriftmoorSceneAdapter:
             cid: self._make_character_entity(cid, cs)
             for cid, cs in self._characters.items()
         }
+        # Enterable child venues (scene_name, cleaned aliases) -> venue entities.
+        self._venue_entities = [
+            _VenueEntity(sn, aliases, self._empty_vector)
+            for sn, aliases in (venues or [])
+        ]
 
     # -- SceneAdapter protocol -------------------------------------------------
 
@@ -150,6 +175,7 @@ class DriftmoorSceneAdapter:
         results: List[Tuple[float, object]] = []
         results.extend(self._match_items(np))
         results.extend(self._match_characters(np))
+        results.extend(self._match_venues(np))
         results.sort(key=lambda pair: pair[0], reverse=True)
         return results
 
@@ -274,6 +300,39 @@ class DriftmoorSceneAdapter:
             score = max(name_score, desc_score)
             if score > 0:
                 out.append((score, ent))
+        return out
+
+    def _match_venues(self, np) -> List[Tuple[float, object]]:
+        """Score an NP against each venue's cleaned aliases and return the
+        ranked hits. Scoring mirrors ``_match_items`` (exact > substring >
+        token-overlap fraction) so a full-name match ("pawn shop") beats a
+        partial word one — the resolver then takes the unique winner, which is
+        what stops a generic sub-token (one venue's "shop") from hijacking
+        another venue's multi-word name."""
+        from engine.verb_resolver import _normalize_target, _tokens
+
+        target = _np_text(np)
+        t = _normalize_target(target)
+        if not t:
+            return []
+        want = _tokens(target)
+        out: List[Tuple[float, object]] = []
+        for ent in self._venue_entities:
+            best = 0.0
+            for alias in ent.aliases:
+                a = _normalize_target(alias)
+                if not a:
+                    continue
+                if t == a:
+                    best = max(best, 1.0)
+                elif a in t or t in a:
+                    best = max(best, 0.85)
+                else:
+                    shared = want & _tokens(alias)
+                    if want and shared:
+                        best = max(best, 0.6 * len(shared) / len(want))
+            if best > 0:
+                out.append((best, ent))
         return out
 
     def _all_entities(self) -> List[Tuple[float, object]]:

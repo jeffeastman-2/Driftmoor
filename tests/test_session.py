@@ -799,6 +799,22 @@ class TestInferDriftmoorVenueTransition:
             assert _infer_driftmoor_venue_transition(
                 phrase, "places/driftmoor", "TOWN_COMMON") is None
 
+    def test_multiword_enter_verb_crosses_in(self):
+        # "go inside" is a compound threshold-crossing verb, distinct from "go".
+        from engine.session import _infer_driftmoor_venue_transition
+        assert _infer_driftmoor_venue_transition(
+            "I go inside the rooming house", "places/driftmoor",
+            "TOWN_COMMON") == "weary_traveler"
+
+    def test_enter_pawn_shop_never_grounds_to_cobbler(self):
+        # LATN grounds the whole "pawn shop" NP as a unit and takes the unique
+        # winner, so a generic sub-token ("shop", shared by the cobbler) can no
+        # longer hijack the match — the classic regex-alias failure.
+        from engine.session import _infer_driftmoor_venue_transition
+        out = _infer_driftmoor_venue_transition(
+            "I enter the pawn shop", "places/driftmoor", "TOWN_COMMON")
+        assert out != "cobblers_shop"
+
     def test_leave_interior_returns_to_driftmoor(self):
         from engine.session import _infer_driftmoor_venue_transition
         out = _infer_driftmoor_venue_transition(

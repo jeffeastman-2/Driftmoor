@@ -50,13 +50,29 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
                 "stab", "shoot", "fire", "fire at", "loose", "lunge", "lunge at"]),
     ("cast", ["cast", "invoke", "channel"]),
     ("move", ["move", "go", "walk", "approach", "advance", "step", "head",
-              "enter", "follow", "continue", "proceed", "return", "climb"]),
+              "follow", "continue", "proceed", "return", "climb"]),
     ("dash", ["dash", "sprint", "rush", "run"]),
     ("disengage", ["disengage", "withdraw", "retreat", "fall back", "flee", "escape"]),
     ("dodge", ["dodge", "evade"]),
     ("help", ["help", "aid", "assist"]),
     ("ready", ["ready", "prepare"]),
     ("hide", ["hide", "conceal", "sneak"]),
+]
+
+# Threshold-crossing verbs. Registered with a dual "move enter"/"move leave"
+# reading (see _build_rpg_layer): "move" keeps them groundable as ordinary
+# movement, while "enter"/"leave" flags an intent to cross a venue boundary.
+# Multi-word forms stay <=3 tokens (the tokenizer's compound limit). "go"/"walk"
+# alone remain plain movement, so "go to the tavern" walks to the door while
+# "go inside the tavern" crosses in.
+_ENTER_VERB_WORDS: list[str] = [
+    "enter", "enters", "entering", "go inside", "go in", "goes inside",
+    "step inside", "steps inside", "walk inside", "head inside", "duck inside",
+    "venture inside", "visit", "visits", "visiting",
+]
+_LEAVE_VERB_WORDS: list[str] = [
+    "leave", "leaves", "leaving", "exit", "exits", "exiting", "go outside",
+    "goes outside", "go out", "head out", "step outside", "walk out",
 ]
 
 # Faction adjectives -> faction value whose one-hot dim they activate.
@@ -131,6 +147,15 @@ def _build_rpg_layer() -> dict:
     for canonical, synonyms in (*_VERB_LEXICON, *_TRANSFER_LEXICON, *_EXTRA_VERB_SYNONYMS):
         for word in synonyms:
             layer[word.lower()] = _vf(f"verb action {canonical}")
+    # Threshold-crossing verbs carry BOTH "move" (so movement still grounds —
+    # "enter the chamber" moves into a zone) and "enter"/"leave" (the crossing
+    # signal that promotes a venue destination to a sub-scene transition). Set
+    # after the loop so they win over any plain-"move" reading; multi-word forms
+    # are compound keys the tokenizer matches (<=3 words).
+    for word in _ENTER_VERB_WORDS:
+        layer[word.lower()] = _vf("verb action move enter")
+    for word in _LEAVE_VERB_WORDS:
+        layer[word.lower()] = _vf("verb action move leave")
     # Faction adjectives -> faction_<value> dims.
     for value, words in _FACTION_SYNONYMS:
         dim = property_dim("faction", value)
@@ -146,7 +171,8 @@ def _build_rpg_layer() -> dict:
 
 
 def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
-                       zones: Iterable = (), landmarks: Iterable = ()) -> dict:
+                       zones: Iterable = (), landmarks: Iterable = (),
+                       venues: Iterable = ()) -> dict:
     layer: dict = {}
     # Modifier-position words: every non-final word of a multi-word reference.
     # These get a dual "noun adj" reading at the end so multi-word references
@@ -199,6 +225,15 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
     for lname in landmarks:
         _add_noun_text(layer, _note(lname or ""))
 
+    # Venue aliases (enterable child places) -> nouns + component words, as clean
+    # compound tokens so "broken lantern" / "pawn shop" / "rooming house"
+    # tokenize as units (not scattered into shared words like "shop"). Each
+    # ``venue`` is (scene_name, aliases); the aliases are pre-cleaned by the
+    # caller (leading articles and generic nouns dropped).
+    for _vname, aliases in venues:
+        for alias in aliases:
+            _add_noun_text(layer, _note(alias or ""))
+
     # Characters: names as proper nouns, then descriptor words carrying their
     # property dims (added last so they win over any plain-noun homograph from
     # a label, e.g. a "cleric" mentioned in some item's text).
@@ -235,7 +270,7 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
 
 def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
                             places: Iterable = (), zones: Iterable = (),
-                            landmarks: Iterable = ()):
+                            landmarks: Iterable = (), venues: Iterable = ()):
     """Build the layered Driftmoor lexicon. Registers the RPG dims first
     (idempotent), then returns an Engraf ``Lexicon`` over a ChainMap of
     world > rpg > function-base (Engraf's shared FUNCTION_WORDS).
@@ -251,7 +286,7 @@ def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
 
     base = dict(FUNCTION_WORDS)
     rpg = _build_rpg_layer()
-    world = _build_world_layer(characters, items, places, zones, landmarks)
+    world = _build_world_layer(characters, items, places, zones, landmarks, venues)
     # ChainMap lookup is first-wins; we want function/action backbone to take
     # precedence over world content homographs, so order base, rpg, world.
     return Lexicon(ChainMap(base, rpg, world))

@@ -308,6 +308,40 @@ def resolve_movement_target(intent_text: str, *, lexicon, adapter) -> Optional[I
     return None
 
 
+def resolve_venue_action(intent_text: str, *, lexicon, adapter):
+    """Detect a venue-crossing intent and ground its target.
+
+    Returns ``("enter", venue_entity_or_None)`` when a predicate verb ``isa
+    "enter"`` (the threshold-crossing rider on movement), grounding its object /
+    destination NP to a unique venue entity; ``("leave", None)`` when a verb
+    ``isa "leave"``; ``None`` otherwise (plain movement like "go to the tavern"
+    carries neither rider, so it walks to the door without crossing in). The
+    ``None`` venue on an enter means the name grounded to no unique venue — the
+    caller declines rather than guessing."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        for vp in _predicate_vps(sp):
+            vec = getattr(vp, "vector", None)
+            if vec is None:
+                continue
+            if vec.isa("leave"):
+                return ("leave", None)
+            if vec.isa("enter"):
+                np = _destination_np(vp)
+                if np is None:
+                    return ("enter", None)
+                venues = _entities_of_kind(adapter.resolve_noun_phrase(np), "venue")
+                return ("enter", _unique_winner(venues))
+    return None
+
+
 def _token_surface(word: str) -> str:
     """Surface form for a LATN token word (unwraps NP(...))."""
     w = (word or "").strip().lower()

@@ -61,6 +61,14 @@ VERB_DIMS: tuple[str, ...] = (
     # dedupes it. Declared here anyway so Driftmoor's required vocabulary is
     # self-contained regardless of the base schema it layers onto.
     "move", "dash", "disengage",
+    # Threshold-crossing riders on movement. A movement verb that ALSO isa
+    # "enter"/"leave" signals crossing into/out of a venue sub-scene. They
+    # co-occur with "move" (declared first, so it stays the canonical verb and
+    # ordinary movement still grounds — "enter the chamber" just moves into a
+    # zone); a venue transition fires only when the destination grounds to a
+    # venue entity. Distinct from "move" so "go to X" (walk to the door) and
+    # "enter X" (cross inside) separate at the verb layer, no regex.
+    "enter", "leave",
     # Defensive / support / perception -> DM-Left adjudication & combat state.
     "dodge", "help", "ready", "hide", "search",
     # Object interaction -> engine/verb_resolver (phase 2a). The fine split of

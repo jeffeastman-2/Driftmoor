@@ -1497,19 +1497,10 @@ _CONNECTOR_NAME_TOKENS = {
 }
 
 
-# True "cross the threshold" verbs only. "go to / head to / walk to / move to"
-# are deliberately NOT here: those are movement to the venue's door (which stops
-# there), while these carry the actor inside to the sub-scene. Keeping them
-# distinct is what makes "go to the apothecary" (front door) and "enter the
-# apothecary" (inside) different actions.
-_ENTER_SCENE_RE = re.compile(
-    r"\b(enter|enters|entering|go\s+inside|go\s+in|head\s+inside|step\s+inside|walk\s+inside|step\s+into|go\s+into|visit)\b",
-    re.IGNORECASE,
-)
-_LEAVE_SCENE_RE = re.compile(
-    r"\b(leave|leaves|leaving|exit|exits|exiting|go\s+outside|go\s+out|head\s+out|step\s+outside|walk\s+out|head\s+back\s+out)\b",
-    re.IGNORECASE,
-)
+# The enter/leave verb split now lives in the LATN lexicon (threshold-crossing
+# verbs carry an "enter"/"leave" dim on top of "move"); venue-transition
+# detection parses through LATN rather than these regexes — see
+# _infer_driftmoor_venue_transition.
 
 
 def _normalize_venue_intent_text(text: str) -> str:
@@ -1808,45 +1799,83 @@ def _driftmoor_enter_doorway(
     return None
 
 
+_VENUE_ALIAS_GENERIC = {
+    "place", "building", "the", "a", "an", "shop", "house", "hall", "store",
+    "room", "rooms", "md", "of", "and",
+}
+
+
+def _clean_venue_aliases(aliases: tuple[str, ...]) -> tuple[str, ...]:
+    """A venue's identifying aliases for LATN grounding: drop the PLACE.md-title
+    boilerplate and bare generic nouns (``shop``/``house``/…) so a generic word
+    of one venue can't be a groundable name of another. Multi-word phrases
+    (``rooming house``, ``pawn shop``) survive whole — only the standalone
+    generic token is dropped."""
+    out: list[str] = []
+    for a in aliases:
+        al = (a or "").strip().lower()
+        if not al or al in _VENUE_ALIAS_GENERIC or "place md" in al:
+            continue
+        out.append(al)
+    return tuple(dict.fromkeys(out))
+
+
+def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """``(scene_name, cleaned_aliases)`` for each enterable child of the current
+    place — the venue candidates LATN grounds an "enter <name>" against."""
+    place = (current_place_path or "").strip().lower().strip("/")
+    if not place:
+        return ()
+    return tuple(
+        (node.scene_name, _clean_venue_aliases(node.aliases))
+        for node in _driftmoor_place_registry()
+        if node.parent_place_path == place
+    )
+
+
 def _infer_driftmoor_venue_transition(
     intent_text: str,
     current_place_path: str,
     actor_zone: str,
 ) -> Optional[str]:
-    """Detect hierarchy-based Driftmoor scene transitions.
+    """Detect hierarchy-based Driftmoor scene transitions via LATN.
 
     The authored ``scenario/places/driftmoor`` directory defines the tree:
     you can enter any child place from its parent, and exit a child place back
-    to the nearest parent place. The resolver is data-driven from the place
-    hierarchy rather than a hand-maintained venue list.
+    to the nearest parent place. The intent is parsed by LATN — a verb ``isa
+    "enter"`` grounds its object NP to a child venue (compound-aware, unique
+    winner), and a verb ``isa "leave"`` returns to the parent — rather than
+    regex alias matching, so multi-word venue names resolve consistently and a
+    generic sub-token ("shop") can't hijack another venue.
     """
     text = _normalize_venue_intent_text(intent_text)
     place = (current_place_path or "").strip().lower().strip("/")
-    zone = (actor_zone or "").strip().upper()
     if not text or not place:
         return None
 
-    registry = _driftmoor_place_registry()
-    by_place = {node.place_path: node for node in registry}
+    by_place = {node.place_path: node for node in _driftmoor_place_registry()}
     current = by_place.get(place)
     if current is None:
         return None
 
-    # Exit: any authored child scene returns to its immediate parent scene.
-    if _LEAVE_SCENE_RE.search(text) and current.parent_place_path:
-        parent = by_place.get(current.parent_place_path)
-        if parent is not None:
-            return parent.scene_name
+    # Candidates = the enterable children, plus the CURRENT place itself so that
+    # "leave the rooming house" (naming the place you're in) grounds its object
+    # and the leave VP survives policy. A self-referential "enter" is guarded
+    # below (you can't enter where you already are).
+    children = _driftmoor_child_venues(place)
+    child_names = {sn for sn, _ in children}
+    candidates = children + ((current.scene_name, _clean_venue_aliases(current.aliases)),)
 
-    # Entry: from a parent scene, descend to a named child scene.
-    if _ENTER_SCENE_RE.search(text):
-        children = [node for node in registry if node.parent_place_path == place]
-        if not children:
-            return None
-        for node in children:
-            if any(re.search(rf"\b{re.escape(alias)}\b", text) for alias in node.aliases):
-                return node.scene_name
-
+    from engine import latn_integration
+    res = latn_integration.resolve_venue_transition(text, {}, actor_zone or "", candidates)
+    if res is None:
+        return None
+    kind, target = res
+    if kind == "leave":
+        parent = by_place.get(current.parent_place_path) if current.parent_place_path else None
+        return parent.scene_name if parent is not None else None
+    if kind == "enter" and target in child_names:
+        return target
     return None
 
 

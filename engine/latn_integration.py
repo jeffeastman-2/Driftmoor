@@ -23,14 +23,17 @@ from models.item import Interaction, Item
 
 
 def build_context(items: dict, characters: dict, actor_zone: str,
-                  scene_geometry=None):
+                  scene_geometry=None, venues=None):
     """Build (lexicon, adapter) for LATN resolution this turn.
 
     ``characters`` values may be CharacterSession or Character — both the
     lexicon builder and the adapter accept either (via character_view).
     ``scene_geometry`` (when supplied) contributes its zone and landmark names
     to the lexicon so movement targets like "the rocky passage" / "echo
-    chamber arch" tokenize — matching the acceptance harness.
+    chamber arch" tokenize — matching the acceptance harness. ``venues`` is an
+    iterable of ``(scene_name, aliases)`` for the enterable child places, fed to
+    both the lexicon (so multi-word venue names tokenize) and the adapter (so
+    they ground) — used by venue-transition resolution.
     """
     from engine.latn_lexicon import build_driftmoor_lexicon
     from engine.latn_adapter import DriftmoorSceneAdapter
@@ -39,11 +42,33 @@ def build_context(items: dict, characters: dict, actor_zone: str,
     item_list = list(items.values()) if hasattr(items, "values") else list(items)
     zones = list(getattr(scene_geometry, "zones", {}) or {}) if scene_geometry is not None else []
     landmarks = list(getattr(scene_geometry, "landmarks", {}) or {}) if scene_geometry is not None else []
+    venue_list = list(venues or [])
     lexicon = build_driftmoor_lexicon(
-        char_list, item_list, zones=zones, landmarks=landmarks,
+        char_list, item_list, zones=zones, landmarks=landmarks, venues=venue_list,
     )
-    adapter = DriftmoorSceneAdapter(items=items, characters=characters, actor_zone=actor_zone)
+    adapter = DriftmoorSceneAdapter(
+        items=items, characters=characters, actor_zone=actor_zone, venues=venue_list)
     return lexicon, adapter
+
+
+def resolve_venue_transition(intent_text, characters, actor_zone, venues,
+                             scene_geometry=None):
+    """LATN venue-transition resolution. Returns ``("enter", scene_name)`` when
+    an enter intent grounds a unique child venue, ``("leave", None)`` for an
+    exit intent, or ``None`` (not a crossing intent, or the venue name grounded
+    to nothing unique — the caller declines rather than guessing). ``scene_name``
+    may be None on an ambiguous/unmatched enter."""
+    from engine import latn_resolver
+    lexicon, adapter = build_context(
+        {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
+    res = latn_resolver.resolve_venue_action(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if res is None:
+        return None
+    kind, ent = res
+    if kind == "leave":
+        return ("leave", None)
+    return ("enter", getattr(ent, "scene_name", None))
 
 
 def resolve_item_interaction(
