@@ -16,9 +16,9 @@ in a character's IDENTITY `## Equipment` list, same as any other Thing.
 | id | name | kind | capacity | contents |
 |----|------|------|----------|----------|
 | explorers_pack | Explorer's Pack | wearable, container | 30 lb | torch x10, rations x10, rope, bedroll, tinderbox, mess_kit, water |
-| burglars_pack | Burglar's Pack | wearable, container | 30 lb | ball_bearings, string, bell, candle x5, crowbar, hammer, piton x10, lantern, oil x2, rations x5, tinderbox, water, rope |
-| gils_pack | Gil's Pack | wearable, container | 30 lb | string, gils_pouch, candle x5, lantern, oil x2, rations x5, tinderbox, mess_kit, water, thieves_tools, disguise_kit|
-| scholars_pack | Scholar's Pack | wearable, container | 30 lb | book_of_lore, ink, ink_pen, parchment x10, bag_of_sand, small_knife |
+| burglars_pack | Burglar's Pack | wearable, container | 30 lb | ball_bearings, string, bell, candle x5, crowbar, hammer, piton x10, lantern, oil x2, rations x5, tinderbox, water, rope, bedroll |
+| gils_pack | Gil's Pack | wearable, container | 30 lb | string, gils_pouch, candle x5, lantern, oil x2, rations x5, tinderbox, mess_kit, water, thieves_tools, disguise_kit, bedroll|
+| scholars_pack | Scholar's Pack | wearable, container | 30 lb | book_of_lore, ink, ink_pen, parchment x10, bag_of_sand, small_knife, bedroll |
 | musicians_pack | Musician's Pack | wearable, container | 30 lb | bedroll, costume x2, candle x5, rations x5, water, disguise_kit |
 | gils_pouch | Old leather pouch | container | 3 lb | |
 | pouch | Pouch | wearable, container | 6 lb | |
