@@ -183,6 +183,10 @@ class Thing:
     # a given range. ``0.0`` means unspecified — treated as a medium object.
     size_ft: float = 0.0
 
+    # Weight in pounds — the encumbrance lever (coins weigh too: 50/lb). 0.0
+    # means unspecified. Volume/3-D packing is deliberately not modelled.
+    weight_lb: float = 0.0
+
     # Optional author-supplied descriptions keyed by perception band name
     # (``near`` / ``intermediate`` / ``far`` / ``distant``). When a band has no
     # entry the engine falls back to the item's label (near/intermediate) or a
@@ -212,6 +216,11 @@ class Thing:
 
     # Mutable runtime state — not parsed; engine maintains these.
     holder: Optional[str] = None
+    # Ownership (property), distinct from `holder` (possession/who's carrying it)
+    # and from position/zone (where it sits). A pack left in the rooming house is
+    # holder=None, zone=rooming_house, owner=<player>. None = unowned. Set at load
+    # for shop goods (from vendor_id) and moved by the transfer primitive.
+    owner: Optional[str] = None
     state: dict[str, str] = field(default_factory=dict)
     discovered_by: set[str] = field(default_factory=set)
 
@@ -243,12 +252,29 @@ class Thing:
     name: str = ""                  # shop display name (scene things use `label`)
     category: str = ""              # "mundane", "magical", "obelisk_shard", "shadowbeast_part"
     price: str = ""                 # kept as string: "5 gp", "2-5 gp", "Varies"
+    value_cp: Optional[int] = None  # base/market worth in copper (parsed from `price`); None = unknown
+    listed_price_cp: Optional[int] = None  # the ask in copper; None = NOT for sale
     vendor_id: str = ""             # character ID of seller
     location_id: str = ""           # place ID where item currently is
     properties: str = ""            # advertised / player-visible properties
     dm_properties: str = ""         # true / hidden properties (DM only)
     attunement: str = ""            # e.g. "Required (1 hour in dim light)"
     raw: str = ""                   # original markdown source
+
+    def __post_init__(self) -> None:
+        # Derive the structured money fields from the authored `price`/`vendor_id`
+        # — one source of truth for every construction path (loaders and the
+        # Phase-4 materialize-kit alike). Explicitly-passed values win.
+        from models.currency import parse_coins
+        if self.value_cp is None and self.price:
+            self.value_cp = parse_coins(self.price)
+        # A shop good (it has a vendor) is for sale at its value by default;
+        # scene props (no vendor) stay not-for-sale (listed_price_cp None), and
+        # a shop good's owner defaults to its vendor.
+        if self.listed_price_cp is None and self.vendor_id and self.value_cp is not None:
+            self.listed_price_cp = self.value_cp
+        if self.owner is None and self.vendor_id:
+            self.owner = self.vendor_id
 
     def find_interaction(self, verb: str) -> Optional["Interaction"]:
         """Return the first interaction matching ``verb`` (or alias)."""

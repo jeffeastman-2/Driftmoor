@@ -86,10 +86,17 @@ supply chain; NPC-to-NPC trade.
 
 ---
 
-## Phase 1 — Data model: ownership, value, weight (fields only, no behavior)
+## Phase 1 — Data model: ownership, value, weight (fields only, no behavior) — ✅ DONE (commit below)
 
 **Goal.** Add the property/value/weight fields to `Thing` and a currency helper.
 Pure additive; no verb changes.
+
+> **As built:** the price→`value_cp`/`listed_price_cp`/`owner` derivation lives in
+> `Thing.__post_init__` (single source of truth for every construction path,
+> including Phase 4's materialize-kit), so `thing_loader.py` needed no edits.
+> Explicitly-passed values win; a good with a vendor is for-sale at its value and
+> owned by the vendor; a priced scene prop (no vendor) has a value but stays
+> not-for-sale and unowned.
 
 **Files.** `models/thing.py`, new `models/currency.py`, `models/thing_loader.py`,
 `tests/test_currency.py`, `tests/test_thing.py`.
