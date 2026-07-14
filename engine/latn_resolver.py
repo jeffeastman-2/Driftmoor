@@ -401,6 +401,29 @@ def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
     return None
 
 
+def resolve_response(intent_text: str, *, lexicon, adapter) -> Optional[str]:
+    """Read a bare yes/no answer to an offer: ``"affirm"`` / ``"decline"`` / None,
+    by testing the intent's tokens for the affirm/decline dimensions (isa), not a
+    yes/no string match. Used by the quote->confirm commerce exchange to read the
+    buyer's reply."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+    l4 = getattr(result, "layer4_result", None)
+    for hyp in (getattr(l4, "hypotheses", None) or []):
+        for tok in getattr(hyp, "tokens", None) or []:
+            if _vec_isa(tok, "affirm"):
+                return "affirm"
+            if _vec_isa(tok, "decline"):
+                return "decline"
+    return None
+
+
 def _token_surface(word: str) -> str:
     """Surface form for a LATN token word (unwraps NP(...))."""
     w = (word or "").strip().lower()

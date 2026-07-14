@@ -376,9 +376,17 @@ atomic transfer (or none) commits.
 >   the `[COMMERCE]` resolution lines are now **engine-authoritative** ("SETTLED
 >   by the engine — do not alter … Narrate only this outcome"), so the narrator
 >   can't invent a different price or result.
-> - **pt8b-2 (next):** the single quote→confirm exchange — the shopkeeper-agent
->   quotes/accepts once, the player confirms, engine commits (a lightweight
->   pending-transaction across a turn, à la `pending_scene_transition`).
+> - **pt8b-2 — ✅ DONE (commit below):** the quote→confirm exchange. A buy now
+>   gets a *quote* (the shopkeeper names the listed price, nothing settles) and a
+>   standing offer is recorded per actor in `pending_purchases`; the buyer's next
+>   reply is read for a bare yes/no via **LATN dimensions** — `affirm`/`decline`
+>   are real vector dims (registered in `RESPONSE_DIMS`, lexicalized on
+>   yes/deal/…/no/never mind/…), and `resolve_response` tests them with `isa`, no
+>   yes/no string match. Affirm completes the sale; decline or any unrelated
+>   intent lets the offer lapse. Sells still settle in one step (cross-turn item
+>   refs are a later refinement). Bare "no" collides with a base function word so
+>   it lapses rather than reading as an explicit decline — acceptable (same
+>   outcome). Verified live: "I'll take the bread loaf" → quote → "yes" → sold.
 > - **A (later):** the full multi-round modal haggle (8a suspend/resume primitive
 >   + 8b disposition-driven policy + UI).
 

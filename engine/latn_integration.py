@@ -76,6 +76,14 @@ def resolve_commerce(intent_text, items, characters, actor_zone, catalog,
     return ("sell", getattr(ent, "item", None))
 
 
+def resolve_response(intent_text, characters, actor_zone):
+    """LATN read of a bare yes/no reply: "affirm" / "decline" / None."""
+    from engine import latn_resolver
+    lexicon, adapter = build_context({}, characters or {}, actor_zone or "")
+    return latn_resolver.resolve_response(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+
+
 def resolve_venue_transition(intent_text, characters, actor_zone, venues,
                              scene_geometry=None):
     """LATN venue-transition resolution. Returns ``("enter", scene_name)`` when

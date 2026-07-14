@@ -2890,23 +2890,24 @@ def _handle_commerce(
     recent_events: list,
     shopkeeper: str,
     catalog,
+    pending_purchases: dict,
 ) -> bool:
-    """Resolve and settle a buy/sell against the ``shopkeeper`` present in the
-    scene. Returns True when the intent was a commerce action (so the caller
-    skips the scene-item interaction path), False otherwise. Buy materializes a
-    fresh Thing into the buyer's pack; sell removes the sold Thing from the
-    seller's loadout. Both narrate via the resolution log + recent events."""
+    """Resolve a buy/sell against the ``shopkeeper`` present in the scene. Returns
+    True when the intent was a commerce action (so the caller skips the scene-item
+    interaction path), False otherwise.
+
+    A buy is a two-step, engine-owned exchange: the first intent gets a *quote*
+    (the shopkeeper names a price, nothing settles) and a standing offer is
+    recorded in ``pending_purchases``; the buyer's next reply is read for a bare
+    yes/no (``resolve_response``) — an affirm completes the sale, anything else
+    lets the offer lapse. Sells still settle in one step (cross-turn item refs
+    are a later refinement)."""
     from engine import commerce, loadout
-    from engine.latn_integration import resolve_commerce
+    from engine.latn_integration import resolve_commerce, resolve_response
     from models.currency import format_coins
 
     loadout.materialize_things(cs)
     possessions = {t.id: t for t in (getattr(cs, "things", None) or [])}
-    res = resolve_commerce(
-        intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
-    if res is None:
-        return False
-    verb, obj = res
 
     ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
     actor = _char_handle(characters[character_id], character_id)
@@ -2918,24 +2919,19 @@ def _handle_commerce(
         if memory_text:
             _append_memory_note(cs, f"Turn {turn_num}: {memory_text}")
 
-    if verb == "buy":
-        if obj is None:
-            _emit(f"[COMMERCE] {character_id} wants to buy from {shopkeeper} but "
-                  f"which good is unclear; no purchase.",
-                  f"{actor} asks {keep} about buying, but it's unclear what.")
-            return True
-        r = commerce.settle_buy(obj, buyer_id=character_id, shopkeeper_id=shopkeeper,
+    def _commit_buy(entry) -> None:
+        r = commerce.settle_buy(entry, buyer_id=character_id, shopkeeper_id=shopkeeper,
                                 catalog=catalog, characters=characters)
         price = format_coins(r.price_cp)
         if not r.ok:
-            why = {"cannot_afford": f"can't afford the {obj.name} ({price})",
-                   "not_for_sale": f"the {obj.name} isn't for sale"}.get(
-                       r.reason, f"can't buy the {obj.name}")
+            why = {"cannot_afford": f"can't afford the {entry.name} ({price})",
+                   "not_for_sale": f"the {entry.name} isn't for sale"}.get(
+                       r.reason, f"can't buy the {entry.name}")
             _emit(f"[COMMERCE] SETTLED by the engine — do not alter: {character_id} "
                   f"{why}; NO purchase happened and no coin moved. Narrate only "
                   f"this refusal.",
-                  f"{actor} tries to buy the {obj.name}, but {why}.")
-            return True
+                  f"{actor} tries to buy the {entry.name}, but {why}.")
+            return
         thing = r.thing
         items[thing.id] = thing
         if getattr(thing, "weapon", None) is not None:
@@ -2953,9 +2949,58 @@ def _handle_commerce(
               f"outcome — do not change the price, the good, or whether it happened.",
               f"{actor} buys the {name} from {keep} for {price}.",
               f"you bought {name} for {price}.")
+
+    # --- A standing offer? read the buyer's yes/no reply. ---
+    pend = pending_purchases.get(character_id)
+    if pend is not None:
+        entry, quoted = pend
+        reply = resolve_response(intent_text, characters, "")
+        if reply == "affirm":
+            del pending_purchases[character_id]
+            _commit_buy(entry)
+            return True
+        fresh = resolve_commerce(
+            intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
+        if reply == "decline" or fresh is None:
+            del pending_purchases[character_id]
+            _emit(f"[COMMERCE] {character_id} does not take {shopkeeper}'s offer of "
+                  f"{entry.name} at {format_coins(quoted)}; the offer lapses and "
+                  f"nothing changes hands. Narrate only that the deal did not happen.",
+                  f"{actor} leaves the {entry.name} on the counter.")
+            return True
+        del pending_purchases[character_id]     # a fresh buy/sell supersedes it
+        res = fresh
+    else:
+        res = resolve_commerce(
+            intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
+
+    if res is None:
+        return False
+    verb, obj = res
+
+    # --- A fresh buy -> QUOTE (do not settle); the engine completes the sale
+    #     only on the buyer's confirmation next turn. ---
+    if verb == "buy":
+        if obj is None:
+            _emit(f"[COMMERCE] {character_id} wants to buy from {shopkeeper} but "
+                  f"which good is unclear; no offer made.",
+                  f"{actor} asks {keep} about buying, but it's unclear what.")
+            return True
+        if obj.listed_price_cp is None:
+            _emit(f"[COMMERCE] the {obj.name} is not for sale; {shopkeeper} makes "
+                  f"no offer.",
+                  f"{keep} says the {obj.name} isn't for sale.")
+            return True
+        pending_purchases[character_id] = (obj, obj.listed_price_cp)
+        price = format_coins(obj.listed_price_cp)
+        _emit(f"[COMMERCE] OFFER (NOT yet settled): {keep} quotes {price} for the "
+              f"{obj.name}. The engine will complete the sale only if {character_id} "
+              f"confirms next (e.g. 'yes' / 'deal'). Narrate {keep} naming this price "
+              f"and awaiting an answer — do NOT complete the sale or move coin yet.",
+              f"{keep} offers the {obj.name} for {price}.")
         return True
 
-    # sell
+    # sell (single-step settle)
     label = getattr(obj, "name", None) or getattr(obj, "label", None) or getattr(obj, "id", "item")
     if obj is None:
         _emit(f"[COMMERCE] {character_id} wants to sell to {shopkeeper} but which "
@@ -4606,6 +4651,10 @@ async def iter_session(
     current_positions: dict[str, tuple[float, float, str]] = _parse_positions_table(
         game_state_summary
     )
+    # Standing shop offers awaiting the buyer's yes/no, per actor id (a quote is
+    # recorded on the buy turn and completed/lapsed on the reply turn). In-memory
+    # for the scene; a lapsed quote across save/resume is acceptable.
+    pending_purchases: dict = {}
     # Fill any missing entries from the scene-resolved starting positions
     # (carried on scene_geometry.starting_positions by the loader) so
     # speed-clamping works from Turn 1 even for characters not in the
@@ -5802,6 +5851,7 @@ async def iter_session(
                     recent_events=recent_events,
                     shopkeeper=_shopkeeper,
                     catalog=_shop_catalog,
+                    pending_purchases=pending_purchases,
                 ):
                     _kit_manip_applied = True
 

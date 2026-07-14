@@ -80,6 +80,11 @@ VERB_DIMS: tuple[str, ...] = (
     "buy", "sell",
 )
 
+# Bare conversational answers to an offer ("yes" / "no thanks"). The quote->confirm
+# commerce exchange reads the buyer's reply as a vector dimension via isa, not a
+# yes/no string match.
+RESPONSE_DIMS: tuple[str, ...] = ("affirm", "decline")
+
 # World-axis direction semantics for adverbial movement words (north/east/etc.)
 # and explicit linear-distance units (ft/feet/foot).
 SPATIAL_DIMS: tuple[str, ...] = (
@@ -168,7 +173,8 @@ def driftmoor_rpg_dimensions(characters: Iterable = ()) -> list[str]:
     De-duplicated, static-first. Registration is order-insensitive (Engraf
     appends by name), so order is purely cosmetic.
     """
-    static = list(VERB_DIMS) + list(SPATIAL_DIMS) + _namespaced("faction", FACTION_VALUES)
+    static = (list(VERB_DIMS) + list(SPATIAL_DIMS) + list(RESPONSE_DIMS)
+              + _namespaced("faction", FACTION_VALUES))
     derived = derive_character_property_dims(characters)
     seen: set[str] = set()
     out: list[str] = []

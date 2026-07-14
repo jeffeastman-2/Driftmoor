@@ -77,6 +77,16 @@ _LEAVE_VERB_WORDS: list[str] = [
     "goes outside", "go out", "head out", "step outside", "walk out",
 ]
 
+# Bare affirmations / refusals to an offer (the quote->confirm reply).
+_AFFIRM_WORDS: list[str] = [
+    "yes", "yeah", "yep", "yup", "sure", "ok", "okay", "aye", "deal",
+    "agreed", "done", "please do", "go ahead", "i agree",
+]
+_DECLINE_WORDS: list[str] = [
+    "no", "nope", "nah", "pass", "cancel", "decline", "never mind",
+    "forget it", "no thanks", "not now", "no thank you",
+]
+
 # Faction adjectives -> faction value whose one-hot dim they activate.
 _FACTION_SYNONYMS: list[tuple[str, list[str]]] = [
     ("party", ["friendly", "allied", "ally"]),
@@ -158,6 +168,12 @@ def _build_rpg_layer() -> dict:
         layer[word.lower()] = _vf("verb action move enter")
     for word in _LEAVE_VERB_WORDS:
         layer[word.lower()] = _vf("verb action move leave")
+    # Bare yes/no answers to an offer carry an affirm/decline dimension so the
+    # quote->confirm exchange reads them via isa (not a yes/no string match).
+    for word in _AFFIRM_WORDS:
+        layer[word.lower()] = _vf("adv", affirm=1.0)
+    for word in _DECLINE_WORDS:
+        layer[word.lower()] = _vf("adv", decline=1.0)
     # Faction adjectives -> faction_<value> dims.
     for value, words in _FACTION_SYNONYMS:
         dim = property_dim("faction", value)

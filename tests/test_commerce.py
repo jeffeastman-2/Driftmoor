@@ -138,3 +138,19 @@ class TestSettleSell:
                                  characters=chars)
         assert not r.ok and r.reason == "shop_broke"
         assert dagger.owner == "player"            # nothing moved
+
+
+class TestResponse:
+    def test_affirmations_read_as_affirm(self):
+        from engine.latn_integration import resolve_response
+        for w in ("yes", "yeah", "sure", "ok", "deal", "go ahead", "agreed"):
+            assert resolve_response(w, {}, "") == "affirm", w
+
+    def test_refusals_read_as_decline(self):
+        from engine.latn_integration import resolve_response
+        for w in ("nope", "never mind", "pass", "cancel", "decline"):
+            assert resolve_response(w, {}, "") == "decline", w
+
+    def test_non_answer_is_none(self):
+        from engine.latn_integration import resolve_response
+        assert resolve_response("I look around", {}, "") is None
