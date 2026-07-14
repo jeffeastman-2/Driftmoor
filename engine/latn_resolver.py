@@ -498,8 +498,10 @@ def resolve_movement_distance(intent_text: str, *, lexicon, adapter) -> Optional
     if not is_movement:
         for hyp in hypotheses:
             for tok in getattr(hyp, "tokens", None) or []:
-                w = _token_surface(getattr(tok, "word", ""))
-                if w in _MOVEMENT_VERBS:
+                # A layer-4 token is itself a VectorSpace, so test its dimensions
+                # (catches walk/go/head via the move dim, not just literal
+                # "move"/"dash").
+                if _vec_isa(tok, *_MOVEMENT_VERBS):
                     is_movement = True
                     break
             if is_movement:
