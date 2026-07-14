@@ -127,9 +127,16 @@ Pure additive; no verb changes.
 
 ---
 
-## Phase 2 — Purse on characters (integer copper)
+## Phase 2 — Purse on characters (integer copper) — ✅ DONE (commit below)
 
 **Goal.** Every character can hold money.
+
+> **As built:** `purse_cp` + `can_afford`/`debit`/`credit` live on the base
+> `Character` (so players, NPCs, and creatures all inherit them). The loader
+> parses an optional `- **Purse:** …` line (via `_parse_purse` → `currency.parse_coins`)
+> at each construction site; absent/unparseable → 0. No character authors a purse
+> yet — that's author-side data — but the field is present and integer on every
+> loaded character.
 
 **Files.** `models/character.py`, `models/character_loader.py`,
 `tests/test_character_loader.py`.

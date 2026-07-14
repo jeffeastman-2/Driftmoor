@@ -39,6 +39,26 @@ class Character:
     # ``ac`` is then the EFFECTIVE AC = natural adjusted by equipment/effects
     # (worn armor sets the base; a shield/ring/potion adds).
     natural_ac: int = 0
+    # Coin purse, in copper pieces (see models.currency). Money is always integer
+    # copper; denominations are display-only. Every character can hold coin —
+    # players spend it, shopkeepers keep a till, monsters carry loot.
+    purse_cp: int = 0
+
+    def can_afford(self, cp: int) -> bool:
+        return self.purse_cp >= cp
+
+    def debit(self, cp: int) -> bool:
+        """Spend ``cp`` copper if affordable; no-op and return False otherwise
+        (including a negative amount)."""
+        if cp < 0 or self.purse_cp < cp:
+            return False
+        self.purse_cp -= cp
+        return True
+
+    def credit(self, cp: int) -> None:
+        """Receive ``cp`` copper (negative amounts ignored)."""
+        if cp > 0:
+            self.purse_cp += cp
 
 
 @dataclass

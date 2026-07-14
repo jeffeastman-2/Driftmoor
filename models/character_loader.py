@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from models.character import Character, Creature, PlayerCharacter, NPC
+from models.currency import parse_coins
 from models.spellcasting import parse_spellcasting
 
 
@@ -19,6 +20,12 @@ def _extract_field(text: str, field_name: str) -> str | None:
     pattern = rf"-\s*\*\*{re.escape(field_name)}:\*\*\s*(.+)"
     match = re.search(pattern, text, re.IGNORECASE)
     return match.group(1).strip() if match else None
+
+
+def _parse_purse(text: str) -> int:
+    """Starting coin in copper from an optional ``- **Purse:** 15 gp`` line
+    (typically under a ``## Wealth`` section). Absent/unparseable → 0."""
+    return parse_coins(_extract_field(text, "Purse")) or 0
 
 
 def _extract_section(text: str, heading: str) -> str:
@@ -324,6 +331,7 @@ def load_player_character(directory: Path) -> PlayerCharacter:
         equipment=p["equipment"],
         current_hp=p["current_hp"],
         open_threads=p["open_threads"],
+        purse_cp=_parse_purse(identity_raw),
     )
 
 
@@ -361,6 +369,7 @@ def load_npc(directory: Path, character_type: str = "npc") -> NPC:
         intelligence=p["intelligence"],
         wisdom=p["wisdom"],
         charisma=p["charisma"],
+        purse_cp=_parse_purse(identity_raw),
     )
 
 
@@ -380,6 +389,7 @@ def load_family_npc(filepath: Path) -> NPC:
         role=p["role"],
         knowledge=p["knowledge"],
         hooks=p["hooks"],
+        purse_cp=_parse_purse(text),
     )
 
 
