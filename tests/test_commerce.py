@@ -46,6 +46,23 @@ class TestGrounding:
         entries = _catalog().entries_for("maribel")
         assert resolve_commerce("I look at the pie", {}, {}, "", entries) is None
 
+    def test_take_a_shop_good_is_a_buy(self):
+        # loose phrasing in a shop routes to commerce, not the LLM.
+        entries = _catalog().entries_for("maribel")
+        res = resolve_commerce("I'll take the meat pie", {}, {}, "", entries)
+        assert res is not None and res[0] == "buy" and res[1].catalog_id == "meat_pie"
+
+    def test_grab_a_shop_good_is_a_buy(self):
+        entries = _catalog().entries_for("maribel")
+        res = resolve_commerce("grab the sweet roll", {}, {}, "", entries)
+        assert res[0] == "buy" and res[1].catalog_id == "sweet_roll"
+
+    def test_take_a_non_shop_thing_is_not_commerce(self):
+        # taking a possession (not shop stock) is a normal take, not a purchase.
+        dagger = Thing(id="dagger", label="dagger", zone="", owner="player")
+        entries = _catalog().entries_for("maribel")
+        assert resolve_commerce("I take my dagger", {"dagger": dagger}, {}, "", entries) is None
+
 
 class TestSettleBuy:
     def _entry(self, cat, cid):

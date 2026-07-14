@@ -364,6 +364,24 @@ price; each refusal path fires and mutates nothing. Suite green.
 refuses; the player haggles; disposition tilts the price. World-time frozen; one
 atomic transfer (or none) commits.
 
+> **Chosen path: B (engine-adjudicated single exchange) first, then A (full modal
+> haggle) as an extension.** The symptom "purchases handled by the LLM, not the
+> engine" had two causes: (1) loose phrasing didn't ground as `buy`, and (2) even
+> when the engine settled, the LLM authored the visible outcome.
+>
+> - **pt8b-1 — ✅ DONE (commit below):** widen commerce detection so `take`/`grab`
+>   /`pick up`/`pocket` a **shop good** (object grounds to the catalog) routes to
+>   a buy — "I'll take the mace" in a shop is now a purchase, not an LLM
+>   fabrication; a take of a non-catalog thing stays the normal take path. And
+>   the `[COMMERCE]` resolution lines are now **engine-authoritative** ("SETTLED
+>   by the engine — do not alter … Narrate only this outcome"), so the narrator
+>   can't invent a different price or result.
+> - **pt8b-2 (next):** the single quote→confirm exchange — the shopkeeper-agent
+>   quotes/accepts once, the player confirms, engine commits (a lightweight
+>   pending-transaction across a turn, à la `pending_scene_transition`).
+> - **A (later):** the full multi-round modal haggle (8a suspend/resume primitive
+>   + 8b disposition-driven policy + UI).
+
 Split into two commits.
 
 ### 8a — Engine: suspend/resume two-party dialogue primitive

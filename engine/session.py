@@ -2931,7 +2931,9 @@ def _handle_commerce(
             why = {"cannot_afford": f"can't afford the {obj.name} ({price})",
                    "not_for_sale": f"the {obj.name} isn't for sale"}.get(
                        r.reason, f"can't buy the {obj.name}")
-            _emit(f"[COMMERCE] {character_id} {why}; no purchase. Narrate the refusal.",
+            _emit(f"[COMMERCE] SETTLED by the engine — do not alter: {character_id} "
+                  f"{why}; NO purchase happened and no coin moved. Narrate only "
+                  f"this refusal.",
                   f"{actor} tries to buy the {obj.name}, but {why}.")
             return True
         thing = r.thing
@@ -2945,8 +2947,10 @@ def _handle_commerce(
                 cs.pack.append(thing)
         loadout.materialize_things(cs)
         name = thing.name or thing.id
-        _emit(f"[COMMERCE] {character_id} buys {name} from {shopkeeper} for {price} "
-              f"(now carried). Narrate the purchase.",
+        _emit(f"[COMMERCE] SETTLED by the engine — do not alter: {character_id} "
+              f"bought {name} from {shopkeeper} for exactly {price}; it is now in "
+              f"their possession and the coin has changed hands. Narrate only this "
+              f"outcome — do not change the price, the good, or whether it happened.",
               f"{actor} buys the {name} from {keep} for {price}.",
               f"you bought {name} for {price}.")
         return True
@@ -2966,7 +2970,8 @@ def _handle_commerce(
                "not_owned": f"the {label} isn't theirs to sell",
                "shop_broke": f"{keep} can't cover {price} for the {label}"}.get(
                    r.reason, f"can't sell the {label}")
-        _emit(f"[COMMERCE] {character_id} {why}; no sale. Narrate the refusal.",
+        _emit(f"[COMMERCE] SETTLED by the engine — do not alter: {character_id} "
+              f"{why}; NO sale happened and no coin moved. Narrate only this refusal.",
               f"{actor} tries to sell the {label}, but {why}.")
         return True
     sold_id = getattr(obj, "id", "")
@@ -2974,8 +2979,9 @@ def _handle_commerce(
     cs.pack = [p for p in (getattr(cs, "pack", None) or []) if getattr(p, "id", "") != sold_id]
     cs.weapons = [w for w in (getattr(cs, "weapons", None) or []) if getattr(w, "id", "") != sold_id]
     loadout.materialize_things(cs)
-    _emit(f"[COMMERCE] {character_id} sells {label} to {shopkeeper} for {price}. "
-          f"Narrate the sale.",
+    _emit(f"[COMMERCE] SETTLED by the engine — do not alter: {character_id} sold "
+          f"{label} to {shopkeeper} for exactly {price}; ownership and coin have "
+          f"changed hands. Narrate only this outcome.",
           f"{actor} sells the {label} to {keep} for {price}.",
           f"you sold {label} for {price}.")
     return True

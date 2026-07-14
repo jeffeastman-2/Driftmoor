@@ -361,14 +361,25 @@ def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
     for sp in (getattr(result, "sentence_phrases", None) or []):
         for vp in _predicate_vps(sp):
             verb = _canonical_verb(vp)
-            if verb not in ("buy", "sell"):
-                continue
-            np = _destination_np(vp)
-            if np is None:
-                return (verb, None)
-            kind = "catalog" if verb == "buy" else "item"
-            hits = _entities_of_kind(adapter.resolve_noun_phrase(np), kind)
-            return (verb, _unique_winner(hits))
+            if verb == "sell":
+                np = _destination_np(vp)
+                if np is None:
+                    return ("sell", None)
+                items = _entities_of_kind(adapter.resolve_noun_phrase(np), "item")
+                return ("sell", _unique_winner(items))
+            # "buy" is explicit; "take" (and its synonyms — grab/pick up/pocket…)
+            # counts as a buy WHEN the object is a shop good, so loose phrasing
+            # like "I'll take the mace" in a shop routes to commerce instead of
+            # the LLM. A take of a non-catalog thing is left to the normal
+            # take/steal path (return None).
+            if verb in ("buy", "take"):
+                np = _destination_np(vp)
+                if np is None:
+                    return ("buy", None) if verb == "buy" else None
+                cat = _entities_of_kind(adapter.resolve_noun_phrase(np), "catalog")
+                if cat:
+                    return ("buy", _unique_winner(cat))
+                return ("buy", None) if verb == "buy" else None
     return None
 
 

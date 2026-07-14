@@ -50,7 +50,7 @@ class TestBuyWiring:
         assert chars["maribel"].character.purse_cp == 4
         assert any(getattr(p, "id", "").startswith("meat_pie") for p in chars["player"].pack)
         assert any(k.startswith("meat_pie") for k in items)
-        assert any("COMMERCE" in l and "buys" in l for l in log)
+        assert any("COMMERCE" in l and "bought" in l for l in log)
 
     def test_broke_buyer_is_handled_but_refused(self):
         chars = {"player": _cs("player", 2), "maribel": _cs("maribel", 0)}
@@ -63,6 +63,15 @@ class TestBuyWiring:
     def test_non_commerce_intent_not_handled(self):
         chars = {"player": _cs("player", 100), "maribel": _cs("maribel", 0)}
         assert _buy(chars["player"], chars, {}, text="I look around the shop") is False
+
+    def test_take_a_shop_good_buys_it(self):
+        # "I'll take the meat pie" in the shop settles as a purchase.
+        chars = {"player": _cs("player", 100), "maribel": _cs("maribel", 0)}
+        items, log = {}, []
+        assert _buy(chars["player"], chars, items, text="I'll take the meat pie", log=log) is True
+        assert chars["player"].character.purse_cp == 96
+        assert any(getattr(p, "id", "").startswith("meat_pie") for p in chars["player"].pack)
+        assert any("SETTLED by the engine" in l for l in log)
 
 
 class TestSellWiring:
