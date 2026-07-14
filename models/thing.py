@@ -292,6 +292,17 @@ class Thing:
         return [i for i in self.interactions if i.matches(verb)]
 
 
+def resolve_owner(thing: "Thing", container: object) -> Optional[str]:
+    """The ownership a *contained* Thing takes on: its own ``owner`` if it sets
+    one, else the container's owner. This is how "everything on the shopkeeper's
+    shelf is the shopkeeper's" falls out — a good declares its own owner only to
+    override the inheritance. ``None`` when neither is owned."""
+    own = getattr(thing, "owner", None)
+    if own:
+        return own
+    return getattr(container, "owner", None)
+
+
 def derive_affordances(thing: "Thing") -> "Thing":
     """Fill in a scene Thing's ``affordances``/``effects`` from its already-parsed
     fields (pickable / weapon / armor / interactions). Idempotent — uses set

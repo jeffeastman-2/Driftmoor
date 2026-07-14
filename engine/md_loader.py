@@ -574,6 +574,10 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
             inst = copy.deepcopy(src)
             inst.quantity = qty
             inst.parent_container_id = getattr(container, "id", "")
+            # Contents inherit the container's owner (a shopkeeper-owned shelf
+            # makes its goods hers); a good with its own owner keeps it.
+            from models.thing import resolve_owner
+            inst.owner = resolve_owner(inst, container)
             pack.append(inst)
     session.pack = pack
     if free_text:

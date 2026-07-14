@@ -125,3 +125,30 @@ class TestThingOwnershipAndValue:
         # listed_price_cp was passed None explicitly, but derivation fills it from
         # value_cp for a vendor good — the ask defaults on where it's unset.
         assert t.listed_price_cp == 999
+
+
+class TestOwnershipInheritance:
+    """resolve_owner: contents inherit their container's owner (Phase 5)."""
+
+    def test_content_inherits_container_owner(self):
+        from models.thing import resolve_owner
+        shelf = Thing(id="shelf", name="Shelf", owner="maribel")
+        loaf = Thing(id="loaf", name="Loaf")            # unowned good on her shelf
+        assert resolve_owner(loaf, shelf) == "maribel"
+
+    def test_content_keeps_its_own_owner(self):
+        from models.thing import resolve_owner
+        shelf = Thing(id="shelf", name="Shelf", owner="maribel")
+        heirloom = Thing(id="ring", name="Ring", owner="player")
+        assert resolve_owner(heirloom, shelf) == "player"
+
+    def test_unowned_container_yields_none(self):
+        from models.thing import resolve_owner
+        crate = Thing(id="crate", name="Crate")         # nobody's crate
+        junk = Thing(id="junk", name="Junk")
+        assert resolve_owner(junk, crate) is None
+
+    def test_duck_typed_container(self):
+        from types import SimpleNamespace as NS
+        from models.thing import resolve_owner
+        assert resolve_owner(Thing(id="x", name="X"), NS(owner="shopkeep")) == "shopkeep"

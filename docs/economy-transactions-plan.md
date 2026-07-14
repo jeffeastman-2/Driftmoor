@@ -233,10 +233,17 @@ price; materializing twice yields two independent Things. Suite green.
 
 ---
 
-## Phase 5 — Containers & ownership inheritance (shelves/counters)
+## Phase 5 — Containers & ownership inheritance (shelves/counters) — ✅ DONE (commit below)
 
 **Goal.** Shop furniture (shelves, counters, displays) are container Things owned
 by the shopkeeper; their contents inherit that owner.
+
+> **As built:** `resolve_owner(thing, container)` in `models/thing.py` — a good's
+> own owner if set, else the container's owner. Applied at the existing container
+> expansion in `engine/md_loader.py` (`inst.owner = resolve_owner(inst, container)`),
+> so contents inherit; behavior is unchanged for today's ownerless packs and
+> ready for shopkeeper-owned shelves. The shelf/counter furniture itself is
+> author-side data (Jeff) — this ships only the rule.
 
 **Files.** `models/thing.py` (helper), `engine/md_loader.py`, `tests/test_thing.py`.
 
