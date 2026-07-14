@@ -18,7 +18,7 @@ own catalog — see CONTAINERS.md.
 | id | price | name | kind | effects |
 |----|-------|------|------|---------|
 | shield | 10 gp | Shield | shield | ac +2 |
-| bracelet | 10 gp | Bracelet | wearable | |
+| bracelet |  | Bracelet | wearable | |
 | ring | 5 gp | Ring | wearable | |
 | amulet | 10 gp | Amulet | wearable | |
 | cloak | 10 gp | Cloak | wearable | |
