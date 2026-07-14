@@ -27,6 +27,7 @@ Consolidated price list and item descriptions for all non-magical purchasable go
 | Dagger | 2 gp | 1d4 piercing, finesse, light, thrown |
 | Shortsword | 10 gp | 1d6 piercing, finesse, light |
 | Arrows (20) | 1 gp | Standard arrows |
+| Bolts (20) | 1 gp | Standard crossbow bolts |
 | Tent, 2-person | 2 gp | Simple canvas shelter |
 | Iron Spikes (10) | 1 gp | Securing ropes, barricading doors |
 | Signal Whistle | 5 sp | Loud; alerts allies or startles animals |

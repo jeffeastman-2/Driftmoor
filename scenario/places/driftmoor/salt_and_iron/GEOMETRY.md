@@ -24,15 +24,14 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_doors     | 35 | 0  |
-| main_counter    | 35 | 39 |
-| shelves_west    | 6  | 32 |
-| shelves_east    | 65 | 32 |
+| shelves_west    | 6  | 15 |
+| shelves_east    | 65 | 15 |
 | barrel_corner_w | 9  | 55 |
 | barrel_corner_e | 61 | 55 |
 | staircase       | 58 | 52 |
 | clock           | 35 | 61 |
-| cudgel_under_counter | 42 | 42 |
-| ledger          | 32 | 42 |
+| cudgel_under_counter | 42 | 32 |
+| ledger          | 32 | 32 |
 
 ---
 
@@ -41,7 +40,7 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 | name       | render_z | vertices                              |
 |------------|----------|---------------------------------------|
 | BACK_STORE | 6.5        | (0,45) (71,45) (71,65) (0,65)         |
-| COUNTER    | 6.5        | (19,35) (58,35) (58,45) (19,45)         |
+| COUNTER    | 6.5        | (19,25) (58,25) (58,35) (19,35)         |
 | SHOP_FLOOR | 3.25        | (0,0) (71,0) (71,45) (0,45)           |
 | EXTERIOR   | 0.0        | (-16,-16) (87,-16) (87,81) (-16,81)       |
 
@@ -51,8 +50,7 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | description      | vertices                              |
 |------------------|---------------------------------------|
-| Main counter     | (19,35) (58,35) (58,42) (19,42)         |
-| Back store wall  | (0,45) (71,45) (71,48) (0,48)         |
+| COUNTER    |  (19,25) (58,25) (58,35) (19,35)         |
 
 ---
 
@@ -66,19 +64,5 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 ---
 
 ## Boundaries
-
-### Counter Line — Jorgen's Domain
-
-- **type:** conditional
-- **blocks:** all
-- **effect:** crossing behind the counter without permission is trespassing; Jorgen keeps a cudgel beneath the counter and will use it
-- **vertices:** (0,35) (71,35) (71,65) (0,65)
-
-### Back Store — Private
-
-- **type:** physical
-- **blocks:** all
-- **effect:** locked door; Jorgen's private stock and staircase to quarters; DC 48.75 Thieves' Tools to pick
-- **vertices:** (0,48) (71,48) (71,65) (0,65)
 
 ---

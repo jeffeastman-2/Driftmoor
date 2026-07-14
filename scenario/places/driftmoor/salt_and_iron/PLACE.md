@@ -11,7 +11,7 @@ Smells of iron, grain, and rope. The smell of a working town.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/jorgen/SOUL.md
 - **identity_file:** scenario/people/npcs/jorgen/IDENTITY.md
- **position:** 36, 45
+- **position:** 36, 40
 
 ## Who Is Normally Here
 - **Jorgen Hallowtide** — behind the counter
@@ -20,7 +20,7 @@ Smells of iron, grain, and rope. The smell of a working town.
 ## Scene Introductions
 
 ### jorgen
-A dragonborn just walked into your shop. Red scales, amber eyes, robes, no armor. Carrying a leather satchel and a quarterstaff. He is looking at the shelves the way someone looks when they are not shopping — he is scanning. A sorcerer, almost certainly. You have not decided yet if he is Kelem's man or something else. The supply caravan is three days late and you are in no mood for trouble.
+A person just walked into your shop. A potential customer, your third today. You're in a good mood but are always on the lookout for shoplifters. The supply caravan is three days late and you are in no mood for trouble.
 
 ## Connections
 - Village center (outside, near square)
