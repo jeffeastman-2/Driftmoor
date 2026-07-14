@@ -85,11 +85,12 @@ def _verb_affordances() -> dict:
 @dataclass
 class ResolvedAction:
     """One parsed, grounded action from an intent."""
-    verb: str                                  # canonical verb dim
+    verb: str                                  # canonical verb dim (identity/name)
     item: Optional[Item] = None
     interaction: Optional[Interaction] = None
     recipient_id: Optional[str] = None         # character id (transfer verbs)
     ambiguous: bool = False                     # grounding tie -> refused to guess
+    vector: object = None                       # the action's LATN vector, for isa tests
 
 
 def _unique_winner(pairs: List[Tuple[float, object]]):
@@ -110,6 +111,19 @@ def _canonical_verb(vp) -> Optional[str]:
         if vec.isa(dim):
             return dim
     return None
+
+
+def _vec_isa(vec, *dims) -> bool:
+    """True if the LATN vector carries any of ``dims``. This is the vector-space
+    membership test that replaces string-matching a collapsed canonical verb — a
+    multi-dimension verb (e.g. "enter" = move+enter) is caught for every
+    dimension it holds, not just the first one _canonical_verb would name."""
+    return vec is not None and any(vec.isa(d) for d in dims)
+
+
+def _vp_isa(vp, *dims) -> bool:
+    """`_vec_isa` on a verb phrase's action vector."""
+    return _vec_isa(getattr(vp, "vector", None), *dims)
 
 
 def _entities_of_kind(ranked, kind):
@@ -224,15 +238,16 @@ def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedActio
     merged: "dict[tuple, ResolvedAction]" = {}
     for sp in (getattr(result, "sentence_phrases", None) or []):
         for vp in _predicate_vps(sp):
-            verb = _canonical_verb(vp)
+            verb = _canonical_verb(vp)          # canonical NAME (for lookups/keys)
             if verb is None:
                 continue
             item, ambiguous = _resolve_object(vp, adapter, verb)
-            recipient = _resolve_recipient(vp, adapter) if verb in _TRANSFER_VERBS else None
+            recipient = _resolve_recipient(vp, adapter) if _vp_isa(vp, *_TRANSFER_VERBS) else None
             key = (verb, item.id if item is not None else None)
             prev = merged.get(key)
             if prev is None:
-                merged[key] = ResolvedAction(verb, item, None, recipient, ambiguous)
+                merged[key] = ResolvedAction(
+                    verb, item, None, recipient, ambiguous, getattr(vp, "vector", None))
             else:
                 # Same clause seen via another PP-attachment variant: keep the
                 # recipient if this variant found one, and don't let a variant
@@ -243,9 +258,9 @@ def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedActio
 
     actions: List[ResolvedAction] = []
     for action in merged.values():
-        if action.item is not None and action.verb in _INTERACTION_VERBS:
+        if action.item is not None and _vec_isa(action.vector, *_INTERACTION_VERBS):
             action.interaction = _interaction_for(action.item, action.verb)
-        elif action.item is not None and action.verb in _TRANSFER_VERBS:
+        elif action.item is not None and _vec_isa(action.vector, *_TRANSFER_VERBS):
             resp = authored_transfer_response(action.item, action.verb)
             if resp:
                 action.interaction = Interaction(
@@ -296,7 +311,7 @@ def resolve_movement_target(intent_text: str, *, lexicon, adapter) -> Optional[I
         result = executor.execute_layer5(intent_text or "")
     for sp in (getattr(result, "sentence_phrases", None) or []):
         for vp in _predicate_vps(sp):
-            if _canonical_verb(vp) not in _MOVEMENT_VERBS:
+            if not _vp_isa(vp, *_MOVEMENT_VERBS):
                 continue
             np = _destination_np(vp)
             if np is None:
@@ -472,7 +487,7 @@ def resolve_movement_distance(intent_text: str, *, lexicon, adapter) -> Optional
     is_movement = False
     for sp in (getattr(result, "sentence_phrases", None) or []):
         for vp in _predicate_vps(sp):
-            if _canonical_verb(vp) in _MOVEMENT_VERBS:
+            if _vp_isa(vp, *_MOVEMENT_VERBS):
                 is_movement = True
                 break
         if is_movement:
