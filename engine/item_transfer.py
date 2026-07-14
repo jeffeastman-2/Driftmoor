@@ -10,6 +10,7 @@ uses these. session.py re-exports these names, so existing
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:  # avoid a runtime import cycle (CharacterSession lives in session)
@@ -98,10 +99,11 @@ def _apply_item_transfer(
 ) -> None:
     """Move ``item`` to ``new_holder`` (or drop it when ``new_holder`` is None).
 
-    Maintains both sides of ownership: the previous holder's inventory loses
-    the id, the new holder's inventory gains it, and ``item.holder`` is set.
-    When ``target_pos`` is given the item's position/zone are synced to it so
-    a dropped or handed item sits where it should.
+    This is the *possession* leg only: the previous holder's inventory loses the
+    id, the new holder's inventory gains it, and ``item.holder`` is set. When
+    ``target_pos`` is given the item's position/zone are synced to it so a
+    dropped or handed item sits where it should. Ownership (``item.owner``) and
+    coin are handled by :func:`transfer_thing`, not here.
     """
     from models.space_time import Position
 
@@ -123,6 +125,69 @@ def _apply_item_transfer(
         item.position = Position(float(x), float(y))
         if zone:
             item.zone = zone
+
+
+@dataclass
+class TransferResult:
+    """Outcome of :func:`transfer_thing`. ``reason`` is empty on success, else a
+    machine code the caller can branch on ("cannot_afford", "invalid_amount")."""
+    ok: bool
+    reason: str = ""
+
+
+def transfer_thing(
+    thing: "Item",
+    *,
+    from_id: Optional[str],
+    to_id: Optional[str],
+    characters: dict[str, "CharacterSession"],
+    move_ownership: bool,
+    move_possession: bool = True,
+    coin_cp: int = 0,
+    target_pos: Optional[tuple[float, float, str]] = None,
+) -> TransferResult:
+    """The one transfer primitive: move any subset of {ownership, possession,
+    coin} between two parties, **atomically**.
+
+    The item goes from ``from_id`` to ``to_id``. When ``coin_cp`` is positive the
+    item *recipient* (``to_id``) pays that many copper to the item *giver*
+    (``from_id``) — the buy/sell shape (whoever receives the item pays for it).
+    Nothing mutates unless the whole transfer can complete: if the payer can't
+    afford the coin, the call fails and leaves everything untouched.
+
+    All five verbs are configurations of this:
+
+    * give   — ``move_ownership=True``, ``coin_cp=0``
+    * drop   — ``move_ownership=False``, ``to_id=None``, ``coin_cp=0``
+    * take   — ``move_ownership=(thing.owner is None)`` (own unclaimed loot; an
+      owned thing keeps its owner — possession without ownership is theft)
+    * buy    — item seller→buyer, ``move_ownership=True``, ``coin_cp=price``
+    * sell   — item seller→buyer(shop), ``move_ownership=True``, ``coin_cp=bid``
+    * steal  — ``move_possession`` only, ``move_ownership=False``, ``coin_cp=0``
+    """
+    def _char(cid: Optional[str]):
+        cs = characters.get(cid) if cid else None
+        return getattr(cs, "character", None) if cs else None
+
+    # Gate on affordability BEFORE mutating anything (atomicity).
+    if coin_cp:
+        if coin_cp < 0:
+            return TransferResult(False, "invalid_amount")
+        payer = _char(to_id)  # the item recipient pays the item giver
+        if payer is None or not payer.can_afford(coin_cp):
+            return TransferResult(False, "cannot_afford")
+
+    # Commit — reached only when the whole transfer can complete.
+    if move_possession:
+        _apply_item_transfer(thing, to_id, characters=characters, target_pos=target_pos)
+    if move_ownership:
+        thing.owner = to_id
+    if coin_cp:
+        _char(to_id).debit(coin_cp)
+        payee = _char(from_id)
+        if payee is not None:
+            payee.credit(coin_cp)
+    return TransferResult(True)
 
 
 def _char_handle(cs: "CharacterSession", fallback: str) -> str:

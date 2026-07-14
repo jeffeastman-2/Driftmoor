@@ -2649,6 +2649,7 @@ from engine.item_transfer import (  # noqa: E402
     _char_handle,
     _character_descriptor_tokens,
     _resolve_recipient_character,
+    transfer_thing,
 )
 
 
@@ -2716,8 +2717,13 @@ def _handle_item_transfer(
                 None,
             )
             return
-        _apply_item_transfer(
-            item_obj, character_id, characters=characters, target_pos=actor_pos
+        # Taking unclaimed loot makes you its owner; a thing someone else owns
+        # keeps its owner (possession without ownership — theft is Phase 6).
+        transfer_thing(
+            item_obj, from_id=item_obj.holder, to_id=character_id,
+            characters=characters,
+            move_ownership=(getattr(item_obj, "owner", None) is None),
+            coin_cp=0, target_pos=actor_pos,
         )
         item_obj.discovered_by.add(character_id)
         flavor = authored_response or f"{actor_handle} picks up the {label}."
@@ -2770,8 +2776,11 @@ def _handle_item_transfer(
             return
         from engine import loadout
         loadout.stow_item(cs, item_obj.id)  # free the hand if it was held
-        _apply_item_transfer(
-            item_obj, None, characters=characters, target_pos=actor_pos
+        # Dropping releases possession to the floor but not ownership — your pack
+        # left in the rooming house is still yours.
+        transfer_thing(
+            item_obj, from_id=character_id, to_id=None, characters=characters,
+            move_ownership=False, coin_cp=0, target_pos=actor_pos,
         )
         flavor = authored_response or f"{actor_handle} sets down the {label}."
         _emit(
@@ -2834,8 +2843,10 @@ def _handle_item_transfer(
         return
     recipient_handle = _char_handle(characters[recipient], recipient)
     recipient_pos = current_positions.get(recipient, actor_pos)
-    _apply_item_transfer(
-        item_obj, recipient, characters=characters, target_pos=recipient_pos
+    # Giving hands over ownership as well as possession.
+    transfer_thing(
+        item_obj, from_id=character_id, to_id=recipient, characters=characters,
+        move_ownership=True, coin_cp=0, target_pos=recipient_pos,
     )
     item_obj.discovered_by.add(recipient)
     flavor = authored_response or (

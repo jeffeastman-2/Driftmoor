@@ -158,10 +158,20 @@ Pure additive; no verb changes.
 
 ---
 
-## Phase 3 — Generalize the transfer primitive (ownership + coin aware)
+## Phase 3 — Generalize the transfer primitive (ownership + coin aware) — ✅ DONE (commit below)
 
 **Goal.** One primitive that moves any subset of {ownership, possession, coin}
 atomically. Refactor give/take/drop onto it, behavior-preserving.
+
+> **As built:** `transfer_thing(...) -> TransferResult` in `engine/item_transfer.py`
+> wraps the possession leg (`_apply_item_transfer`) with ownership + atomic coin.
+> **Coin convention:** the item *recipient* (`to_id`) pays the item *giver*
+> (`from_id`) — the buy/sell shape (whoever receives the item pays). Affordability
+> is gated before any mutation. give (`move_ownership=True`), drop
+> (`move_ownership=False`, `to_id=None`), and take (`move_ownership=` unowned) in
+> `session._handle_item_transfer` now route through it. The take site reads
+> ownership via `getattr(item_obj, "owner", None)` so duck-typed item stubs still
+> work.
 
 **Files.** `engine/item_transfer.py`, `engine/session.py` (`_handle_item_transfer`),
 `tests/test_item_transfer.py`.
