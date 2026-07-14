@@ -18,18 +18,18 @@ own catalog — see CONTAINERS.md.
 | id | price | name | kind | effects |
 |----|-------|------|------|---------|
 | shield | 10 gp | Shield | shield | ac +2 |
-| bracelet |  | Bracelet | wearable | |
-| ring |  | Ring | wearable | |
-| amulet |  | Amulet | wearable | |
-| cloak |  | Cloak | wearable | |
+| bracelet | 10 gp | Bracelet | wearable | |
+| ring | 5 gp | Ring | wearable | |
+| amulet | 10 gp | Amulet | wearable | |
+| cloak | 10 gp | Cloak | wearable | |
 | holy_symbol | 5 gp | Holy Symbol | wearable | |
-| talisman |  | Talisman | wearable | |
+| talisman | 10 gp | Talisman | wearable | |
 | thieves_tools | 25 gp | Thieves' Tools | tool | |
 | disguise_kit | 25 gp | Disguise Kit | tool | |
 | healers_kit | 5 gp | Healer's Kit | tool | |
 | torch | 1 cp | Torch | tool | |
 | prayer_book | 25 gp | Prayer Book | tool | |
-| incense |  | Incense | tool | |
+| incense | 5 cp | Incense | tool | |
 | smiths_tools | 20 gp | Smith's Tools | tool | |
 | spellbook | 50 gp | Spell Book | tool | |
 | notebook | 25 gp | Notebook | tool | |
@@ -46,13 +46,13 @@ own catalog — see CONTAINERS.md.
 | lantern | 5 gp | Hooded Lantern | tool | |
 | oil | 1 sp | Flask of Oil | tool | |
 | ball_bearings | 1 gp | Ball Bearings | tool | |
-| string |  | String (10 ft) | tool | |
+| string | 1 cp | String (10 ft) | tool | |
 | bell | 1 gp | Bell | tool | |
 | book_of_lore | 25 gp | Book of Lore | tool | |
 | ink | 10 gp | Ink (1 oz bottle) | tool | |
 | ink_pen | 2 cp | Ink Pen | tool | |
 | parchment | 1 sp | Parchment | tool | |
-| bag_of_sand |  | Bag of Sand | tool | |
+| bag_of_sand | 1 cp | Bag of Sand | tool | |
 | small_knife | 2 sp | Small Knife | tool | |
 | costume | 5 gp | Costume | wearable | |
 | flint_steel | 5 sp | Flint & Steel | tool |  |
