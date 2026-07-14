@@ -57,6 +57,8 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("help", ["help", "aid", "assist"]),
     ("ready", ["ready", "prepare"]),
     ("hide", ["hide", "conceal", "sneak"]),
+    ("buy", ["buy", "buys", "purchase", "purchases", "pay for"]),
+    ("sell", ["sell", "sells", "vend", "offload", "hawk", "pawn"]),
 ]
 
 # Threshold-crossing verbs. Registered with a dual "move enter"/"move leave"
@@ -172,7 +174,7 @@ def _build_rpg_layer() -> dict:
 
 def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
                        zones: Iterable = (), landmarks: Iterable = (),
-                       venues: Iterable = ()) -> dict:
+                       venues: Iterable = (), catalog: Iterable = ()) -> dict:
     layer: dict = {}
     # Modifier-position words: every non-final word of a multi-word reference.
     # These get a dual "noun adj" reading at the end so multi-word references
@@ -234,6 +236,11 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
         for alias in aliases:
             _add_noun_text(layer, _note(alias or ""))
 
+    # Shop catalog goods -> nouns + component words, so "buy the meat pie"
+    # tokenizes even though the good isn't a materialized scene item yet.
+    for entry in catalog:
+        _add_noun_text(layer, _note(getattr(entry, "name", "") or ""))
+
     # Characters: names as proper nouns, then descriptor words carrying their
     # property dims (added last so they win over any plain-noun homograph from
     # a label, e.g. a "cleric" mentioned in some item's text).
@@ -270,7 +277,8 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
 
 def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
                             places: Iterable = (), zones: Iterable = (),
-                            landmarks: Iterable = (), venues: Iterable = ()):
+                            landmarks: Iterable = (), venues: Iterable = (),
+                            catalog: Iterable = ()):
     """Build the layered Driftmoor lexicon. Registers the RPG dims first
     (idempotent), then returns an Engraf ``Lexicon`` over a ChainMap of
     world > rpg > function-base (Engraf's shared FUNCTION_WORDS).
@@ -286,7 +294,7 @@ def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
 
     base = dict(FUNCTION_WORDS)
     rpg = _build_rpg_layer()
-    world = _build_world_layer(characters, items, places, zones, landmarks, venues)
+    world = _build_world_layer(characters, items, places, zones, landmarks, venues, catalog)
     # ChainMap lookup is first-wins; we want function/action backbone to take
     # precedence over world content homographs, so order base, rpg, world.
     return Lexicon(ChainMap(base, rpg, world))

@@ -131,6 +131,29 @@ class _VenueEntity:
         return "venue"
 
 
+class _CatalogEntity:
+    """GroundedEntity wrapper for a shop CatalogEntry — what a ``buy`` grounds
+    against. String-matched on the good's name; carries the catalog id + price
+    the settlement needs."""
+
+    def __init__(self, entry, vector):
+        self._entry = entry
+        self.catalog_id = entry.catalog_id
+        self.name = entry.name or entry.catalog_id
+        self.object_id = entry.catalog_id
+        self.entity_id = entry.catalog_id
+        self.vector = vector
+        self.position = _xyz(0.0, 0.0)
+
+    @property
+    def entry(self):
+        return self._entry
+
+    @property
+    def kind(self) -> str:
+        return "catalog"
+
+
 class DriftmoorSceneAdapter:
     def __init__(
         self,
@@ -141,6 +164,7 @@ class DriftmoorSceneAdapter:
         current_positions: Optional[dict] = None,
         recent: Optional[Iterable] = None,
         venues: Optional[Iterable] = None,
+        catalog: Optional[Iterable] = None,
     ):
         # Ensure the property dims exist before building character vectors.
         register_driftmoor_dimensions(
@@ -168,6 +192,10 @@ class DriftmoorSceneAdapter:
             _VenueEntity(sn, aliases, self._empty_vector)
             for sn, aliases in (venues or [])
         ]
+        # The current shop's for-sale goods (CatalogEntry) -> catalog entities.
+        self._catalog_entities = [
+            _CatalogEntity(e, self._empty_vector) for e in (catalog or [])
+        ]
 
     # -- SceneAdapter protocol -------------------------------------------------
 
@@ -176,6 +204,7 @@ class DriftmoorSceneAdapter:
         results.extend(self._match_items(np))
         results.extend(self._match_characters(np))
         results.extend(self._match_venues(np))
+        results.extend(self._match_catalog(np))
         results.sort(key=lambda pair: pair[0], reverse=True)
         return results
 
@@ -333,6 +362,33 @@ class DriftmoorSceneAdapter:
                         best = max(best, 0.6 * len(shared) / len(want))
             if best > 0:
                 out.append((best, ent))
+        return out
+
+    def _match_catalog(self, np) -> List[Tuple[float, object]]:
+        """Score an NP against the current shop's catalog goods by name (exact >
+        substring > token-overlap), same shape as items/venues; the resolver
+        takes the unique winner so a partial word can't mis-buy."""
+        from engine.verb_resolver import _normalize_target, _tokens
+
+        target = _np_text(np)
+        t = _normalize_target(target)
+        if not t:
+            return []
+        want = _tokens(target)
+        out: List[Tuple[float, object]] = []
+        for ent in self._catalog_entities:
+            name = _normalize_target(ent.name)
+            if not name:
+                continue
+            if t == name:
+                score = 1.0
+            elif name in t or t in name:
+                score = 0.85
+            else:
+                shared = want & _tokens(ent.name)
+                score = 0.6 * len(shared) / len(want) if want and shared else 0.0
+            if score > 0:
+                out.append((score, ent))
         return out
 
     def _all_entities(self) -> List[Tuple[float, object]]:

@@ -300,6 +300,21 @@ Suite green (deterministic seed).
 **Goal.** Purchase and sale as LATN verbs grounding the catalog, transacting real
 coin. Straight accept at listed price — haggling is Phase 8.
 
+> **Order (decided):** verbs first (B), then backfill library `value_cp`. Split
+> into three commits:
+> - **pt7b-verbs — ✅ DONE (commit below):** `buy`/`sell` LATN verbs (dims +
+>   lexicon), a `_CatalogEntity` grounded kind in `latn_adapter` (buy grounds a
+>   `CatalogEntry`, sell grounds an owned item — unique-winner, same as venues),
+>   `latn_resolver.resolve_commerce_action` + `latn_integration.resolve_commerce`,
+>   and `engine/commerce.py` (`settle_buy`/`settle_sell` via `transfer_thing`;
+>   `BUY_RATE = 0.5`; refusal reasons not_for_sale/cannot_afford/not_sellable/
+>   not_owned/shop_broke). Fully unit-tested, not yet wired to the turn loop.
+> - **pt7b-wiring (next):** load the `ShopCatalog` into the session, detect the
+>   current shopkeeper (the vendor NPC in the scene), and hook `resolve_commerce`
+>   + settlement into the turn loop with narration — so it's playable.
+> - **pt7a-libraries (after):** `value_cp` on WEAPONS/ARMOR/GEAR/CONSUMABLES/
+>   CONTAINERS (loader + 5e prices) to broaden what players can sell.
+
 **Files.** `engine/latn_dimensions.py`, `engine/latn_lexicon.py`,
 `engine/latn_adapter.py` (ground catalog entries as a grounded entity kind, like
 venues), `engine/latn_resolver.py`, `engine/session.py`, `tests/test_buy_sell.py`.

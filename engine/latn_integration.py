@@ -23,7 +23,7 @@ from models.item import Interaction, Item
 
 
 def build_context(items: dict, characters: dict, actor_zone: str,
-                  scene_geometry=None, venues=None):
+                  scene_geometry=None, venues=None, catalog=None):
     """Build (lexicon, adapter) for LATN resolution this turn.
 
     ``characters`` values may be CharacterSession or Character — both the
@@ -43,12 +43,37 @@ def build_context(items: dict, characters: dict, actor_zone: str,
     zones = list(getattr(scene_geometry, "zones", {}) or {}) if scene_geometry is not None else []
     landmarks = list(getattr(scene_geometry, "landmarks", {}) or {}) if scene_geometry is not None else []
     venue_list = list(venues or [])
+    catalog_list = list(catalog or [])
     lexicon = build_driftmoor_lexicon(
         char_list, item_list, zones=zones, landmarks=landmarks, venues=venue_list,
+        catalog=catalog_list,
     )
     adapter = DriftmoorSceneAdapter(
-        items=items, characters=characters, actor_zone=actor_zone, venues=venue_list)
+        items=items, characters=characters, actor_zone=actor_zone,
+        venues=venue_list, catalog=catalog_list)
     return lexicon, adapter
+
+
+def resolve_commerce(intent_text, items, characters, actor_zone, catalog,
+                     scene_geometry=None):
+    """LATN buy/sell resolution. Returns ``("buy", catalog_entry)`` /
+    ``("sell", item)`` / ``None`` (not a commerce intent, or nothing unique
+    grounded — caller declines). The grounded object is the CatalogEntry (buy)
+    or the scene Item (sell), or None on an ambiguous/unmatched name."""
+    from engine import latn_resolver
+    lexicon, adapter = build_context(
+        items or {}, characters or {}, actor_zone or "", scene_geometry,
+        catalog=catalog)
+    res = latn_resolver.resolve_commerce_action(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if res is None:
+        return None
+    verb, ent = res
+    if ent is None:
+        return (verb, None)
+    if verb == "buy":
+        return ("buy", getattr(ent, "entry", None))
+    return ("sell", getattr(ent, "item", None))
 
 
 def resolve_venue_transition(intent_text, characters, actor_zone, venues,

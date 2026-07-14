@@ -75,6 +75,9 @@ VERB_DIMS: tuple[str, ...] = (
     # 5e's "Use an Object" (+ the examine-class verbs already resolved today).
     # "stow" = move a held item into the pack (distinct from "drop" to ground).
     "examine", "read", "press", "take", "drop", "give", "stow",
+    # Commerce -> engine/commerce.py. "buy" grounds a shop catalog entry, "sell"
+    # grounds an owned Thing; both settle a coin transfer through transfer_thing.
+    "buy", "sell",
 )
 
 # World-axis direction semantics for adverbial movement words (north/east/etc.)

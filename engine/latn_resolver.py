@@ -342,6 +342,36 @@ def resolve_venue_action(intent_text: str, *, lexicon, adapter):
     return None
 
 
+def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
+    """Detect a buy/sell intent and ground its object.
+
+    Returns ``("buy", catalog_entity_or_None)`` when a predicate verb is ``buy``,
+    grounding its object NP to a unique shop catalog entry; ``("sell",
+    item_entity_or_None)`` when the verb is ``sell``, grounding to a unique scene
+    item; ``None`` otherwise. A ``None`` entity means the name grounded to nothing
+    unique — the caller declines rather than guessing which good."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        for vp in _predicate_vps(sp):
+            verb = _canonical_verb(vp)
+            if verb not in ("buy", "sell"):
+                continue
+            np = _destination_np(vp)
+            if np is None:
+                return (verb, None)
+            kind = "catalog" if verb == "buy" else "item"
+            hits = _entities_of_kind(adapter.resolve_noun_phrase(np), kind)
+            return (verb, _unique_winner(hits))
+    return None
+
+
 def _token_surface(word: str) -> str:
     """Surface form for a LATN token word (unwraps NP(...))."""
     w = (word or "").strip().lower()
