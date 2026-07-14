@@ -197,10 +197,20 @@ payer-broke aborts the whole transfer; give/take/drop unchanged externally
 
 ---
 
-## Phase 4 — Structured shop catalog + lazy materialization
+## Phase 4 — Structured shop catalog + lazy materialization — ✅ DONE (commit below)
 
 **Goal.** A shop's sellable stock is structured data the engine can transact
 against, and each good materializes into a full Thing only when needed.
+
+> **As built:** `models/shop_catalog.py`. The Phase-1 priced goods from
+> `load_all_things` (those with a vendor + `listed_price_cp`) are the catalog
+> *templates* — no separate parse of the "Rates and Services" prose was needed,
+> since the market facet already carries the structured price/owner. `ShopCatalog`
+> indexes templates by id and by shop; `CatalogEntry.from_thing` is the light
+> display view; `ShopCatalog.materialize(catalog_id, owner=…, zone=…, position=…)`
+> deep-copies a template into a fresh shop-owned, unheld Thing with a unique id
+> (`<catalog_id>_iN`), so repeated calls yield independent Things and the template
+> is never mutated. Session wiring is deferred to Phase 7 (buy/sell).
 
 **Files.** new `models/shop_catalog.py`, `models/thing_loader.py`,
 `tests/test_shop_catalog.py`.
