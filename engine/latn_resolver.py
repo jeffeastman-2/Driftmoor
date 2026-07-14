@@ -360,26 +360,29 @@ def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
         result = executor.execute_layer5(intent_text or "")
     for sp in (getattr(result, "sentence_phrases", None) or []):
         for vp in _predicate_vps(sp):
-            verb = _canonical_verb(vp)
-            if verb == "sell":
+            vec = getattr(vp, "vector", None)
+            if vec is None:
+                continue
+            if vec.isa("sell"):
                 np = _destination_np(vp)
                 if np is None:
                     return ("sell", None)
                 items = _entities_of_kind(adapter.resolve_noun_phrase(np), "item")
                 return ("sell", _unique_winner(items))
-            # "buy" is explicit; "take" (and its synonyms — grab/pick up/pocket…)
-            # counts as a buy WHEN the object is a shop good, so loose phrasing
-            # like "I'll take the mace" in a shop routes to commerce instead of
-            # the LLM. A take of a non-catalog thing is left to the normal
-            # take/steal path (return None).
-            if verb in ("buy", "take"):
+            # A "buy" verb, or a "take" (grab / pick up / pocket …) whose object
+            # is a shop good, is a purchase — so loose phrasing like "I'll take
+            # the mace" in a shop routes to commerce instead of the LLM. Test the
+            # vector's action dimensions directly (isa), not a collapsed verb
+            # string, so a multi-dimension verb still registers. A take of a
+            # non-catalog thing is left to the normal take/steal path (None).
+            if vec.isa("buy") or vec.isa("take"):
                 np = _destination_np(vp)
                 if np is None:
-                    return ("buy", None) if verb == "buy" else None
+                    return ("buy", None) if vec.isa("buy") else None
                 cat = _entities_of_kind(adapter.resolve_noun_phrase(np), "catalog")
                 if cat:
                     return ("buy", _unique_winner(cat))
-                return ("buy", None) if verb == "buy" else None
+                return ("buy", None) if vec.isa("buy") else None
     return None
 
 
