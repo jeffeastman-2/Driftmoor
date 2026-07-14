@@ -2860,6 +2860,127 @@ def _handle_item_transfer(
     )
 
 
+@lru_cache(maxsize=1)
+def _driftmoor_shop_catalog():
+    """The town's shop catalog (priced goods as templates), built once."""
+    from models.shop_catalog import ShopCatalog
+    things_dir = _DRIFTMOOR_PLACES_ROOT.parent.parent / "things"
+    return ShopCatalog.from_things_dir(things_dir)
+
+
+def _current_shopkeeper(characters, active_characters, catalog):
+    """The id of a present character who is a vendor (has for-sale stock), or
+    None — commerce only happens where there's a shopkeeper to trade with."""
+    for cid in sorted(active_characters):
+        if cid in characters and catalog.entries_for(cid):
+            return cid
+    return None
+
+
+def _handle_commerce(
+    *,
+    intent_text: str,
+    character_id: str,
+    characters: dict,
+    items: dict,
+    cs: "CharacterSession",
+    turn_num: int,
+    game_time: Optional[GameTime],
+    attack_log: list,
+    recent_events: list,
+    shopkeeper: str,
+    catalog,
+) -> bool:
+    """Resolve and settle a buy/sell against the ``shopkeeper`` present in the
+    scene. Returns True when the intent was a commerce action (so the caller
+    skips the scene-item interaction path), False otherwise. Buy materializes a
+    fresh Thing into the buyer's pack; sell removes the sold Thing from the
+    seller's loadout. Both narrate via the resolution log + recent events."""
+    from engine import commerce, loadout
+    from engine.latn_integration import resolve_commerce
+    from models.currency import format_coins
+
+    loadout.materialize_things(cs)
+    possessions = {t.id: t for t in (getattr(cs, "things", None) or [])}
+    res = resolve_commerce(
+        intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
+    if res is None:
+        return False
+    verb, obj = res
+
+    ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
+    actor = _char_handle(characters[character_id], character_id)
+    keep = _char_handle(characters[shopkeeper], shopkeeper)
+
+    def _emit(log_line: str, event_text: str, memory_text: Optional[str] = None) -> None:
+        attack_log.append(log_line)
+        recent_events.append((turn_num, f"{ts} | {event_text}"))
+        if memory_text:
+            _append_memory_note(cs, f"Turn {turn_num}: {memory_text}")
+
+    if verb == "buy":
+        if obj is None:
+            _emit(f"[COMMERCE] {character_id} wants to buy from {shopkeeper} but "
+                  f"which good is unclear; no purchase.",
+                  f"{actor} asks {keep} about buying, but it's unclear what.")
+            return True
+        r = commerce.settle_buy(obj, buyer_id=character_id, shopkeeper_id=shopkeeper,
+                                catalog=catalog, characters=characters)
+        price = format_coins(r.price_cp)
+        if not r.ok:
+            why = {"cannot_afford": f"can't afford the {obj.name} ({price})",
+                   "not_for_sale": f"the {obj.name} isn't for sale"}.get(
+                       r.reason, f"can't buy the {obj.name}")
+            _emit(f"[COMMERCE] {character_id} {why}; no purchase. Narrate the refusal.",
+                  f"{actor} tries to buy the {obj.name}, but {why}.")
+            return True
+        thing = r.thing
+        items[thing.id] = thing
+        if getattr(thing, "weapon", None) is not None:
+            loadout.register_held_weapon(cs, thing)
+        else:
+            if getattr(cs, "pack", None) is None:
+                cs.pack = []
+            if thing not in cs.pack:
+                cs.pack.append(thing)
+        loadout.materialize_things(cs)
+        name = thing.name or thing.id
+        _emit(f"[COMMERCE] {character_id} buys {name} from {shopkeeper} for {price} "
+              f"(now carried). Narrate the purchase.",
+              f"{actor} buys the {name} from {keep} for {price}.",
+              f"you bought {name} for {price}.")
+        return True
+
+    # sell
+    label = getattr(obj, "name", None) or getattr(obj, "label", None) or getattr(obj, "id", "item")
+    if obj is None:
+        _emit(f"[COMMERCE] {character_id} wants to sell to {shopkeeper} but which "
+              f"item is unclear; no sale.",
+              f"{actor} offers to sell {keep} something, but it's unclear what.")
+        return True
+    r = commerce.settle_sell(obj, seller_id=character_id, shopkeeper_id=shopkeeper,
+                             characters=characters)
+    price = format_coins(r.price_cp)
+    if not r.ok:
+        why = {"not_sellable": f"the {label} has no resale value",
+               "not_owned": f"the {label} isn't theirs to sell",
+               "shop_broke": f"{keep} can't cover {price} for the {label}"}.get(
+                   r.reason, f"can't sell the {label}")
+        _emit(f"[COMMERCE] {character_id} {why}; no sale. Narrate the refusal.",
+              f"{actor} tries to sell the {label}, but {why}.")
+        return True
+    sold_id = getattr(obj, "id", "")
+    items.pop(sold_id, None)
+    cs.pack = [p for p in (getattr(cs, "pack", None) or []) if getattr(p, "id", "") != sold_id]
+    cs.weapons = [w for w in (getattr(cs, "weapons", None) or []) if getattr(w, "id", "") != sold_id]
+    loadout.materialize_things(cs)
+    _emit(f"[COMMERCE] {character_id} sells {label} to {shopkeeper} for {price}. "
+          f"Narrate the sale.",
+          f"{actor} sells the {label} to {keep} for {price}.",
+          f"you sold {label} for {price}.")
+    return True
+
+
 def _append_memory_note(
     cs: CharacterSession,
     note: str,
@@ -5557,6 +5678,34 @@ async def iter_session(
                             recent_events.extend(_mr.events)
                             for _note in _mr.memory:
                                 _append_memory_note(cs, _note)
+
+            # Commerce: buy a shop good / sell a possession to the shopkeeper
+            # present in this scene. Runs only where there IS a shopkeeper (so it
+            # costs nothing elsewhere), and only if nothing already handled the
+            # intent; marks it handled so it isn't re-processed as an interaction.
+            if (
+                adjudication.approved
+                and not use_resolver
+                and not _kit_manip_applied
+                and intent.intent
+            ):
+                _shop_catalog = _driftmoor_shop_catalog()
+                _shopkeeper = _current_shopkeeper(
+                    characters, active_characters, _shop_catalog)
+                if _shopkeeper is not None and _handle_commerce(
+                    intent_text=intent.intent,
+                    character_id=character_id,
+                    characters=characters,
+                    items=items,
+                    cs=cs,
+                    turn_num=turn_num,
+                    game_time=game_time,
+                    attack_log=attack_log,
+                    recent_events=recent_events,
+                    shopkeeper=_shopkeeper,
+                    catalog=_shop_catalog,
+                ):
+                    _kit_manip_applied = True
 
             # Phase 2b: resolve item interactions BEFORE narration so the
             # narrator sees DM-authoritative findings instead of inventing

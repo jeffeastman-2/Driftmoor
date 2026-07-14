@@ -309,9 +309,14 @@ coin. Straight accept at listed price — haggling is Phase 8.
 >   and `engine/commerce.py` (`settle_buy`/`settle_sell` via `transfer_thing`;
 >   `BUY_RATE = 0.5`; refusal reasons not_for_sale/cannot_afford/not_sellable/
 >   not_owned/shop_broke). Fully unit-tested, not yet wired to the turn loop.
-> - **pt7b-wiring (next):** load the `ShopCatalog` into the session, detect the
->   current shopkeeper (the vendor NPC in the scene), and hook `resolve_commerce`
->   + settlement into the turn loop with narration — so it's playable.
+> - **pt7b-wiring — ✅ DONE (commit below):** `session._driftmoor_shop_catalog()`
+>   (cached), `_current_shopkeeper()` (the present vendor with stock), and
+>   `_handle_commerce()` — resolves via `resolve_commerce`, settles via
+>   `engine.commerce`, integrates the bought Thing into the buyer's pack (or
+>   removes a sold one), and narrates with a `[COMMERCE]` line. Hooked into the
+>   turn loop next to the kit-manip dispatch, gated on a shopkeeper being present
+>   (costs nothing elsewhere). Verified end-to-end on live data — Gil buys a
+>   Bread loaf from Maribel; coin moves, the loaf lands in his pack.
 > - **pt7a-libraries (after):** `value_cp` on WEAPONS/ARMOR/GEAR/CONSUMABLES/
 >   CONTAINERS (loader + 5e prices) to broaden what players can sell.
 
