@@ -79,3 +79,6 @@ Tall and imposing, scales the deep crimson of cooling iron. Amber eyes with vert
 - **Active conditions:** None
 - **Resources expended:** None
 - **Open threads:** Draconic lineage research; obelisk fragment obsession; Kelem Dustcloak connection
+
+## Wealth
+- **Purse:** 75 gp

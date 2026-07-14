@@ -78,3 +78,6 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 - **Active conditions:** None
 - **Resources expended:** None
 - **Open threads:** Tyrannical noble who burned the inn; friends killed; guilt carried quietly
+
+## Wealth
+- **Purse:** 125 gp

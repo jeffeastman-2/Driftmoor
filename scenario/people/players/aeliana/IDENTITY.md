@@ -63,3 +63,6 @@ Moves with the quiet of falling leaves. Long chestnut-brown hair loosely braided
 - **Resources expended:** None
 - **Spell slots used:** None
 - **Open threads:** Obelisk connection to Lyrendel rift; tribal homeland unresolved
+
+## Wealth
+- **Purse:** 125 gp

@@ -64,3 +64,6 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 
 ## Current Situation
 Hendricks travels as a retired scholar and behaves like a man still quietly in office. He is collecting observations, yes, but also testing whether wisdom is possible after regret has become part of the method.
+
+## Wealth
+- **Purse:** 100 gp

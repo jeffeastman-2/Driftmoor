@@ -79,3 +79,6 @@ Weathered face, marks of a life in service. Broad-shouldered, sturdy. Graying br
 - **Active conditions:** None
 - **Resources expended:** None
 - **Open threads:** Guilt over lives lost in village; faith tested but intact
+
+## Wealth
+- **Purse:** 125 gp

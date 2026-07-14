@@ -53,3 +53,6 @@ Brenna is tall and broad-shouldered, built by decades of drill and road work. Pa
 
 ## Current Situation
 Brenna came to Driftmoor to honor a contract whose sponsor died before she arrived. She intended to stay one week and has already stayed longer. She is evaluating the people around her with professional care and personal reluctance, as if deciding whether this place is another waystation or the beginning of an oath she has postponed for eleven years.
+
+## Wealth
+- **Purse:** 125 gp

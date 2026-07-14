@@ -100,3 +100,6 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 
 ## Current Situation
 Gilthaness has moved through Driftmoor for decades without becoming part of it, and now feels the shape of a decision she has postponed: remain selective and solitary, or spend her hard-won craft on people who may outlive her only in memory.
+
+## Wealth
+- **Purse:** 5000 gp

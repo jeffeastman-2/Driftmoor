@@ -63,3 +63,6 @@ Lithe, raven-black hair cropped above the shoulders, piercing green eyes. Dusky 
 - **Active conditions:** None
 - **Resources expended:** None
 - **Open threads:** Unexplained arcane ability; guild history unresolved
+
+## Wealth
+- **Purse:** 100 gp

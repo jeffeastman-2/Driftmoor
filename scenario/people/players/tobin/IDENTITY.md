@@ -69,3 +69,6 @@ Tobin is broad-shouldered and comfortably grounded, with brown hair gone silver 
 
 ## Current Situation
 Tobin intended to pass through Driftmoor. Instead, he keeps finding one more person who needs him and one more reason to stay. He suspects that is either providence or vanity and is prepared to be corrected by events.
+
+## Wealth
+- **Purse:** 125 gp

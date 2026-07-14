@@ -65,3 +65,6 @@ Pippa is small even for a fairy, all quick wings and kinetic posture, with wild 
 
 ## Current Situation
 Pippa came to Driftmoor in search of old fey knowledge and found people before answers. She is pretending those are separate outcomes and has not yet convinced herself.
+
+## Wealth
+- **Purse:** 75 gp

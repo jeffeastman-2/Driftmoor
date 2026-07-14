@@ -84,3 +84,6 @@ Dark brown skin, warm brown eyes, close-cropped black hair. Medium build, carrie
 - **Active conditions:** None
 - **Resources expended:** None
 - **Open threads:** Church orders to investigate disturbances; personal calling toward the suffering
+
+## Wealth
+- **Purse:** 125 gp

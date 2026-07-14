@@ -61,3 +61,6 @@ Short but commanding. Fiery red beard braided and tucked into his belt. Steel-gr
 - **Active conditions:** None
 - **Resources expended:** None
 - **Open threads:** Survivor's guilt; seeking redemption; no current ties to Kragmire Hold
+
+## Wealth
+- **Purse:** 125 gp
