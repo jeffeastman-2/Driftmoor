@@ -3813,6 +3813,7 @@ def _render_transport_prompt(
         cs=cs,
     )
     recent_section = _strip_recent_prefix(delta)
+    recent_section = _humanize_recent_context(recent_section)
     zone_brief, current_position = _orientation_for_transport(context.scene_context)
     scene_intro = _scene_intro_for_transport(context.scene_context, raw_history)
 
@@ -3931,6 +3932,97 @@ def _strip_recent_prefix(text: str) -> str:
     if lines and lines[0].strip().lower().startswith("recent context"):
         return "\n".join(lines[1:]).strip()
     return (text or "").strip()
+
+
+_TRANSPORT_SAYS_RE = re.compile(r"^(?P<who>.+?) says: (?P<rest>.+)$")
+_TRANSPORT_ACTS_RE = re.compile(r"^(?P<who>.+?) acts: (?P<rest>.+)$")
+# A bare fallback utterance, e.g. ``gilthaness "do you have any bolts?".`` —
+# a single id token followed only by a quoted line (optional trailing period).
+_BARE_UTTERANCE_RE = re.compile(r'^(?P<who>\S+)\s+"(?P<quote>.+)"\.?\s*$')
+
+
+def _tidy_bare_utterance(line: str) -> str:
+    """Reformat a bare ``<id> "quote".`` fallback line to ``Name: "quote"``.
+
+    The narrator's no-LLM fallback renders a spoken action as
+    ``{character_id} "{spoken}".`` — an un-capitalized id with a trailing
+    period and no attribution colon. For the human RECENT CONTEXT we title-case
+    the id and give it a colon so it reads like the other dialogue lines.
+    Non-matching prose (a full narration sentence) is returned unchanged.
+    """
+    m = _BARE_UTTERANCE_RE.match(line)
+    if not m:
+        return line
+    who = " ".join(
+        w[:1].upper() + w[1:] for w in m.group("who").replace("_", " ").split()
+    )
+    return f'{who}: "{m.group("quote")}"'
+
+
+
+def _humanize_recent_context(text: str) -> str:
+    """Collapse the raw says/acts/prose history triple into one readable line
+    per beat for the human RECENT CONTEXT.
+
+    ``raw_history`` records each contribution as up to three lines — a raw
+    ``{handle} says: "…"`` quote, a first-person ``{handle} acts: …`` intent,
+    and a polished third-person prose narration that already restates both.
+    Showing all three to a human reader is noisy and repetitive, so here we keep
+    only the polished prose when present, falling back to the spoken quote (then
+    the action) when there is no prose. Bare ``[MOVEMENT] …`` debug lines are
+    dropped — position is shown separately under CURRENT POSITION and on the
+    map. This touches only the human-facing packet; NPC prompts read the raw
+    history unchanged.
+    """
+    speaker: Optional[str] = None
+    says_line: Optional[str] = None
+    acts_line: Optional[str] = None
+    prose_line: Optional[str] = None
+    out: list[str] = []
+
+    def flush() -> None:
+        nonlocal speaker, says_line, acts_line, prose_line
+        if prose_line is not None:
+            out.append(prose_line)
+        elif says_line is not None:
+            out.append(says_line)
+        elif acts_line is not None:
+            out.append(acts_line)
+        speaker = says_line = acts_line = prose_line = None
+
+    for raw in (text or "").splitlines():
+        line = raw.rstrip()
+        if not line.strip():
+            continue
+        if line.lstrip().startswith("[MOVEMENT]"):
+            continue
+        ms = _TRANSPORT_SAYS_RE.match(line)
+        ma = _TRANSPORT_ACTS_RE.match(line)
+        if ms:
+            if speaker is not None or says_line or acts_line or prose_line:
+                flush()
+            speaker = ms.group("who")
+            says_line = line
+        elif ma:
+            who = ma.group("who")
+            if speaker is None:
+                speaker = who
+                acts_line = line
+            elif who == speaker and acts_line is None and prose_line is None:
+                acts_line = line
+            else:
+                flush()
+                speaker = who
+                acts_line = line
+        else:
+            # Prose narration (or a plain history line): it ends the beat and,
+            # when present, is the single line we keep for that beat. A bare
+            # ``<id> "quote".`` fallback is tidied to ``Name: "quote"``.
+            prose_line = _tidy_bare_utterance(line)
+            flush()
+
+    flush()
+    return "\n".join(out)
 
 
 def _scene_intro_for_transport(scene_context: str, raw_history: str) -> str:

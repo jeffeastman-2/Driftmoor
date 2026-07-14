@@ -953,6 +953,61 @@ class TestHistoryEntryFormatting:
         assert out.endswith("The innkeeper watches him.")
 
 
+class TestHumanizeRecentContext:
+    """The human RECENT CONTEXT collapses each says/acts/prose beat to one
+    readable line (prose preferred), dropping redundant intent + movement noise."""
+
+    def test_collapses_says_acts_prose_triple_to_prose(self):
+        from engine.session import _humanize_recent_context
+        raw = (
+            'Gil says: "I\'ve seen shadowy creatures."\n'
+            'Gil acts: I warn the room about the forest.\n'
+            'Gil warns the room, his voice low. "I\'ve seen shadowy creatures."\n'
+            'Maribel says: "Lord preserve us."\n'
+            'Maribel acts: I move to the shelves.\n'
+            'Maribel walks to the display shelves. "Lord preserve us."\n'
+            '[MOVEMENT] maribel: (19,9) -> (9,9)'
+        )
+        assert _humanize_recent_context(raw).splitlines() == [
+            'Gil warns the room, his voice low. "I\'ve seen shadowy creatures."',
+            'Maribel walks to the display shelves. "Lord preserve us."',
+        ]
+
+    def test_keeps_quote_when_no_prose(self):
+        from engine.session import _humanize_recent_context
+        raw = 'Gil says: "Hello."\nGil acts: I wave.'
+        assert _humanize_recent_context(raw) == 'Gil says: "Hello."'
+
+    def test_keeps_action_when_only_acts(self):
+        from engine.session import _humanize_recent_context
+        raw = 'Gil acts: I search the shelf.'
+        assert _humanize_recent_context(raw) == 'Gil acts: I search the shelf.'
+
+    def test_preserves_plain_history_lines(self):
+        from engine.session import _humanize_recent_context
+        raw = "line 1\nline 2\nline 3"
+        assert _humanize_recent_context(raw) == "line 1\nline 2\nline 3"
+
+    def test_tidies_bare_player_utterance_to_name_colon_quote(self):
+        from engine.session import _humanize_recent_context
+        raw = 'gilthaness "do you have any crossbow bolts?".'
+        assert _humanize_recent_context(raw) == 'Gilthaness: "do you have any crossbow bolts?"'
+
+    def test_bare_utterance_titlecases_underscored_id(self):
+        from engine.session import _humanize_recent_context
+        raw = 'giant_spider "hiss".'
+        assert _humanize_recent_context(raw) == 'Giant Spider: "hiss"'
+
+    def test_bare_utterance_tidy_leaves_full_prose_untouched(self):
+        from engine.session import _humanize_recent_context
+        raw = 'Jorgen reaches beneath the counter. "A box of twenty for two copper," he says.'
+        assert _humanize_recent_context(raw) == raw
+
+    def test_empty_input_yields_empty(self):
+        from engine.session import _humanize_recent_context
+        assert _humanize_recent_context("") == ""
+
+
 # Dropping/drawing a KIT weapon out of combat is now the unified
 # affordance-gated dispatch — see tests/test_manipulation.py.
 
