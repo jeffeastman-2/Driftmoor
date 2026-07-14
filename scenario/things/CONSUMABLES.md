@@ -12,13 +12,13 @@ comma-separated list applied to the eater when the item is consumed:
 
 Hunger/thirst use *need* framing (they drift up over time; consuming lowers them).
 
-| id | name | kind | effects |
-|----|------|------|---------|
-| pemmican | Pemmican | eat | hunger -0.4, heal 2 |
-| hard_tack | Hard Tack | eat | hunger -0.25 |
-| rations | Rations | eat | hunger -0.3 |
-| water | Waterskin | drink | thirst -0.5 |
-| mead | Mead | drink | thirst -0.3, intoxication +0.3, dopamine +0.05 |
-| moonlace | Moonlace | eat | dopamine +0.05 |
-| mistwood_herbs | Mistwood Herbs | eat |  |
+| id | price | name | kind | effects |
+|----|-------|------|------|---------|
+| pemmican | 5 sp | Pemmican | eat | hunger -0.4, heal 2 |
+| hard_tack | 2 sp | Hard Tack | eat | hunger -0.25 |
+| rations | 5 sp | Rations | eat | hunger -0.3 |
+| water | 2 sp | Waterskin | drink | thirst -0.5 |
+| mead | 2 sp | Mead | drink | thirst -0.3, intoxication +0.3, dopamine +0.05 |
+| moonlace |  | Moonlace | eat | dopamine +0.05 |
+| mistwood_herbs |  | Mistwood Herbs | eat |  |
 

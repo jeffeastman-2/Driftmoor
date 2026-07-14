@@ -319,6 +319,18 @@ coin. Straight accept at listed price — haggling is Phase 8.
 >   Bread loaf from Maribel; coin moves, the loaf lands in his pack.
 > - **pt7a-libraries (after):** `value_cp` on WEAPONS/ARMOR/GEAR/CONSUMABLES/
 >   CONTAINERS (loader + 5e prices) to broaden what players can sell.
+>
+>   **As built — ✅ DONE (commit below):** each library table gained a
+>   human-readable `price` column (second column, denominations pp/gp/ep/sp/cp)
+>   parsed once via `currency.parse_coins` — the same authored-price pattern as
+>   Phase 1 and `mundane_items.md`, so a Thing's worth lives in one place next to
+>   its other stats. `Weapon`/`Armor` gained a `value_cp` field set from the
+>   column in `engine/weapon_loader.py`; `engine/consumable_loader.py`
+>   (`load_catalog`, shared by consumables/gear/containers) sets `thing.value_cp`
+>   from the column when unset. Blank price = unpriced/not-sellable, so bespoke or
+>   fictional items (a named personal pack, an invented herb, an improvised spear,
+>   a plain trinket) simply leave the cell empty — and, unlike a code map, now
+>   have an obvious home to be priced later. No engine price table.
 
 **Files.** `engine/latn_dimensions.py`, `engine/latn_lexicon.py`,
 `engine/latn_adapter.py` (ground catalog entries as a grounded entity kind, like

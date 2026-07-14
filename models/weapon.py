@@ -8,6 +8,7 @@ Attack bonuses are per-character (set when loading from CONFIG.md).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -33,6 +34,8 @@ class Weapon:
     # ("draw my sword" -> a rapier tagged `sword`). Categorical truth, not a
     # subclass — a rapier carries {martial, sword, blade} at once.
     tags: list[str] = field(default_factory=list)
+    # Base/market worth in copper (canonical 5e price); None = unpriced.
+    value_cp: Optional[int] = None
 
     @property
     def is_ranged(self) -> bool:
@@ -54,3 +57,5 @@ class Armor:
     ac_base: int
     ac_dex_cap: int | None = None   # None = DEX modifier uncapped (light armor)
     stealth_disadvantage: bool = False
+    # Base/market worth in copper (canonical 5e price); None = unpriced.
+    value_cp: Optional[int] = None

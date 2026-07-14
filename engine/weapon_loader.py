@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from models.weapon import Weapon, Armor
+from models.currency import parse_coins
 
 
 def _parse_md_table(text: str) -> list[dict[str, str]]:
@@ -77,6 +78,7 @@ def load_weapons(weapons_md: Path) -> dict[str, Weapon]:
             properties=properties,
             ammunition_id=ammunition_id,
             tags=tags,
+            value_cp=parse_coins(row.get("price", "")),
         )
     return result
 
@@ -102,6 +104,7 @@ def load_armors(armor_md: Path) -> dict[str, Armor]:
             ac_base=ac_base,
             ac_dex_cap=ac_dex_cap,
             stealth_disadvantage=stealth_disadvantage,
+            value_cp=parse_coins(row.get("price", "")),
         )
     return result
 

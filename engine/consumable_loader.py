@@ -24,6 +24,7 @@ from typing import Optional
 
 from models.condition import DIMENSIONS
 from models.thing import Effect, Interaction, Thing, derive_affordances
+from models.currency import parse_coins
 
 
 def parse_effect(spec: str) -> Optional[Effect]:
@@ -153,6 +154,8 @@ def load_catalog(path: Path, default_kind: str = "eat") -> dict[str, Thing]:
             (row.get("kind") or default_kind).strip(), parse_effects(row.get("effects", "")))
         thing.contents = parse_contents(row.get("contents", ""))
         thing.capacity = (row.get("capacity", "") or "").strip()
+        if thing.value_cp is None:
+            thing.value_cp = parse_coins(row.get("price", ""))
         lib[cid] = thing
     return lib
 
