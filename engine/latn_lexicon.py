@@ -57,7 +57,12 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("help", ["help", "aid", "assist"]),
     ("ready", ["ready", "prepare"]),
     ("hide", ["hide", "conceal", "sneak"]),
-    ("buy", ["buy", "buys", "purchase", "purchases", "pay for"]),
+    # Plus conversational buy framings. These carry only the "buy" dim, so they
+    # ground as a purchase ONLY when the object is one of the shopkeeper's
+    # catalog goods (the object gate) — "I want to leave" / "looking for the
+    # mayor" stay None rather than misfiring. Multi-word forms are <=3 tokens.
+    ("buy", ["buy", "buys", "purchase", "purchases", "pay for",
+             "want", "wants", "need", "needs", "looking for", "would like"]),
     ("sell", ["sell", "sells", "vend", "offload", "hawk", "pawn"]),
 ]
 
@@ -85,6 +90,17 @@ _AFFIRM_WORDS: list[str] = [
 _DECLINE_WORDS: list[str] = [
     "no", "nope", "nah", "pass", "cancel", "decline", "never mind",
     "forget it", "no thanks", "not now", "no thank you",
+]
+
+# Common item modifiers (material/type adjectives) that appear in natural
+# references to goods but not always in the good's own name -- e.g. "crossbow
+# bolts" for the good "Bolts (20)". Registered as bare adjectives so head-noun
+# matching resolves the good; the adj reading is free (grounding is string-
+# based). Renaming a good to carry its modifier auto-registers it too, via the
+# world layer's modifier derivation. Kept to clear, low-collision modifiers.
+_ITEM_MODIFIER_WORDS: list[str] = [
+    "crossbow", "wooden", "iron", "steel", "silver", "silvered", "golden",
+    "leather", "silk", "hemp", "glass", "bronze", "copper", "tin",
 ]
 
 # Faction adjectives -> faction value whose one-hot dim they activate.
@@ -179,6 +195,11 @@ def _build_rpg_layer() -> dict:
         dim = property_dim("faction", value)
         for word in words:
             layer[word.lower()] = _vf("adj", **{dim: 1.0})
+    # Item modifiers -> bare adjectives; head-noun matching grounds the good.
+    # setdefault so a word already carrying a reading (verb/faction) is not
+    # overwritten by a plain-adjective one.
+    for word in _ITEM_MODIFIER_WORDS:
+        layer.setdefault(word.lower(), _vf("adj"))
 
     # Movement direction adverbs and distance units.
     for word, dims in _DIRECTION_VOCAB:

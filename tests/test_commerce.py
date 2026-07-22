@@ -22,6 +22,14 @@ def _catalog():
     ])
 
 
+def _weapon_catalog():
+    # A good whose plain name omits a modifier a player would naturally use
+    # ("crossbow bolts" for "Bolts (20)") -- exercises head-noun matching.
+    return ShopCatalog([
+        Thing(id="bolts_20", name="Bolts (20)", price="1 gp", vendor_id="jorgen"),
+    ])
+
+
 class TestGrounding:
     def test_buy_grounds_catalog_entry(self):
         entries = _catalog().entries_for("maribel")
@@ -45,6 +53,32 @@ class TestGrounding:
     def test_non_commerce_is_none(self):
         entries = _catalog().entries_for("maribel")
         assert resolve_commerce("I look at the pie", {}, {}, "", entries) is None
+
+    def test_conversational_buy_framings_ground(self):
+        # Polite/indirect phrasings ground as a buy without an imperative verb.
+        entries = _catalog().entries_for("maribel")
+        for s in ("I want the meat pie", "I need a meat pie",
+                  "I am looking for a meat pie", "I would like the meat pie"):
+            res = resolve_commerce(s, {}, {}, "", entries)
+            assert res is not None and res[0] == "buy" and res[1].catalog_id == "meat_pie", s
+
+    def test_desire_verb_without_a_good_is_not_commerce(self):
+        # The object gate: a desire/seek verb with no catalog object stays None
+        # (no misfiring "buy something unclear").
+        entries = _catalog().entries_for("maribel")
+        for s in ("I want to leave", "I am looking for the way out",
+                  "I would like to talk to the baker"):
+            assert resolve_commerce(s, {}, {}, "", entries) is None, s
+
+    def test_modifier_before_head_noun_grounds(self):
+        # "crossbow bolts" reaches the good "Bolts (20)" via head-noun matching,
+        # even though the good's name has no "crossbow".
+        entries = _weapon_catalog().entries_for("jorgen")
+        for s in ("buy crossbow bolts", "buy some crossbow bolts",
+                  "I'd like to buy some crossbow bolts",
+                  "I am looking for some crossbow bolts"):
+            res = resolve_commerce(s, {}, {}, "", entries)
+            assert res is not None and res[0] == "buy" and res[1].catalog_id == "bolts_20", s
 
     def test_take_a_shop_good_is_a_buy(self):
         # loose phrasing in a shop routes to commerce, not the LLM.
