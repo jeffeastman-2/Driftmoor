@@ -158,16 +158,16 @@ def _build_rpg_layer() -> dict:
     # compound keys, which the tokenizer matches (up to 3 words).
     for canonical, synonyms in (*_VERB_LEXICON, *_TRANSFER_LEXICON, *_EXTRA_VERB_SYNONYMS):
         for word in synonyms:
-            layer[word.lower()] = _vf(f"verb action {canonical}")
+            layer[word.lower()] = _vf("verb", **{canonical: 1.0})
     # Threshold-crossing verbs carry BOTH "move" (so movement still grounds —
     # "enter the chamber" moves into a zone) and "enter"/"leave" (the crossing
     # signal that promotes a venue destination to a sub-scene transition). Set
     # after the loop so they win over any plain-"move" reading; multi-word forms
     # are compound keys the tokenizer matches (<=3 words).
     for word in _ENTER_VERB_WORDS:
-        layer[word.lower()] = _vf("verb action move enter")
+        layer[word.lower()] = _vf("verb", move=1.0, enter=1.0)
     for word in _LEAVE_VERB_WORDS:
-        layer[word.lower()] = _vf("verb action move leave")
+        layer[word.lower()] = _vf("verb", move=1.0, leave=1.0)
     # Bare yes/no answers to an offer carry an affirm/decline dimension so the
     # quote->confirm exchange reads them via isa (not a yes/no string match).
     for word in _AFFIRM_WORDS:

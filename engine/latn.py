@@ -32,7 +32,7 @@ from latn.lexer.sp_policy import (
 )
 from latn.lexer.spatial_policy import (
     SpatialPolicy,
-    StrictSpatialPolicy,
+    PermissiveSpatialPolicy,
     set_active_spatial_policy,
     use_spatial_policy,
 )
@@ -57,7 +57,7 @@ __all__ = [
     "set_active_sp_policy",
     "use_sp_policy",
     "SpatialPolicy",
-    "StrictSpatialPolicy",
+    "PermissiveSpatialPolicy",
     "set_active_spatial_policy",
     "use_spatial_policy",
     "VectorSpace",

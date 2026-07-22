@@ -51,7 +51,9 @@ def test_lexicon_tokenizes_actions_recipients_and_descriptors():
 
     t = _tok_map(lex, "give the banded mace to the dwarf cleric")
     assert t["give"].isa("give")
-    assert t["to"]["directional_target"] != 0.0
+    # LATN owns the grammatical preposition; Driftmoor's resolver interprets
+    # the surface word "to" when selecting a recipient.
+    assert t["to"].isa("prep")
     assert t["banded mace"].isa("noun")          # multi-word label compound
     assert t["dwarf"].isa("race_dwarf")
     assert t["cleric"].isa("class_cleric")
