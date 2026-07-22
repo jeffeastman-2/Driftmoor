@@ -376,17 +376,30 @@ atomic transfer (or none) commits.
 >   the `[COMMERCE]` resolution lines are now **engine-authoritative** ("SETTLED
 >   by the engine — do not alter … Narrate only this outcome"), so the narrator
 >   can't invent a different price or result.
-> - **pt8b-2 — ✅ DONE (commit below):** the quote→confirm exchange. A buy now
->   gets a *quote* (the shopkeeper names the listed price, nothing settles) and a
->   standing offer is recorded per actor in `pending_purchases`; the buyer's next
->   reply is read for a bare yes/no via **LATN dimensions** — `affirm`/`decline`
->   are real vector dims (registered in `RESPONSE_DIMS`, lexicalized on
->   yes/deal/…/no/never mind/…), and `resolve_response` tests them with `isa`, no
->   yes/no string match. Affirm completes the sale; decline or any unrelated
->   intent lets the offer lapse. Sells still settle in one step (cross-turn item
->   refs are a later refinement). Bare "no" collides with a base function word so
->   it lapses rather than reading as an explicit decline — acceptable (same
->   outcome). Verified live: "I'll take the bread loaf" → quote → "yes" → sold.
+> - **pt8b-2 — ✅ DONE (commit below):** the quote→confirm exchange, as an
+>   **in-turn sub-dialog** (revised — see pt8b-2b). A buy quotes the listed price
+>   and settles only on the buyer's confirmation, and — this is the fix — the
+>   confirmation is read *inside the buyer's single turn*, not on a later turn.
+>   The reply is classified with **LATN dimensions** — `affirm`/`decline` are real
+>   vector dims (registered in `RESPONSE_DIMS`, lexicalized on yes/deal/…/no/never
+>   mind/…), and `resolve_response` tests them with `isa`, no yes/no string match.
+>   Affirm completes the sale; anything else lets the offer lapse. Sells still
+>   settle in one step (cross-turn item refs are a later refinement). Bare "no"
+>   collides with a base function word so it lapses rather than reading as an
+>   explicit decline — acceptable (same outcome).
+> - **pt8b-2b — ✅ DONE (revision):** the first cut recorded the offer in a
+>   cross-turn `pending_purchases` dict and read the "yes" on the *next* turn —
+>   but a turn advances initiative, runs every NPC, and re-packs context, so the
+>   confirmation landed in a different world and never settled (live bug: Jorgen
+>   quoted, "yes" did nothing). Replaced with a genuine sub-dialog: `_handle_commerce`
+>   is now `async` and takes a `negotiate` async callback (`_commerce_negotiator`,
+>   bound to the buyer's web/telegram transport). On a priced buy it sends the
+>   quote and awaits the buyer's reply on the same transport, all within the one
+>   per-character slice — no initiative between quote and answer, exactly like the
+>   DM-question handler. `pending_purchases` is retired. Settlement + the
+>   engine-authoritative `[COMMERCE] SETTLED` lines still emit from the turn-loop
+>   hook (where `attack_log`/`recent_events` feed the narrator). The hook only
+>   runs for transport-backed human players (`negotiate is not None`).
 > - **A (later):** the full multi-round modal haggle (8a suspend/resume primitive
 >   + 8b disposition-driven policy + UI).
 

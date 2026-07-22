@@ -1,6 +1,9 @@
 """Turn-loop wiring for buy/sell (engine.session._handle_commerce +
-_current_shopkeeper). Buy is a quote->confirm exchange; sell settles in one step."""
+_current_shopkeeper). A buy is a quote->confirm *sub-dialog inside one turn*:
+the shopkeeper names a price and the buyer's next reply (read through the
+``negotiate`` transport callback) settles or lapses it. Sells settle in one step."""
 
+import asyncio
 from types import SimpleNamespace as NS
 
 from models.character import Character
@@ -26,12 +29,24 @@ def _chars(player_purse=100, keeper_purse=0):
     return {"player": _cs("player", player_purse), "maribel": _cs("maribel", keeper_purse)}
 
 
-def _commerce(chars, items, text, pending, log=None):
-    return _handle_commerce(
+class _Reply:
+    """A scripted negotiator: returns a fixed reply and records every quote sent."""
+
+    def __init__(self, reply: str):
+        self.reply = reply
+        self.prompts: list[str] = []
+
+    async def __call__(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        return self.reply
+
+
+def _commerce(chars, items, text, negotiate=None, log=None):
+    return asyncio.run(_handle_commerce(
         intent_text=text, character_id="player", characters=chars, items=items,
         cs=chars["player"], turn_num=1, game_time=None,
         attack_log=log if log is not None else [], recent_events=[],
-        shopkeeper="maribel", catalog=_catalog(), pending_purchases=pending)
+        shopkeeper="maribel", catalog=_catalog(), negotiate=negotiate))
 
 
 class TestShopkeeperDetection:
@@ -44,54 +59,50 @@ class TestShopkeeperDetection:
 
 class TestBuyQuoteConfirm:
     def test_quote_then_confirm_settles(self):
-        chars, items, pend = _chars(100, 0), {}, {}
-        log = []
-        # 1. buy -> a quote, nothing settled, a standing offer recorded.
-        assert _commerce(chars, items, "I buy the meat pie", pend, log) is True
-        assert chars["player"].character.purse_cp == 100
-        assert not items and "player" in pend
-        assert any("OFFER" in l for l in log)
-        # 2. "yes" -> the sale completes.
-        log2 = []
-        assert _commerce(chars, items, "yes", pend, log2) is True
+        chars, items = _chars(100, 0), {}
+        say_yes, log = _Reply("yes"), []
+        # A buy quotes a price (via the transport) then settles on "yes" — one turn.
+        assert _commerce(chars, items, "I buy the meat pie", say_yes, log) is True
+        assert say_yes.prompts and "meat pie" in say_yes.prompts[0].lower()
         assert chars["player"].character.purse_cp == 96
+        assert chars["maribel"].character.purse_cp == 4
         assert any(getattr(p, "id", "").startswith("meat_pie") for p in chars["player"].pack)
-        assert "player" not in pend
-        assert any("SETTLED" in l and "bought" in l for l in log2)
+        assert any("SETTLED" in l and "bought" in l for l in log)
 
     def test_take_a_shop_good_also_quotes(self):
-        chars, items, pend = _chars(100, 0), {}, {}
-        assert _commerce(chars, items, "I'll take the meat pie", pend) is True
-        assert "player" in pend and chars["player"].character.purse_cp == 100
+        chars, items = _chars(100, 0), {}
+        say_yes = _Reply("sure")
+        assert _commerce(chars, items, "I'll take the meat pie", say_yes) is True
+        assert say_yes.prompts
+        assert chars["player"].character.purse_cp == 96
 
     def test_decline_lapses_the_offer(self):
-        chars, items, pend = _chars(100, 0), {}, {}
-        _commerce(chars, items, "buy the meat pie", pend)
-        assert "player" in pend
+        chars, items = _chars(100, 0), {}
         log = []
-        assert _commerce(chars, items, "nope", pend, log) is True
+        assert _commerce(chars, items, "buy the meat pie", _Reply("no"), log) is True
         assert chars["player"].character.purse_cp == 100
-        assert not items and "player" not in pend
+        assert not items and not chars["player"].pack
         assert any("lapse" in l for l in log)
 
-    def test_unrelated_intent_lapses_the_offer(self):
-        chars, items, pend = _chars(100, 0), {}, {}
-        _commerce(chars, items, "buy the meat pie", pend)
-        # an unrelated (non yes/no, non-commerce) intent lets the offer lapse.
-        assert _commerce(chars, items, "I look at the shelves", pend) is True
-        assert "player" not in pend and chars["player"].character.purse_cp == 100
+    def test_unrelated_reply_lapses_the_offer(self):
+        chars, items = _chars(100, 0), {}
+        # A reply that isn't a yes/no lets the offer lapse (nothing changes hands).
+        assert _commerce(chars, items, "buy the meat pie", _Reply("I look around")) is True
+        assert chars["player"].character.purse_cp == 100 and not chars["player"].pack
 
     def test_broke_buyer_refused_at_confirm(self):
-        chars, items, pend = _chars(2, 0), {}, {}
-        _commerce(chars, items, "buy the meat pie", pend)     # quote (always offered)
+        chars, items = _chars(2, 0), {}
         log = []
-        _commerce(chars, items, "yes", pend, log)             # confirm -> can't pay
+        _commerce(chars, items, "buy the meat pie", _Reply("yes"), log)   # confirm, can't pay
         assert chars["player"].character.purse_cp == 2
         assert not items
         assert any("afford" in l for l in log)
 
     def test_non_commerce_intent_not_handled(self):
-        assert _commerce(_chars(), {}, "I look around the shop", {}) is False
+        # Not a commerce intent at all: handled=False, no quote ever sent.
+        say = _Reply("yes")
+        assert _commerce(_chars(), {}, "I look around the shop", say) is False
+        assert not say.prompts
 
 
 class TestSellWiring:
@@ -100,10 +111,10 @@ class TestSellWiring:
         pc = _cs("player", 0, inv=["dagger"]); pc.pack = [dagger]
         chars = {"player": pc, "maribel": _cs("maribel", 1000)}
         items = {"dagger": dagger}
-        handled = _handle_commerce(
+        handled = asyncio.run(_handle_commerce(
             intent_text="I sell my dagger", character_id="player", characters=chars,
             items=items, cs=pc, turn_num=1, game_time=None, attack_log=[],
-            recent_events=[], shopkeeper="maribel", catalog=_catalog(), pending_purchases={})
+            recent_events=[], shopkeeper="maribel", catalog=_catalog(), negotiate=None))
         assert handled is True
         assert chars["player"].character.purse_cp == 100
         assert dagger.owner == "maribel" and "dagger" not in items

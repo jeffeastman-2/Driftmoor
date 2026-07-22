@@ -2877,7 +2877,49 @@ def _current_shopkeeper(characters, active_characters, catalog):
     return None
 
 
-def _handle_commerce(
+def _commerce_negotiator(cs, character_id):
+    """An ``async (prompt) -> reply`` bound to a human player's transport, or
+    None for non-transport actors.
+
+    It lets a buy run as a quote->confirm *sub-dialog inside the buyer's single
+    turn*: the shopkeeper names a price and the very next line the human sends is
+    read as their answer — no turn is consumed and no initiative advances between
+    the quote and the reply (the same in-turn dialog shape the DM-question
+    handler already uses). Web ``receive`` blocks until input; Telegram long-polls
+    and returns empty on timeout, so we loop until a line actually arrives."""
+    transport = (getattr(cs, "player_transport", None) or "llm").strip().lower()
+    if transport == "web":
+        from engine import web_transport
+        wt = web_transport.for_character(character_id)
+
+        async def ask(prompt: str) -> str:
+            web_transport.flush_inbound(character_id)
+            web_transport.set_awaiting(character_id, True)
+            await wt.send(prompt)
+            reply = (await wt.receive() or "").strip()
+            web_transport.set_awaiting(character_id, False)
+            return reply
+
+        return ask
+    if transport == "telegram":
+        from engine import telegram_transport
+        tt = telegram_transport.for_character(character_id)
+        if tt is None:
+            return None
+
+        async def ask(prompt: str) -> str:
+            await asyncio.to_thread(tt.flush)
+            await asyncio.to_thread(tt.send, prompt)
+            while True:
+                reply = (await asyncio.to_thread(tt.poll_once) or "").strip()
+                if reply:
+                    return reply
+
+        return ask
+    return None
+
+
+async def _handle_commerce(
     *,
     intent_text: str,
     character_id: str,
@@ -2890,18 +2932,21 @@ def _handle_commerce(
     recent_events: list,
     shopkeeper: str,
     catalog,
-    pending_purchases: dict,
+    negotiate=None,
 ) -> bool:
     """Resolve a buy/sell against the ``shopkeeper`` present in the scene. Returns
     True when the intent was a commerce action (so the caller skips the scene-item
     interaction path), False otherwise.
 
-    A buy is a two-step, engine-owned exchange: the first intent gets a *quote*
-    (the shopkeeper names a price, nothing settles) and a standing offer is
-    recorded in ``pending_purchases``; the buyer's next reply is read for a bare
-    yes/no (``resolve_response``) — an affirm completes the sale, anything else
-    lets the offer lapse. Sells still settle in one step (cross-turn item refs
-    are a later refinement)."""
+    A buy is an engine-owned exchange settled inside the buyer's single turn — a
+    *sub-dialog*, not a cross-turn handoff. When ``negotiate`` is supplied (an
+    ``async (prompt) -> reply`` bound to the buyer's transport), the shopkeeper
+    quotes a price and the same nested exchange reads the buyer's yes/no reply
+    right away — no initiative advances between the quote and the answer. An
+    affirm completes the sale; anything else lets the offer lapse. With no
+    ``negotiate`` (a non-interactive actor) a priced buy settles at the listed
+    price directly. Sells settle in one step (cross-turn item refs are a later
+    refinement)."""
     from engine import commerce, loadout
     from engine.latn_integration import resolve_commerce, resolve_response
     from models.currency import format_coins
@@ -2950,36 +2995,15 @@ def _handle_commerce(
               f"{actor} buys the {name} from {keep} for {price}.",
               f"you bought {name} for {price}.")
 
-    # --- A standing offer? read the buyer's yes/no reply. ---
-    pend = pending_purchases.get(character_id)
-    if pend is not None:
-        entry, quoted = pend
-        reply = resolve_response(intent_text, characters, "")
-        if reply == "affirm":
-            del pending_purchases[character_id]
-            _commit_buy(entry)
-            return True
-        fresh = resolve_commerce(
-            intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
-        if reply == "decline" or fresh is None:
-            del pending_purchases[character_id]
-            _emit(f"[COMMERCE] {character_id} does not take {shopkeeper}'s offer of "
-                  f"{entry.name} at {format_coins(quoted)}; the offer lapses and "
-                  f"nothing changes hands. Narrate only that the deal did not happen.",
-                  f"{actor} leaves the {entry.name} on the counter.")
-            return True
-        del pending_purchases[character_id]     # a fresh buy/sell supersedes it
-        res = fresh
-    else:
-        res = resolve_commerce(
-            intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
-
+    res = resolve_commerce(
+        intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
     if res is None:
         return False
     verb, obj = res
 
-    # --- A fresh buy -> QUOTE (do not settle); the engine completes the sale
-    #     only on the buyer's confirmation next turn. ---
+    # --- A buy: quote a price, then settle only on the buyer's confirmation —
+    #     all inside this one turn (a sub-dialog on the buyer's transport, so no
+    #     initiative advances between the quote and the answer). ---
     if verb == "buy":
         if obj is None:
             _emit(f"[COMMERCE] {character_id} wants to buy from {shopkeeper} but "
@@ -2991,13 +3015,21 @@ def _handle_commerce(
                   f"no offer.",
                   f"{keep} says the {obj.name} isn't for sale.")
             return True
-        pending_purchases[character_id] = (obj, obj.listed_price_cp)
         price = format_coins(obj.listed_price_cp)
-        _emit(f"[COMMERCE] OFFER (NOT yet settled): {keep} quotes {price} for the "
-              f"{obj.name}. The engine will complete the sale only if {character_id} "
-              f"confirms next (e.g. 'yes' / 'deal'). Narrate {keep} naming this price "
-              f"and awaiting an answer — do NOT complete the sale or move coin yet.",
-              f"{keep} offers the {obj.name} for {price}.")
+        if negotiate is None:
+            # Non-interactive actor: no one to confirm with, settle directly.
+            _commit_buy(obj)
+            return True
+        reply = await negotiate(
+            f'{keep}: "That\'ll be {price} for the {obj.name}. Have we a deal?"'
+        )
+        if resolve_response(reply, characters, "") == "affirm":
+            _commit_buy(obj)
+            return True
+        _emit(f"[COMMERCE] {character_id} does not take {shopkeeper}'s offer of "
+              f"{obj.name} at {price}; the offer lapses and nothing changes hands. "
+              f"Narrate only that the deal did not happen.",
+              f"{actor} leaves the {obj.name} on the counter.")
         return True
 
     # sell (single-step settle)
@@ -4651,10 +4683,6 @@ async def iter_session(
     current_positions: dict[str, tuple[float, float, str]] = _parse_positions_table(
         game_state_summary
     )
-    # Standing shop offers awaiting the buyer's yes/no, per actor id (a quote is
-    # recorded on the buy turn and completed/lapsed on the reply turn). In-memory
-    # for the scene; a lapsed quote across save/resume is acceptable.
-    pending_purchases: dict = {}
     # Fill any missing entries from the scene-resolved starting positions
     # (carried on scene_geometry.starting_positions by the loader) so
     # speed-clamping works from Turn 1 even for characters not in the
@@ -5830,16 +5858,18 @@ async def iter_session(
             # present in this scene. Runs only where there IS a shopkeeper (so it
             # costs nothing elsewhere), and only if nothing already handled the
             # intent; marks it handled so it isn't re-processed as an interaction.
+            _negotiate = _commerce_negotiator(cs, character_id)
             if (
                 adjudication.approved
                 and not use_resolver
                 and not _kit_manip_applied
                 and intent.intent
+                and _negotiate is not None
             ):
                 _shop_catalog = _driftmoor_shop_catalog()
                 _shopkeeper = _current_shopkeeper(
                     characters, active_characters, _shop_catalog)
-                if _shopkeeper is not None and _handle_commerce(
+                if _shopkeeper is not None and await _handle_commerce(
                     intent_text=intent.intent,
                     character_id=character_id,
                     characters=characters,
@@ -5851,7 +5881,7 @@ async def iter_session(
                     recent_events=recent_events,
                     shopkeeper=_shopkeeper,
                     catalog=_shop_catalog,
-                    pending_purchases=pending_purchases,
+                    negotiate=_negotiate,
                 ):
                     _kit_manip_applied = True
 
