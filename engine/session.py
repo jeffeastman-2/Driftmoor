@@ -2919,6 +2919,71 @@ def _commerce_negotiator(cs, character_id):
     return None
 
 
+def _format_unknown_word_prompt(unknowns: list) -> str:
+    """A DM line naming the words the parser did not recognise, with the nearest
+    known spelling where there is one. ``unknowns`` is diagnose()'s output:
+    a list of (word, [suggestions])."""
+    parts = []
+    for word, hints in unknowns:
+        if hints:
+            parts.append(f'"{word}" (did you mean {" or ".join(hints)}?)')
+        else:
+            parts.append(f'"{word}"')
+    listing = "; ".join(parts)
+    head = ("I don't know the word" if len(unknowns) == 1
+            else "I don't know some of those words:")
+    return (f'The Dungeon Master pauses: "{head} {listing}. '
+            f'Could you put it another way?"')
+
+
+async def _clarify_unknown_words(intent_text, *, ask, diagnose_fn, max_rounds: int = 3):
+    """In-turn sub-dialog for a human whose line uses words the lexicon doesn't
+    know: the DM names them (and near spellings) and asks for a rephrase, reading
+    the reply and re-checking, up to ``max_rounds``. Returns the refined line
+    (or the player's last line if they don't clear it, so the caller proceeds
+    with best effort). No LLM, no turn consumed.
+
+    ``diagnose_fn(text)`` must be self-contained w.r.t. the active lexicon (set
+    it internally) so no lexicon global is held across the ``await`` -- other
+    scenes may run concurrently."""
+    text = intent_text or ""
+    for _ in range(max_rounds):
+        unknowns = diagnose_fn(text)
+        if not unknowns:
+            return text
+        reply = (await ask(_format_unknown_word_prompt(unknowns)) or "").strip()
+        if not reply:
+            return text
+        text = reply
+    return text
+
+
+def _player_intent_grounds(intent_text, *, lexicon, adapter, items, characters,
+                           actor_zone, entries) -> bool:
+    """True when the engine can ground the line to *some* action -- a buy/sell of
+    a real good, or any recognized action verb (examine / take / give / attack /
+    cast / move, incl. "go to X" / "enter X").
+
+    Gates the unknown-word clarification: a line that grounds is acted on and its
+    surrounding prose narrated, never interrogated about vocabulary ("I look
+    around and ask for bolts" buys the bolts; it doesn't quibble over "look").
+    Only when nothing grounds does the clarification help. Deliberately generous
+    -- when unsure, treat as grounded so we don't nag."""
+    from engine import latn_resolver
+    from engine.latn_integration import resolve_commerce
+    try:
+        if entries and resolve_commerce(intent_text, items, characters, actor_zone, entries):
+            return True
+    except Exception:  # noqa: BLE001 - a gate must never crash the turn
+        pass
+    try:
+        if latn_resolver.resolve_actions(intent_text, lexicon=lexicon, adapter=adapter):
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    return False
+
+
 async def _handle_commerce(
     *,
     intent_text: str,
@@ -4868,6 +4933,53 @@ async def iter_session(
                 items=items,
                 current_positions=current_positions,
             )
+
+            # Parser honesty: when a human's line grounds to NO action, and it
+            # uses words the lexicon doesn't know, the DM names them (+ near
+            # spellings) and asks for a rephrase -- an in-turn sub-dialog, no LLM.
+            # Gated on grounding: a line the engine can act on (even buried in
+            # prose -- "I look around and ask for bolts") is acted on and
+            # narrated, never interrogated. The diagnostic lexicon mirrors the
+            # hooks' (scene items, characters, zones, venues, present shop goods)
+            # so real words aren't flagged. Transport-backed human players only.
+            _asker = _commerce_negotiator(cs, character_id)
+            if _asker is not None and intent.intent:
+                try:
+                    from engine.latn_integration import build_context as _dm_build_ctx
+                    from engine.latn import use_lexicon as _dm_use_lex
+                    from latn.lexer.diagnostics import diagnose as _dm_diagnose
+                    _dm_zone = (current_positions.get(character_id, (0.0, 0.0, ""))[2] or "")
+                    _dm_venues = (
+                        _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "")
+                        if scene_geometry is not None else ())
+                    _dm_cat = _driftmoor_shop_catalog()
+                    _dm_keeper = _current_shopkeeper(characters, active_characters, _dm_cat)
+                    _dm_entries = _dm_cat.entries_for(_dm_keeper) if _dm_keeper else []
+                    # items is None for an item-less scene (web_play passes
+                    # `cfg.items or None`); build_context needs a dict like every
+                    # other caller's `items or {}`.
+                    _dm_lex, _dm_adp = _dm_build_ctx(
+                        items or {}, characters or {}, _dm_zone, scene_geometry,
+                        venues=_dm_venues, catalog=_dm_entries)
+
+                    if not _player_intent_grounds(
+                        intent.intent, lexicon=_dm_lex, adapter=_dm_adp,
+                        items=items or {}, characters=characters or {},
+                        actor_zone=_dm_zone, entries=_dm_entries,
+                    ):
+                        def _dm_diag(_t, _lex=_dm_lex):
+                            with _dm_use_lex(_lex):
+                                return _dm_diagnose(_t)
+
+                        _refined = await _clarify_unknown_words(
+                            intent.intent, ask=_asker, diagnose_fn=_dm_diag)
+                        if _refined and _refined != intent.intent:
+                            intent.intent = _refined
+                            output.action = _refined
+                except Exception as _dm_err:  # noqa: BLE001 - a nicety must never crash the turn
+                    _dbg(f"[CLARIFY] skipped for {character_id}: "
+                         f"{type(_dm_err).__name__}: {_dm_err}")
+
             loop_guard_notes: list[str] = []
 
             actor_zone_before = (
