@@ -512,6 +512,20 @@ def resolve_movement_distance(intent_text: str, *, lexicon, adapter) -> Optional
         for vp in _predicate_vps(sp):
             if _vp_isa(vp, *_MOVEMENT_VERBS):
                 is_movement = True
+                # The distance may be captured as the movement VP's object NP
+                # ("move ten feet north" -> VP object NP(ten foot), carrying
+                # unit_ft + number). Read it from the VP -- this uses the richer
+                # parse rather than depending on the tokens staying loose.
+                _np = getattr(vp, "noun_phrase", None)
+                _vec = getattr(_np, "vector", None)
+                if _vec is not None:
+                    try:
+                        if _vec.isa("unit_ft"):
+                            _d = _number_from_latn_token(_vec)
+                            if _d is not None:
+                                return _d
+                    except Exception:
+                        pass
                 break
         if is_movement:
             break

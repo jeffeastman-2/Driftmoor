@@ -70,7 +70,10 @@ def resolve_commerce(intent_text, items, characters, actor_zone, catalog,
         return None
     verb, ent = res
     if ent is None:
-        return (verb, None)
+        # Verb read as commerce but the object didn't ground to a real good
+        # (e.g. "looking for the way out"): the object gate declines it rather
+        # than reporting a buy of nothing.
+        return None
     if verb == "buy":
         return ("buy", getattr(ent, "entry", None))
     return ("sell", getattr(ent, "item", None))

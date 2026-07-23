@@ -70,6 +70,16 @@ class TestGrounding:
                   "I would like to talk to the baker"):
             assert resolve_commerce(s, {}, {}, "", entries) is None, s
 
+    def test_trailing_tokens_after_object_still_ground(self):
+        # A stray token after the object -- politeness, adverb, punctuation, or a
+        # modal question wrapper -- must not block VP formation (the LATN VP-ATN
+        # after_np reduce fix), so these all still ground as a buy.
+        entries = _weapon_catalog().entries_for("jorgen")
+        for s in ("buy bolts please", "buy bolts now", "buy the bolts quickly",
+                  "buy bolts, thank you", "can I buy some bolts please"):
+            res = resolve_commerce(s, {}, {}, "", entries)
+            assert res is not None and res[0] == "buy" and res[1].catalog_id == "bolts_20", s
+
     def test_modifier_before_head_noun_grounds(self):
         # "crossbow bolts" reaches the good "Bolts (20)" via head-noun matching,
         # even though the good's name has no "crossbow".

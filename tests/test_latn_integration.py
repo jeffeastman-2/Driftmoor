@@ -115,8 +115,19 @@ def test_direction_and_feet_tokens_have_semantic_dims():
     assert north.isa("locy")
     assert "locy=1.00" in north.non_zero_dims()
 
-    # Unit may appear as a standalone token ("feet") or merged NP
-    # (e.g. "NP(ten foot)").
-    unit_tok = next((t for t in toks if t.isa("unit_ft")), None)
-    assert unit_tok is not None
-    assert "unit_ft=1.00" in unit_tok.non_zero_dims()
+    # The feet unit carries the unit_ft semantic dim. Depending on the parse it
+    # rides either a top-level token ("feet"/"NP(ten foot)") or -- now that a
+    # trailing token ("north") no longer blocks the VP -- the movement VP's
+    # object NP. Accept it wherever it lands; the semantic dim is what matters
+    # (and infer_movement_distance reads it either way).
+    def _carries_unit_ft():
+        if any(t.isa("unit_ft") for t in toks):
+            return True
+        for sp in (getattr(res, "sentence_phrases", None) or []):
+            vec = getattr(getattr(sp, "predicate", None), "noun_phrase", None)
+            vec = getattr(vec, "vector", None)
+            if vec is not None and vec.isa("unit_ft"):
+                return True
+        return False
+
+    assert _carries_unit_ft()
