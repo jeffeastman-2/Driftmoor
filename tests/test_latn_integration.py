@@ -72,6 +72,48 @@ def test_build_context_returns_lexicon_and_adapter():
     assert lexicon is not None and adapter is not None
 
 
+# --- resolve_query: LATN answers shop questions, DM gets out of the picture ---
+
+def _shop_catalog():
+    from models.thing import Thing
+    from models.shop_catalog import ShopCatalog
+    return ShopCatalog([
+        Thing(id="bolts_20", name="Bolts (20)", price="1 gp", vendor_id="jorgen"),
+    ]).entries_for("jorgen")
+
+
+def test_resolve_query_answers_yesno_for_sale():
+    # A to-be-led yes/no question, no '?' and no wh-word, is answered from the
+    # catalog by the engine -- the SQ pass grounds "your bolts" to the good.
+    entries = _shop_catalog()
+    ans = latn_integration.resolve_query(
+        "are your bolts for sale", {}, {}, "", catalog=entries)
+    assert ans is not None and "Bolts (20)" in ans and "1 gp" in ans
+
+
+def test_resolve_query_lists_catalog_for_what():
+    entries = _shop_catalog()
+    ans = latn_integration.resolve_query(
+        "what do you have for sale", {}, {}, "", catalog=entries)
+    assert ans is not None and "Bolts (20)" in ans
+
+
+def test_resolve_query_declines_non_question():
+    # A command is not a question: resolve_query returns None so the caller
+    # routes it to the action resolver, not an answer.
+    entries = _shop_catalog()
+    assert latn_integration.resolve_query(
+        "buy bolts", {}, {}, "", catalog=entries) is None
+
+
+def test_resolve_query_declines_unrouted_question():
+    # A question that isn't about the catalog returns None (-> annotated DM
+    # fallback) until geometry/self sources are routed.
+    entries = _shop_catalog()
+    assert latn_integration.resolve_query(
+        "where is the tavern", {}, {}, "", catalog=entries) is None
+
+
 def test_infer_movement_target_grounds_feature():
     # "move to the <feature>" grounds the destination item (in the directional
     # PP, not the direct object) to its position.

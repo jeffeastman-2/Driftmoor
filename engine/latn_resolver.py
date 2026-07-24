@@ -401,6 +401,52 @@ def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
     return None
 
 
+@dataclass
+class ResolvedQuery:
+    """A grounded interrogative: what was asked and what its focus refers to.
+
+    LATN says the *shape* of the question (the wh lexeme or a yes/no flag, the
+    queried focus NP and its grounded entities, and any prepositional relation);
+    the host decides how to answer from its world model -- the same
+    grounding-vs-answering split the action resolvers use."""
+
+    wh_word: Optional[str]
+    is_yesno: bool
+    focus_np: object
+    focus_entities: list        # ranked (score, entity) pairs for the focus NP
+    prepositional_phrases: list
+
+
+def resolve_query_action(intent_text: str, *, lexicon, adapter):
+    """Detect an interrogative (the parallel SQ pass) and ground its focus.
+
+    Returns a ``ResolvedQuery`` when the line parses as a question -- grounding
+    the queried focus NP through the adapter -- or ``None`` when it isn't a
+    question (SQ only fires on a wh-word or an inverted to-be, so statements and
+    commands fall through here to the normal action path)."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+    questions = getattr(result, "question_phrases", None) or []
+    if not questions:
+        return None
+    q = questions[0]
+    focus = getattr(q, "focus", None)
+    grounded = adapter.resolve_noun_phrase(focus) if focus is not None else []
+    return ResolvedQuery(
+        wh_word=getattr(q, "wh_word", None),
+        is_yesno=getattr(q, "is_yesno", False),
+        focus_np=focus,
+        focus_entities=list(grounded or []),
+        prepositional_phrases=list(getattr(q, "prepositional_phrases", None) or []),
+    )
+
+
 def resolve_response(intent_text: str, *, lexicon, adapter) -> Optional[str]:
     """Read a bare yes/no answer to an offer: ``"affirm"`` / ``"decline"`` / None,
     by testing the intent's tokens for the affirm/decline dimensions (isa), not a

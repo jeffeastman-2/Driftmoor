@@ -4406,6 +4406,7 @@ async def _player_roles_via_transport(
     actor_z: float = 0.0,
     items: Optional[dict] = None,
     current_positions: Optional[dict] = None,
+    answer_query=None,
 ) -> tuple[ActionIntent, CharacterOutput]:
     """Run player roles using transport-backed human input when configured.
 
@@ -4472,11 +4473,24 @@ async def _player_roles_via_transport(
             # Telegram's poll_once long-polls (~30s) then returns empty; web's
             # receive blocks until input. Either way, loop for the next line.
             continue
+        # Let LATN answer the question first (cheap; returns None for a
+        # non-question). The parallel SQ pass grounds shop-catalog questions --
+        # "are your bolts for sale?", "what do you have for sale?" -- and the
+        # engine answers them directly, no '?' or wh-word required and no LLM.
+        # Only a question LATN can't answer falls to the DM (annotated); a
+        # non-question returns None here and drops to the action resolver below.
+        grounded_answer = answer_query(inbound) if answer_query is not None else None
+        if grounded_answer is not None:
+            await _send(grounded_answer)
+            continue
         # A question goes to the DM, not the action resolver: answer it and keep
         # the dialog open (no cap) until the player states an actual intent.
         if _looks_like_question(inbound):
             answer = await _dm_answer(turn_cycle, context, inbound)
-            await _send(answer)
+            # Flag DM/LLM involvement: these questions are answered by the model,
+            # not LATN+the engine, so the player can see where the parser hasn't
+            # taken over yet (and where the answer may be improvised).
+            await _send(f"🎲 DM (LLM — not yet parsed by LATN): {answer}")
             continue
         intent = _intent_from_transport_text(
             character_id=context.character_id,
@@ -4923,6 +4937,25 @@ async def iter_session(
                 scene_geometry.floor_z_at(Position(_ap[0], _ap[1]))
                 if scene_geometry is not None and _ap else 0.0
             )
+            # LATN-grounded answers to a player's questions (shop catalog for
+            # now), so shop questions bypass the DM/LLM. Assembles the present
+            # shopkeeper's goods the same way the clarify block below does;
+            # returns None for non-questions and unrouted questions (which then
+            # fall to the annotated DM).
+            def _answer_query(text, _char_id=character_id):
+                try:
+                    from engine.latn_integration import resolve_query as _resolve_query
+                    _q_zone = (current_positions.get(_char_id, (0.0, 0.0, ""))[2] or "")
+                    _q_cat = _driftmoor_shop_catalog()
+                    _q_keeper = _current_shopkeeper(characters, active_characters, _q_cat)
+                    _q_entries = _q_cat.entries_for(_q_keeper) if _q_keeper else []
+                    return _resolve_query(
+                        text, items or {}, characters or {}, _q_zone,
+                        catalog=_q_entries, scene_geometry=scene_geometry)
+                except Exception as e:  # noqa: BLE001 - keep the dialog alive
+                    _dbg(f"[QUERY] resolve_query failed for {_char_id}: {e}")
+                    return None
+
             intent, output = await _player_roles_via_transport(
                 turn_cycle=turn_cycle,
                 context=context,
@@ -4932,6 +4965,7 @@ async def iter_session(
                 actor_z=_az,
                 items=items,
                 current_positions=current_positions,
+                answer_query=_answer_query,
             )
 
             # Parser honesty: when a human's line grounds to NO action, and it

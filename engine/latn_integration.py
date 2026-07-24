@@ -79,6 +79,53 @@ def resolve_commerce(intent_text, items, characters, actor_zone, catalog,
     return ("sell", getattr(ent, "item", None))
 
 
+def resolve_query(intent_text, items, characters, actor_zone, catalog,
+                  scene_geometry=None):
+    """Answer a player's question from the world model, or None.
+
+    LATN parses the interrogative and grounds its focus (``resolve_query_action``
+    over the parallel SQ pass); this host glue turns the grounded focus into an
+    answer string. Today it routes the SHOP CATALOG family -- "are your bolts for
+    sale?", "what do you have for sale?" -- so shop questions are answered by the
+    engine instead of the DM/LLM, no '?' or wh-word required. Questions that
+    aren't about the catalog (where is X, how much gold) return None, so the
+    caller falls back (annotated DM) until those sources are routed too.
+    """
+    from engine import latn_resolver
+    from models.currency import format_coins
+
+    lexicon, adapter = build_context(
+        items or {}, characters or {}, actor_zone or "", scene_geometry,
+        catalog=catalog)
+    rq = latn_resolver.resolve_query_action(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if rq is None:
+        return None
+
+    # The focus names a specific for-sale good ("are your bolts for sale?") ->
+    # confirm it and quote the listed price.
+    catalog_focus = [
+        e for _s, e in rq.focus_entities
+        if getattr(e, "kind", None) == "catalog"
+    ]
+    if catalog_focus:
+        entry = getattr(catalog_focus[0], "entry", None)
+        name = getattr(entry, "name", None) or getattr(catalog_focus[0], "name", "that")
+        price = format_coins(getattr(entry, "listed_price_cp", None))
+        return f"Yes — {name} is for sale at {price}."
+
+    # A "what (do you have/sell)" with a shop present -> list the catalog. The
+    # passed-in catalog is already the present shopkeeper's goods (empty when no
+    # keeper is here), so a non-empty list means a shop is open.
+    entries = list(catalog or [])
+    if entries and rq.wh_word == "what":
+        listed = ", ".join(
+            f"{e.name} ({format_coins(e.listed_price_cp)})" for e in entries)
+        return f"For sale: {listed}."
+
+    return None
+
+
 def resolve_response(intent_text, characters, actor_zone):
     """LATN read of a bare yes/no reply: "affirm" / "decline" / None."""
     from engine import latn_resolver
