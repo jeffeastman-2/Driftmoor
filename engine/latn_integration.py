@@ -103,12 +103,17 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
         return None
 
     # The focus names a specific for-sale good ("are your bolts for sale?") ->
-    # confirm it and quote the listed price.
+    # confirm it and quote the listed price. Only when the focus actually NAMES
+    # a thing: a subject pronoun ("what can I buy", "what do you have") has no
+    # head noun and must not be treated as a good -- otherwise "I"/"you" grounds
+    # loosely to some catalog entry and we'd answer about the wrong item instead
+    # of listing the shop.
+    focus_names_a_thing = bool((getattr(rq.focus_np, "noun", "") or "").strip())
     catalog_focus = [
         e for _s, e in rq.focus_entities
         if getattr(e, "kind", None) == "catalog"
     ]
-    if catalog_focus:
+    if catalog_focus and focus_names_a_thing:
         entry = getattr(catalog_focus[0], "entry", None)
         name = getattr(entry, "name", None) or getattr(catalog_focus[0], "name", "that")
         price = format_coins(getattr(entry, "listed_price_cp", None))

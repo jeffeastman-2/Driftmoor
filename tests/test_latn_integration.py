@@ -98,6 +98,16 @@ def test_resolve_query_lists_catalog_for_what():
     assert ans is not None and "Bolts (20)" in ans
 
 
+def test_resolve_query_what_can_i_buy_lists_catalog():
+    # The focus is the subject pronoun "I", which must NOT be mistaken for a
+    # named good (it grounds loosely to a catalog entry); a "what" shop question
+    # lists the catalog instead of answering about one wrong item.
+    entries = _shop_catalog()
+    ans = latn_integration.resolve_query(
+        "what can I buy", {}, {}, "", catalog=entries)
+    assert ans is not None and ans.startswith("For sale:") and "Bolts (20)" in ans
+
+
 def test_resolve_query_declines_non_question():
     # A command is not a question: resolve_query returns None so the caller
     # routes it to the action resolver, not an answer.
