@@ -41,7 +41,8 @@ def test_item_icon_keyword_and_fallback():
 
 
 def test_inventory_none_character_is_empty():
-    assert web_play._player_inventory(None, {}) == {"hand": [], "worn": [], "carried": []}
+    assert web_play._player_inventory(None, {}) == {
+        "hand": [], "worn": [], "carried": [], "purse": ""}
 
 
 def test_inventory_ui_keeps_in_hand_group_when_empty():
@@ -181,3 +182,29 @@ def test_inventory_container_contents_are_not_duplicated_when_held():
     inv = web_play._player_inventory(cs, items)
     labels = [c["label"] for c in inv["hand"] + inv["worn"] + inv["carried"]]
     assert labels.count("Torch") == 1
+
+
+def test_inventory_bought_item_shown_once_by_name():
+    """A bought/taken item lives in BOTH char.inventory and the pack (display vs
+    use-dispatch); it must render exactly once, labelled by its name rather than
+    the raw instance id. Regression for the duplicate 'bolts 20 i1' + 'bolts_20_i1'."""
+    from models.thing import Thing
+    bolt = Thing(id="bolts_20_i1", name="Bolts (20)")   # materialized: name set, label empty
+    cs = _cs(inventory=["bolts_20_i1"], pack=[bolt])
+    inv = web_play._player_inventory(cs, {})
+    assert [c["label"] for c in inv["carried"]] == ["Bolts (20)"]
+
+
+def test_inventory_surfaces_purse_from_character():
+    """The Coin indicator: _player_inventory reports the character's purse via
+    format_coins, empty when broke. (The panel renders it as a 🪙 chip.)"""
+    from types import SimpleNamespace as NS
+    from models.character import Character
+
+    def _pcs(purse_cp):
+        c = Character(id="p", name="Gil", race="Elf", character_type="player",
+                      purse_cp=purse_cp)
+        return NS(weapons=[], wielded=[], held_items=[], armor=None, pack=[], character=c)
+
+    assert web_play._player_inventory(_pcs(100), {})["purse"] == "1 gp"
+    assert web_play._player_inventory(_pcs(0), {})["purse"] == ""

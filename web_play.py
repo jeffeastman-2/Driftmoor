@@ -103,7 +103,7 @@ def _player_inventory(cs, items: dict | None) -> dict:
     items are in hand; armor and worn gear (by keyword) are worn; everything
     else carried — non-wielded weapons, tools, kits, picked-up scene items."""
     if cs is None:
-        return {"hand": [], "worn": [], "carried": []}
+        return {"hand": [], "worn": [], "carried": [], "purse": ""}
     char = getattr(cs, "character", None)
     weapons = list(getattr(cs, "weapons", None) or [])
     weapon_ids = {w.id for w in weapons}
@@ -121,7 +121,9 @@ def _player_inventory(cs, items: dict | None) -> dict:
         it = (items or {}).get(iid)
         if it is None:
             it = pack_by_id.get(iid)
-        label = (getattr(it, "label", "") or "").strip() or iid.replace("_", " ")
+        label = ((getattr(it, "label", "") or "").strip()
+                 or (getattr(it, "name", "") or "").strip()   # e.g. bought "Bolts (20)"
+                 or iid.replace("_", " "))
         return {"icon": _item_icon(label), "label": label}
 
     def gear_chip(text: str) -> dict:
@@ -130,7 +132,9 @@ def _player_inventory(cs, items: dict | None) -> dict:
 
     def content_chip(content_id: str, qty: int) -> dict:
         it = (items or {}).get(content_id)
-        label = (getattr(it, "label", "") or "").strip() or content_id.replace("_", " ")
+        label = ((getattr(it, "label", "") or "").strip()
+                 or (getattr(it, "name", "") or "").strip()
+                 or content_id.replace("_", " "))
         if qty > 1:
             label = f"{label} ×{qty}"
         return {"icon": _item_icon(label), "label": label}
@@ -163,9 +167,15 @@ def _player_inventory(cs, items: dict | None) -> dict:
         if chip["label"].lower() in worn_labels:
             continue
         (worn if _is_worn(entry) else carried).append(chip)
+    inv_set = set(inv)
     for prov in pack:   # food, drink, tools, wearables
         from models.thing import WORN
         if getattr(prov, "id", "") in held_set:
+            continue
+        # A bought/taken item lives in BOTH char.inventory (rendered by the `inv`
+        # loop above) and the pack (so use/eat/drink can reach it). Render it once
+        # -- skip here if the `inv` loop already showed it.
+        if getattr(prov, "id", "") in inv_set:
             continue
         parent_container_id = getattr(prov, "parent_container_id", "")
         if parent_container_id and parent_container_id not in held_set:
@@ -189,7 +199,10 @@ def _player_inventory(cs, items: dict | None) -> dict:
                 continue
             seen_content_ids.add(content_id)
             carried.append(content_chip(content_id, int(qty or 1)))
-    return {"hand": hand, "worn": worn, "carried": carried}
+    from models.currency import format_coins
+    purse_cp = getattr(char, "purse_cp", 0) or 0
+    return {"hand": hand, "worn": worn, "carried": carried,
+            "purse": format_coins(purse_cp) if purse_cp else ""}
 
 
 _NAME_TITLES = {"sister", "brother", "father", "mother", "lord", "lady",
@@ -438,6 +451,7 @@ button:disabled{opacity:.5;cursor:not-allowed;}
   background:#1a1a22;border:1px solid #3a3a44;}
 .chip.hand{border-color:#4a90d9;background:#15212e;}
 .chip.worn{border-color:#7a6a3a;background:#1e1a10;}
+.chip.coin{border-color:#c9a227;background:#211d0f;color:#f0d477;font-weight:600;}
 .chip.empty{opacity:.8;font-style:italic;}
 .chip .ic{font-size:15px;line-height:1;}
 </style></head><body>
@@ -519,7 +533,9 @@ function renderInv(m){
         if(!items && !empty && !opts.always)return '';
         return '<span class="grp"><span class="lbl">'+label+'</span>'+(items||empty)+'</span>';
     };
-    const h=grp('In hand',m.hand,'hand',{always:true,emptyText:'Nothing in hand'})
+    const coin=grp('Coin',(m.purse?[{icon:'🪙',label:m.purse}]:[]),'coin');
+    const h=coin
+        +grp('In hand',m.hand,'hand',{always:true,emptyText:'Nothing in hand'})
         +grp('Worn',m.worn,'worn')
     +grp('Carried',m.carried,'carried');  // (+ grp('Ingested',m.ingested,...) someday)
   inv.innerHTML=h||'<span class="lbl">No possessions yet</span>';
