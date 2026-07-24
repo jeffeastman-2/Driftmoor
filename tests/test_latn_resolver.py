@@ -46,6 +46,17 @@ def test_examine_resolves_authored_interaction():
     assert a.interaction and "shimmers" in a.interaction.response
 
 
+def test_consumption_verbs_ground_as_actions():
+    # "eat"/"drink" carry the consume dim, so they ground instead of being
+    # flagged as unknown (execution stays in manipulation.py). A verb without a
+    # dim ("ride") still doesn't ground.
+    pie = Item(id="meat_pie", label="meat pie", zone="GLADE")
+    lex, adapter, _ = _scene(extra_items={"meat_pie": pie})
+    assert resolve_actions("eat the meat pie", lexicon=lex, adapter=adapter)
+    assert resolve_actions("drink the potion", lexicon=lex, adapter=adapter)
+    assert not resolve_actions("ride the meat pie", lexicon=lex, adapter=adapter)
+
+
 def test_transfer_resolves_object_and_recipient():
     lex, adapter, _ = _scene()
     acts = resolve_actions("give the mace to Amara", lexicon=lex, adapter=adapter)

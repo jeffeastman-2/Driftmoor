@@ -5148,6 +5148,19 @@ async def iter_session(
                             with _dm_use_lex(_lex):
                                 return _dm_diagnose(_t)
 
+                        # Record the out-of-vocabulary words so real gaps (e.g.
+                        # "eat") accumulate for review and can be added to the
+                        # lexicon later -- no one has to remember them mid-game.
+                        _diag = _dm_diag(intent.intent)
+                        if _diag:
+                            from engine.unknown_word_log import log_unknown_words
+                            log_unknown_words(
+                                [w for w, _s in _diag],
+                                intent_text=intent.intent,
+                                scene=getattr(scene_geometry, "place_path", "") or "",
+                                suggestions={w: s for w, s in _diag if s},
+                            )
+
                         _refined = await _clarify_unknown_words(
                             intent.intent, ask=_asker, diagnose_fn=_dm_diag)
                         if _refined and _refined != intent.intent:

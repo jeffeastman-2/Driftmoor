@@ -102,6 +102,17 @@ _CURRENCY_WORDS: list[str] = [
     "silver pieces", "copper piece", "copper pieces",
 ]
 
+# Consumption verbs -> the "consume" action dim, so "eat the meat pie" / "drink
+# the potion" ground as actions (no longer flagged as unknown). The eat-vs-drink
+# split stays in engine.manipulation (state-gated on the thing); LATN just needs
+# to recognize the verbs. Mirrors manipulation.py's _EAT_RE/_DRINK_RE/_CONSUME_RE.
+_CONSUME_VERB_WORDS: list[str] = [
+    "eat", "eats", "devour", "devours", "bite", "bites", "chew", "chews",
+    "munch", "munches", "drink", "drinks", "quaff", "quaffs", "sip", "sips",
+    "gulp", "gulps", "swig", "swigs", "consume", "consumes", "swallow",
+    "swallows", "ingest", "ingests",
+]
+
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
 # bolts" for the good "Bolts (20)". Registered as bare adjectives so head-noun
@@ -203,6 +214,9 @@ def _build_rpg_layer() -> dict:
     # Money words -> nouns carrying the currency axis (wealth questions).
     for word in _CURRENCY_WORDS:
         layer[word.lower()] = _vf("noun", currency=1.0)
+    # Consumption verbs -> the consume action dim.
+    for word in _CONSUME_VERB_WORDS:
+        layer[word.lower()] = _vf("verb", consume=1.0)
     # Faction adjectives -> faction_<value> dims.
     for value, words in _FACTION_SYNONYMS:
         dim = property_dim("faction", value)

@@ -78,6 +78,10 @@ VERB_DIMS: tuple[str, ...] = (
     # Commerce -> engine/commerce.py. "buy" grounds a shop catalog entry, "sell"
     # grounds an owned Thing; both settle a coin transfer through transfer_thing.
     "buy", "sell",
+    # Consumption -> engine/manipulation.py (eat/drink split by the thing's
+    # state there). One grounding dim; naming the verb is enough for the parser
+    # to recognize "eat the meat pie" as an action instead of flagging "eat".
+    "consume",
 )
 
 # Bare conversational answers to an offer ("yes" / "no thanks"). The quote->confirm
