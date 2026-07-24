@@ -209,3 +209,23 @@ def test_armor_class_natural_plus_dex_armor_replaces_shield_adds():
     assert armor_class(NS(natural_ac=10, dexterity=20), chain, []) == 16
     assert armor_class(NS(natural_ac=10, dexterity=20), chain, [shield]) == 18
     assert armor_class(NS(natural_ac=10, dexterity=16), leather, []) == 14    # light: 11 + DEX(+3)
+
+
+def test_md_loader_reads_purse_from_identity():
+    """Regression: the md_loader path (configure_from_md -> _build_player_or_npc,
+    what web_play uses) must set purse_cp from the identity's "- **Purse:** N gp"
+    line. It previously defaulted to 0, so md-loaded players couldn't afford
+    anything (a 1 gp purchase failed with cannot_afford). Tracks the fixture's
+    own value so it survives Gil's authored wealth changing."""
+    from engine.md_loader import _build_player_or_npc
+    from models.character_loader import _parse_purse
+
+    ident = "scenario/people/players/gilthaness/IDENTITY.md"
+    expected = _parse_purse(Path(ident).read_text())
+    assert expected > 0, "fixture must carry a Purse line to test against"
+
+    cs = _build_player_or_npc(
+        "gilthaness", {"identity_file": ident, "type": "player"},
+        {"gilthaness": "Gil steps in."})
+    assert cs.character.purse_cp == expected
+    assert cs.character.can_afford(100)   # 1 gp

@@ -834,6 +834,11 @@ def _build_player_or_npc(
     char_type = cfg.get("type", "player")
     faction = cfg.get("faction", "party")
     name = cfg.get("name", s["name"]) or char_id
+    # Starting coin from the identity's "- **Purse:** N gp" line. Without this,
+    # md-loaded characters default to 0 cp and can't afford anything (the other
+    # loader, character_loader.load_player_character, already reads it).
+    from models.character_loader import _parse_purse
+    purse_cp = _parse_purse(identity_text)
 
     if char_type == "player":
         character = PlayerCharacter(
@@ -854,6 +859,7 @@ def _build_player_or_npc(
             intelligence=s["intelligence"],
             wisdom=s["wisdom"],
             charisma=s["charisma"],
+            purse_cp=purse_cp,
         )
     else:
         character = NPC(
@@ -873,6 +879,7 @@ def _build_player_or_npc(
             intelligence=s["intelligence"],
             wisdom=s["wisdom"],
             charisma=s["charisma"],
+            purse_cp=purse_cp,
         )
 
     soul = ""
