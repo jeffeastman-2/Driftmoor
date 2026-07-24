@@ -85,6 +85,11 @@ VERB_DIMS: tuple[str, ...] = (
 # yes/no string match.
 RESPONSE_DIMS: tuple[str, ...] = ("affirm", "decline")
 
+# Money words (gold/coin/silver/…) carry a ``currency`` axis so a self-question
+# about wealth ("how much gold do I have") routes to the purse via isa, not a
+# word list in the resolver.
+CURRENCY_DIMS: tuple[str, ...] = ("currency",)
+
 # World-axis direction semantics for adverbial movement words (north/east/etc.)
 # and explicit linear-distance units (ft/feet/foot).
 SPATIAL_DIMS: tuple[str, ...] = (
@@ -174,7 +179,7 @@ def driftmoor_rpg_dimensions(characters: Iterable = ()) -> list[str]:
     appends by name), so order is purely cosmetic.
     """
     static = (list(VERB_DIMS) + list(SPATIAL_DIMS) + list(RESPONSE_DIMS)
-              + _namespaced("faction", FACTION_VALUES))
+              + list(CURRENCY_DIMS) + _namespaced("faction", FACTION_VALUES))
     derived = derive_character_property_dims(characters)
     seen: set[str] = set()
     out: list[str] = []

@@ -10,6 +10,7 @@ import pytest
 
 from engine.latn_dimensions import (
     RESPONSE_DIMS,
+    CURRENCY_DIMS,
     FACTION_VALUES,
     SPATIAL_DIMS,
     VERB_DIMS,
@@ -68,6 +69,7 @@ def test_empty_characters_yields_only_static():
         set(VERB_DIMS)
         | set(SPATIAL_DIMS)
         | set(RESPONSE_DIMS)
+        | set(CURRENCY_DIMS)
         | {f"faction_{f}" for f in FACTION_VALUES}
     )
 

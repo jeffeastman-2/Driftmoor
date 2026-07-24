@@ -447,6 +447,44 @@ def resolve_query_action(intent_text: str, *, lexicon, adapter):
     )
 
 
+def resolve_self_query(intent_text: str, *, lexicon, adapter) -> Optional[str]:
+    """Classify a first-person question about the speaker's own state.
+
+    Returns ``"wealth"`` (a currency word is present -- "how much gold do I
+    have"), ``"possessions"`` (first-person but no currency -- "what am I
+    carrying", "what do I have"), or ``None`` when it isn't a first-person
+    question. Both signals are read as vector dimensions (``first_person`` on the
+    pronoun, ``currency`` on the money word) off the atomic Layer-1 tokens, not a
+    word list -- the host answers from the speaker's character."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+        # Atomic (per-word) tokens carry the first_person/currency dims before
+        # NP/VP composition folds them into a phrase vector.
+        atoms = executor.execute_layer1(intent_text or "")
+    if not (getattr(result, "question_phrases", None) or []):
+        return None  # not a question
+    tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
+    if not any(_isa(t, "first_person") for t in tokens):
+        return None  # about someone/something else, not the speaker
+    # A first-person PURCHASE question ("what can I buy") is about the shop's
+    # stock, not the speaker -- defer it to the catalog resolver. Selling is
+    # about the speaker's own goods, so it stays here.
+    if (any(_isa(t, "buy") for t in tokens)
+            and not any(_isa(t, "sell") for t in tokens)):
+        return None
+    return "wealth" if any(_isa(t, "currency") for t in tokens) else "possessions"
+
+
+def _isa(tok, dim) -> bool:
+    return tok is not None and tok.isa(dim)
+
+
 def resolve_response(intent_text: str, *, lexicon, adapter) -> Optional[str]:
     """Read a bare yes/no answer to an offer: ``"affirm"`` / ``"decline"`` / None,
     by testing the intent's tokens for the affirm/decline dimensions (isa), not a

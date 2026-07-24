@@ -2696,3 +2696,56 @@ class TestWhereQuestion:
         assert _answer_where_question(
             "enter the tavern", characters=cfg.characters, actor_zone="",
             scene_geometry=sg, venues=venues, player_xy=(900.0, 400.0)) is None
+
+
+class TestSelfQuestion:
+    """LATN answers first-person questions about the speaker, no DM/LLM."""
+
+    def _player(self):
+        from engine.md_loader import configure_from_md
+        cfg = configure_from_md(Path("scenes/driftmoor.md"))
+        pid = next(c for c, cs in cfg.characters.items()
+                   if getattr(getattr(cs, "character", None), "character_type", "") == "player")
+        return cfg, cfg.characters[pid]
+
+    def test_wealth_question_reports_purse(self):
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        ans = _answer_self_question(
+            "how much gold do I have", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
+        assert ans is not None and "purse" in ans.lower()
+        # gilthaness carries 5000 gp (500000 cp).
+        assert "5000 gp" in ans
+
+    def test_possessions_question_lists_carry(self):
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        ans = _answer_self_question(
+            "what am I carrying", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
+        assert ans is not None and ans.startswith("You are carrying:")
+
+    def test_sell_question_is_about_own_goods(self):
+        # "what can I sell" is about the speaker's inventory, not the shop.
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        ans = _answer_self_question(
+            "what can I sell", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
+        assert ans is not None and ans.startswith("You are carrying:")
+
+    def test_purchase_question_defers_to_catalog(self):
+        # "what can I buy" is about the shop -> self-answer declines (None).
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        assert _answer_self_question(
+            "what can I buy", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items) is None
+
+    def test_third_person_question_is_not_self(self):
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        assert _answer_self_question(
+            "what do you have for sale", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items) is None

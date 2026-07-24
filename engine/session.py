@@ -1979,6 +1979,65 @@ def _answer_where_question(
             f"about {dist:.0f} ft away.")
 
 
+def _character_possessions(cs, items) -> list[str]:
+    """De-duplicated human-readable list of what a character is carrying --
+    weapons, pack goods (food/tools/wearables), and picked-up scene items."""
+    char = getattr(cs, "character", None)
+    labels: list[str] = []
+    seen: set[str] = set()
+
+    def _add(text) -> None:
+        label = (text or "").strip()
+        key = label.lower()
+        if label and key not in seen:
+            seen.add(key)
+            labels.append(label)
+
+    for weapon in (getattr(cs, "weapons", None) or []):
+        _add(getattr(weapon, "name", ""))
+    for prov in (getattr(cs, "pack", None) or []):
+        _add(getattr(prov, "label", None) or getattr(prov, "id", ""))
+    for iid in (getattr(char, "inventory", None) or []):
+        it = (items or {}).get(iid)
+        _add((getattr(it, "label", "") or getattr(it, "name", "")
+              or str(iid).replace("_", " ")))
+    return labels
+
+
+def _answer_self_question(
+    intent_text: str,
+    *,
+    cs,
+    characters: dict,
+    actor_zone: str,
+    scene_geometry,
+    items,
+) -> Optional[str]:
+    """Answer a first-person question about the speaker -- wealth or possessions
+    -- from their own character, or None. LATN classifies the question (currency
+    vs possession, deferring purchase questions to the catalog); the answer is
+    read straight off the CharacterSession, no DM/LLM."""
+    if cs is None:
+        return None
+    from engine.latn_integration import build_context
+    from engine import latn_resolver
+    from models.currency import format_coins
+    lexicon, adapter = build_context(
+        items or {}, characters or {}, actor_zone or "", scene_geometry)
+    kind = latn_resolver.resolve_self_query(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if kind is None:
+        return None
+    char = getattr(cs, "character", None)
+    purse = format_coins(getattr(char, "purse_cp", 0) or 0)
+    if kind == "wealth":
+        return f"You have {purse} in your purse."
+    goods = _character_possessions(cs, items)
+    if goods:
+        return f"You are carrying: {', '.join(goods)}. Your purse holds {purse}."
+    return f"You aren't carrying anything. Your purse holds {purse}."
+
+
 _COORD_DEST_RE = re.compile(
     r"[\[(]\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*[\])]"
 )
@@ -5004,10 +5063,20 @@ async def iter_session(
             # shopkeeper's goods the same way the clarify block below does;
             # returns None for non-questions and unrouted questions (which then
             # fall to the annotated DM).
-            def _answer_query(text, _char_id=character_id):
+            def _answer_query(text, _char_id=character_id, _cs=cs):
                 try:
                     from engine.latn_integration import resolve_query as _resolve_query
                     _q_zone = (current_positions.get(_char_id, (0.0, 0.0, ""))[2] or "")
+                    # 1) A first-person question about yourself -- "how much gold
+                    # do I have", "what am I carrying", "what can I sell".
+                    ans = _answer_self_question(
+                        text, cs=_cs, characters=characters or {},
+                        actor_zone=_q_zone, scene_geometry=scene_geometry,
+                        items=items)
+                    if ans is not None:
+                        return ans
+                    # 2) A shop-catalog question -- "what can I buy", "are your
+                    # bolts for sale". (Purchase questions were deferred here.)
                     _q_cat = _driftmoor_shop_catalog()
                     _q_keeper = _current_shopkeeper(characters, active_characters, _q_cat)
                     _q_entries = _q_cat.entries_for(_q_keeper) if _q_keeper else []
@@ -5016,8 +5085,8 @@ async def iter_session(
                         catalog=_q_entries, scene_geometry=scene_geometry)
                     if ans is not None:
                         return ans
-                    # Geography: "where is <venue>?" -> bearing + distance to its
-                    # door, answered by the engine instead of the DM.
+                    # 3) Geography: "where is <venue>?" -> bearing + distance to
+                    # its door, answered by the engine instead of the DM.
                     _pos = current_positions.get(_char_id)
                     _venues = (
                         _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "")

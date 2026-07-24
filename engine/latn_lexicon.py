@@ -92,6 +92,16 @@ _DECLINE_WORDS: list[str] = [
     "forget it", "no thanks", "not now", "no thank you",
 ]
 
+# Money words carry a ``currency`` axis so a wealth question ("how much gold do
+# I have") routes to the purse via isa. Bare "silver"/"copper" are omitted --
+# they're item-material modifiers (a silver rope, a copper key); the unambiguous
+# coin phrasings ("silver pieces", "sp") carry the axis instead.
+_CURRENCY_WORDS: list[str] = [
+    "gold", "money", "coin", "coins", "currency", "wealth", "cash",
+    "gp", "sp", "cp", "gold piece", "gold pieces", "silver piece",
+    "silver pieces", "copper piece", "copper pieces",
+]
+
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
 # bolts" for the good "Bolts (20)". Registered as bare adjectives so head-noun
@@ -190,6 +200,9 @@ def _build_rpg_layer() -> dict:
         layer[word.lower()] = _vf("adv", affirm=1.0)
     for word in _DECLINE_WORDS:
         layer[word.lower()] = _vf("adv", decline=1.0)
+    # Money words -> nouns carrying the currency axis (wealth questions).
+    for word in _CURRENCY_WORDS:
+        layer[word.lower()] = _vf("noun", currency=1.0)
     # Faction adjectives -> faction_<value> dims.
     for value, words in _FACTION_SYNONYMS:
         dim = property_dim("faction", value)
