@@ -1916,6 +1916,68 @@ _CARDINAL_VECTORS: dict[str, tuple[float, float]] = {
     "southwest": (-_DIAG, -_DIAG), "sw": (-_DIAG, -_DIAG),
 }
 
+_COMPASS_LABELS = ("east", "northeast", "north", "northwest",
+                   "west", "southwest", "south", "southeast")
+
+
+def _compass_label(dx: float, dy: float) -> str:
+    """8-point compass word for a world-space delta (+y north, +x east)."""
+    import math
+    return _COMPASS_LABELS[round(math.degrees(math.atan2(dy, dx)) / 45) % 8]
+
+
+def _answer_where_question(
+    intent_text: str,
+    *,
+    characters: dict,
+    actor_zone: str,
+    scene_geometry,
+    venues,
+    player_xy,
+) -> Optional[str]:
+    """Answer "where is <venue>?" from geometry, or None.
+
+    LATN's SQ pass grounds the queried focus to an enterable venue; this reports
+    that venue's authored doorway as a bearing + distance from the player. Only a
+    ``where`` question that grounds a venue with a known door and a known player
+    position is answered -- otherwise None, and the caller falls back to the
+    annotated DM. (Landmark/zone focuses aren't grounded yet -- a later slice.)
+    """
+    if player_xy is None or scene_geometry is None:
+        return None
+    from engine.latn_integration import build_context
+    from engine import latn_resolver
+    lexicon, adapter = build_context(
+        {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
+    rq = latn_resolver.resolve_query_action(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if rq is None or rq.wh_word != "where":
+        return None
+    venue_ents = [
+        e for _s, e in rq.focus_entities if getattr(e, "kind", None) == "venue"
+    ]
+    if not venue_ents:
+        return None
+    # scene_name matches the doorway's child identifier (both the place's dir
+    # segment), so a direct lookup gives the front-door coordinates.
+    doorways = {
+        child: (x, y)
+        for child, _conn, x, y in _driftmoor_source_doorways(
+            getattr(scene_geometry, "place_path", "") or "")
+    }
+    ent = venue_ents[0]
+    pos = doorways.get(ent.scene_name)
+    if pos is None:
+        return None
+    label = (ent.aliases[0] if getattr(ent, "aliases", None)
+             else ent.scene_name.replace("_", " ")).title()
+    dx, dy = pos[0] - player_xy[0], pos[1] - player_xy[1]
+    dist = (dx * dx + dy * dy) ** 0.5
+    if dist < 10.0:
+        return f"The {label} is right here."
+    return (f"The {label} is to the {_compass_label(dx, dy)}, "
+            f"about {dist:.0f} ft away.")
+
 
 _COORD_DEST_RE = re.compile(
     r"[\[(]\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*[\])]"
@@ -4949,9 +5011,21 @@ async def iter_session(
                     _q_cat = _driftmoor_shop_catalog()
                     _q_keeper = _current_shopkeeper(characters, active_characters, _q_cat)
                     _q_entries = _q_cat.entries_for(_q_keeper) if _q_keeper else []
-                    return _resolve_query(
+                    ans = _resolve_query(
                         text, items or {}, characters or {}, _q_zone,
                         catalog=_q_entries, scene_geometry=scene_geometry)
+                    if ans is not None:
+                        return ans
+                    # Geography: "where is <venue>?" -> bearing + distance to its
+                    # door, answered by the engine instead of the DM.
+                    _pos = current_positions.get(_char_id)
+                    _venues = (
+                        _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "")
+                        if scene_geometry is not None else ())
+                    return _answer_where_question(
+                        text, characters=characters or {}, actor_zone=_q_zone,
+                        scene_geometry=scene_geometry, venues=_venues,
+                        player_xy=((_pos[0], _pos[1]) if _pos else None))
                 except Exception as e:  # noqa: BLE001 - keep the dialog alive
                     _dbg(f"[QUERY] resolve_query failed for {_char_id}: {e}")
                     return None

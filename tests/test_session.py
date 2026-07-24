@@ -2653,3 +2653,46 @@ class TestResolveTeleportDestination:
         assert geo.zone_at(Position(x, y)) == "Echo Chamber"
 
 
+
+
+class TestWhereQuestion:
+    """LATN answers "where is <venue>?" from geometry, no DM/LLM."""
+
+    def test_compass_label_conventions(self):
+        # +y is north, +x is east (map orientation).
+        from engine.session import _compass_label
+        assert _compass_label(0, 1) == "north"
+        assert _compass_label(1, 0) == "east"
+        assert _compass_label(0, -1) == "south"
+        assert _compass_label(-1, 0) == "west"
+        assert _compass_label(1, 1) == "northeast"
+        assert _compass_label(-1, -1) == "southwest"
+
+    def test_where_is_venue_reports_bearing_and_distance(self):
+        from engine.session import (
+            _answer_where_question, _driftmoor_child_venues,
+        )
+        from engine.md_loader import configure_from_md
+        cfg = configure_from_md(Path("scenes/driftmoor.md"))
+        sg = cfg.scene_geometry
+        venues = _driftmoor_child_venues(getattr(sg, "place_path", "") or "")
+        ans = _answer_where_question(
+            "where is the tavern", characters=cfg.characters, actor_zone="",
+            scene_geometry=sg, venues=venues, player_xy=(900.0, 400.0))
+        assert ans is not None
+        assert "Broken Lantern" in ans and "ft away" in ans
+        # north of the player (tavern door y=568 > player y=400).
+        assert "north" in ans
+
+    def test_where_question_declines_non_where(self):
+        from engine.session import (
+            _answer_where_question, _driftmoor_child_venues,
+        )
+        from engine.md_loader import configure_from_md
+        cfg = configure_from_md(Path("scenes/driftmoor.md"))
+        sg = cfg.scene_geometry
+        venues = _driftmoor_child_venues(getattr(sg, "place_path", "") or "")
+        # A command, not a where-question -> None (routes to the action path).
+        assert _answer_where_question(
+            "enter the tavern", characters=cfg.characters, actor_zone="",
+            scene_geometry=sg, venues=venues, player_xy=(900.0, 400.0)) is None
