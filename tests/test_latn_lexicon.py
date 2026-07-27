@@ -64,3 +64,22 @@ def test_lexicon_tokenizes_actions_recipients_and_descriptors():
 
     # function base still present (prepositions/determiners reused from Engraf)
     assert _tok_map(lex, "examine the shimmering patch")["the"].isa("det")
+
+
+def test_inflected_verbs_derive_from_base_forms():
+    # The vocab lists carry base forms only; LATN's layer-1 morphology grounds
+    # the inflections, so "enters"/"buys"/"coins" inherit their roots' dims.
+    # Guards against re-adding the redundant -s/-ing entries that were swept.
+    pytest.importorskip("latn.lexer.vector_space")
+    from engine.latn_lexicon import build_driftmoor_lexicon
+    lex = build_driftmoor_lexicon([], [])
+
+    def has(sentence, *dims):
+        toks = _tok_map(lex, sentence).values()
+        return any(all(t.isa(d) for d in dims) for t in toks)
+
+    assert has("she enters the tavern", "move", "enter")   # <- "enter"
+    assert has("he leaves the shop", "move", "leave")      # kept (leaf plural)
+    assert has("the guard buys bolts", "buy")              # <- "buy"
+    assert has("she wants a dagger", "buy")                # <- "want"
+    assert has("how much coins do I have", "currency")     # <- "coin"

@@ -62,9 +62,11 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     # ground as a purchase ONLY when the object is one of the shopkeeper's
     # catalog goods (the object gate) — "I want to leave" / "looking for the
     # mayor" stay None rather than misfiring. Multi-word forms are <=3 tokens.
-    ("buy", ["buy", "buys", "purchase", "purchases", "pay for",
-             "want", "wants", "need", "needs", "looking for", "would like"]),
-    ("sell", ["sell", "sells", "vend", "offload", "hawk", "pawn"]),
+    # Base forms only; morphology derives buys/wants/needs. "purchases" stays --
+    # it doesn't reduce to "purchase" via the inflector.
+    ("buy", ["buy", "purchase", "purchases", "pay for",
+             "want", "need", "looking for", "would like"]),
+    ("sell", ["sell", "vend", "offload", "hawk", "pawn"]),
 ]
 
 # Threshold-crossing verbs. Registered with a dual "move enter"/"move leave"
@@ -73,13 +75,18 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
 # Multi-word forms stay <=3 tokens (the tokenizer's compound limit). "go"/"walk"
 # alone remain plain movement, so "go to the tavern" walks to the door while
 # "go inside the tavern" crosses in.
+# Base (uninflected) forms only where LATN morphology derives the rest: a
+# single-word -s/-ing form resolves to its root and inherits its dims, so
+# "enters"/"entering"/"visits" ground move+enter from "enter"/"visit". Multi-word
+# compounds ("goes inside") aren't single-word-reducible, so they stay. "leaves"
+# stays too -- morphology reads it as the plural of "leaf", not the verb "leave".
 _ENTER_VERB_WORDS: list[str] = [
-    "enter", "enters", "entering", "go inside", "go in", "goes inside",
+    "enter", "go inside", "go in", "goes inside",
     "step inside", "steps inside", "walk inside", "head inside", "duck inside",
-    "venture inside", "visit", "visits", "visiting",
+    "venture inside", "visit",
 ]
 _LEAVE_VERB_WORDS: list[str] = [
-    "leave", "leaves", "leaving", "exit", "exits", "exiting", "go outside",
+    "leave", "leaves", "exit", "go outside",
     "goes outside", "go out", "head out", "step outside", "walk out",
 ]
 
@@ -98,7 +105,7 @@ _DECLINE_WORDS: list[str] = [
 # they're item-material modifiers (a silver rope, a copper key); the unambiguous
 # coin phrasings ("silver pieces", "sp") carry the axis instead.
 _CURRENCY_WORDS: list[str] = [
-    "gold", "money", "coin", "coins", "currency", "wealth", "cash",
+    "gold", "money", "coin", "currency", "wealth", "cash",
     "gp", "sp", "cp", "gold piece", "gold pieces", "silver piece",
     "silver pieces", "copper piece", "copper pieces",
 ]
