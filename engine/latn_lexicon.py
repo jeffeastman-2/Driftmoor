@@ -106,12 +106,14 @@ _CURRENCY_WORDS: list[str] = [
 # Consumption verbs -> the "consume" action dim, so "eat the meat pie" / "drink
 # the potion" ground as actions (no longer flagged as unknown). The eat-vs-drink
 # split stays in engine.manipulation (state-gated on the thing); LATN just needs
-# to recognize the verbs. Mirrors manipulation.py's _EAT_RE/_DRINK_RE/_CONSUME_RE.
+# to recognize the verbs. Base forms ONLY: LATN's layer-1 morphology derives the
+# inflections ("eats"/"drinks"/"quaffs" resolve to their root and inherit its
+# consume dim), so listing the -s forms would be redundant. (Note LATN does not
+# enforce subject-verb agreement -- "I eats the cake" grounds the same as "I eat
+# the cake" -- which is what we want from a permissive intent parser.)
 _CONSUME_VERB_WORDS: list[str] = [
-    "eat", "eats", "devour", "devours", "bite", "bites", "chew", "chews",
-    "munch", "munches", "drink", "drinks", "quaff", "quaffs", "sip", "sips",
-    "gulp", "gulps", "swig", "swigs", "consume", "consumes", "swallow",
-    "swallows", "ingest", "ingests",
+    "eat", "devour", "bite", "chew", "munch", "drink", "quaff", "sip",
+    "gulp", "swig", "consume", "swallow", "ingest",
 ]
 
 # Common item modifiers (material/type adjectives) that appear in natural

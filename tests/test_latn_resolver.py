@@ -71,6 +71,10 @@ def test_consumption_verbs_ground_as_actions():
     assert resolve_actions("eat the meat pie", lexicon=lex, adapter=adapter)
     assert resolve_actions("drink the potion", lexicon=lex, adapter=adapter)
     assert not resolve_actions("ride the meat pie", lexicon=lex, adapter=adapter)
+    # Only base forms are registered; LATN morphology derives the inflections,
+    # so an -s form still grounds (guards against re-adding redundant -s entries).
+    assert resolve_actions("eats the meat pie", lexicon=lex, adapter=adapter)
+    assert resolve_actions("she quaffs the potion", lexicon=lex, adapter=adapter)
 
 
 def test_transfer_resolves_object_and_recipient():
