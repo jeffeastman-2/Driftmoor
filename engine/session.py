@@ -3896,31 +3896,17 @@ async def _host_read_text(host: str, path: str, *, min_mtime_ns: int = 0) -> str
     )
 
 
-_DRAW_VERB_RE = re.compile(
-    r'\b(draw|draws|ready|readies|wield|wields|unsheath\w*|equip\w*|brandish\w*'
-    r'|get|gets|hold|holds|pull out|pulls out|produce|produces)\b',
-    re.IGNORECASE,
-)
-_SHEATHE_VERB_RE = re.compile(
-    r'\b(sheath\w*|stow\w*|holster\w*|put away|puts away|put down)\b',
-    re.IGNORECASE,
-)
-_ATTACK_VERB_RE = re.compile(
-    r'\b(attack|strike|stab|slash|hit|shoot|fire|swing|lunge|thrust|loose)\b',
-    re.IGNORECASE,
-)
-
-
 def _apply_loadout_intent(intent_text: str, cs: "CharacterSession",
                           log: list[str]) -> None:
     """Apply draw/sheathe manipulations named in the intent and auto-draw the
     weapon the actor says they're attacking with, mutating ``cs.wielded``.
 
     Focused clause parser (split on commas / and / then) so "I sheathe my
-    dagger, draw my crossbow and attack the spider" works in one turn; Phase 2c
-    replaces this with LATN multi-action parsing plus a reword on failure.
+    dagger, draw my crossbow and attack the spider" works in one turn; the verb
+    of each clause is read via LATN dims (draw/hold/sheathe/stow/attack), not a
+    regex. Phase 2c replaces this with LATN multi-action parsing plus a reword.
     """
-    from engine import loadout
+    from engine import loadout, latn_resolver
     from engine.combat_resolver import _weapon_name_tokens
     weapons = getattr(cs, "weapons", None) or []
     _GENERIC_TAGS = {
@@ -3951,18 +3937,25 @@ def _apply_loadout_intent(intent_text: str, cs: "CharacterSession",
 
     clauses = re.split(r'\s*(?:,|\band\b|\bthen\b)\s*', intent_text or "",
                        flags=re.IGNORECASE)
-    for clause in clauses:
-        if _SHEATHE_VERB_RE.search(clause):
+    # Read each clause's verb signal once (draw/hold=draw a weapon; sheathe/stow=
+    # sheathe it; attack=auto-draw the attacked-with weapon).
+    clause_verbs = [
+        (c, latn_resolver.intent_action_dims(
+            c, ("draw", "hold", "sheathe", "stow", "attack")))
+        for c in clauses
+    ]
+    for clause, verbs in clause_verbs:
+        if verbs & {"sheathe", "stow"}:
             w = _named(clause, prefer_wielded=True)
             if w is not None:
                 loadout.sheathe(cs, w, log)
-        elif _DRAW_VERB_RE.search(clause):
+        elif verbs & {"draw", "hold"}:
             w = _named(clause)
             if w is not None:
                 loadout.draw(cs, w, log)
     # Auto-draw a weapon named in the attack clause ("attack with my dagger").
-    for clause in clauses:
-        if _ATTACK_VERB_RE.search(clause):
+    for clause, verbs in clause_verbs:
+        if "attack" in verbs:
             w = _named(clause)
             if w is not None and not loadout.is_wielding(cs, w):
                 loadout.draw(cs, w, log)

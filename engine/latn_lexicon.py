@@ -47,8 +47,8 @@ from engine.latn_dimensions import (
 # are not duplicated here. Spell/target names ride NPs, not these.
 _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("attack", ["attack", "strike", "hit", "swing", "swing at", "slash",
-                "stab", "shoot", "fire", "fire at", "loose", "lunge", "lunge at",
-                "charge", "aim"]),
+                "stab", "thrust", "shoot", "fire", "fire at", "loose", "lunge",
+                "lunge at", "charge", "aim"]),
     ("cast", ["cast", "invoke", "channel"]),
     ("move", ["move", "go", "walk", "approach", "advance", "step", "head",
               "follow", "continue", "proceed", "return", "climb"]),
@@ -110,17 +110,31 @@ _CURRENCY_WORDS: list[str] = [
     "silver pieces", "copper piece", "copper pieces",
 ]
 
-# Consumption verbs -> the "consume" action dim, so "eat the meat pie" / "drink
-# the potion" ground as actions (no longer flagged as unknown). The eat-vs-drink
-# split stays in engine.manipulation (state-gated on the thing); LATN just needs
-# to recognize the verbs. Base forms ONLY: LATN's layer-1 morphology derives the
-# inflections ("eats"/"drinks"/"quaffs" resolve to their root and inherit its
-# consume dim), so listing the -s forms would be redundant. (Note LATN does not
-# enforce subject-verb agreement -- "I eats the cake" grounds the same as "I eat
-# the cake" -- which is what we want from a permissive intent parser.)
-_CONSUME_VERB_WORDS: list[str] = [
-    "eat", "devour", "bite", "chew", "munch", "drink", "quaff", "sip",
-    "gulp", "swig", "consume", "swallow", "ingest",
+# Consumption verbs, split by which state they apply to so engine.manipulation
+# can refuse a mismatch ("drink the bread"): eat-words -> solids, drink-words ->
+# liquids, generic consume/swallow/ingest -> whichever the thing affords. Base
+# forms ONLY: LATN's layer-1 morphology derives the inflections ("eats"/"drinks"/
+# "quaffs" resolve to their root and inherit its dim). (LATN does not enforce
+# subject-verb agreement -- "I eats the cake" grounds the same as "I eat" -- as
+# a permissive intent parser should.)
+_CONSUME_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
+    ("eat", ["eat", "devour", "bite", "chew", "munch"]),
+    ("drink", ["drink", "quaff", "sip", "gulp", "swig"]),
+    ("consume", ["consume", "swallow", "ingest"]),
+]
+
+# Kit-manipulation verb signals -> engine.manipulation.classify_verb picks the
+# engine verb from the target's affordances (draw/hold on a weapon vs a pack,
+# etc.). Base forms only (morphology derives inflections). The transfer verbs
+# drop/stow/take stay in _TRANSFER_LEXICON -- classify_verb reads those too, so
+# "put away"/"put down"/"pick up" aren't duplicated here. ("draw" = weapon-ready:
+# draw/wield/unsheathe/brandish; "hold" = generic take-in-hand: get/hold/carry.)
+_KIT_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
+    ("draw", ["draw", "wield", "unsheathe", "brandish"]),
+    ("hold", ["get", "hold", "carry", "pull out", "produce"]),
+    ("sheathe", ["sheathe", "holster"]),
+    ("wear", ["wear", "don", "put on", "equip"]),
+    ("remove", ["remove", "take off", "doff", "unequip"]),
 ]
 
 # Common item modifiers (material/type adjectives) that appear in natural
@@ -224,9 +238,14 @@ def _build_rpg_layer() -> dict:
     # Money words -> nouns carrying the currency axis (wealth questions).
     for word in _CURRENCY_WORDS:
         layer[word.lower()] = _vf("noun", currency=1.0)
-    # Consumption verbs -> the consume action dim.
-    for word in _CONSUME_VERB_WORDS:
-        layer[word.lower()] = _vf("verb", consume=1.0)
+    # Consumption verbs -> eat/drink/consume dims (state-gated in manipulation).
+    for canonical, words in _CONSUME_VERB_SYNONYMS:
+        for word in words:
+            layer[word.lower()] = _vf("verb", **{canonical: 1.0})
+    # Kit-manipulation verb signals -> their dims.
+    for canonical, words in _KIT_VERB_SYNONYMS:
+        for word in words:
+            layer[word.lower()] = _vf("verb", **{canonical: 1.0})
     # Faction adjectives -> faction_<value> dims.
     for value, words in _FACTION_SYNONYMS:
         dim = property_dim("faction", value)

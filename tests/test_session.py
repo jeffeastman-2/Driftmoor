@@ -1026,12 +1026,14 @@ class TestDrawKitWeapon:
         return NS(character=NS(name="Gil", hands=2), weapons=[rapier, dagger],
                   wielded=[], held_items=[])
 
-    def test_draw_verb_re_matches_get_and_unsheathe(self):
-        from engine.session import _DRAW_VERB_RE
+    def test_draw_verbs_ground_via_latn(self):
+        # The loadout draw-verb detection is LATN-grounded (draw/hold dims), not
+        # a regex; the vocabulary lives in the lexicon.
+        from engine.latn_resolver import intent_action_dims
         for phrase in ("get my dagger", "unsheathe the dagger", "hold my dagger",
                        "draw my rapier", "pull out my dagger"):
-            assert _DRAW_VERB_RE.search(phrase), phrase
-        assert not _DRAW_VERB_RE.search("I walk south")
+            assert intent_action_dims(phrase, ("draw", "hold")), phrase
+        assert not intent_action_dims("I walk south", ("draw", "hold"))
 
     def test_unsheathe_named_weapon_wields_it(self):
         from engine.session import _apply_loadout_intent

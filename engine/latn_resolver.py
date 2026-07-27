@@ -220,6 +220,24 @@ def intent_has_action(intent_text: str, *dims: str, lexicon=None) -> bool:
     return any(any(_isa(t, d) for d in dims) for t in tokens)
 
 
+def intent_action_dims(intent_text: str, dims, lexicon=None) -> set:
+    """The subset of ``dims`` that a verb in the intent carries (one tokenize).
+
+    Same LATN-first idea as ``intent_has_action`` but returns which dims are
+    present, so a caller testing several verb signals (e.g. classify_verb's
+    draw/hold/sheathe/wear/remove) tokenizes once instead of per dim."""
+    dims = tuple(dims)
+    if not (intent_text or "").strip() or not dims:
+        return set()
+    from engine.latn import LATNLayerExecutor, use_lexicon
+    lex = lexicon if lexicon is not None else _default_action_lexicon()
+    executor = LATNLayerExecutor()
+    with use_lexicon(lex):
+        result = executor.execute_layer1(intent_text)
+    tokens = list(result.hypotheses[0].tokens) if result.hypotheses else []
+    return {d for d in dims if any(_isa(t, d) for t in tokens)}
+
+
 def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedAction]:
     """Parse ``intent_text`` and return the grounded actions it describes.
 

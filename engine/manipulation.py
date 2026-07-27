@@ -23,26 +23,13 @@ from typing import Optional
 from models.thing import DRINKABLE, EDIBLE, HOLDABLE, WEAPON, WEARABLE
 
 
-# Verb → canonical manipulation. Drop/stow/take come from the shared transfer
-# lexicon; draw/sheathe/wear/remove have their own phrasings here (the combat
-# path keeps its own copies in session._apply_loadout_intent).
-_DRAW_RE = re.compile(
-    r"\b(draw|draws|ready|readies|wield|wields|unsheath\w*|brandish\w*"
-    r"|get|gets|hold|holds|carry|carries|carrying|pull out|pulls out|produce|produces)\b", re.IGNORECASE)
-_HOLD_RE = re.compile(
-    r"\b(get|gets|hold|holds|carry|carries|carrying|pull out|pulls out|produce|produces)\b",
-    re.IGNORECASE,
-)
-_SHEATHE_RE = re.compile(
-    r"\b(sheath\w*|holster\w*|put away|puts away|put down)\b", re.IGNORECASE)
-_WEAR_RE = re.compile(r"\b(wear|wears|don|dons|put on|puts on|equip\w*)\b", re.IGNORECASE)
-_REMOVE_RE = re.compile(
-    r"\b(remove|removes|take off|takes off|doff|doffs|unequip\w*)\b", re.IGNORECASE)
-# Consumption verbs split by state: solids are eaten, liquids drunk; a few are
-# generic (consume/swallow/ingest) and resolve to whichever the thing affords.
-_EAT_RE = re.compile(r"\b(eat|eats|devour\w*|bite|bites|chew\w*|munch\w*)\b", re.IGNORECASE)
-_DRINK_RE = re.compile(r"\b(drink|drinks|quaff\w*|sip|sips|gulp\w*|swig\w*)\b", re.IGNORECASE)
-_CONSUME_RE = re.compile(r"\b(consume|consumes|swallow\w*|ingest\w*)\b", re.IGNORECASE)
+# Kit-manipulation verb signals classify_verb reads (grounded by LATN, not regex;
+# vocabulary lives in engine.latn_lexicon). "draw" = weapon-ready verbs
+# (draw/wield/unsheathe/brandish); "hold" = generic take-in-hand (get/hold/carry);
+# "consume" covers eat/drink/… with the eat-vs-drink split decided by state here.
+# drop/stow/take stay transfer verbs (detect_transfer_verb).
+_KIT_VERB_DIMS = ("eat", "drink", "consume", "draw", "hold",
+                  "sheathe", "wear", "remove")
 
 
 @dataclass
@@ -154,47 +141,52 @@ def classify_verb(intent_text: str, thing) -> Optional[str]:
     potion" is refused (a potion has no ``weapon`` affordance, so no verb
     classifies) while "drink the potion" resolves to ``eat``."""
     from engine.verb_resolver import detect_transfer_verb
+    from engine import latn_resolver
     aff = getattr(thing, "affordances", set()) or set()
     tv = detect_transfer_verb(intent_text)
     if tv == "drop":
         return "drop"
-    # Consumption is state-gated: you can't drink bread or eat water.
-    if EDIBLE in aff and _EAT_RE.search(intent_text):
+    verbs = latn_resolver.intent_action_dims(intent_text, _KIT_VERB_DIMS)
+    # Consumption is state-gated: eat-words apply to solids, drink-words to
+    # liquids, and a generic "consume" to whichever the thing affords -- so
+    # "drink the bread" / "eat the mead" don't classify (refused), as before.
+    if "eat" in verbs and EDIBLE in aff:
         return "eat"
-    if DRINKABLE in aff and _DRINK_RE.search(intent_text):
+    if "drink" in verbs and DRINKABLE in aff:
         return "drink"
-    if _CONSUME_RE.search(intent_text):        # generic verb -> whatever it affords
+    if "consume" in verbs:
         if EDIBLE in aff:
             return "eat"
         if DRINKABLE in aff:
             return "drink"
     carry = getattr(thing, "carry", None)
     carry_loc = getattr(carry, "location", "") if carry is not None else ""
-    if WEAPON not in aff and _REMOVE_RE.search(intent_text) and (
+    if WEAPON not in aff and "remove" in verbs and (
         WEARABLE in aff or carry_loc == "worn" or _is_pack_like_container(thing)
     ):
         return "remove"
-    if WEAPON not in aff and _WEAR_RE.search(intent_text) and (
+    if WEAPON not in aff and "wear" in verbs and (
         WEARABLE in aff or _is_pack_like_container(thing)
     ):
         return "wear"
     if WEARABLE in aff and WEAPON not in aff:
-        if _REMOVE_RE.search(intent_text):
+        if "remove" in verbs:
             return "remove"
-        if _WEAR_RE.search(intent_text):
+        if "wear" in verbs:
             return "wear"
     if HOLDABLE in aff and WEAPON not in aff:
         if tv == "drop":
             return "drop"
-        if tv == "stow" or _SHEATHE_RE.search(intent_text):
+        if tv == "stow" or "sheathe" in verbs:
             return "stow"
-        # Non-weapons should not answer to weapon verbs like "wield/draw".
-        if tv == "take" or _HOLD_RE.search(intent_text):
+        # Non-weapons should not answer to weapon verbs like "wield/draw" -- only
+        # the generic "hold" signal (get/hold/carry) or a "take" transfer.
+        if tv == "take" or "hold" in verbs:
             return "hold"
     if WEAPON in aff:  # draw/sheathe are weapon verbs (a potion won't wield)
-        if tv == "stow" or _SHEATHE_RE.search(intent_text):
+        if tv == "stow" or "sheathe" in verbs:
             return "sheathe"
-        if tv == "take" or _DRAW_RE.search(intent_text):
+        if tv == "take" or "draw" in verbs or "hold" in verbs:
             return "draw"
     return None
 

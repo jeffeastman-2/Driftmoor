@@ -78,10 +78,16 @@ VERB_DIMS: tuple[str, ...] = (
     # Commerce -> engine/commerce.py. "buy" grounds a shop catalog entry, "sell"
     # grounds an owned Thing; both settle a coin transfer through transfer_thing.
     "buy", "sell",
-    # Consumption -> engine/manipulation.py (eat/drink split by the thing's
-    # state there). One grounding dim; naming the verb is enough for the parser
-    # to recognize "eat the meat pie" as an action instead of flagging "eat".
-    "consume",
+    # Consumption -> engine/manipulation.py. Split so the verb WORD is state-
+    # gated: eat-words apply to solids, drink-words to liquids, and generic
+    # "consume"/swallow/ingest to whichever the thing affords (so "drink the
+    # bread" / "eat the mead" are refused, as before).
+    "eat", "drink", "consume",
+    # Kit manipulation -> engine/manipulation.py (classify_verb). These are the
+    # verb SIGNALS; the engine verb is chosen by the target's affordances there
+    # (draw/hold on a weapon vs a pack, sheathe->sheathe vs stow, etc.). Retires
+    # manipulation.py's _DRAW_RE/_HOLD_RE/_SHEATHE_RE/_WEAR_RE/_REMOVE_RE.
+    "draw", "hold", "sheathe", "wear", "remove",
 )
 
 # Bare conversational answers to an offer ("yes" / "no thanks"). The quote->confirm
