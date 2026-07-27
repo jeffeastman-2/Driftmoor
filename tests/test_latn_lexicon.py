@@ -78,8 +78,40 @@ def test_inflected_verbs_derive_from_base_forms():
         toks = _tok_map(lex, sentence).values()
         return any(all(t.isa(d) for d in dims) for t in toks)
 
+    def has_across_hypotheses(sentence, *dims):
+        # Scan every layer-1 hypothesis (not just the best): a homograph reading
+        # is present even when another reading ranks first.
+        from latn.lexer.lexicon import use_lexicon
+        from latn.lexer.latn_tokenizer_layer1 import latn_tokenize_layer1
+        with use_lexicon(lex):
+            hyps = latn_tokenize_layer1(sentence)
+        return any(all(t.isa(d) for d in dims)
+                   for h in hyps for t in h.tokens)
+
     assert has("she enters the tavern", "move", "enter")   # <- "enter"
-    assert has("he leaves the shop", "move", "leave")      # kept (leaf plural)
     assert has("the guard buys bolts", "buy")              # <- "buy"
     assert has("she wants a dagger", "buy")                # <- "want"
     assert has("how much coins do I have", "currency")     # <- "coin"
+    # "leaves" is now a homograph (noun "leaf" + verb "leave"), so the verb
+    # reading rides alongside the noun -- present among the hypotheses.
+    assert has_across_hypotheses("he leaves the shop", "move", "leave")
+
+
+def test_setting_and_common_nouns_registered():
+    # "leaf" (common noun) and "Driftmoor" (setting proper noun) tokenize instead
+    # of being flagged unknown; adding "leaf" makes "leaves" a live homograph.
+    pytest.importorskip("latn.lexer.vector_space")
+    from engine.latn_lexicon import build_driftmoor_lexicon
+    from latn.lexer.lexicon import use_lexicon
+    from latn.lexer.latn_tokenizer_layer1 import latn_tokenize_layer1
+    lex = build_driftmoor_lexicon([], [])
+
+    assert _tok_map(lex, "a leaf")["leaf"].isa("noun")
+    dtok = _tok_map(lex, "driftmoor")["driftmoor"]
+    assert dtok.isa("proper_noun") and not dtok.isa("unknown")
+    # "leaves" forks into a noun and a verb reading.
+    with use_lexicon(lex):
+        pos = {("noun" if h.tokens[0].isa("noun") else
+                "verb" if h.tokens[0].isa("verb") else "?")
+               for h in latn_tokenize_layer1("leaves")}
+    assert "noun" in pos and "verb" in pos, pos

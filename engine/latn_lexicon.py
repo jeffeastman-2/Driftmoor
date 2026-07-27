@@ -137,6 +137,17 @@ _KIT_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("remove", ["remove", "take off", "doff", "unequip"]),
 ]
 
+# Setting proper nouns -- place/region names that occur in play but aren't a
+# grounded scene entity (so the world layer doesn't derive them). Registered so
+# they tokenize instead of being flagged unknown.
+_SETTING_PROPER_NOUNS: list[str] = ["driftmoor"]
+
+# Common content nouns likely in narration/play but not tied to a scene Item.
+# "leaf" also gives "leaves" a noun reading: with the verb "leaves" already in
+# _LEAVE_VERB_WORDS, the homograph now forks (noun leaf / verb leave) and the
+# grammar keeps whichever parses -- "the leaves" (NP) vs "she leaves" (VP).
+_COMMON_NOUNS: list[str] = ["leaf"]
+
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
 # bolts" for the good "Bolts (20)". Registered as bare adjectives so head-noun
@@ -246,6 +257,12 @@ def _build_rpg_layer() -> dict:
     for canonical, words in _KIT_VERB_SYNONYMS:
         for word in words:
             layer[word.lower()] = _vf("verb", **{canonical: 1.0})
+    # Setting proper nouns + common content nouns. setdefault so a word already
+    # carrying a reading (e.g. the verb "leaves") is not clobbered.
+    for word in _SETTING_PROPER_NOUNS:
+        layer.setdefault(word.lower(), _vf("proper_noun singular"))
+    for word in _COMMON_NOUNS:
+        layer.setdefault(word.lower(), _vf("noun singular"))
     # Faction adjectives -> faction_<value> dims.
     for value, words in _FACTION_SYNONYMS:
         dim = property_dim("faction", value)
