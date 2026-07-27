@@ -24,6 +24,7 @@ so the Driftmoor lexicon is active and non-CAD verbs survive Layer-4 grounding.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import functools
 import re
 from typing import List, Optional, Tuple
 
@@ -187,6 +188,36 @@ def _interaction_for(item: Item, verb: str) -> Optional[Interaction]:
         )
         return Interaction(verb="examine", aliases=[], condition="", response=text)
     return None
+
+
+def _default_action_lexicon():
+    """Scene-independent Driftmoor lexicon for verb detection. Built fresh per
+    call (cheap) rather than cached: the action dims are scene-independent, but a
+    module-level cache would capture whatever global lexicon/dimension state
+    happened to be active at first build, coupling otherwise-independent callers.
+    Registering the RPG dims here is idempotent."""
+    from engine.latn_lexicon import build_driftmoor_lexicon
+    return build_driftmoor_lexicon([], [])
+
+
+def intent_has_action(intent_text: str, *dims: str, lexicon=None) -> bool:
+    """True when a verb in the intent carries one of the given action dims.
+
+    A lightweight LATN check that replaces regex keyword detection: the verb
+    vocabulary lives in the lexicon (``isa`` a dim), not a hand-maintained
+    pattern. Tokenizes at layer 1 -- atomic, but the tokenizer still matches a
+    multi-word verb key ("swing at") -- and tests each token; no scene grounding
+    needed, so callers that only have the text can use it. Pass ``lexicon`` to
+    reuse a scene lexicon and skip the per-call build."""
+    if not (intent_text or "").strip() or not dims:
+        return False
+    from engine.latn import LATNLayerExecutor, use_lexicon
+    lex = lexicon if lexicon is not None else _default_action_lexicon()
+    executor = LATNLayerExecutor()
+    with use_lexicon(lex):
+        result = executor.execute_layer1(intent_text)
+    tokens = list(result.hypotheses[0].tokens) if result.hypotheses else []
+    return any(any(_isa(t, d) for d in dims) for t in tokens)
 
 
 def resolve_actions(intent_text: str, *, lexicon, adapter) -> List[ResolvedAction]:

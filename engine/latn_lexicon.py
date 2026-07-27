@@ -47,7 +47,8 @@ from engine.latn_dimensions import (
 # are not duplicated here. Spell/target names ride NPs, not these.
 _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("attack", ["attack", "strike", "hit", "swing", "swing at", "slash",
-                "stab", "shoot", "fire", "fire at", "loose", "lunge", "lunge at"]),
+                "stab", "shoot", "fire", "fire at", "loose", "lunge", "lunge at",
+                "charge", "aim"]),
     ("cast", ["cast", "invoke", "channel"]),
     ("move", ["move", "go", "walk", "approach", "advance", "step", "head",
               "follow", "continue", "proceed", "return", "climb"]),

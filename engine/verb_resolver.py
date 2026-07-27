@@ -27,7 +27,8 @@ from models.item import Interaction, Item
 # whole word (or whole multi-word run) against the intent text.
 _VERB_LEXICON: list[tuple[str, list[str]]] = [
     ("examine", ["examine", "inspect", "study", "scrutinize", "observe", "look at", "look over", "look closer"]),
-    ("search", ["search", "rummage", "rifle", "investigate", "comb"]),
+    ("search", ["search", "rummage", "rifle", "investigate", "comb",
+                "look", "scan", "check", "sift"]),
     ("read", ["read", "decipher", "transcribe"]),
     ("press", ["press", "push", "depress", "tap", "trigger", "activate"]),
 ]

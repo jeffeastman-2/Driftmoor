@@ -46,6 +46,22 @@ def test_examine_resolves_authored_interaction():
     assert a.interaction and "shimmers" in a.interaction.response
 
 
+def test_intent_has_action_reads_verb_dims():
+    from engine.latn_resolver import intent_has_action
+    # Attack vocabulary lives in the lexicon, not a keyword regex.
+    assert intent_has_action("attack the goblin", "attack")
+    assert intent_has_action("swing at the orc", "attack")   # regex missed this
+    assert intent_has_action("loose an arrow", "attack")     # and this
+    assert not intent_has_action("I walk north", "attack")
+    # cast / search dims too
+    assert intent_has_action("cast fireball", "cast")
+    assert intent_has_action("invoke the ward", "cast")
+    assert intent_has_action("look around", "search", "examine")
+    assert intent_has_action("scan the room", "search", "examine")
+    assert not intent_has_action("cast fireball", "search", "examine")
+    assert not intent_has_action("", "attack")
+
+
 def test_consumption_verbs_ground_as_actions():
     # "eat"/"drink" carry the consume dim, so they ground instead of being
     # flagged as unknown (execution stays in manipulation.py). A verb without a

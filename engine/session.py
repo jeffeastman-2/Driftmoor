@@ -312,11 +312,12 @@ def _movement_cap_for_intent(
 
 
 def _is_search_like_intent(intent_text: str) -> bool:
-    """Heuristic: intent text is a search/examine style action."""
-    return bool(re.search(
-        r"\b(search|examine|inspect|investigate|look|scan|check|sift)\b",
-        (intent_text or "").lower(),
-    ))
+    """Intent text is a search/examine style action.
+
+    LATN-grounded on the ``search``/``examine`` dims (search/look/scan/check/
+    sift/examine/inspect/investigate all live in the lexicon)."""
+    from engine import latn_resolver
+    return latn_resolver.intent_has_action(intent_text, "search", "examine")
 
 
 # Generic text helpers live in engine.text_util (extracted); re-exported so
@@ -2598,17 +2599,14 @@ def _build_context(
 # Combat resolver helpers
 # ---------------------------------------------------------------------------
 
-_ATTACK_KEYWORDS = re.compile(
-    r'\b(attack|shoot|fire|strike|shoot|stab|slash|lunge|charge|aim)\b',
-    re.IGNORECASE,
-)
-
-_CAST_KEYWORDS = re.compile(r"\b(cast|casts|casting|use\s+spell|spell)\b", re.IGNORECASE)
-
-
 def _intent_is_attack(intent_text: str) -> bool:
-    """Return True if the Player-Left intent string describes an attack action."""
-    return bool(_ATTACK_KEYWORDS.search(intent_text or ""))
+    """Return True if the Player-Left intent string describes an attack action.
+
+    LATN-grounded: the attack-verb vocabulary lives in the lexicon (isa the
+    ``attack`` dim), so this is one check instead of a keyword regex to keep in
+    sync -- "swing at" / "loose an arrow" are caught for free."""
+    from engine import latn_resolver
+    return latn_resolver.intent_has_action(intent_text, "attack")
 
 
 def _resolve_teleport_destination(
@@ -2706,8 +2704,13 @@ def _resolve_teleport_destination(
 
 
 def _intent_is_spell(intent_text: str) -> bool:
-    """Return True when intent text appears to describe casting a spell."""
-    return bool(_CAST_KEYWORDS.search(intent_text or ""))
+    """Return True when intent text describes casting a spell.
+
+    LATN-grounded on the ``cast`` dim (cast/invoke/channel). A bare "use a
+    spell" with no named spell no longer trips the gate -- it never cast
+    anything anyway (``_extract_spell_name_from_intent`` finds no name)."""
+    from engine import latn_resolver
+    return latn_resolver.intent_has_action(intent_text, "cast")
 
 
 def _extract_spell_name_from_intent(intent_text: str, cs: CharacterSession) -> str | None:

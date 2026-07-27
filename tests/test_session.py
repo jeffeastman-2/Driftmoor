@@ -2749,3 +2749,25 @@ class TestSelfQuestion:
         assert _answer_self_question(
             "what do you have for sale", cs=cs, characters=cfg.characters,
             actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items) is None
+
+
+class TestIntentDetectorsUseLATN:
+    """The attack/spell/search intent gates ground via LATN, not regex."""
+
+    def test_intent_is_attack(self):
+        from engine.session import _intent_is_attack
+        assert _intent_is_attack("attack the goblin")
+        assert _intent_is_attack("loose an arrow at the wolf")  # regex missed
+        assert not _intent_is_attack("I walk north")
+
+    def test_intent_is_spell(self):
+        from engine.session import _intent_is_spell
+        assert _intent_is_spell("cast fireball")
+        assert _intent_is_spell("channel divine energy")        # regex missed
+        assert not _intent_is_spell("I move to the door")
+
+    def test_is_search_like_intent(self):
+        from engine.session import _is_search_like_intent
+        assert _is_search_like_intent("search the room")
+        assert _is_search_like_intent("look around")
+        assert not _is_search_like_intent("attack the beast")
