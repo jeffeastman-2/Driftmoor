@@ -1,5 +1,9 @@
 # PLACE.md — Elyssa Moonglow's Cottage
 
+## Place Identity
+- **type:** cottage
+- **aliases:** cottage, Elyssa's cottage, Elyssa's house, Elyssa Moonglow's Cottage
+
 ## Description and Atmosphere
 A simple stone building with slate roof and ivy up the walls on a low hill overlooking the Greywater River. A small chimney emits thin smoke — the fire in her study is almost never out. The front path is lined with overgrown lavender and rosemary. A side herb garden, less well-kept than her work inside. A weathered sign reads "E. Moonglow – Researcher" in Elvish script.
 

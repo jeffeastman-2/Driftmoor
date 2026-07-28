@@ -1,5 +1,9 @@
 # PLACE.md — The Rusty Razor (Barbershop)
 
+## Place Identity
+- **type:** barber
+- **aliases:** barber, barbershop, barber shop, Rusty Razor, The Rusty Razor
+
 ## Description and Atmosphere
 A small wooden building tucked into a corner near the village square. Red-and-white painted sign depicting a razor crossed with a comb. Inside: warm and inviting, potbelly stove, two sturdy customer chairs, wall lined with mirrors, scissors, razors, and brushes. Smells of pine soap and pomade.
 

@@ -1,5 +1,9 @@
 # PLACE.md — The Bitter Remedy
 
+## Place Identity
+- **type:** apothecary
+- **aliases:** apothecary, potion shop, herbalist, Bitter Remedy, The Bitter Remedy
+
 ## Description and Atmosphere
 A small weathered stone structure with a crooked chimney and green vines up the walls. Near the Greywater River — Lytha harvests many of her herbs from the riverbank. Inside: shelves crammed with jars, vials, and bundles of dried herbs. The air heavy with lavender, mint, and something faintly bitter. A wooden counter covered in mortars, pestles, scales, and open tomes.
 

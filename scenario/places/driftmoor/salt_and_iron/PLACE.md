@@ -1,5 +1,9 @@
 # PLACE.md — Salt & Iron Mercantile
 
+## Place Identity
+- **type:** mercantile
+- **aliases:** mercantile, general merchant, Salt and Iron, Salt & Iron, Salt & Iron Mercantile
+
 ## Description and Atmosphere
 One of the town's largest and most solidly built structures — timber reinforced with iron bands. Practical and defensible. A swinging sign above the double doors depicts a sack of salt and crossed iron tongs. Inside: organized but crowded, shelves along the walls, barrels in corners, a long counter dominating the center where Jorgen is almost always found.
 

@@ -1,5 +1,9 @@
 # PLACE.md — The Tannery
 
+## Place Identity
+- **type:** tannery
+- **aliases:** tannery, leatherworks, leather shop, The Tannery
+
 ## Description and Atmosphere
 A low stone building near the riverbank. The smell of leather and curing hides is unmistakable from twenty feet away. Wooden racks outside display stretched animal skins. Barrels of dyes and oils stacked against the walls. Inside: the work of rendering hide into leather in all its unsentimental stages.
 

@@ -1,5 +1,9 @@
 # PLACE.md — The Corral
 
+## Place Identity
+- **type:** corral
+- **aliases:** corral, paddock, horse yard, The Corral
+
 ## Description and Atmosphere
 A broad fenced yard beside the stables, surfaced with packed earth and scattered
 straw. The rails are sturdy, the gate is well-oiled, and a water trough stands

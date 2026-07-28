@@ -1,5 +1,9 @@
 # PLACE.md — The Beacon (Church of Pelor)
 
+## Place Identity
+- **type:** church
+- **aliases:** church, beacon, temple, Church of Pelor, The Beacon
+
 ## Description and Atmosphere
 A modest stone building on a small rise overlooking the village. Wooden steeple. At night its lantern burns as a symbol of hope — recently flickering with a wrong, dark light. Inside: simple and well-kept. Wooden pews, stone altar with sun symbols, tall narrow windows letting in natural light. Smells of beeswax and herbs from the garden behind.
 

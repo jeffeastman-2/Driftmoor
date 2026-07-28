@@ -1,5 +1,9 @@
 # PLACE.md — The Mayor's Hall
 
+## Place Identity
+- **type:** civic hall
+- **aliases:** mayor's hall, mayors hall, town hall, civic hall, The Mayor's Hall
+
 ## Description and Atmosphere
 The largest and most prominent building in Driftmoor — two stories of timber and stone built to withstand coastal weather and project quiet authority. Situated near the village square. Practical in design with small touches of civic pride: carved wooden trim along the eaves, a tended flower bed outside, the town crest on the double oak doors.
 

@@ -1,5 +1,9 @@
 # PLACE.md — The Cobbler's Shop
 
+## Place Identity
+- **type:** cobbler
+- **aliases:** cobbler, shoe shop, shoemaker, Cobbler's Shop, The Cobbler's Shop
+
 ## Description and Atmosphere
 A snug brick-walled shop. Shoes of all shapes and sizes in the front window. The smell of leather and beeswax. Marta's laugh arrives before you open the door. She works with nimble fingers and keeps up a constant stream of conversation — she prefers it to silence and has never experienced a lull she couldn't fill.
 

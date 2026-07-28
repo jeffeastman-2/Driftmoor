@@ -1,5 +1,9 @@
 # PLACE.md — The Gilded Trinket (Pawnshop)
 
+## Place Identity
+- **type:** pawn shop
+- **aliases:** pawn shop, pawnbroker, Gilded Trinket, The Gilded Trinket
+
 ## Description and Atmosphere
 A narrow, weathered wooden building. Faded gold-painted sign above the door — a coin surrounded by sparkling trinkets. Small windows covered with metal grates. Inside: cluttered but carefully organized. Shelves of rusty tools, jewelry, old weapons, curios of uncertain value. A locked glass display case at the counter holds the most valuable wares. Behind it, a large safe and ledger. Dim oil lamp lighting.
 

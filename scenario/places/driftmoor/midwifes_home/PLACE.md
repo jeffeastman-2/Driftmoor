@@ -1,5 +1,9 @@
 # PLACE.md — The Midwife's Home
 
+## Place Identity
+- **type:** midwife
+- **aliases:** midwife, midwife's home, healer, Gran Lorie's house, The Midwife's Home
+
 ## Description and Atmosphere
 A cozy cottage with a small herb garden and a cheery painted door. Inside: shelves of jarred remedies and bandages alongside the practical tools of her trade. Warm and welcoming in a different way than the tavern — more like being looked after than entertained. Gran Lorie has seen everything and judges nothing.
 

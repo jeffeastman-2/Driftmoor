@@ -1,5 +1,9 @@
 # PLACE.md — Carpenter's Workshop
 
+## Place Identity
+- **type:** carpenter
+- **aliases:** carpenter, carpentry shop, woodworker, Carpenter's Workshop
+
 ## Description and Atmosphere
 Timber-framed with an open front. The smell of freshly cut wood and sawdust. Piles of lumber, half-finished furniture, the rhythmic sound of hammering. Hilda's apprentices work alongside her — she runs a tight shop. The finished pieces visible from the entrance are genuinely fine work.
 

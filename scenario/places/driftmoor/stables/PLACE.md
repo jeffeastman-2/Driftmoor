@@ -1,5 +1,9 @@
 # PLACE.md — The Stables
 
+## Place Identity
+- **type:** stable
+- **aliases:** stable, stables, livery, horse stable, The Stables
+
 ## Description and Atmosphere
 Clean and well-maintained — Kara's domain. Space for a dozen horses. Saddle racks and feed bins neatly organized. Smells of hay and horse. The animals here are calm around Kara and noticeably less so around strangers.
 

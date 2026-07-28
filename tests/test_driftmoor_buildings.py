@@ -11,6 +11,7 @@ from engine.session import (
     _driftmoor_source_doorways,
     _entry_point_from_target_geometry,
     _infer_driftmoor_venue_transition,
+    _place_identity_metadata,
 )
 from models.game_init import INITIAL_LOCATIONS
 
@@ -36,6 +37,9 @@ def test_driftmoor_building_is_enterable_and_loads_its_npcs(
     place_dir = DRIFTMOOR / place_id
     assert (place_dir / "PLACE.md").is_file()
     assert (place_dir / "GEOMETRY.md").is_file()
+    place_type, aliases = _place_identity_metadata(place_dir / "PLACE.md")
+    assert place_type
+    assert aliases
 
     # Connection names are the public generic aliases used on the map:
     # to_fishmonger -> "enter the fishmonger", etc.

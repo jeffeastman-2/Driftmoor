@@ -1,5 +1,9 @@
 # PLACE.md — The Weaver's Cottage
 
+## Place Identity
+- **type:** weaver
+- **aliases:** weaver, weaving shop, cloth shop, Weaver's Cottage, The Weaver's Cottage
+
 ## Description and Atmosphere
 A quaint stone-and-thatch cottage surrounded by colorful cloth drying on lines. The rhythmic clatter of the loom from inside. Bolts of finished fabric visible through the open door, in practical greens and browns alongside occasional surprising color. Eadric works continuously and talks while doing it.
 

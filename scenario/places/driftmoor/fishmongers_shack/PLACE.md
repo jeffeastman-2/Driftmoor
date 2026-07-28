@@ -1,5 +1,9 @@
 # PLACE.md — The Fishmonger's Shack
 
+## Place Identity
+- **type:** fishmonger
+- **aliases:** fishmonger, fish market, fish shop, Fishmonger's Shack, The Fishmonger's Shack
+
 ## Description and Atmosphere
 A small weathered shack near the harbor with a slanted roof and a sign shaped like a fish. Crates of fresh and salted fish stacked high inside. Nets and hooks hanging from the walls. Smells exactly like you would expect. Kessla's voice can be heard before the shack comes into view.
 

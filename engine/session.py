@@ -1526,6 +1526,7 @@ class _SceneNode:
     place_path: str
     parent_place_path: str
     aliases: tuple[str, ...]
+    place_type: str = ""
 
 
 def _scene_aliases(*texts: str) -> tuple[str, ...]:
@@ -1561,6 +1562,41 @@ def _scene_header_aliases(place_file: Path) -> tuple[str, ...]:
     return tuple(aliases)
 
 
+def _place_identity_metadata(place_file: Path) -> tuple[str, tuple[str, ...]]:
+    """Return explicit ``(type, aliases)`` from a PLACE.md identity section.
+
+    Directory slugs remain stable technical ids. These fields own the
+    player-facing category and vocabulary, so a place can be renamed or gain
+    colloquial names without moving files. Legacy-derived aliases are still
+    appended by ``_scene_node_from_place_file`` during migration.
+    """
+    try:
+        text = place_file.read_text(encoding="utf-8")
+    except OSError:
+        return "", ()
+    match = re.search(
+        r"^## Place Identity\s*$\n(.*?)(?=^## |\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return "", ()
+    fields: dict[str, str] = {}
+    for key, value in re.findall(
+        r"^\s*-\s*\*\*(.+?):\*\*\s*(.*?)\s*$",
+        match.group(1),
+        re.MULTILINE,
+    ):
+        fields[key.strip().lower()] = value.strip()
+    place_type = fields.get("type", "").lower()
+    aliases = tuple(
+        alias.strip().lower()
+        for alias in fields.get("aliases", "").split(",")
+        if alias.strip()
+    )
+    return place_type, tuple(dict.fromkeys(aliases))
+
+
 def _place_path_from_place_file(place_file: Path) -> str:
     try:
         rel_parent = place_file.parent.relative_to(_DRIFTMOOR_PLACES_ROOT)
@@ -1574,12 +1610,19 @@ def _scene_node_from_place_file(place_file: Path) -> _SceneNode:
     place_path = _place_path_from_place_file(place_file)
     parent_place_path = place_path.rsplit("/", 1)[0] if "/" in place_path else ""
     scene_name = Path(place_path).name or "driftmoor"
-    scene_aliases = _scene_aliases(
+    place_type, explicit_aliases = _place_identity_metadata(place_file)
+    legacy_aliases = _scene_aliases(
         scene_name.replace("_", " "),
         place_path.split("/")[-1].replace("_", " "),
     )
-    scene_aliases += _scene_header_aliases(place_file)
-    return _SceneNode(scene_name, place_path, parent_place_path, scene_aliases)
+    legacy_aliases += _scene_header_aliases(place_file)
+    # Keep the stable place-name alias first because a few presentation paths
+    # use aliases[0] as the human-readable label. Explicit aliases extend the
+    # grounding vocabulary without changing that display name.
+    scene_aliases = tuple(dict.fromkeys(legacy_aliases + explicit_aliases))
+    return _SceneNode(
+        scene_name, place_path, parent_place_path, scene_aliases, place_type
+    )
 
 
 @lru_cache(maxsize=1)
@@ -1651,6 +1694,7 @@ def _driftmoor_place_registry() -> tuple[_SceneNode, ...]:
                     node.place_path,
                     node.parent_place_path,
                     aliases,
+                    node.place_type,
                 )
             nodes.append(node)
     return tuple(nodes)

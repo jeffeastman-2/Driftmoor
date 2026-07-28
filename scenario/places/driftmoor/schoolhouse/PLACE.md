@@ -1,5 +1,9 @@
 # PLACE.md — The Schoolhouse
 
+## Place Identity
+- **type:** schoolhouse
+- **aliases:** school, schoolhouse, classroom, The Schoolhouse
+
 ## Description and Atmosphere
 A one-room building with a bell on the roof. Chalkboard, rows of wooden desks. Chalk dust and ink are the primary smells. Alina's enthusiasm fills the room more than the furniture does. Used as a community meeting hall when school is not in session.
 

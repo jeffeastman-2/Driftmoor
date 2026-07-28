@@ -885,12 +885,28 @@ class TestInferDriftmoorVenueTransition:
             assert doorway[0] == scene_name
             assert doorway[1][:2] == point
 
-    def test_combined_ironhoof_record_is_not_an_enterable_town_venue(self):
+    def test_explicit_place_identity_supplies_type_and_aliases(self):
+        from engine.session import (
+            _driftmoor_place_registry,
+            _infer_driftmoor_venue_transition,
+        )
+
+        forge = next(
+            node for node in _driftmoor_place_registry()
+            if node.place_path == "places/driftmoor/forge"
+        )
+        assert forge.place_type == "forge"
+        assert "smithy" in forge.aliases
+        assert _infer_driftmoor_venue_transition(
+            "I enter the smithy", "places/driftmoor", "TOWN_COMMON"
+        ) == "forge"
+
+    def test_ironhoof_forge_proper_name_resolves_to_forge_place(self):
         from engine.session import _infer_driftmoor_venue_transition
 
         assert _infer_driftmoor_venue_transition(
             "I enter Ironhoof Forge", "places/driftmoor", "TOWN_COMMON"
-        ) is None
+        ) == "forge"
 
     def test_exit_forge_and_enter_stables_resolves_sibling_transition(self):
         from engine.session import _infer_driftmoor_venue_transition

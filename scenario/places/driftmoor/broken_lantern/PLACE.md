@@ -1,5 +1,9 @@
 # PLACE.md — The Broken Lantern
 
+## Place Identity
+- **type:** tavern
+- **aliases:** tavern, inn, pub, Broken Lantern, The Broken Lantern
+
 ## Description and Atmosphere
 Driftmoor's only tavern and its social heart. A weathered timber structure with a sloping roof and ivy up one side. The cracked, rusted lantern above the door belonged to the founder and has never been replaced. Inside: warm, slightly shabby, full of competing smells — woodfire, roasted meat, ale, and something faintly briny from the harbor crowd.
 

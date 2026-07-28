@@ -1,5 +1,9 @@
 # PLACE.md — The General Store
 
+## Place Identity
+- **type:** general store
+- **aliases:** general store, store, provisions, supply shop, The General Store
+
 ## Description and Atmosphere
 A simple stone-and-wood building crowded with everyday goods. Shelves overflow with tools, rope, candles, preserved food. Jedrin sits behind the small counter ready to barter. Behind the store, a large and surprisingly well-tended garden — Jedrin's quiet pride.
 

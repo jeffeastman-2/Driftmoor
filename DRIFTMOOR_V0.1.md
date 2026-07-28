@@ -153,11 +153,11 @@ Current automatically verified destinations:
 
 Remaining place work:
 
-- [ ] Add explicit place `type` and `aliases` metadata.
-- [ ] Make directory slugs stable internal IDs rather than player-facing names.
-- [ ] Preserve compatibility with title-, type-, connection-, and
+- [x] Add explicit place `type` and `aliases` metadata.
+- [x] Make directory slugs stable internal IDs rather than player-facing names.
+- [x] Preserve compatibility with title-, type-, connection-, and
       directory-derived aliases during migration.
-- [ ] Standardize map landmark type labels while retaining proper place names
+- [x] Standardize map landmark type labels while retaining proper place names
       in tooltips.
 - [ ] Review every building's description, connections, dynamic state, and
       notable contents for contradictions.
