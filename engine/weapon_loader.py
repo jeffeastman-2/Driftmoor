@@ -2,7 +2,8 @@
 
 Parses the markdown tables into dict[id, Weapon] and dict[id, Armor].
 The weapon library is keyed by weapon id (e.g. "longbow").
-Attack bonuses are NOT stored here; they come from CONFIG.md per-character.
+Attack bonuses are NOT stored here; they come from a character's IDENTITY.md
+``weapons:`` line, per-character.
 """
 
 from __future__ import annotations
@@ -113,7 +114,7 @@ def parse_character_weapons(
     weapons_cfg: str,
     weapon_library: dict[str, Weapon],
 ) -> list[Weapon]:
-    """Parse a character's ``weapons:`` CONFIG.md field into Weapon instances.
+    """Parse a character's ``weapons:`` IDENTITY.md field into Weapon instances.
 
     Format: comma-separated entries, each optionally with an attack bonus suffix:
         weapons: longbow+5, shortsword+5, dagger+5

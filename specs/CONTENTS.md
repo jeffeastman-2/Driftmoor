@@ -72,9 +72,9 @@ notes on count, location, and behavior. Cross-references to
 `scenario/creatures/<creature_id>.md` are encouraged for any
 creature with a stat block.
 
-This section is **not parsed** by the engine. Creature placement is
-handled via GEOMETRY.md (`## Starting Positions`) and via the
-scene's character roster in `scenes/<scene>.md`.
+This section is **not parsed** by the engine. Placement (of characters and
+creatures alike) is authored per-scene in `scenes/<scene>.md` — GEOMETRY.md is a
+pure stage and no longer carries a `## Starting Positions` table.
 
 Example:
 
@@ -357,34 +357,54 @@ verbatim to the DM context.
 
 ## Item Lifecycle and the Engine
 
-(Forward-looking; not yet implemented as of this spec.)
-
-The parser produces, for each item, an `Item` instance with at
-minimum:
+The parser (`models/contents_loader.py`) produces, for each item, a **`Thing`**
+(`models/thing.py`) — the unified type that also represents weapons, armor,
+consumables, and shop goods. The fields authored here:
 
 ```python
 @dataclass
-class Item:
+class Thing:
     id: str                              # from heading
-    description: str                     # prose paragraphs
-    pickable: bool                       # from properties
-    flavor_only: bool                    # from properties
-    pressable: bool                      # from properties
-    quest_item_for: Optional[str]        # from properties
-    extra_facts: list[str]               # unrecognized parenthetical text
-    interactions: list[Interaction]      # in source order
-    interactions_ref: Optional[str]      # cross-reference target id, if any
+    description: str = ""                # prose paragraphs
 
-    # Populated from GEOMETRY.md:
-    position: Position
-    zone: str
-    label: str
+    # Properties (from the italicized parenthetical line)
+    pickable: bool = False
+    flavor_only: bool = False
+    pressable: bool = False
+    quest_item_for: Optional[str] = None
+    extra_facts: list[str] = ...         # unrecognized parenthetical text
+
+    # Perception (from *Size:* and *Appearance by distance:*)
+    size_ft: float = 0.0                 # largest dimension; drives apparent-size bands
+    weight_lb: float = 0.0               # encumbrance
+    appearance_bands: dict[str, str] = ...   # near/intermediate/far/distant text
+
+    interactions: list[Interaction] = ...    # in source order
+    interactions_ref: Optional[str] = None   # cross-reference target id, if any
+
+    # Populated from GEOMETRY.md by the loader (when a SceneGeometry is given):
+    position: Optional[Position] = None
+    zone: Optional[str] = None
+    label: str = ""
 
     # Mutable runtime state:
     holder: Optional[str] = None         # character_id if picked up
-    state: dict[str, str] = ...          # interaction-set flags
+    state: dict = ...                    # interaction-set flags
     discovered_by: set[str] = ...        # character_ids who know it exists
 ```
+
+`Thing` carries additional facets that CONTENTS.md does **not** author:
+
+- **affordances / effects** are *derived* at load time (`thing.derive_affordances`)
+  from the item's shape — a `*Weapon:*` line makes it wieldable, consumable
+  keywords make it edible/drinkable, and so on. Authors describe *what the item
+  is*; the engine infers *what you can do with it*. (See the affordance-gated
+  verb model in the top-level README.)
+- **carry-state** (`in_world` / `carried` / `in_hand` / `worn` / `consumed`)
+  tracks where a possessed Thing lives; starting carry-state for a character's
+  kit is authored in `scenes/<scene>.md`, not here.
+- the **market facet** (`price` / `vendor_id` / …) is populated only for shop
+  goods (`models/thing_loader.py`) and left empty for a rapier on a cave floor.
 
 `Interaction` minimally:
 

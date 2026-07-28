@@ -101,14 +101,12 @@ Named sections for magical or special boundaries.
 - **effect:** <description>
 - **vertices:** (x,y) (x,y) ...
 
-## Starting Positions
-
-Default starting positions for characters assigned to this scene.
-Override at runtime for specific scenarios.
-
-| character | x | y | zone |
-|-----------|---|---|------|
-| <character_id> | <local x> | <local y> | <zone name> |
+> **Placement is NOT here.** GEOMETRY.md is a pure stage — zones, coordinates,
+> landmarks, boundaries. *Who* starts *where* is authored per-scene in
+> `scenes/<scene>.md` (`- **position:** x, y[, z]` under each character; the
+> zone is derived from the coordinate). See [SCENE.md](SCENE.md). Earlier
+> versions of this spec carried a `## Starting Positions` table here; it has been
+> removed and `geometry_loader` no longer reads one.
 
 ----------------------------------------------------------------------
 WORKED EXAMPLE — Fey Glade (current canonical version)
@@ -173,14 +171,6 @@ Notes:
 - **blocks:** shadowbeast, shadow_creature, undead
 - **effect:** wrongness — body stops, cannot cross
 - **vertices:** (39,44) (61,44) (61,56) (39,56)
-
-## Starting Positions
-
-| character   | x    | y    | zone   |
-|-------------|------|------|--------|
-| aeliana     | 79.0 | 25.0 | TRAIL  |
-| fennel      | 44.0 | 52.0 | GLADE  |
-| shadowbeast | 37.0 | 50.0 | FOREST |
 
 ----------------------------------------------------------------------
 MULTI-LEVEL EXAMPLE — Echoing Caverns (three z-levels)
@@ -313,7 +303,8 @@ class GeometryLoader:
     def _parse(self, content: str) -> SceneGeometry:
         # Parse markdown tables into dataclass fields
         # Sections: Scene, Landmarks, Zones, Impassable,
-        #           Connections, Boundaries, Starting Positions
+        #           Connections, Boundaries
+        # (Starting Positions is NOT read here -- placement lives in scenes/)
         ...
 ```
 

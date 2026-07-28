@@ -1,4 +1,7 @@
-"""Load scene configuration from CONFIG.md + source .md files.
+"""Load scene configuration from a scene .md file + source .md files.
+
+(The scene config file lives at ``scenes/<name>.md``; it was historically named
+CONFIG.md, and some field/section names below still echo that lineage.)
 
 The only scene loader: a scene is identified by the presence of
 scenes/<name>.md, loaded by ``configure_from_md``.
@@ -826,7 +829,7 @@ def _build_player_or_npc(
     identity_text = _load(ROOT / cfg["identity_file"])
     s = parse_identity_stats(identity_text)
 
-    # CONFIG.md overrides take precedence over parsed stats
+    # scene-config overrides take precedence over parsed stats
     hp    = int(cfg["hp"])    if "hp"    in cfg else s["hp"]
     ac    = int(cfg["ac"])    if "ac"    in cfg else s["ac"]
     speed = cfg["speed"]      if "speed" in cfg else s["speed"]
@@ -1042,7 +1045,7 @@ def _build_creature(
 # ---------------------------------------------------------------------------
 
 def configure_from_md(config_path: Path, game_time: GameTime | None = None, self_dm: bool = False):
-    """Return a SceneConfig loaded from a CONFIG.md file.
+    """Return a SceneConfig loaded from a scene .md file (scenes/<name>.md).
 
     The SceneConfig class is imported lazily from engine.scene_runner to avoid
     module-level circular imports.
@@ -1082,7 +1085,7 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     dm_delay    = float(dm_meta.get("call_delay", 2.0))
     dm_llm      = make_call_llm(dm_provider, dm_model, call_delay=dm_delay)
 
-    # ── Scene introductions — CONFIG.md first, PLACE.md as fallback ─────────
+    # ── Scene introductions — scene .md first, PLACE.md as fallback ─────────
     introductions: dict[str, str] = parse_scene_introductions(text)
     place_text = ""
     if place_file:
@@ -1186,9 +1189,9 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         derive_affordances(_it)
 
     # ── Characters ───────────────────────────────────────────────────────────
-    # Parse characters from both scene CONFIG.md and place_file (if present).
-    # NPCs come from place_file; players come from scene CONFIG.md.
-    # When both define the same character, scene CONFIG.md takes precedence.
+    # Parse characters from both the scene .md and place_file (if present).
+    # NPCs come from place_file; players come from the scene .md.
+    # When both define the same character, the scene .md takes precedence.
     char_cfgs = _parse_all_char_sections(text)
     if place_text:
         place_char_cfgs = _parse_all_char_sections(place_text)

@@ -67,8 +67,14 @@ Required columns:
 
 ### Notes
 
-- `attack_bonus` is **not** stored in WEAPONS.md. It is per-character
-  and recorded in the character's CONFIG.md as `<weapon_id>+N`.
+- `attack_bonus` is **not** stored in the weapon library — it is per-character.
+  A character's structured weapon list lives on a `- **weapons:**` line in
+  `IDENTITY.md` (under `## Combat Equipment`, or in `## Combat Statistics`), e.g.
+  `- **weapons:** longbow+5, shortsword+5`; `engine/weapon_loader.
+  parse_character_weapons` matches each id against the library and applies the
+  optional `+N` suffix to that character's copy. (The flat weapon `+N` has largely
+  given way to a runtime bonus derived from ability modifier + proficiency; the
+  suffix now reads as a magic-enhancement rider.)
 - For natural creature weapons, `id` should be `<creature>_<part>`
   (e.g. `shadowbeast_claw`, `spider_bite`).
 

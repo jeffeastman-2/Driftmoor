@@ -20,14 +20,16 @@ expected to conform.
 | [PLACE.md](PLACE.md) | Location description and dynamic state | implemented |
 | [LORE.md](LORE.md) | DM-only deep context | convention only |
 | [WEAPONS_ARMOR.md](WEAPONS_ARMOR.md) | Weapon and armor library tables | implemented |
+| [ZONES.md](ZONES.md) | Per-zone content files (`zone.md`), splitting up CONTENTS.md | draft |
 | [EXPLORATION.md](EXPLORATION.md) | Party exploration momentum and anti-loop policy | draft |
 
 ## Engine subsystem specs
 
 | Spec | Subject | Status |
 |---|---|---|
-| [SPACE_TIME.md](SPACE_TIME.md) | Spatial and temporal architecture | implemented |
-| [SPELLCASTING.md](SPELLCASTING.md) | Spell economy (slots, concentration, rests) | draft |
+| [SPACE_TIME.md](SPACE_TIME.md) | Spatial and temporal architecture (2.5D today; 3D volumes planned) | implemented |
+| [SPELLCASTING.md](SPELLCASTING.md) | Spell economy (slots, concentration, rests) | implemented (MVP) |
+| [SPELLS.md](SPELLS.md) | Reference for the spells the resolver implements | implemented |
 
 ## Status legend
 

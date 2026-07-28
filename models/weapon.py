@@ -2,7 +2,8 @@
 
 Weapons are objectified combat items with explicit stats that the Python
 combat resolver uses instead of parsing prose from identity files.
-Attack bonuses are per-character (set when loading from CONFIG.md).
+Attack bonuses are per-character (set when loading a character's ``weapons:``
+line from IDENTITY.md).
 """
 
 from __future__ import annotations
@@ -15,9 +16,9 @@ from typing import Optional
 class Weapon:
     """A weapon with fully resolved per-character combat stats.
 
-    ``attack_bonus`` is set at character-load time (from CONFIG.md notation
-    like ``longbow+5``), NOT stored in the weapon library.  All other fields
-    come from the WEAPONS.md library.
+    ``attack_bonus`` is set at character-load time (from IDENTITY.md
+    ``weapons:`` notation like ``longbow+5``), NOT stored in the weapon
+    library.  All other fields come from the WEAPONS.md library.
     """
     id: str               # e.g. "longbow", "shadowbeast_claw"
     name: str             # e.g. "Longbow"

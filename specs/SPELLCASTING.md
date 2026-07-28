@@ -1,13 +1,18 @@
 # SPELLCASTING.md — Engine spec for spell economy
 
-Status: **draft / not yet implemented**. This document is the specification the
-engine should converge toward. It does not describe current behaviour.
+Status: **partially implemented (MVP)**. An engine spell resolver now exists
+(`engine/spell_resolver.py`, with `SpellRuntimeState`): it enforces **slots** and
+**concentration** and applies core spell effects for the spells in its book. The
+implemented spells and their mechanics are catalogued in [SPELLS.md](SPELLS.md);
+`engine/spell_resolver.py` is the source of truth. This document remains the
+fuller target — components, rests, and the complete spell economy — that the MVP
+converges toward; sections describing behaviour the resolver does not yet enforce
+are the spec's *goals*, not current behaviour.
 
-Today the `## Spells` section of each character's `IDENTITY.md` is opaque
-prose handed to the LLM. Slots, components, concentration, and durations are
-unenforced. The engine has a single unused field (`Character.spell_slots_used:
-list[str]`) and no resolver hooks. As a result LLM players (Amara especially)
-re-cast leveled spells freely and stack concurrent concentration effects.
+Historically the `## Spells` section of each character's `IDENTITY.md` was opaque
+prose handed to the LLM, with slots and concentration unenforced — which let LLM
+players re-cast leveled spells freely and stack concurrent concentration effects.
+The MVP resolver closes that gap for its supported spells.
 
 ## Goals
 

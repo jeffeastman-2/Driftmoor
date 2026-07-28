@@ -69,8 +69,17 @@ will read save DC / attack bonus / slot tables / concentration flags.
 
 ### `## Equipment` — required, bullet list
 
-`- ` bullets. Each entry becomes one string in `Character.equipment`.
-Free text — no mechanical parsing today.
+`- ` bullets. Each entry becomes one string in `Character.equipment` (or a flat
+list of catalog ids for the newer materialized-kit path). Prose gear, not the
+mechanical weapon list — structured weapons come from a `- **weapons:**` line
+(in `## Combat Equipment` or `## Combat Statistics`; see WEAPONS_ARMOR.md).
+
+### `## Wealth` — optional, bullet list
+
+- `**Purse:** <amount>` — starting coin, e.g. `- **Purse:** 125 gp`. Parsed by
+  `character_loader._parse_purse` into `Character.purse_cp` (copper). Accepts
+  mixed denominations (`1 gp 5 sp`); absent/unparseable → 0. Coins weigh 50 to
+  the pound in the encumbrance model.
 
 ### `## Dynamic State` — required, structured field list
 
