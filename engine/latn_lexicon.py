@@ -77,16 +77,18 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
 # "go inside the tavern" crosses in.
 # Base (uninflected) forms only where LATN morphology derives the rest: a
 # single-word -s/-ing form resolves to its root and inherits its dims, so
-# "enters"/"entering"/"visits" ground move+enter from "enter"/"visit". Multi-word
-# compounds ("goes inside") aren't single-word-reducible, so they stay. "leaves"
-# stays too -- morphology reads it as the plural of "leaf", not the verb "leave".
+# "enters"/"entering"/"visits"/"leaves" ground move+enter/leave from "enter"/
+# "visit"/"leave" (the -s verb inflection now yields leaves->leave even though
+# the noun singularizer would read it as the plural of "leaf" -- both readings
+# fork). Multi-word compounds ("goes inside") aren't single-word-reducible, so
+# they stay.
 _ENTER_VERB_WORDS: list[str] = [
     "enter", "go inside", "go in", "goes inside",
     "step inside", "steps inside", "walk inside", "head inside", "duck inside",
     "venture inside", "visit",
 ]
 _LEAVE_VERB_WORDS: list[str] = [
-    "leave", "leaves", "exit", "go outside",
+    "leave", "exit", "go outside",
     "goes outside", "go out", "head out", "step outside", "walk out",
 ]
 
