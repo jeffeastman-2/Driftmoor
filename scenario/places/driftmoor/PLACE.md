@@ -14,7 +14,9 @@ Something is wrong and most people know it without being able to say what.
 - `salt_and_iron/` — mercantile, Jorgen Hallowtide
 - `bitter_remedy/` — apothecary, Lytha Varrow
 - `beacon_church/` — church of Pelor, Father Elden Greybeard
-- `ironhoof_forge/` — blacksmith and stables, Darrin and Kara Stonebrook
+- `forge/` — Ironhoof blacksmith, Darrin Stonebrook
+- `stables/` — horse boarding and tack, Kara Stonebrook
+- `corral/` — fenced exercise yard
 - `gilded_trinket/` — pawnshop, Tavian Drakescale
 - `rusty_razor/` — barbershop, Arlan Quickstep
 - `weary_traveler/` — rooming house, Martha Greaves

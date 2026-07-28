@@ -22,7 +22,7 @@ from models.game_state import GameState
 INITIAL_LOCATIONS: dict[str, str] = {
     # Players — each starts in a separate scene
     "kaelin": "broken_lantern",
-    "thorgrim": "ironhoof_forge",
+    "thorgrim": "forge",
     "seraphina": "gilded_trinket",
     "aeliana": "fey_glade",
     "lilar": "old_mill",
@@ -47,8 +47,8 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "lytha": "bitter_remedy",
     "fennel": "fey_glade",
     "elden": "beacon_church",
-    "darrin": "ironhoof_forge",
-    "kara": "ironhoof_forge",
+    "darrin": "forge",
+    "kara": "stables",
     "tavian": "gilded_trinket",
     "arlan": "rusty_razor",
     "martha": "weary_traveler",

@@ -863,6 +863,53 @@ class TestInferDriftmoorVenueTransition:
         assert scene == "bitter_remedy"
         assert (x, y) == (1040.0, 780.0)
 
+    def test_first_class_forge_stables_and_corral_have_distinct_doorways(self):
+        from engine.session import (
+            _driftmoor_enter_doorway,
+            _infer_driftmoor_venue_transition,
+        )
+
+        expected = {
+            "I enter the forge": ("forge", (1267.0, 292.0)),
+            "I enter the stable": ("stables", (1267.0, 195.0)),
+            "I enter the corral": ("corral", (1446.0, 227.0)),
+        }
+        for phrase, (scene_name, point) in expected.items():
+            assert _infer_driftmoor_venue_transition(
+                phrase, "places/driftmoor", "TOWN_COMMON"
+            ) == scene_name
+            doorway = _driftmoor_enter_doorway(
+                phrase, "places/driftmoor", "TOWN_COMMON", None
+            )
+            assert doorway is not None
+            assert doorway[0] == scene_name
+            assert doorway[1][:2] == point
+
+    def test_combined_ironhoof_record_is_not_an_enterable_town_venue(self):
+        from engine.session import _infer_driftmoor_venue_transition
+
+        assert _infer_driftmoor_venue_transition(
+            "I enter Ironhoof Forge", "places/driftmoor", "TOWN_COMMON"
+        ) is None
+
+    def test_exit_forge_and_enter_stables_resolves_sibling_transition(self):
+        from engine.session import _infer_driftmoor_venue_transition
+
+        assert _infer_driftmoor_venue_transition(
+            "I exit the forge and enter the stables",
+            "places/driftmoor/forge",
+            "FORGE",
+        ) == "stables"
+
+    def test_exit_and_enter_venue_with_and_in_name(self):
+        from engine.session import _infer_driftmoor_venue_transition
+
+        assert _infer_driftmoor_venue_transition(
+            "I exit the forge and enter Salt and Iron",
+            "places/driftmoor/forge",
+            "FORGE",
+        ) == "salt_and_iron"
+
     def test_enter_doorway_none_for_exit(self):
         from engine.session import _driftmoor_enter_doorway
         # leaving a child back to the parent is not doorway-gated

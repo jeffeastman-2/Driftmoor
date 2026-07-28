@@ -1,12 +1,14 @@
 # Scene Config — Ironhoof Forge
 
 ## Scene
-- **scene_name:** ironhoof_forge
+- **scene_name:** forge
 - **title:** IRONHOOF FORGE
 - **narrative_title:** The Ironhoof Forge
 - **transcript_title:** IRONHOOF FORGE — Thorgrim, Darrin, Kara
 - **character_summary:** Thorgrim (Grok), Darrin (GPT-4o), Kara (DeepSeek)
 - **default_turns:** 4
+- **geometry_file:** scenario/places/driftmoor/forge/GEOMETRY.md
+- **place_file:** scenario/places/driftmoor/forge/PLACE.md
 
 ## Time
 - **hour:** 7
@@ -48,7 +50,7 @@ Characters may leave this scene. Recognise and permit these:
 Early morning at the forge. You slept poorly in the lean-to — bad dreams again, the ambush, the screaming. You are standing at the forge fire, examining the shadowy symbols carved into the stone wall. They were not here a week ago. The marks are unlike any mason's work you know. Darrin is at the anvil, hammering, pretending not to watch you. His daughter Kara is in the stables — you can hear her talking to the horses.
 
 ## Game State Sections
-- header: Scene: Ironhoof Forge | file: scenario/places/driftmoor/ironhoof_forge/PLACE.md
-- file: scenario/places/driftmoor/ironhoof_forge/CONTENTS.md
+- header: Scene: Ironhoof Forge | file: scenario/places/driftmoor/forge/PLACE.md
+- file: scenario/places/driftmoor/forge/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
 - header: Scene Notes | file: scenes/ironhoof_forge.md#Scene Notes

@@ -15,7 +15,7 @@ from models.thing import Thing
 _VENDOR_MAP: dict[str, tuple[str, str]] = {
     "salt & iron mercantile": ("jorgen", "salt_and_iron"),
     "the bitter remedy": ("lytha", "bitter_remedy"),
-    "ironhoof forge": ("darrin", "ironhoof_forge"),
+    "ironhoof forge": ("darrin", "forge"),
     "the gilded trinket": ("tavian", "gilded_trinket"),
     "dustcloak's curios": ("kelem", "dustcloaks_curios"),
     "the broken lantern": ("tess", "broken_lantern"),

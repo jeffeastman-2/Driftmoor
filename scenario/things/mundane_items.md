@@ -89,7 +89,7 @@ Consolidated price list and item descriptions for all non-magical purchasable go
 
 ## Ironhoof Forge
 *Proprietors: Darrin Stonebrook (forge), Kara Stonebrook (stables)*
-*Location: `places/driftmoor/ironhoof_forge`*
+*Location: `places/driftmoor/forge`*
 *Haggling: DC 13 CHA (Persuasion); Darrin respects quality work and may discount for demonstrated competence.*
 
 ### Forge Services and Goods

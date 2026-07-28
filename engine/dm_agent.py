@@ -554,7 +554,10 @@ class DMRight:
             "the acting character, they did not move this turn — narrate them "
             "stationary (no charges, no strides forward, no closing distance, "
             "no skids to a halt against a barrier). Never contradict the "
-            "engine resolution in your prose."
+            "engine resolution in your prose. [VENUE] entries are authoritative "
+            "about doorway crossings: if one says the character approached but "
+            "did not enter, do not describe them crossing the threshold or being "
+            "inside; if it says they entered, describe the completed entry."
         )
         if character_pronouns:
             pronoun_str = ", ".join(

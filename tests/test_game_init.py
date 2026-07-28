@@ -45,7 +45,7 @@ class TestPlayerInitialLocations:
     def test_thorgrim_at_forge(self, state: GameState):
         """Thorgrim at Ironhoof Forge — a dwarf drawn to the smithy."""
         c = state.get_character("thorgrim")
-        assert c.location == "ironhoof_forge"
+        assert c.location == "forge"
 
     def test_seraphina_at_pawnshop(self, state: GameState):
         """Seraphina at the Gilded Trinket — rogue browsing the pawnshop."""
@@ -98,10 +98,10 @@ class TestNPCInitialLocations:
         assert state.get_character("elden").location == "beacon_church"
 
     def test_darrin_at_forge(self, state: GameState):
-        assert state.get_character("darrin").location == "ironhoof_forge"
+        assert state.get_character("darrin").location == "forge"
 
     def test_kara_at_stables(self, state: GameState):
-        assert state.get_character("kara").location == "ironhoof_forge"
+        assert state.get_character("kara").location == "stables"
 
     def test_tavian_at_pawnshop(self, state: GameState):
         assert state.get_character("tavian").location == "gilded_trinket"

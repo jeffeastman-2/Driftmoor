@@ -71,7 +71,7 @@ class TestParseMundaneItems:
         shoes = next((t for t in items if "horseshoe" in t.name.lower()), None)
         assert shoes is not None
         assert shoes.vendor_id == "darrin"
-        assert shoes.location_id == "ironhoof_forge"
+        assert shoes.location_id == "forge"
 
     def test_gilded_trinket_item(self, items):
         lock = next((t for t in items if "iron lock" in t.name.lower()), None)

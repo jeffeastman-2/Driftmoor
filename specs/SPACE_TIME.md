@@ -233,7 +233,9 @@ WORLD_ORIGINS = {
     "salt_and_iron":          Position(-30, 0, 0),
     "bitter_remedy":          Position(90, -60, 0),
     "beacon_church":          Position(-15, 120, 9),    # z=9: on the rise
-    "ironhoof_forge":         Position(-240, -90, 0),
+    "forge":                  Position(-240, -90, 0),
+    "stables":                Position(-225, -110, 0),
+    "corral":                 Position(-195, -105, 0),
     "dustcloaks_curios":      Position(-360, 180, 0),   # near Mistwood edge
     "elyssa_cottage":         Position(150, 240, 4.5),  # z=4.5: low hill
 

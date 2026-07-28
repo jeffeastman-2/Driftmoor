@@ -123,7 +123,9 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | to_mayors_hall         | 1365 | 942 | places/driftmoor/mayors_hall             |
 | to_tavern              | 910 | 568 | places/driftmoor/broken_lantern          |
 | to_salt_and_iron       | 1040 | 568 | places/driftmoor/salt_and_iron           |
-| to_forge               | 1267 | 292  | places/driftmoor/ironhoof_forge          |
+| to_forge               | 1267 | 292  | places/driftmoor/forge                   |
+| to_stable              | 1267 | 195  | places/driftmoor/stables                 |
+| to_corral              | 1446 | 227  | places/driftmoor/corral                  |
 | to_elyssa_house        | 1446 | 536 | places/driftmoor/elyssa_cottage           |
 | to_apothecary          | 1040 | 780 | places/driftmoor/bitter_remedy           |
 | to_gilded_trinket      | 796 | 568 | places/driftmoor/gilded_trinket          |

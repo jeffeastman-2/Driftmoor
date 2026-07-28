@@ -1823,14 +1823,23 @@ def _clean_venue_aliases(aliases: tuple[str, ...]) -> tuple[str, ...]:
 
 def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
     """``(scene_name, cleaned_aliases)`` for each enterable child of the current
-    place — the venue candidates LATN grounds an "enter <name>" against."""
+    place — the venue candidates LATN grounds an "enter <name>" against.
+
+    A PLACE.md alone does not make a venue enterable from its parent: the
+    parent's geometry must also author a doorway connection to it.  This keeps
+    umbrella/location records (such as the former combined Ironhoof site) from
+    competing with first-class buildings that have their own doors.
+    """
     place = (current_place_path or "").strip().lower().strip("/")
     if not place:
         return ()
+    doorway_children = {
+        child for child, _conn, _x, _y in _driftmoor_source_doorways(place)
+    }
     return tuple(
         (node.scene_name, _clean_venue_aliases(node.aliases))
         for node in _driftmoor_place_registry()
-        if node.parent_place_path == place
+        if node.parent_place_path == place and node.scene_name in doorway_children
     )
 
 
@@ -1859,6 +1868,34 @@ def _infer_driftmoor_venue_transition(
     if current is None:
         return None
 
+    from engine import latn_integration
+
+    # A coordinated "exit X and enter Y" names a sibling venue reached through
+    # the shared parent. Resolve the entry clause against the parent's authored
+    # doorways instead of returning immediately on the first leave VP.
+    if current.parent_place_path:
+        sibling_clauses = re.split(
+            r"\b(?:and\s+(?=(?:i\s+)?(?:enter|go\s+inside|step\s+inside|"
+            r"walk\s+inside)\b)|then\s+(?=(?:i\s+)?(?:enter|go\s+inside|"
+            r"step\s+inside|walk\s+inside)\b))",
+            text,
+        )
+        if len(sibling_clauses) > 1:
+            parent_children = _driftmoor_child_venues(
+                current.parent_place_path
+            )
+            parent_child_names = {sn for sn, _aliases in parent_children}
+            for clause in sibling_clauses[1:]:
+                sibling_res = latn_integration.resolve_venue_transition(
+                    clause, {}, actor_zone or "", parent_children
+                )
+                if (
+                    sibling_res is not None
+                    and sibling_res[0] == "enter"
+                    and sibling_res[1] in parent_child_names
+                ):
+                    return sibling_res[1]
+
     # Candidates = the enterable children, plus the CURRENT place itself so that
     # "leave the rooming house" (naming the place you're in) grounds its object
     # and the leave VP survives policy. A self-referential "enter" is guarded
@@ -1867,7 +1904,6 @@ def _infer_driftmoor_venue_transition(
     child_names = {sn for sn, _ in children}
     candidates = children + ((current.scene_name, _clean_venue_aliases(current.aliases)),)
 
-    from engine import latn_integration
     res = latn_integration.resolve_venue_transition(text, {}, actor_zone or "", candidates)
     if res is None:
         return None
@@ -6426,6 +6462,44 @@ async def iter_session(
                     f"({reason})."
                 )))
 
+            # Tell the narrator whether a doorway-gated "enter" actually
+            # crossed the threshold. Movement coordinates alone cannot express
+            # this distinction, and otherwise prose may claim entry while the
+            # engine merely moved the actor closer to the door.
+            if _enter_info is not None:
+                _venue_now = current_positions.get(
+                    character_id, (0.0, 0.0, "")
+                )
+                _venue_door = _enter_info[1]
+                _venue_dist = (
+                    (float(_venue_now[0]) - _venue_door[0]) ** 2
+                    + (float(_venue_now[1]) - _venue_door[1]) ** 2
+                ) ** 0.5
+                _venue_label = _enter_info[0].replace("_", " ")
+                if _venue_dist > _DOORWAY_ARRIVAL_FT:
+                    attack_log.append(
+                        f"[VENUE] {character_id}: approached the "
+                        f"{_venue_label} but did not enter it this turn "
+                        f"({_venue_dist:.1f} ft from the doorway)."
+                    )
+                else:
+                    attack_log.append(
+                        f"[VENUE] {character_id}: reached the doorway and "
+                        f"entered the {_venue_label} this turn."
+                    )
+            elif intent.intent:
+                _immediate_venue = _infer_driftmoor_venue_transition(
+                    intent.intent,
+                    getattr(scene_geometry, "place_path", "")
+                    if scene_geometry else "",
+                    current_positions.get(character_id, (0.0, 0.0, ""))[2],
+                )
+                if _immediate_venue is not None:
+                    attack_log.append(
+                        f"[VENUE] {character_id}: completed the transition to "
+                        f"{_immediate_venue.replace('_', ' ')} this turn."
+                    )
+
             cr = await turn_cycle.narrate_turn(
                 intent, output, adjudication, "",
                 resolution_log=attack_log if attack_log else None,
@@ -6877,4 +6951,3 @@ async def run_session(
         },
         scene_history="",
     )
-

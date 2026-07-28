@@ -5,8 +5,24 @@ Hot, smoky, loud. The main anvil is large and well-used — the surface tells th
 
 Darrin works here in near-silence, communicating through the rhythm of his hammer.
 
+## Resident NPCs and Creatures
+
+### darrin
+- **type:** npc
+- **soul_file:** scenario/people/npcs/darrin/SOUL.md
+- **identity_file:** scenario/people/npcs/darrin/IDENTITY.md
+- **position:** 26, 13
+
 ## Who Is Normally Here
 - **Darrin Stonebrook**
+
+## Scene Introductions
+
+### darrin
+Morning at the forge. You are hammering a set of horseshoes, but your mind is
+elsewhere. Thorgrim has been studying the cold marks on the wall. From the
+separate stable building you can hear Kara talking to the remaining horses.
+One is still missing.
 
 ## Connections
 - Road (open-fronted, visible from outside)
