@@ -9,7 +9,7 @@ tests (test_combat_resolver) are unchanged.
 
 from __future__ import annotations
 
-import random
+from engine.game_rng import rng
 import re
 
 from models.space_time import Position
@@ -150,7 +150,7 @@ def _resolve_attacks(
 
         target_char = characters[target_id].character
         ac = getattr(target_char, "ac", 10)
-        d20 = random.randint(1, 20)
+        d20 = rng().randint(1, 20)
         total_roll = d20 + hit_bonus
 
         if total_roll >= ac:

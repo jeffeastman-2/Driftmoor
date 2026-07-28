@@ -2,13 +2,15 @@
 
 Extracted from engine.session (low-risk refactor) so combat (attack damage)
 and geometry (boundary-crossing damage) share one implementation rather than
-crossing cluster boundaries. Pure: only re + random.
+crossing cluster boundaries. Rolls go through the shared game RNG so a seed
+reproduces the game.
 """
 
 from __future__ import annotations
 
-import random
 import re
+
+from engine.game_rng import rng
 
 
 def _roll_damage_expr(expr: str) -> int:
@@ -22,7 +24,7 @@ def _roll_damage_expr(expr: str) -> int:
     for m in re.finditer(r'(\d+)\s*[dD]\s*(\d+)', expr):
         count, sides = int(m.group(1)), int(m.group(2))
         for _ in range(count):
-            total += random.randint(1, sides)
+            total += rng().randint(1, sides)
     # Apply flat modifier: the +/- numbers not part of a dice term
     remainder = re.sub(r'\d+\s*[dD]\s*\d+', '', expr)
     for m in re.finditer(r'([+-]\s*\d+)', remainder):

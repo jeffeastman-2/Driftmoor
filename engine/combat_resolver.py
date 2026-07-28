@@ -20,7 +20,7 @@ The resolver handles:
 from __future__ import annotations
 
 import math
-import random
+from engine.game_rng import rng
 import re
 from typing import Optional
 
@@ -43,7 +43,7 @@ def _roll_damage(dice_expr: str) -> int:
     for m in re.finditer(r'(\d+)\s*[dD]\s*(\d+)', dice_expr):
         count, sides = int(m.group(1)), int(m.group(2))
         for _ in range(count):
-            total += random.randint(1, sides)
+            total += rng().randint(1, sides)
     remainder = re.sub(r'\d+\s*[dD]\s*\d+', '', dice_expr)
     for m in re.finditer(r'([+-]\s*\d+)', remainder):
         total += int(m.group(1).replace(' ', ''))
@@ -277,14 +277,14 @@ class CombatResolver:
 
         # 3. Roll attack
         if attack_disadvantage:
-            d20_a = random.randint(1, 20)
-            d20_b = random.randint(1, 20)
+            d20_a = rng().randint(1, 20)
+            d20_b = rng().randint(1, 20)
             d20 = min(d20_a, d20_b)
             log.append(
                 f"[ATTACK] disadvantage applied: rolls {d20_a} and {d20_b} -> using {d20}"
             )
         else:
-            d20 = random.randint(1, 20)
+            d20 = rng().randint(1, 20)
         total_roll = d20 + weapon.attack_bonus
         ac = getattr(target_char, "ac", 10)
         hit = total_roll >= ac

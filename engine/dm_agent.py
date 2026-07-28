@@ -14,7 +14,7 @@ minimal valid data.  When call_llm is provided it is awaited as:
 
 from __future__ import annotations
 
-import random
+from engine.game_rng import rng
 import re
 from dataclasses import dataclass, field
 from typing import Optional
@@ -25,17 +25,17 @@ from engine.player_router import CallLLM, CharacterOutput
 
 def _roll_dice(n: int = 8, sides: int = 20) -> list[int]:
     """Roll n dice with the given number of sides using Python's CSPRNG."""
-    return [random.randint(1, sides) for _ in range(n)]
+    return [rng().randint(1, sides) for _ in range(n)]
 
 
 def _roll_damage_pools(n: int = 6) -> dict[str, list[int]]:
     """Pre-roll damage dice pools for all common die sizes."""
     return {
-        "d4":  [random.randint(1, 4)  for _ in range(n)],
-        "d6":  [random.randint(1, 6)  for _ in range(n)],
-        "d8":  [random.randint(1, 8)  for _ in range(n)],
-        "d10": [random.randint(1, 10) for _ in range(n)],
-        "d12": [random.randint(1, 12) for _ in range(n)],
+        "d4":  [rng().randint(1, 4)  for _ in range(n)],
+        "d6":  [rng().randint(1, 6)  for _ in range(n)],
+        "d8":  [rng().randint(1, 8)  for _ in range(n)],
+        "d10": [rng().randint(1, 10) for _ in range(n)],
+        "d12": [rng().randint(1, 12) for _ in range(n)],
     }
 
 

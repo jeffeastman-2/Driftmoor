@@ -9,7 +9,7 @@ these so the turn loop and other callers are unchanged.
 
 from __future__ import annotations
 
-import random
+from engine.game_rng import rng
 import re
 from typing import Optional
 
@@ -319,7 +319,7 @@ def _check_boundary_crossing(
         # Wisdom saving throw
         wisdom = getattr(character, "wisdom", 10)
         wis_mod = (wisdom - 10) // 2
-        d20 = random.randint(1, 20)
+        d20 = rng().randint(1, 20)
         total = d20 + wis_mod
 
         if total >= dc:

@@ -4848,6 +4848,13 @@ async def iter_session(
     turn_cycle = TurnCycle(character_roles=character_roles)
     scene_history = initial_history
 
+    # Install the session RNG so every gameplay roll (dice, attacks, boundary
+    # checks) draws from ONE seeded stream -- a given seed reproduces the game,
+    # instead of dice reaching for the global `random` module (whose seed
+    # pytest-randomly owns, which made combat-outcome tests flaky by run order).
+    from engine.game_rng import use_rng
+    rng = use_rng(rng)
+
     # (Pre-session inbox/outbox purge removed: the direct Telegram transport has
     # no files; stale messages are handled by TelegramTransport.flush() at each
     # prompt.)

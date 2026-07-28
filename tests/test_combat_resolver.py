@@ -74,7 +74,7 @@ def _target_session() -> CharacterSession:
 
 def test_resolve_without_disadvantage_can_hit(monkeypatch):
     rolls = iter([15, 4])  # d20, damage die
-    monkeypatch.setattr("engine.combat_resolver.random.randint", lambda a, b: next(rolls))
+    monkeypatch.setattr("engine.game_rng._rng.randint", lambda a, b: next(rolls))
 
     resolver = CombatResolver()
     adjudication, _ = resolver.resolve(
@@ -94,7 +94,7 @@ def test_resolve_without_disadvantage_can_hit(monkeypatch):
 def test_resolve_with_disadvantage_uses_lower_roll(monkeypatch):
     # disadvantage d20s: 15 and 2 => uses 2, total 7 vs AC14 -> miss
     rolls = iter([15, 2])
-    monkeypatch.setattr("engine.combat_resolver.random.randint", lambda a, b: next(rolls))
+    monkeypatch.setattr("engine.game_rng._rng.randint", lambda a, b: next(rolls))
 
     resolver = CombatResolver()
     adjudication, log = resolver.resolve(
@@ -142,7 +142,7 @@ def _resolve_with_intent(monkeypatch, intent_text):
     from engine.loadout import default_wield
     from engine.session import _apply_loadout_intent
     monkeypatch.setattr(
-        "engine.combat_resolver.random.randint", lambda a, b: 3)
+        "engine.game_rng._rng.randint", lambda a, b: 3)
     cs = _multi_weapon_attacker()
     default_wield(cs)
     _apply_loadout_intent(intent_text, cs, [])
@@ -188,7 +188,7 @@ def test_preferred_weapon_overrides_best(monkeypatch):
     # A just-picked-up weapon (passed as preferred) is used even though the
     # rapier would otherwise win the damage-max default. It must be wielded.
     monkeypatch.setattr(
-        "engine.combat_resolver.random.randint", lambda a, b: 3)
+        "engine.game_rng._rng.randint", lambda a, b: 3)
     cs = _multi_weapon_attacker()
     cs.wielded = ["rapier", "dagger"]            # both in hand
     dagger = next(w for w in cs.weapons if w.id == "dagger")
@@ -205,7 +205,7 @@ def test_preferred_weapon_overrides_best(monkeypatch):
 
 def test_preferred_weapon_ignored_when_not_wielded(monkeypatch):
     monkeypatch.setattr(
-        "engine.combat_resolver.random.randint", lambda a, b: 3)
+        "engine.game_rng._rng.randint", lambda a, b: 3)
     cs = _multi_weapon_attacker()
     cs.wielded = ["rapier"]                       # dagger NOT in hand
     dagger = next(w for w in cs.weapons if w.id == "dagger")
