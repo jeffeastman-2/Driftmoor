@@ -13,6 +13,7 @@ A simple stone-and-wood building crowded with everyday goods. Shelves overflow w
 - **type:** npc
 - **soul_file:** scenario/people/npcs/jedrin/SOUL.md
 - **identity_file:** scenario/people/npcs/jedrin/IDENTITY.md
+- **position:** 22, 22
 
 ## Scene Introductions
 

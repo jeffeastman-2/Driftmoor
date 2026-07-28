@@ -29,7 +29,7 @@ Driftmoor v0.1 is ready when:
 
 ### Included
 
-- Driftmoor town map and its 25 first-class destinations
+- Driftmoor town map and its 26 first-class destinations
 - Town building entry and exit
 - Resident NPC loading and introductions
 - Spatial movement, visibility, and map rendering
@@ -127,6 +127,7 @@ Current automatically verified destinations:
 
 - [x] `dustcloaks_curios` — Dustcloak's house/curios
 - [x] `beacon_church` — church
+- [x] `graveyard` — graveyard/cemetery
 - [x] `mayors_hall` — mayor's hall
 - [x] `broken_lantern` — tavern
 - [x] `salt_and_iron` — mercantile
@@ -173,7 +174,7 @@ Remaining place work:
 - [ ] Review every Driftmoor NPC's `IDENTITY.md` for required runtime fields.
 - [ ] Review every Driftmoor NPC's `SOUL.md` for stable voice, knowledge, and
       motivations.
-- [ ] Confirm residents appear at plausible positions in their building
+- [x] Confirm residents appear at plausible positions in their building
       geometry.
 - [ ] Confirm NPC knowledge does not reveal DM-only or unperceived information.
 - [ ] Confirm NPC starting locations agree across initialization, place files,
@@ -344,5 +345,5 @@ Record release-focused decisions and milestone completions here.
 - 2026-07-28: Classified Fey Glade and Echoing Caverns as experimental
   previews.
 - 2026-07-28: Deferred Old Mill and Haverstad first-class NPC work.
-- 2026-07-28: Added automated coverage for all 25 first-class Driftmoor
+- 2026-07-28: Added automated coverage for all 26 first-class Driftmoor
   destinations and their initialized resident NPCs.

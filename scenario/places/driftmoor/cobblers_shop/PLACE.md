@@ -13,6 +13,7 @@ A snug brick-walled shop. Shoes of all shapes and sizes in the front window. The
 - **type:** npc
 - **soul_file:** scenario/people/npcs/marta/SOUL.md
 - **identity_file:** scenario/people/npcs/marta/IDENTITY.md
+- **position:** 16, 19
 
 ## Scene Introductions
 

@@ -15,6 +15,7 @@ The horses near the Mistwood road stall have been spooked for weeks.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/kara/SOUL.md
 - **identity_file:** scenario/people/npcs/kara/IDENTITY.md
+- **position:** 46, 55
 
 ### bramble
 - **type:** creature

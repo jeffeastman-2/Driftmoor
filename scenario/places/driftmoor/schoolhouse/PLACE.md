@@ -13,6 +13,7 @@ A one-room building with a bell on the roof. Chalkboard, rows of wooden desks. C
 - **type:** npc
 - **soul_file:** scenario/people/npcs/alina/SOUL.md
 - **identity_file:** scenario/people/npcs/alina/IDENTITY.md
+- **position:** 22, 26
 
 ## Scene Introductions
 

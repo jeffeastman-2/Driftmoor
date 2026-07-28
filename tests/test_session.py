@@ -708,6 +708,17 @@ class TestInferCoordinateDestination:
         from engine.session import _infer_coordinate_destination
         assert _infer_coordinate_destination("move to the forge", self._geom()) is None
 
+    def test_explicit_decimal_coordinate_overrides_wrong_structured_target(self):
+        from engine.session import _coordinate_authoritative_target
+
+        target = _coordinate_authoritative_target(
+            "I move to [1272.7,1008.1]",
+            (900.0, 1008.1, 0.0),
+            self._geom(),
+        )
+        assert target is not None
+        assert target[:2] == (1272.7, 1008.1)
+
 
 class TestMovementBudgetPerTurn:
     """Speed is per melee round; exploration turns span multiple rounds."""
@@ -2700,6 +2711,17 @@ class TestResolveTeleportDestination:
 
     def test_no_geometry_returns_none(self):
         assert _resolve_teleport_destination("Teleport to the echo chamber", None) is None
+
+    def test_exact_coordinate_destination(self, geo):
+        from models.space_time import Position
+
+        dest = _resolve_teleport_destination(
+            "I cast Teleport to [190, 162]", geo
+        )
+        assert dest is not None
+        x, y, label = dest
+        assert (x, y) == (190.0, 162.0)
+        assert label == (geo.zone_at(Position(x, y)) or "").upper()
 
     def test_named_item_feature_resolves_to_its_position(self, geo):
         from models.contents_loader import load_contents_with_geometry

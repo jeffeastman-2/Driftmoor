@@ -22,6 +22,11 @@ def test_web_server_allows_explicit_private_network_bind():
     assert args.port == 8090
 
 
+def test_map_double_click_command_uses_integer_coordinates():
+    assert "x.toFixed(0)" in web_play._PAGE
+    assert "y.toFixed(0)" in web_play._PAGE
+
+
 def _weapon(wid, name):
     return NS(id=wid, name=name)
 

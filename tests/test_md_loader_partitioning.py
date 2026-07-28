@@ -160,6 +160,18 @@ def test_configure_from_place_path_loads_resident_npc_without_intro_block():
     assert lytha.character.character_type == "npc"
 
 
+def test_scene_loader_attaches_authored_player_spellcasting():
+    from pathlib import Path
+    from engine.md_loader import configure_from_md
+
+    cfg = configure_from_md(Path("scenes/driftmoor.md"))
+    profile = cfg.characters["gilthaness"].character.spellcasting
+
+    assert profile is not None
+    assert any(spell.name == "Teleport" for spell in profile.known)
+    assert profile.spell_slots_max[7] == 1
+
+
 def test_build_npc_allows_missing_scene_introduction():
     cs = _build_player_or_npc(
         "lytha",

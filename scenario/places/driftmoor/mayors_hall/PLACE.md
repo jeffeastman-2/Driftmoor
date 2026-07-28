@@ -29,11 +29,13 @@ The heart of the building. Rows of simple wooden benches face a raised dais with
 - **type:** npc
 - **soul_file:** scenario/people/npcs/aldren/SOUL.md
 - **identity_file:** scenario/people/npcs/aldren/IDENTITY.md
+- **position:** 58, 29
 
 ### elise
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elise/SOUL.md
 - **identity_file:** scenario/people/npcs/elise/IDENTITY.md
+- **position:** 16, 45
 
 ## Scene Introductions
 

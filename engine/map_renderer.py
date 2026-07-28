@@ -92,7 +92,7 @@ _PANZOOM_JS = (
     r"s.addEventListener('mousedown',function(e){d=true;I();l={x:e.clientX,y:e.clientY};"
     r"s.style.cursor='grabbing';e.preventDefault();});"
     r"s.addEventListener('dblclick',function(e){e.preventDefault();I();var p=P(e);"
-    r"var x=Math.round(p.x*10)/10;var y=Math.round((-p.y)*10)/10;"
+    r"var x=Math.round(p.x);var y=Math.round(-p.y);"
     r"try{if(window.parent&&window.parent!==window)"
     r"window.parent.postMessage({type:'driftmoor-map-dblclick',x:x,y:y,shift:!!e.shiftKey},'*');}catch(_){}"
     r"});"

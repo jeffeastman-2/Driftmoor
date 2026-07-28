@@ -55,6 +55,14 @@ def test_driftmoor_building_is_enterable_and_loads_its_npcs(
     cfg = configure_from_place_path(f"places/driftmoor/{place_id}")
     assert cfg.scene_geometry is not None
     assert cfg.scene_geometry.place_path == f"places/driftmoor/{place_id}"
+    assert set(cfg.characters) <= set(cfg.scene_geometry.starting_positions)
+    for resident_id in cfg.characters:
+        start = cfg.scene_geometry.starting_positions[resident_id]
+        assert cfg.scene_geometry.zone_at(start)
+        assert not any(
+            obstacle.contains(start)
+            for obstacle in cfg.scene_geometry.impassable
+        )
 
     # The interior must author a reciprocal exit/arrival point back to town.
     assert _entry_point_from_target_geometry(

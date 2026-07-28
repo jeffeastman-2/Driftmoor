@@ -575,7 +575,7 @@ window.addEventListener('message',ev=>{
     if(inp.disabled)return; // only draft moves during your active turn
     const x=Number(m.x),y=Number(m.y);
     if(!Number.isFinite(x)||!Number.isFinite(y))return;
-    const pt='['+x.toFixed(1)+','+y.toFixed(1)+']';
+    const pt='['+x.toFixed(0)+','+y.toFixed(0)+']';
     const cmd='I move to '+pt;
     const prev=inp.value.trim();
     if(!prev)inp.value=cmd;

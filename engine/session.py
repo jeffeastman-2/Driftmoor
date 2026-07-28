@@ -2150,6 +2150,18 @@ def _infer_coordinate_destination(
     return (x, y, zone)
 
 
+def _coordinate_authoritative_target(
+    intent_text: str,
+    structured_target: Optional[tuple[float, float, float]],
+    scene_geometry: Optional["SceneGeometry"],
+) -> Optional[tuple[float, float, str] | tuple[float, float, float]]:
+    """Prefer a coordinate written in the intent over model-generated fields."""
+    return (
+        _infer_coordinate_destination(intent_text, scene_geometry)
+        or structured_target
+    )
+
+
 def _infer_cardinal_destination(
     intent_text: str,
     my_pos: Optional[tuple[float, float, str]],
@@ -2713,6 +2725,17 @@ def _resolve_teleport_destination(
     words = _dest_tokens(intent_text)
     if not words:
         return None
+
+    # Map-assisted casting may name an exact coordinate. Teleport is itself the
+    # relocation cue, so this path is not subject to ordinary movement cues or
+    # speed clamping.
+    coordinate_match = _COORD_DEST_RE.search(intent_text or "")
+    if coordinate_match is not None:
+        cx = float(coordinate_match.group(1))
+        cy = float(coordinate_match.group(2))
+        zone = (scene_geometry.zone_at(Position(cx, cy)) or "").upper()
+        if zone:
+            return (cx, cy, zone)
 
     def _best(candidates: list[tuple[str, float, float, str]]):
         best = None
@@ -5774,7 +5797,29 @@ async def iter_session(
             # DM-Left can reject the action (approved=False) but cannot rewrite
             # the destination — its MOVEMENT TARGET is ignored here.
             # Skipped when CombatResolver already applied movement.
-            player_target = intent.movement_target  # (x, y, z) or None
+            player_target = _coordinate_authoritative_target(
+                intent.intent,
+                intent.movement_target,
+                scene_geometry,
+            )
+
+            # An explicit coordinate in the intent is authoritative over a
+            # model-generated MOVEMENT field. This is especially important for
+            # map double-click commands: the language model may otherwise emit
+            # a nearby or even opposite-direction coordinate despite repeating
+            # the requested destination in its prose.
+            _explicit_coordinate = _infer_coordinate_destination(
+                intent.intent, scene_geometry
+            )
+            if _explicit_coordinate is not None and adjudication.approved:
+                player_target = _explicit_coordinate
+                intent.movement_target = _explicit_coordinate
+                attack_log.append(
+                    f"[COORDINATE] {character_id}: explicit intent coordinate "
+                    f"({_explicit_coordinate[0]:.1f},"
+                    f"{_explicit_coordinate[1]:.1f}) overrides structured "
+                    f"movement."
+                )
 
             # "enter <venue>" is a distance-clamped walk to that venue's front
             # door (its authored connection point), not a teleport. Resolve the

@@ -39,9 +39,13 @@ platform with views over the town and harbor. Oil lamps at top.
 
 ## Impassable
 
-| description | vertices                    |
-|-------------|-----------------------------|
-| Tower walls | (0,0) (32,0) (32,32) (0,32) |
+| description      | vertices                         |
+|------------------|----------------------------------|
+| North tower wall | (0,29) (32,29) (32,32) (0,32)  |
+| West tower wall  | (0,0) (3,0) (3,32) (0,32)      |
+| East tower wall  | (29,0) (32,0) (32,32) (29,32)  |
+| South wall west  | (0,0) (13,0) (13,3) (0,3)      |
+| South wall east  | (19,0) (32,0) (32,3) (19,3)    |
 
 ---
 

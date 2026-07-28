@@ -208,6 +208,13 @@ def test_building_zone_tooltip_title_cases_type(tmp_path):
     ) == "Cooper: The Cooper's Shed"
 
 
+def test_map_double_click_emits_integer_coordinates():
+    from engine.map_renderer import _PANZOOM_JS
+
+    assert "var x=Math.round(p.x);var y=Math.round(-p.y);" in _PANZOOM_JS
+    assert "Math.round(p.x*10)/10" not in _PANZOOM_JS
+
+
 def test_render_turn_slider_live_positions_override(tmp_path):
     """Live (mid-turn) positions stamp the latest frame so the map shows current
     positions; a dormant creature passed in live_positions stays fogged."""

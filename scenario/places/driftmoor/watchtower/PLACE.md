@@ -13,6 +13,7 @@ A squat stone tower in the center of town. Simple wooden door, a ladder ascendin
 - **type:** npc
 - **soul_file:** scenario/people/npcs/darwin/SOUL.md
 - **identity_file:** scenario/people/npcs/darwin/IDENTITY.md
+- **position:** 16, 16
 
 ## Scene Introductions
 

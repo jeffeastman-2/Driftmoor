@@ -885,6 +885,16 @@ def _build_player_or_npc(
             purse_cp=purse_cp,
         )
 
+    # Scene loading builds its own Character objects rather than going through
+    # models.character_loader. Attach the same structured spellcasting profile
+    # here so authored spells (including high-level utility spells such as
+    # Teleport) work in interactive scenes instead of existing only as prose.
+    if char_type == "player":
+        from models.spellcasting import parse_spellcasting
+        character.spellcasting = parse_spellcasting(
+            _extract_section(identity_text, "Spells")
+        )
+
     soul = ""
     if cfg.get("soul_file"):
         soul = _load(ROOT / cfg["soul_file"])

@@ -29,7 +29,7 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 - **type:** npc
 - **soul_file:** scenario/people/npcs/wilfred/SOUL.md
 - **identity_file:** scenario/people/npcs/wilfred/IDENTITY.md
-- **position:** 56, 20
+- **position:** 56, 26
 
 ### bran
 - **type:** npc

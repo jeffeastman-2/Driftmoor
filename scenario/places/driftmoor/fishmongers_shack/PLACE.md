@@ -13,6 +13,7 @@ A small weathered shack near the harbor with a slanted roof and a sign shaped li
 - **type:** npc
 - **soul_file:** scenario/people/npcs/kessla/SOUL.md
 - **identity_file:** scenario/people/npcs/kessla/IDENTITY.md
+- **position:** 16, 9
 
 ## Scene Introductions
 
