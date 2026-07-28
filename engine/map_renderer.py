@@ -233,7 +233,7 @@ def _zone_tooltip(zname: str, dest: str | None, scenario_root: Path | None) -> s
                 title = ""
             _PLACE_TITLE_CACHE[key] = title
         if title:
-            return f"{zname}: {title}"
+            return f"{label}: {title}"
     return label
 
 
@@ -1466,4 +1466,3 @@ if __name__ == "__main__":
         except FileNotFoundError as exc:
             sys.stderr.write(f"error: {exc}\n")
             sys.exit(1)
-

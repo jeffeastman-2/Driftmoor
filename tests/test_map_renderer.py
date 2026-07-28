@@ -194,6 +194,20 @@ def test_item_tooltip_label_only_without_detail():
     assert _item_tooltip("Torch bracket", None) == "Torch bracket"
 
 
+def test_building_zone_tooltip_title_cases_type(tmp_path):
+    from engine.map_renderer import _zone_tooltip
+
+    place = tmp_path / "places" / "driftmoor" / "coopers_shed"
+    place.mkdir(parents=True)
+    (place / "PLACE.md").write_text(
+        "# PLACE.md — The Cooper's Shed\n", encoding="utf-8"
+    )
+
+    assert _zone_tooltip(
+        "COOPER", "places/driftmoor/coopers_shed", tmp_path
+    ) == "Cooper: The Cooper's Shed"
+
+
 def test_render_turn_slider_live_positions_override(tmp_path):
     """Live (mid-turn) positions stamp the latest frame so the map shows current
     positions; a dormant creature passed in live_positions stays fogged."""

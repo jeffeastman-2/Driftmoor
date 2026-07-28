@@ -103,6 +103,9 @@ class TestNPCInitialLocations:
     def test_kara_at_stables(self, state: GameState):
         assert state.get_character("kara").location == "stables"
 
+    def test_elise_at_mayors_hall(self, state: GameState):
+        assert state.get_character("elise").location == "mayors_hall"
+
     def test_tavian_at_pawnshop(self, state: GameState):
         assert state.get_character("tavian").location == "gilded_trinket"
 

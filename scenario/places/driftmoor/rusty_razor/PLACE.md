@@ -5,6 +5,21 @@ A small wooden building tucked into a corner near the village square. Red-and-wh
 
 The social hub for male townsfolk and the best source of current gossip in Driftmoor after the tavern.
 
+## Resident NPCs and Creatures
+
+### arlan
+- **type:** npc
+- **soul_file:** scenario/people/npcs/arlan/SOUL.md
+- **identity_file:** scenario/people/npcs/arlan/IDENTITY.md
+
+## Scene Introductions
+
+### arlan
+The stove is warm and both razors are freshly stropped. You are sweeping the
+last dark curls from beneath a customer chair while the village square passes
+outside the window. By midday, someone will sit down carrying news they claim
+not to be spreading.
+
 ## Who Is Normally Here
 - **Arlan Quickstep** — almost always, scissors in hand or not
 - One or two customers during the day

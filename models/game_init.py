@@ -37,6 +37,7 @@ INITIAL_LOCATIONS: dict[str, str] = {
 
     # Named NPCs — at their home locations
     "aldren": "mayors_hall",
+    "elise": "mayors_hall",
     "elyssa": "elyssa_cottage",
     "kelem": "dustcloaks_curios",
     "jorgen": "salt_and_iron",

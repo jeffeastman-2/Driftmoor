@@ -19,6 +19,32 @@ The heart of the building. Rows of simple wooden benches face a raised dais with
 - Flagpole with faded town banner
 - Stone steps flanked by lanterns lit each evening
 
+## Resident NPCs and Creatures
+
+### aldren
+- **type:** npc
+- **soul_file:** scenario/people/npcs/aldren/SOUL.md
+- **identity_file:** scenario/people/npcs/aldren/IDENTITY.md
+
+### elise
+- **type:** npc
+- **soul_file:** scenario/people/npcs/elise/SOUL.md
+- **identity_file:** scenario/people/npcs/elise/IDENTITY.md
+
+## Scene Introductions
+
+### aldren
+You are at the long table in the main hall with town records spread before
+you. The building is quiet enough to hear the fire and the occasional footstep
+outside the oak doors. Driftmoor's ordinary problems are waiting in neat
+stacks; the less ordinary ones refuse to stay on paper.
+
+### elise
+You are in the records room checking the shelf where the old incident ledger
+should be. The surrounding volumes are ordered correctly, and the gap is too
+clean to be an accident. Aldren is working in the main hall. You have the room
+key at your belt and a list of recent archive requests beside the lamp.
+
 ## Who Is Normally Here
 - **Aldren Thorne** — mayor, usually in his office during the day
 - **Elise Harper** — sharp-eyed clerk, manages the records room

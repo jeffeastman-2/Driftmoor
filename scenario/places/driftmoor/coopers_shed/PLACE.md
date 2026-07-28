@@ -3,6 +3,21 @@
 ## Description and Atmosphere
 A utilitarian structure near the harbor. The yard is littered with wooden staves and iron hoops. The rhythmic pounding of mallet work. Tomas works in near-silence, preferring the sound of the wood. Small wooden toys are sometimes visible near the entrance — gifts for the town's children.
 
+## Resident NPCs and Creatures
+
+### tomas
+- **type:** npc
+- **soul_file:** scenario/people/npcs/tomas/SOUL.md
+- **identity_file:** scenario/people/npcs/tomas/IDENTITY.md
+
+## Scene Introductions
+
+### tomas
+You are fitting an iron hoop around a half-finished barrel, testing the staves
+with small, measured taps of your mallet. Harbor noise carries through the open
+shed, but the wood has your attention. A little carved boat waits near the
+door for whichever child notices it first.
+
 ## Who Is Normally Here
 - **Tomas Reed**
 
