@@ -439,14 +439,27 @@ def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
             # vector's action dimensions directly (isa), not a collapsed verb
             # string, so a multi-dimension verb still registers. A take of a
             # non-catalog thing is left to the normal take/steal path (None).
-            if vec.isa("buy") or vec.isa("take"):
+            if (vec.isa("buy") or vec.isa("take") or vec.isa("eat")
+                    or vec.isa("drink") or vec.isa("consume")):
                 np = _destination_np(vp)
                 if np is None:
                     return ("buy", None) if vec.isa("buy") else None
+                if vec.isa("eat") or vec.isa("drink") or vec.isa("consume"):
+                    # If the player already possesses a matching consumable,
+                    # this is use, not another shop order.  Possessions and the
+                    # current catalog share the adapter, so explicitly give the
+                    # former routing priority.
+                    owned = _entities_of_kind(
+                        adapter.resolve_noun_phrase(np), "item")
+                    if owned:
+                        return None
                 cat = _entities_of_kind(adapter.resolve_noun_phrase(np), "catalog")
                 if cat:
                     return ("buy", _unique_winner(cat))
-                return ("buy", None) if vec.isa("buy") else None
+                # No catalog match at all is not commerce ("looking for the way
+                # out").  A non-empty but tied catalog list above deliberately
+                # returns ("buy", None), allowing the host to ask which good.
+                return None
     return None
 
 

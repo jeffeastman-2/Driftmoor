@@ -56,6 +56,7 @@ def test_intent_has_action_reads_verb_dims():
     # cast / search dims too
     assert intent_has_action("cast fireball", "cast")
     assert intent_has_action("invoke the ward", "cast")
+    assert intent_has_action("teleport", "cast")
     assert intent_has_action("look around", "search", "examine")
     assert intent_has_action("scan the room", "search", "examine")
     assert not intent_has_action("cast fireball", "search", "examine")

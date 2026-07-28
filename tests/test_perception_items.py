@@ -230,9 +230,10 @@ class TestDistantItemAppearance:
         finally:
             items["snapped_torch"].discovered_by.discard("seraphina")
 
-    def test_unauthored_item_uses_generic_placeholder(self, geometry, items):
-        # An item with a size but NO authored bands, viewed in its "far" band,
-        # reads as a generic placeholder rather than its label.
+    def test_unauthored_far_item_is_omitted_as_visual_clutter(self, geometry, items):
+        # An item with no authored far silhouette should not become a generic
+        # "indistinct shape"; that flooded populated interiors with implausible
+        # mystery objects. It appears once close enough to identify.
         from models.item import Item
         from models.space_time import Position
 
@@ -251,7 +252,7 @@ class TestDistantItemAppearance:
             characters=_observer("thorgrim", race="Mountain Dwarf"),
             items={"mystery_lump": mystery},
         )
-        assert "indistinct shape" in perception, perception
+        assert "indistinct shape" not in perception, perception
         assert "Mystery lump" not in perception, perception
 
 

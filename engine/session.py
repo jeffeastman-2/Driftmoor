@@ -1338,8 +1338,10 @@ def _build_perception(
                 # Close enough (for its size) to identify by sight.
                 shown = label
             else:
-                # Far/distant and unauthored — only a vague shape registers.
-                shown = "An indistinct shape, too far to make out"
+                # An unauthored small prop at long range is visual clutter, not
+                # a useful "mystery shape".  Omit it until close enough to
+                # identify; authored far/distant silhouettes still appear.
+                continue
             view_lines.append(
                 f"- {shown} ({zone_prefix}~{dist_rounded:.0f} ft away)"
             )
@@ -3286,6 +3288,27 @@ async def _handle_commerce(
               f"outcome — do not change the price, the good, or whether it happened.",
               f"{actor} buys the {name} from {keep} for {price}.",
               f"you bought {name} for {price}.")
+        # In a food-service venue, "drink the ale" / "eat the pie" naturally
+        # means order and consume it.  Commerce owns the purchase first; once
+        # settled, run the same affordance-gated manipulation used for any
+        # possessed consumable.
+        from engine import manipulation
+        consume_verb = manipulation.classify_verb(intent_text, thing)
+        if consume_verb in {"eat", "drink"}:
+            mr = manipulation.apply_manipulation(
+                cs, consume_verb, thing, items=items,
+                actor_pos=(0.0, 0.0, ""), actor_zone="",
+                character_id=character_id, game_time=game_time,
+                turn_num=turn_num,
+            )
+            if mr.applied:
+                attack_log.extend(mr.log)
+                recent_events.extend(mr.events)
+                for note in mr.memory:
+                    _append_memory_note(cs, note)
+                from models.thing import CONSUMED
+                if getattr(getattr(thing, "carry", None), "location", "") == CONSUMED:
+                    items.pop(thing.id, None)
 
     res = resolve_commerce(
         intent_text, possessions, characters, "", catalog.entries_for(shopkeeper))
@@ -4589,6 +4612,38 @@ def _looks_like_question(text: str) -> bool:
     return first in _WH_WORDS
 
 
+def _spell_help(text: str, cs: CharacterSession) -> Optional[str]:
+    """Answer generic spell prompts without consuming a turn.
+
+    A bare ``spell`` / ``cast a spell`` cannot identify one spell to cast.
+    Return the truthful engine-supported subset for this character, including
+    remaining slots, instead of sending the ambiguity to the LLM.
+    """
+    normalized = re.sub(r"[^a-z ]+", " ", (text or "").lower())
+    normalized = " ".join(normalized.split())
+    help_forms = {
+        "spell", "spells", "cast spell", "cast a spell",
+        "what spell can i cast", "what spells can i cast",
+        "which spell can i cast", "which spells can i cast",
+    }
+    if normalized not in help_forms:
+        return None
+    from engine.spell_resolver import supported_spells_for
+    spells = supported_spells_for(cs.character)
+    if not spells:
+        return "You have no spells that the Python spell resolver currently supports."
+    profile = getattr(cs.character, "spellcasting", None)
+    slot_bits = []
+    if profile is not None:
+        for level in sorted(profile.spell_slots_max):
+            maximum = profile.spell_slots_max[level]
+            remaining = maximum - profile.spell_slots_used.get(level, 0)
+            slot_bits.append(f"level {level}: {remaining}/{maximum}")
+    slots = "; ".join(slot_bits)
+    tail = f" Remaining slots: {slots}." if slots else ""
+    return "Engine-supported spells you can cast: " + ", ".join(spells) + "." + tail
+
+
 async def _dm_answer(turn_cycle: TurnCycle, context: RoleContext, question: str) -> str:
     """Answer a human player's question to the DM, bounded to what their
     character can currently perceive. Reuses the character's own LLM provider;
@@ -4692,6 +4747,10 @@ async def _player_roles_via_transport(
         if not inbound:
             # Telegram's poll_once long-polls (~30s) then returns empty; web's
             # receive blocks until input. Either way, loop for the next line.
+            continue
+        spell_help = _spell_help(inbound, cs)
+        if spell_help is not None:
+            await _send(spell_help)
             continue
         # Let LATN answer the question first (cheap; returns None for a
         # non-question). The parallel SQ pass grounds shop-catalog questions --

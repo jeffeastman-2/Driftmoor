@@ -66,6 +66,7 @@ class TestParseMundaneItems:
         assert ale is not None
         assert ale.vendor_id == "tess"
         assert ale.location_id == "broken_lantern"
+        assert {"holdable", "consumable", "drinkable"} <= ale.affordances
 
     def test_ironhoof_forge_item(self, items):
         shoes = next((t for t in items if "horseshoe" in t.name.lower()), None)
@@ -96,6 +97,12 @@ class TestParseMundaneItems:
         assert bread is not None
         assert bread.vendor_id == "maribel"
         assert bread.location_id == "bakery"
+        assert {"holdable", "consumable", "edible"} <= bread.affordances
+
+    def test_general_store_preserved_food_is_edible(self, items):
+        food = next(t for t in items if t.name.startswith("Preserved food"))
+        assert food.vendor_id == "jedrin"
+        assert {"holdable", "consumable", "edible"} <= food.affordances
 
     def test_description_populated(self, items):
         """Items with a Description/Effect/Notes column should have descriptions."""
@@ -157,6 +164,7 @@ class TestParseMagicalItems:
         assert "25 gp" in amulet.price
         assert amulet.vendor_id == "tavian"
         assert amulet.location_id == "gilded_trinket"
+        assert {"holdable", "wearable"} <= amulet.affordances
 
     def test_cracked_compass(self, items):
         compass = next((t for t in items if "compass" in t.name.lower()), None)

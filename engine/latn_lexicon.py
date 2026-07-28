@@ -49,7 +49,10 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("attack", ["attack", "strike", "hit", "swing", "swing at", "slash",
                 "stab", "thrust", "shoot", "fire", "fire at", "loose", "lunge",
                 "lunge at", "charge", "aim"]),
-    ("cast", ["cast", "invoke", "channel"]),
+    # A known spell name can also be used as the command itself ("teleport to
+    # the bridge").  Register Teleport as a cast verb as well as matching it by
+    # name in the spell resolver; this keeps the natural shorthand actionable.
+    ("cast", ["cast", "invoke", "channel", "teleport"]),
     ("move", ["move", "go", "walk", "approach", "advance", "step", "head",
               "follow", "continue", "proceed", "return", "climb"]),
     ("dash", ["dash", "sprint", "rush", "run"]),
@@ -148,7 +151,17 @@ _SETTING_PROPER_NOUNS: list[str] = ["driftmoor"]
 # "leaf" also gives "leaves" a noun reading: with the verb "leaves" already in
 # _LEAVE_VERB_WORDS, the homograph now forks (noun leaf / verb leave) and the
 # grammar keeps whichever parses -- "the leaves" (NP) vs "she leaves" (VP).
-_COMMON_NOUNS: list[str] = ["leaf"]
+_COMMON_NOUNS: list[str] = [
+    "leaf",
+    # Conversational/shop/spell vocabulary which need not denote a live scene
+    # entity, but must remain valid input to the parser and its honesty check.
+    "sale", "spell",
+]
+
+# Standalone social openings are discourse acts, not world actions.  Giving
+# them a grammatical reading prevents the unknown-word dialog from rejecting
+# perfectly ordinary greetings; the DM/NPC conversation layer still answers.
+_DISCOURSE_WORDS: list[str] = ["hi", "hello", "greetings"]
 
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
@@ -251,6 +264,8 @@ def _build_rpg_layer() -> dict:
     # Money words -> nouns carrying the currency axis (wealth questions).
     for word in _CURRENCY_WORDS:
         layer[word.lower()] = _vf("noun", currency=1.0)
+    for word in _DISCOURSE_WORDS:
+        layer[word.lower()] = _vf("adv")
     # Consumption verbs -> eat/drink/consume dims (state-gated in manipulation).
     for canonical, words in _CONSUME_VERB_SYNONYMS:
         for word in words:
@@ -364,6 +379,19 @@ def _build_world_layer(characters: Iterable, items: Iterable, places: Iterable,
         # character before names are exchanged), falling back to the base.
         handle = getattr(c, "scene_handle", "") or getattr(base, "scene_handle", "") or ""
         _add_noun_text(layer, handle)
+        # A player's authored spell names are live vocabulary.  Without this,
+        # the unknown-word honesty dialog rejected perfectly valid commands
+        # such as "cast Minor Illusion" before spell adjudication could explain
+        # whether that spell is implemented.
+        profile = getattr(base, "spellcasting", None)
+        if profile is not None:
+            spells = (
+                list(getattr(profile, "cantrips", None) or [])
+                + list(getattr(profile, "prepared", None) or [])
+                + list(getattr(profile, "known", None) or [])
+            )
+            for spell in spells:
+                _add_noun_text(layer, _note(getattr(spell, "name", "") or ""))
         for field, attr in (("race", "race"), ("class", "character_class"), ("role", "role")):
             value = getattr(base, attr, "") or ""
             dim = property_dim(field, value)

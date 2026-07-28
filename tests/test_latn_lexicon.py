@@ -115,3 +115,26 @@ def test_setting_and_common_nouns_registered():
                 "verb" if h.tokens[0].isa("verb") else "?")
                for h in latn_tokenize_layer1("leaves")}
     assert "noun" in pos and "verb" in pos, pos
+
+
+def test_conversation_commerce_and_spell_words_are_known():
+    pytest.importorskip("latn.lexer.vector_space")
+    from engine.latn_lexicon import build_driftmoor_lexicon
+    lex = build_driftmoor_lexicon([], [])
+
+    assert not _tok_map(lex, "hello")["hello"].isa("unknown")
+    assert _tok_map(lex, "for sale")["sale"].isa("noun")
+    assert _tok_map(lex, "a spell")["spell"].isa("noun")
+    assert _tok_map(lex, "teleport")["teleport"].isa("cast")
+
+
+def test_authored_character_spell_names_are_world_vocabulary():
+    pytest.importorskip("latn.lexer.vector_space")
+    from models.spellcasting import Spell, SpellcastingProfile
+    from engine.latn_lexicon import build_driftmoor_lexicon
+
+    caster = _Ch(name="Gil")
+    caster.spellcasting = SpellcastingProfile(
+        ability="INT", known=[Spell(name="Minor Illusion", level=0)])
+    lex = build_driftmoor_lexicon([caster], [])
+    assert not _tok_map(lex, "cast minor illusion")["minor illusion"].isa("unknown")

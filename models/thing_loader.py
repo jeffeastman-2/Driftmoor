@@ -5,7 +5,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from models.thing import Thing
+from models.thing import (
+    CONSUMABLE, DRINKABLE, EDIBLE, HOLDABLE, WEARABLE, Thing,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +174,7 @@ def parse_mundane_items(path: Path) -> list[Thing]:
                 thing_id = f"{base_id}_{n}"
             seen_ids.add(thing_id)
 
-            things.append(Thing(
+            thing = Thing(
                 id=thing_id,
                 name=name,
                 category="mundane",
@@ -180,9 +182,38 @@ def parse_mundane_items(path: Path) -> list[Thing]:
                 description=desc,
                 vendor_id=current_vendor_id,
                 location_id=current_location_id,
-            ))
+            )
+            _derive_market_affordances(thing)
+            things.append(thing)
 
     return things
+
+
+def _derive_market_affordances(thing: Thing) -> None:
+    """Add ordinary physical affordances which price-list prose does not encode.
+
+    Shop tables predate the structured Thing catalog, so rows say "Ale" or
+    "Bread loaf" without a `kind` column.  Keep the inference deliberately
+    narrow and vendor-aware: recognizable drinks and food from food vendors
+    become usable possessions after purchase.
+    """
+    words = set(re.findall(r"[a-z]+", (thing.name or "").lower()))
+    drink_words = {
+        "ale", "cider", "wine", "spirit", "draught", "potion", "antitoxin",
+    }
+    food_vendors = {"tess", "martha", "maribel", "kessla"}
+    food_words = {
+        "food", "ration", "rations", "bread", "loaf", "pie", "stew",
+        "fish", "pork", "pastry", "pastries", "roll",
+    }
+    non_food_words = {
+        "room", "bath", "laundry", "tackle", "hooks", "service",
+    }
+    if words & drink_words:
+        thing.affordances.update({HOLDABLE, CONSUMABLE, DRINKABLE})
+    elif ((thing.vendor_id in food_vendors or words & food_words)
+          and not (words & non_food_words)):
+        thing.affordances.update({HOLDABLE, CONSUMABLE, EDIBLE})
 
 
 def _find_vendor_for_table(lines: list[str], table_start: int) -> tuple[str, str]:
@@ -311,7 +342,7 @@ def _parse_magical_block(
     # Determine description from advertised or first non-field line
     desc = _extract_field(block, "advertised") or ""
 
-    return Thing(
+    thing = Thing(
         id=thing_id,
         name=name,
         category="magical",
@@ -324,6 +355,14 @@ def _parse_magical_block(
         attunement=attunement,
         raw=block.strip(),
     )
+    # Jewelry and wearable clothing sold as authored magical items must retain
+    # their ordinary physical affordances.  Previously a purchased amulet was
+    # owned and carried but could neither be held nor worn because magical-item
+    # prose never populated the structured affordance set.
+    words = set(re.findall(r"[a-z]+", name.lower()))
+    if words & {"amulet", "necklace", "ring", "bracelet", "cloak", "mask"}:
+        thing.affordances.update({HOLDABLE, WEARABLE})
+    return thing
 
 
 def _extract_field(block: str, field_name: str) -> str:

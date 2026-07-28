@@ -25,6 +25,7 @@ Something is wrong and most people know it without being able to say what.
 - `tannery/` — Boren Thatch
 - `carpenters_workshop/` — Hilda Truebeam
 - `fishmongers_shack/` — Kessla Brinehook
+- `fisherfolk/` — harbor-side fishing families' homes and shared work yard
 - `weavers_cottage/` — Eadric Spindle
 - `bakery/` — Maribel Crust
 - `tailors_shop/` — Vindra Goldneedle

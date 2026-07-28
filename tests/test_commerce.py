@@ -30,6 +30,15 @@ def _weapon_catalog():
     ])
 
 
+def _fish_catalog():
+    return ShopCatalog([
+        Thing(id="fresh_fish", name="Fresh fish (per lb)", price="2 cp",
+              vendor_id="kessla"),
+        Thing(id="salted_fish", name="Salted fish (per lb)", price="4 cp",
+              vendor_id="kessla"),
+    ])
+
+
 class TestGrounding:
     def test_buy_grounds_catalog_entry(self):
         entries = _catalog().entries_for("maribel")
@@ -42,6 +51,32 @@ class TestGrounding:
         entries = _catalog().entries_for("maribel")
         _, ent = resolve_commerce("buy the sweet roll", {}, {}, "", entries)
         assert ent.catalog_id == "sweet_roll"
+
+    def test_ambiguous_buy_is_preserved_for_shop_clarification(self):
+        entries = _fish_catalog().entries_for("kessla")
+        for text in ("buy fish", "can I buy some fish"):
+            assert resolve_commerce(text, {}, {}, "", entries) == ("buy", None)
+
+    def test_consuming_a_catalog_good_routes_through_purchase(self):
+        cat = ShopCatalog([
+            Thing(id="ale", name="Driftmoor Ale", price="4 cp", vendor_id="tess"),
+        ])
+        result = resolve_commerce(
+            "drink the ale", {}, {}, "", cat.entries_for("tess"))
+        assert result is not None
+        assert result[0] == "buy" and result[1].catalog_id == "ale"
+
+    def test_owned_consumable_wins_over_same_shop_catalog_good(self):
+        cat = ShopCatalog([
+            Thing(id="food", name="Preserved food (week's supply)",
+                  price="5 sp", vendor_id="jedrin"),
+        ])
+        owned = Thing(
+            id="food_i1", name="Preserved food (week's supply)",
+            owner="player", holder="player")
+        assert resolve_commerce(
+            "I eat some food", {owned.id: owned}, {}, "",
+            cat.entries_for("jedrin")) is None
 
     def test_sell_grounds_owned_item(self):
         dagger = Thing(id="dagger", label="dagger", zone="", owner="player")

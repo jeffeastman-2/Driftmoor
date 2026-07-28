@@ -109,6 +109,27 @@ _SPELL_BOOK: dict[str, _SpellDef] = {
 }
 
 
+def supported_spells_for(character: object) -> list[str]:
+    """Engine-supported spells the character currently knows or has prepared."""
+    profile = getattr(character, "spellcasting", None)
+    if profile is None:
+        return []
+    authored = {
+        _canonical_spell_name(s.name)
+        for s in (
+            list(profile.cantrips or [])
+            + list(profile.prepared or [])
+            + list(profile.known or [])
+        )
+        if getattr(s, "name", "")
+    }
+    return [
+        definition.name
+        for key, definition in _SPELL_BOOK.items()
+        if key in authored
+    ]
+
+
 def _canonical_spell_name(name: str) -> str:
     """Normalize authored spell bullet text to a stable spell-name key."""
     if not name:

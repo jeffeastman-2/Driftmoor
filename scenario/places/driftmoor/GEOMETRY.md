@@ -87,10 +87,6 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | BRIDGE           | 4.5      | (1235,1050) (1305,1050) (1305,1215) (1235,1215) |
 | GARDEN           | 4.0      | (667,150) (1090,150) (1090,338) (667,338) |
 | DOCKS            | 5.0      | (300,700) (50,700) (50,850) (300,850) |
-| EXIT_OBELISK_REACH  | 2.5   | (455,1385) (650,1385) (650,1460) (455,1460) |
-| EXIT_MISTWOOD_HILLS | 2.5   | (1505,1210) (1620,1210) (1620,1360) (1505,1360) |
-| EXIT_OLD_MILL       | 2.5   | (1548,655) (1620,655) (1620,830) (1548,830) |
-| EXIT_STONEHEARTH    | 2.5   | (762,5) (1000,5) (1000,110) (762,110) |
 | AZURE_SEA        | 0.0      | (0,1462) (300,1462) (300,0) (0,0) |
 | GREYWATER_RIVER  | 0.0      | (300,1072) (1625,1072) (1625,1200) (300,1200) |
 | NORTH_BANK       | 2.0      | (300,1200) (1625,1200) (1625,1462) (300,1462) |
@@ -113,10 +109,6 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | name                   | x     | y     | destination                              |
 |------------------------|-------|-------|------------------------------------------|
 | to_region              | 812 | 731 | places/                                  |
-| to_obelisk_road        | 568 | 1446 | places/obelisk_reach                     |
-| to_old_mill_road       | 1608 | 747 | places/greywater_river/old_mill          |
-| to_stonehearth_road    | 877 | 16   | places/plains_of_stonehearth             |
-| to_mistwood_trail      | 1608 | 1235 | places/mistwood_hills                    |
 | to_harbor_water        | 97  | 877 | places/azure_sea                         |
 | to_dustcloaks_house    | 503 | 1283 | places/driftmoor/dustcloaks_curios       |
 | to_church              | 1153 | 1300 | places/driftmoor/beacon_church           |
@@ -140,6 +132,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | to_tailor              | 828 | 942 | places/driftmoor/tailors_shop            |
 | to_tannery             | 698 | 991 | places/driftmoor/tannery                 |
 | to_fishmonger          | 455 | 682 | places/driftmoor/fishmongers_shack       |
+| to_fisherfolk          | 392 | 800 | places/driftmoor/fisherfolk              |
 | to_schoolhouse         | 1365 | 747 | places/driftmoor/schoolhouse            |
 | to_midwife             | 1462 | 1007 | places/driftmoor/midwifes_home         |
 | to_watchtower          | 633 | 698 | places/driftmoor/watchtower              |

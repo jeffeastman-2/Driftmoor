@@ -2853,6 +2853,20 @@ class TestIntentDetectorsUseLATN:
         assert _intent_is_spell("channel divine energy")        # regex missed
         assert not _intent_is_spell("I move to the door")
 
+    def test_generic_spell_command_lists_supported_spells(self):
+        from engine.session import _spell_help
+        from types import SimpleNamespace
+        caster = SimpleNamespace(character=SimpleNamespace(spellcasting=SpellcastingProfile(
+            ability="WIS",
+            prepared=[Spell(name="Healing Word", level=1)],
+            spell_slots_max={1: 4},
+            spell_slots_used={1: 1},
+        )))
+        answer = _spell_help("spell", caster)
+        assert "Engine-supported spells" in answer
+        assert "Healing Word" in answer
+        assert "level 1:" in answer
+
     def test_is_search_like_intent(self):
         from engine.session import _is_search_like_intent
         assert _is_search_like_intent("search the room")

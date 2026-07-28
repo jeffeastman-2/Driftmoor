@@ -70,10 +70,11 @@ def resolve_commerce(intent_text, items, characters, actor_zone, catalog,
         return None
     verb, ent = res
     if ent is None:
-        # Verb read as commerce but the object didn't ground to a real good
-        # (e.g. "looking for the way out"): the object gate declines it rather
-        # than reporting a buy of nothing.
-        return None
+        # Preserve an explicit buy/sell whose object is ambiguous or unmatched
+        # so the commerce handler can respond honestly ("which fish?").  The
+        # resolver itself still returns None for non-commerce desires such as
+        # "I want to leave", so this does not weaken the object gate.
+        return (verb, None)
     if verb == "buy":
         return ("buy", getattr(ent, "entry", None))
     return ("sell", getattr(ent, "item", None))
@@ -100,7 +101,30 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
     rq = latn_resolver.resolve_query_action(
         intent_text or "", lexicon=lexicon, adapter=adapter)
     if rq is None:
-        return None
+        # Defensive punctuation-independent shop-question fallback.  Some LATN
+        # grammar paths can reduce "what are you selling" as a statement when
+        # there is no terminal question mark.  The atomic vectors still carry
+        # the wh/sell semantics, so recognize that shape without requiring '?'.
+        from engine.latn import (
+            LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+            use_sp_policy, PermissiveSPPolicy,
+        )
+        executor = LATNLayerExecutor(adapter)
+        with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+                use_sp_policy(PermissiveSPPolicy()):
+            atoms = executor.execute_layer1(intent_text or "")
+        tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
+        surfaces = {
+            str(getattr(t, "word", "") or "").strip().lower()
+            for t in tokens
+        }
+        if not (catalog and "what" in surfaces
+                and any(latn_resolver._isa(t, "sell") or latn_resolver._isa(t, "buy")
+                        for t in tokens)):
+            return None
+        listed = ", ".join(
+            f"{e.name} ({format_coins(e.listed_price_cp)})" for e in catalog)
+        return f"For sale: {listed}."
 
     # The focus names a specific for-sale good ("are your bolts for sale?") ->
     # confirm it and quote the listed price. Only when the focus actually NAMES
