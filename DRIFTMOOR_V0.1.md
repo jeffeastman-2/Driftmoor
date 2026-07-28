@@ -279,12 +279,12 @@ MPLCONFIGDIR=/tmp/driftmoor-mpl .venv/bin/pytest -q
 
 - [ ] Run a dependency vulnerability review.
 - [ ] Review browser and web-server defaults before recommending public use.
-- [ ] Document local solo play as the default v0.1 deployment.
-- [ ] Document trusted remote solo play over a private network.
-- [ ] Warn explicitly against exposing `web_play.py` directly to the public
+- [x] Document local solo play as the default v0.1 deployment.
+- [x] Document trusted remote solo play over a private network.
+- [x] Warn explicitly against exposing `web_play.py` directly to the public
       internet.
-- [ ] Document the one-human-player-per-process limitation.
-- [ ] Confirm remote-access documentation does not imply that a reverse proxy
+- [x] Document the one-human-player-per-process limitation.
+- [x] Confirm remote-access documentation does not imply that a reverse proxy
       or tunnel supplies application-level authorization.
 - [ ] Confirm the server does not expose arbitrary local files.
 - [ ] Confirm logs and checkpoints do not unintentionally store secrets.

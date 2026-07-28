@@ -613,13 +613,25 @@ f.addEventListener('submit',async ev=>{
 </body></html>"""
 
 
-def main():
+def _build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Driftmoor web play")
     ap.add_argument("scene", nargs="?", default="echoing_caverns")
     ap.add_argument("--player", default="gilthaness")
     ap.add_argument("--turns", type=int, default=None)
     ap.add_argument("--port", type=int, default=8080)
-    args = ap.parse_args()
+    ap.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help=(
+            "Interface to bind (default: 127.0.0.1, local only). "
+            "Use 0.0.0.0 only on a trusted private network."
+        ),
+    )
+    return ap
+
+
+def main():
+    args = _build_arg_parser().parse_args()
 
     cfg = configure_from_md(Path("scenes") / f"{args.scene}.md")
     if args.player not in cfg.characters:
@@ -656,8 +668,14 @@ def main():
     app.on_startup.append(_on_startup)
     app.on_cleanup.append(_on_cleanup)
     print(f"Playing {args.scene} as {args.player} -> {checkpoint_dir}")
-    print(f"Open http://localhost:{args.port}/")
-    web.run_app(app, host="0.0.0.0", port=args.port, print=None)
+    display_host = "localhost" if args.host in {"127.0.0.1", "::1"} else args.host
+    print(f"Open http://{display_host}:{args.port}/")
+    if args.host not in {"127.0.0.1", "::1", "localhost"}:
+        print(
+            "WARNING: web_play has no application authentication. "
+            "Bind beyond localhost only on a trusted private network."
+        )
+    web.run_app(app, host=args.host, port=args.port, print=None)
 
 
 if __name__ == "__main__":

@@ -77,6 +77,34 @@ You control one character; the DM and other characters run on their LLMs. Type
 intent in plain English; ask questions (`what can I buy?`, `where is the
 forge?`); watch the map update as everyone moves.
 
+### v0.1 deployment boundary
+
+Driftmoor v0.1 supports one human player per game-server process.
+
+For local solo play, the default command binds only to `127.0.0.1`:
+
+```bash
+python web_play.py driftmoor --player gilthaness
+```
+
+For trusted remote solo play, the host may run the game and model backend on a
+private machine while the player connects through a private network such as
+Tailscale:
+
+```bash
+python web_play.py driftmoor --player gilthaness --host 0.0.0.0
+```
+
+Open `http://<host-private-address>:8080/` from the trusted remote device. Keep
+the host firewall and private-network access controls restricted to intended
+devices.
+
+`web_play.py` has no application-level authentication or independent player
+identity. Do **not** expose it directly to the public internet. A reverse proxy,
+port forward, or public tunnel does not add the missing authorization. Public
+hosting and authenticated multi-human sessions are deferred beyond v0.1; see
+[`DRIFTMOOR_V0.1.md`](DRIFTMOOR_V0.1.md).
+
 **Run headless (all-LLM), or spectate**
 
 ```bash

@@ -8,6 +8,20 @@ from types import SimpleNamespace as NS
 import web_play
 
 
+def test_web_server_defaults_to_localhost():
+    args = web_play._build_arg_parser().parse_args([])
+    assert args.host == "127.0.0.1"
+    assert args.port == 8080
+
+
+def test_web_server_allows_explicit_private_network_bind():
+    args = web_play._build_arg_parser().parse_args(
+        ["driftmoor", "--host", "0.0.0.0", "--port", "8090"]
+    )
+    assert args.host == "0.0.0.0"
+    assert args.port == 8090
+
+
 def _weapon(wid, name):
     return NS(id=wid, name=name)
 
