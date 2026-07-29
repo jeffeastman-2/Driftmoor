@@ -31,7 +31,7 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | render_z | vertices                    |
 |-----------------|----------|-----------------------------|
-| ROOF_PLATFORM   | 6.5        | (1.5,1.5) (14.5,1.5) (14.5,14.5) (1.5,14.5)     |
+| ROOF_PLATFORM   | 32.5       | (1.5,1.5) (14.5,1.5) (14.5,14.5) (1.5,14.5)     |
 | GROUND_FLOOR    | 3.25        | (0,0) (16,0) (16,16) (0,16)  |
 | EXTERIOR        | 0.0        | (-4.5,-4.5) (21,-4.5) (21,21) (-4.5,21) |
 
