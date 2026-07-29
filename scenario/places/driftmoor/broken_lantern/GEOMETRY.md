@@ -5,9 +5,9 @@
 - **name:** The Broken Lantern
 - **place_path:** places/driftmoor/broken_lantern
 - **z_level:** 16.25
-- **width:** 81.25
-- **height:** 65.0
-- **origin:** 9321.0, 8021.0, 16.25
+- **width:** 40.625
+- **height:** 32.5
+- **origin:** 427.5, 252, 0
 
 Notes: Ground floor contains the main room, bar, stage corner, private
 booths, kitchen, storage room, and meeting room. Upper floor (z=26.0)
@@ -21,16 +21,16 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | name             | x    | y    |
 |------------------|------|------|
-| front_door       | 39 | 0  |
-| hearth           | 71 | 39 |
-| bar_counter      | 65 | 22  |
-| stage_corner     | 9  | 45 |
-| booth_row        | 9  | 22  |
-| staircase        | 58 | 55 |
-| kitchen_center   | 65 | 55 |
-| storage_center   | 26  | 55 |
-| meeting_room_ctr | 9  | 55 |
-| broken_lantern   | 39 | -3 |
+| front_door       | 19.5 | 0  |
+| hearth           | 35.5 | 19.5 |
+| bar_counter      | 32.5 | 11  |
+| stage_corner     | 4.5  | 22.5 |
+| booth_row        | 4.5  | 11  |
+| staircase        | 29 | 27.5 |
+| kitchen_center   | 32.5 | 27.5 |
+| storage_center   | 13  | 27.5 |
+| meeting_room_ctr | 4.5  | 27.5 |
+| broken_lantern   | 19.5 | -1.5 |
 
 ---
 
@@ -38,14 +38,14 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | name          | render_z | vertices                              |
 |---------------|----------|---------------------------------------|
-| STAGE         | 6.5        | (0,39) (26,39) (26,55) (0,55)           |
-| BOOTHS        | 6.5        | (0,13) (26,13) (26,39) (0,39)             |
-| BAR           | 6.5        | (48,13) (74,13) (74,45) (48,45)         |
-| KITCHEN       | 6.5        | (48,45) (81,45) (81,65) (48,65)       |
-| STORAGE_ROOM  | 6.5        | (26,45) (48,45) (48,65) (26,65)         |
-| MEETING_ROOM  | 6.5        | (0,45) (26,45) (26,65) (0,65)           |
-| MAIN_ROOM     | 3.25        | (0,0) (81,0) (81,45) (0,45)           |
-| EXTERIOR      | 0.0        | (-16,-16) (97,-16) (97,81) (-16,81)       |
+| STAGE         | 6.5        | (0,19.5) (13,19.5) (13,27.5) (0,27.5)           |
+| BOOTHS        | 6.5        | (0,6.5) (13,6.5) (13,19.5) (0,19.5)             |
+| BAR           | 6.5        | (24,6.5) (37,6.5) (37,22.5) (24,22.5)         |
+| KITCHEN       | 6.5        | (24,22.5) (40.5,22.5) (40.5,32.5) (24,32.5)       |
+| STORAGE_ROOM  | 6.5        | (13,22.5) (24,22.5) (24,32.5) (13,32.5)         |
+| MEETING_ROOM  | 6.5        | (0,22.5) (13,22.5) (13,32.5) (0,32.5)           |
+| MAIN_ROOM     | 3.25        | (0,0) (40.5,0) (40.5,22.5) (0,22.5)           |
+| EXTERIOR      | 0.0        | (-8,-8) (48.5,-8) (48.5,40.5) (-8,40.5)       |
 
 ---
 
@@ -53,9 +53,9 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | description      | vertices                              |
 |------------------|---------------------------------------|
-| Bar counter      | (48,16) (74,16) (74,22) (48,22)           |
-| Kitchen wall     | (48,45) (81,45) (81,48) (48,48)       |
-| Back wall        | (0,61) (81,61) (81,65) (0,65)         |
+| Bar counter      | (24,8) (37,8) (37,11) (24,11)           |
+| Kitchen wall     | (24,22.5) (40.5,22.5) (40.5,24) (24,24)       |
+| Back wall        | (0,30.5) (40.5,30.5) (40.5,32.5) (0,32.5)         |
 
 ---
 
@@ -63,9 +63,9 @@ building is timber with a sloping roof and ivy on the east wall.
 
 | name              | x    | y    | destination                    |
 |-------------------|------|------|--------------------------------|
-| front_door        | 39 | 0  | places/driftmoor               |
-| to_upper_floor    | 58 | 55 | places/driftmoor/broken_lantern/upper_floor |
-| kitchen_back_door | 81 | 55 | places/driftmoor               |
+| front_door        | 19.5 | 0  | places/driftmoor               |
+| to_upper_floor    | 29 | 27.5 | places/driftmoor/broken_lantern/upper_floor |
+| kitchen_back_door | 40.5 | 27.5 | places/driftmoor               |
 
 ## Items
 
@@ -97,6 +97,6 @@ building is timber with a sloping roof and ivy on the east wall.
 - **type:** conditional
 - **blocks:** all
 - **effect:** storage room and meeting room require Tess's permission or a successful Persuasion/Deception check to access
-- **vertices:** (0,45) (81,45) (81,65) (0,65)
+- **vertices:** (0,22.5) (40.5,22.5) (40.5,32.5) (0,32.5)
 
 ---

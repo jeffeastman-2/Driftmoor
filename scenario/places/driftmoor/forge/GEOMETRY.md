@@ -5,9 +5,9 @@
 - **name:** The Forge
 - **place_path:** places/driftmoor/forge
 - **z_level:** 16.25
-- **width:** 58
-- **height:** 55
-- **origin:** 1205, 244, 16.25
+- **width:** 29
+- **height:** 27.5
+- **origin:** 602.5, 122, 0
 
 ---
 
@@ -15,11 +15,11 @@
 
 | name             | x  | y  |
 |------------------|----|----|
-| forge_entrance   | 0  | 7  |
-| anvil            | 26 | 13 |
-| forge_hearth     | 13 | 26 |
-| forge_wall_marks | 32 | 33 |
-| stable_door      | 58 | 10 |
+| forge_entrance   | 0  | 3.5  |
+| anvil            | 13 | 6.5 |
+| forge_hearth     | 6.5 | 13 |
+| forge_wall_marks | 16 | 16.5 |
+| stable_door      | 29 | 5 |
 
 ---
 
@@ -27,8 +27,8 @@
 
 | name     | render_z | vertices                    |
 |----------|----------|-----------------------------|
-| FORGE    | 6.5      | (0,0) (58,0) (58,55) (0,55) |
-| EXTERIOR | 0.0      | (-8,-8) (66,-8) (66,63) (-8,63) |
+| FORGE    | 6.5      | (0,0) (29,0) (29,27.5) (0,27.5) |
+| EXTERIOR | 0.0      | (-4,-4) (33,-4) (33,31.5) (-4,31.5) |
 
 ---
 
@@ -36,7 +36,7 @@
 
 | description     | vertices                         |
 |-----------------|----------------------------------|
-| Forge back wall | (0,49) (58,49) (58,55) (0,55)  |
+| Forge back wall | (0,24.5) (29,24.5) (29,27.5) (0,27.5)  |
 
 ---
 
@@ -44,8 +44,8 @@
 
 | name            | x  | y  | destination              |
 |-----------------|----|----|--------------------------|
-| forge_to_street | 0  | 7  | places/driftmoor         |
-| forge_to_stables | 58 | 10 | places/driftmoor/stables |
+| forge_to_street | 0  | 3.5  | places/driftmoor         |
+| forge_to_stables | 29 | 5 | places/driftmoor/stables |
 
 ---
 
@@ -56,4 +56,4 @@
 - **type:** conditional
 - **blocks:** none
 - **effect:** within 10 ft of the hearth — extreme heat; prolonged unprotected exposure risks exhaustion
-- **vertices:** (3,16) (23,16) (23,36) (3,36)
+- **vertices:** (1.5,8) (11.5,8) (11.5,18) (1.5,18)

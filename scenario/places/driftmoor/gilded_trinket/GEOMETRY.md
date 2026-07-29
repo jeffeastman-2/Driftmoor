@@ -5,9 +5,9 @@
 - **name:** The Gilded Trinket
 - **place_path:** places/driftmoor/gilded_trinket
 - **z_level:** 16.25
-- **width:** 48.75
-- **height:** 58.5
-- **origin:** 9236.5, 8021.0, 16.25
+- **width:** 24.375
+- **height:** 29.25
+- **origin:** 371.5, 252, 0
 
 Notes: A narrow, dimly lit building. The shopfront is the main room
 with shelves, display cases, and a counter at the rear. Behind the
@@ -23,14 +23,14 @@ sits behind the counter near the back wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22  | 0  |
-| display_case    | 32 | 39 |
-| counter         | 26  | 35 |
-| obsidian_ring   | 34 | 42 |
-| safe             | 42 | 48 |
-| shelves_west    | 6  | 26  |
-| shelves_east    | 42 | 26  |
-| oil_lamp_main   | 22  | 22  |
+| front_door      | 11  | 0  |
+| display_case    | 16 | 19.5 |
+| counter         | 13  | 17.5 |
+| obsidian_ring   | 17 | 21 |
+| safe             | 21 | 24 |
+| shelves_west    | 3  | 13  |
+| shelves_east    | 21 | 13  |
+| oil_lamp_main   | 11  | 11  |
 
 ---
 
@@ -38,10 +38,10 @@ sits behind the counter near the back wall.
 
 | name       | render_z | vertices                              |
 |------------|----------|---------------------------------------|
-| BACK_AREA  | 6.5        | (0,39) (48,39) (48,58) (0,58)         |
-| DISPLAY    | 6.5        | (22,32) (45,32) (45,45) (22,45)         |
-| SHOPFRONT  | 3.25        | (0,0) (48,0) (48,39) (0,39)           |
-| EXTERIOR   | 0.0        | (-16,-16) (65,-16) (65,74) (-16,74)       |
+| BACK_AREA  | 6.5        | (0,19.5) (24,19.5) (24,29) (0,29)         |
+| DISPLAY    | 6.5        | (11,16) (22.5,16) (22.5,22.5) (11,22.5)         |
+| SHOPFRONT  | 3.25        | (0,0) (24,0) (24,19.5) (0,19.5)           |
+| EXTERIOR   | 0.0        | (-8,-8) (32.5,-8) (32.5,37) (-8,37)       |
 
 ---
 
@@ -49,10 +49,10 @@ sits behind the counter near the back wall.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Counter barrier    | (13,32) (45,32) (45,35) (13,35)         |
-| Grated windows E   | (45,9) (48,9) (48,26) (45,26)           |
-| Grated windows W   | (0,9) (3,9) (3,26) (0,26)               |
-| Safe alcove wall   | (35,45) (48,45) (48,58) (35,58)       |
+| Counter barrier    | (6.5,16) (22.5,16) (22.5,17.5) (6.5,17.5)         |
+| Grated windows E   | (22.5,4.5) (24,4.5) (24,13) (22.5,13)           |
+| Grated windows W   | (0,4.5) (1.5,4.5) (1.5,13) (0,13)               |
+| Safe alcove wall   | (17.5,22.5) (24,22.5) (24,29) (17.5,29)       |
 
 ---
 
@@ -60,8 +60,8 @@ sits behind the counter near the back wall.
 
 | name          | x    | y    | destination      |
 |---------------|------|------|------------------|
-| front_door    | 22  | 0  | places/driftmoor |
-| back_door     | 22  | 58 | places/driftmoor |
+| front_door    | 11  | 0  | places/driftmoor |
+| back_door     | 11  | 29 | places/driftmoor |
 
 ---
 
@@ -72,13 +72,13 @@ sits behind the counter near the back wall.
 - **type:** conditional
 - **blocks:** all
 - **effect:** counter marks the boundary of Tavian's domain; crossing without permission triggers immediate hostile response
-- **vertices:** (0,32) (48,32) (48,58) (0,58)
+- **vertices:** (0,16) (24,16) (24,29) (0,29)
 
 ### Display Case — Obelisk Ring Aura
 
 - **type:** magical
 - **blocks:** none
 - **effect:** the obsidian ring pulses with obelisk energy; characters with obelisk shard attunement feel drawn toward it; Perception DC 45.5 to notice the pulse
-- **vertices:** (22,32) (45,32) (45,45) (22,45)
+- **vertices:** (11,16) (22.5,16) (22.5,22.5) (11,22.5)
 
 ---

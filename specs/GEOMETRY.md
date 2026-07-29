@@ -35,10 +35,57 @@ GEOMETRY.md FILE FORMAT
 
 - **name:** <display name>
 - **place_path:** <path to PLACE.md, without PLACE.md>
-- **z_level:** <primary z level, float, sea level = 0.0>
-- **width:** <bounding box east-west, metres>
-- **height:** <bounding box north-south, metres>
-- **origin:** <world x>, <world y>, <world z>
+- **z_level:** <legacy resolved floor elevation, float>
+- **width:** <bounding box east-west, feet>
+- **height:** <bounding box north-south, feet>
+- **origin:** <parent-local x>, <parent-local y>, <parent-local z>
+
+### Coordinate systems and hierarchical origins
+
+Geometry is hierarchical. A place does not repeat its absolute world
+coordinates. Its `origin` is the position of its local `(0, 0, 0)` in
+the coordinate system of its immediate parent place.
+
+The one exception is the root place, whose parent is the world itself.
+The root origin is therefore expressed in world coordinates and is
+normally `(0, 0, 0)`.
+
+All other coordinates in a GEOMETRY.md file are local to that scene:
+landmarks, zone vertices, impassable polygons, boundaries, connections,
+items, and character positions. X increases east, Y increases north,
+and Z increases upward. Unless a place documents a different physical
+reference, its origin is the southwest corner of its primary floor.
+
+An absolute position is obtained by accumulating every origin from the
+root through the containing place, then adding the entity's local
+position:
+
+    absolute(entity) =
+        root.origin
+        + child.origin
+        + ...
+        + containing_place.origin
+        + entity.position
+
+For example:
+
+    Region origin:                  (0, 0, 0)          world coordinates
+    Driftmoor origin:               (8450, 7800, 16.25) in Region
+    Weary Traveler origin:          (435, 361, 0)      in Driftmoor
+    Traveler upstairs origin:       (0, 0, 9)          in Traveler
+    Guest position:                 (16, 19, 0)        upstairs-local
+
+Moving Driftmoor within the Region therefore moves the Traveler, its
+upstairs, and the guest without rewriting any descendant coordinates.
+Likewise, moving the Traveler within Driftmoor requires changing only
+the Traveler origin.
+
+`origin` is the authoritative transform. `z_level` is retained for
+compatibility with existing loaders and renderers that expect a resolved
+primary-floor elevation; it must not be used as an additional
+translation or added to `origin.z`. New spatial code should obtain
+elevation through the accumulated origin chain. A future format revision
+may remove `z_level` once all consumers resolve hierarchical origins.
 
 ## Landmarks
 
@@ -46,8 +93,12 @@ GEOMETRY.md FILE FORMAT
 |------|---|---|
 | <name> | <local x> | <local y> |
 
-Landmarks are named fixed points within the scene. Positions are
-in local scene coordinates (origin at southwest corner).
+Landmarks are named fixed points within the scene. Positions are in
+local scene coordinates. An optional `z` column may be included:
+
+| name | x | y | z |
+|------|---|---|---|
+| <name> | <local x> | <local y> | <local z> |
 
 ## Zones
 
@@ -56,9 +107,16 @@ zone (FOREST, VOID, EXTERIOR) must always be LAST.
 
 Sub-zones must appear BEFORE their parent zone.
 
-| name | render_z | vertices |
-|------|----------|----------|
-| <name> | <int> | (x,y) (x,y) ... |
+| name | floor_z | ceiling_z | render_z | vertices |
+|------|---------|-----------|----------|----------|
+| <name> | <local z> | <local z> | <float> | (x,y) (x,y) ... |
+
+`floor_z` and `ceiling_z` define the zone's vertical extent in local
+scene coordinates. The floor is inclusive and the ceiling is exclusive,
+allowing vertically stacked zones to share a face. When these columns
+are absent, the loader supplies a legacy default of `floor_z = 0` and
+`ceiling_z = 8`. Explicit columns are preferred for newly authored or
+migrated geometry.
 
 render_z is the visual stacking order for map rendering.
 Higher render_z renders on top.
@@ -89,6 +147,19 @@ areas without special abilities or conditions.
 | <name> | <local x> | <local y> | <scene name or place_path> |
 
 Connections are named exit points linking this scene to others.
+
+Reciprocal connections at a shared physical threshold must resolve to
+the same absolute point. If a parent connection enters a child through
+a doorway and the child connection exits through that doorway, then:
+
+    absolute(parent connection) == absolute(child connection)
+
+This invariant determines the child origin when its doorway location and
+the parent's doorway location are already authored. A connection that
+represents travel through space—such as opposite ends of a stairway—may
+have distinct absolute endpoints. Each endpoint is still expressed in
+its own scene's local coordinates, and the connection records the
+intentional displacement.
 
 ## Boundaries
 
@@ -121,7 +192,7 @@ WORKED EXAMPLE — Fey Glade (current canonical version)
 - **z_level:** 0.2
 - **width:** 100.0
 - **height:** 100.0
-- **origin:** 1222.0, 2608.0, 0.2
+- **origin:** 320.0, 180.0, 0.2
 
 ## Landmarks
 
@@ -183,7 +254,15 @@ Each level is a separate GEOMETRY.md file:
   places/obelisk_reach/echoing_caverns/level_2/GEOMETRY.md
   places/obelisk_reach/echoing_caverns/level_3/GEOMETRY.md
 
-Each has its own z_level:
+Each level has a parent-local origin. If the levels are siblings beneath
+`echoing_caverns`, their origin Z values might be:
+
+  entrance:  origin.z = -15.0
+  level_1:   origin.z = -24.0
+  level_2:   origin.z = -37.0
+  level_3:   origin.z = -49.0  (deepest — embedded fragment)
+
+Legacy `z_level` values mirror the corresponding resolved elevations:
   entrance:  z_level = -15.0
   level_1:   z_level = -24.0
   level_2:   z_level = -37.0
@@ -317,23 +396,27 @@ is now deprecated.
 SVG RENDERING — y-axis convention
 ======================================================================
 
-World coordinates: y increases northward (standard math convention)
-SVG coordinates:   y increases downward (SVG convention)
+Local/world coordinates: y increases northward (standard math convention)
+SVG coordinates:         y increases downward (SVG convention)
 
-The map renderer must apply a y-flip when converting world
-coordinates to SVG coordinates:
+The map renderer normally receives scene-local positions and applies a
+y-flip when converting them to SVG coordinates:
 
 ```python
-def world_to_svg(
+def local_to_svg(
     pos: Position,
     scene: SceneGeometry,
     svg_height: float,
     scale: float
 ) -> tuple[float, float]:
-    svg_x = (pos.x - scene.origin.x) * scale
-    svg_y = svg_height - (pos.y - scene.origin.y) * scale
+    svg_x = pos.x * scale
+    svg_y = svg_height - pos.y * scale
     return svg_x, svg_y
 ```
+
+If a renderer starts with an absolute position, it must first subtract
+the scene's fully resolved absolute origin—not merely its immediate,
+parent-local `origin`.
 
 Without this flip, north appears at the bottom of the map.
 This was the error in the initial plan view diagram.

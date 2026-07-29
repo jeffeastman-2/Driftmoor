@@ -23,7 +23,7 @@ Small, sparsely furnished. Narrow bed, wardrobe, table with single candle. Elyss
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elyssa/SOUL.md
 - **identity_file:** scenario/people/npcs/elyssa/IDENTITY.md
-- **position:** 16, 16
+- **position:** 8, 8
 
 ## Who Is Normally Here
 - **Elyssa Moonglow** — almost always, usually at her desk

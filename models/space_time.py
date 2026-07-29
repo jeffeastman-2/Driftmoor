@@ -190,6 +190,15 @@ class SceneGeometry:
     origin: Position
     landmarks: dict[str, Position] = field(default_factory=dict)
     zones: dict[str, Polygon] = field(default_factory=dict)
+    # Local vertical bounds for each zone. Existing 2-D zone rows load as an
+    # eight-foot extrusion from z=0 to z=8; authored multi-storey spaces can
+    # override either value. The polygon remains the exact horizontal footprint.
+    zone_floor_z: dict[str, float] = field(default_factory=dict)
+    zone_ceiling_z: dict[str, float] = field(default_factory=dict)
+    # Zones whose row explicitly authored floor_z and/or ceiling_z. Legacy
+    # zones receive default metadata but retain planar lookup semantics until
+    # their geometry is intentionally migrated.
+    zone_z_explicit: set[str] = field(default_factory=set)
     impassable: list[Polygon] = field(default_factory=list)
     connections: dict[str, Position] = field(default_factory=dict)
     # zone-pair → max visible range in ft; missing pair = unlimited
@@ -219,10 +228,37 @@ class SceneGeometry:
         )
 
     def zone_at(self, point: Position) -> Optional[str]:
-        """Return the zone name containing the given point, or None."""
-        for name, polygon in self.zones.items():
-            if polygon.contains(point):
+        """Return the zone volume containing ``point``, or None.
+
+        Zone order remains the tie-breaker for overlapping planar footprints,
+        but z bounds now distinguish stacked floors. Ceiling faces belong to
+        the zone above when one begins at that exact elevation.
+        """
+        planar_matches = [
+            name for name, polygon in self.zones.items() if polygon.contains(point)
+        ]
+        if planar_matches and not any(
+            name in self.zone_z_explicit for name in planar_matches
+        ):
+            return planar_matches[0]
+        for name in planar_matches:
+            if name not in self.zone_z_explicit:
+                continue
+            polygon = self.zones[name]
+            vertices = getattr(polygon, "vertices", None) or []
+            floor = (
+                _interpolate_vertex_z(vertices, point.x, point.y)
+                if any(len(v) > 2 for v in vertices)
+                else self.zone_floor_z.get(name, 0.0)
+            )
+            ceiling = self.zone_ceiling_z.get(name, 8.0)
+            if floor <= point.z < ceiling:
                 return name
+        # Backward compatibility for callers that only know x/y: most runtime
+        # positions still pass z=0. A nonzero point, however, is explicitly
+        # asking for a vertical volume and must not fall through to another floor.
+        if point.z == 0.0 and planar_matches:
+            return planar_matches[0]
         return None
 
     def floor_z_at(self, point: Position) -> float:
@@ -233,11 +269,35 @@ class SceneGeometry:
         zone or the zone carries no z. Relative to the scene floor (matches the
         GEOMETRY vertex z); add ``z_level`` for world z. Distances within a scene
         only need this relative value (z_level cancels)."""
-        for polygon in self.zones.values():
-            if polygon.contains(point):
-                return _interpolate_vertex_z(
-                    getattr(polygon, "vertices", None) or [], point.x, point.y)
+        zone = self.zone_at(point)
+        if zone is not None:
+            polygon = self.zones[zone]
+            vertices = getattr(polygon, "vertices", None) or []
+            if not any(len(v) > 2 for v in vertices):
+                return self.zone_floor_z.get(zone, 0.0)
+            return _interpolate_vertex_z(
+                vertices, point.x, point.y)
         return 0.0
+
+    def ceiling_z_at(self, point: Position) -> float:
+        """Local ceiling elevation for the zone containing ``point``.
+
+        Defaults to eight feet for legacy zone rows. Returns 8.0 outside all
+        zones, matching the migration default rather than inventing an
+        unbounded volume.
+        """
+        zone = self.zone_at(point)
+        if zone is None:
+            return 8.0
+        return self.zone_ceiling_z.get(zone, self.floor_z_at(point) + 8.0)
+
+    def zone_center(self, name: str) -> Position:
+        """Centroid of a zone volume in local coordinates."""
+        polygon = self.zones[name]
+        planar = polygon.centroid()
+        floor = self.zone_floor_z.get(name, 0.0)
+        ceiling = self.zone_ceiling_z.get(name, floor + 8.0)
+        return Position(planar.x, planar.y, (floor + ceiling) / 2.0)
 
     def ambient_sight_range(self, zone: Optional[str]) -> Optional[float]:
         """Ambient (light-limited) sight range in ft for an observer in ``zone``.

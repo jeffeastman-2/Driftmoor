@@ -5,17 +5,18 @@
 - **name:** Driftmoor Town
 - **place_path:** places/driftmoor
 - **z_level:** 16.25
-- **width:** 1625.0
-- **height:** 1462.5
+- **width:** 812.5
+- **height:** 731.25
 - **origin:** 8450.0, 7800.0, 16.25
 
 Notes: Local coordinates origin at southwest corner (Fisher Folk
-quarter). X increases east, Y increases north. Scale: ~812.5m of
-built town plus surrounding roads and harbor. The Greywater River
+quarter). X increases east, Y increases north. Coordinates are in
+feet. The scene spans about 812.5 by 731.25 feet, including the
+built town, surrounding roads, and harbor. The Greywater River
 forms the northern boundary, curving from northwest to northeast.
-The harbor and docks lie to the west. Streets are 16.25-32.5m wide.
-Buildings are 48.75-81.25m footprints. The town sits 16.25m above sea level
-on average; the church rise is slightly higher at ~26.0m.
+The harbor and docks lie to the west. The town sits 16.25 feet above
+sea level on average; the church rise is slightly higher at about
+26 feet.
 
 Building centers are given as landmarks. Each named building with
 spatial complexity has its own GEOMETRY.md. Simple single-room
@@ -27,20 +28,20 @@ buildings do not.
 
 | name                  | x     | y     |
 |-----------------------|-------|-------|
-| town_center           | 812 | 682 |
-| well                  | 982.5 | 672.5 |
-| greywater_bend        | 682 | 1105 |
-| bridge_crossing       | 1267 | 1137 |
-| harbor_pier_north     | 178  | 1007 |
-| harbor_pier_south     | 146  | 812 |
-| road_to_obelisk       | 568 | 1397 |
-| road_to_old_mill      | 1592 | 747 |
-| road_to_stonehearth   | 877 | 32  |
-| graveyard_center      | 861 | 1348 |
-| garden_center         | 877 | 243  |
-| stable_center         | 1267 | 195  |
-| corral_center         | 1446 | 227  |
-| fisherfolk_center     | 292  | 130  |
+| town_center           | 406 | 341 |
+| well                  | 491.25 | 336.25 |
+| greywater_bend        | 341 | 552.5 |
+| bridge_crossing       | 633.5 | 568.5 |
+| harbor_pier_north     | 89  | 503.5 |
+| harbor_pier_south     | 73  | 406 |
+| road_to_obelisk       | 284 | 698.5 |
+| road_to_old_mill      | 796 | 373.5 |
+| road_to_stonehearth   | 438.5 | 16  |
+| graveyard_center      | 430.5 | 674 |
+| garden_center         | 438.5 | 121.5  |
+| stable_center         | 633.5 | 97.5  |
+| corral_center         | 723 | 113.5  |
+| fisherfolk_center     | 146  | 65  |
 
 ---
 
@@ -56,51 +57,51 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 
 | name              | render_z | vertices                                                    |
 |-------------------|----------|-------------------------------------------------------------|
-| GRAVEYARD        | 5.0      | (696,1260) (1026,1260) (1026,1436) (696,1436) |
-| CHURCH           | 5.0      | (1041,1260) (1265,1260) (1265,1436) (1041,1436) |
-| DUSTCLOAKS_HOUSE | 5.0      | (425,1201) (581,1201) (581,1365) (425,1365) |
-| MAYORS_HALL      | 5.0      | (1310,846) (1420,846) (1420,1038) (1310,1038) |
-| MIDWIFE          | 5.0      | (1424,951) (1500,951) (1500,1063) (1424,1063) |
-| TANNERY          | 5.0      | (646,933) (750,933) (750,1049) (646,1049) |
-| CARPENTER        | 5.0      | (559,886) (643,886) (643,998) (559,998) |
-| TAILOR           | 5.0      | (768,894) (888,894) (888,990) (768,990) |
-| WEAVER           | 5.0      | (903,894) (1013,894) (1013,990) (903,990) |
-| COOPER           | 5.0      | (530,776) (640,776) (640,880) (530,880) |
-| COBBLER          | 5.0      | (704,728) (790,728) (790,832) (704,832) |
-| BARBER           | 5.0      | (795,728) (861,728) (861,832) (795,832) |
-| ROOMING_HOUSE    | 5.0      | (870,722) (982,722) (982,838) (870,838) |
-| APOTHECARY       | 5.0      | (988,728) (1092,728) (1092,832) (988,832) |
-| SCHOOLHOUSE      | 5.0      | (1285,687) (1445,687) (1445,807) (1285,807) |
-| WATCHTOWER       | 5.0      | (600,665) (666,665) (666,731) (600,731) |
-| WELL             | 5.0      | (980,680) (990,680) (990,670) (980,670) |
-| FISHMONGER       | 5.0      | (397,627) (513,627) (513,737) (397,737) |
-| BAKERY           | 5.0      | (626,504) (738,504) (738,632) (626,632) |
-| PAWN_SHOP        | 5.0      | (743,504) (849,504) (849,632) (743,632) |
-| TAVERN           | 5.0      | (855,504) (965,504) (965,632) (855,632) |
-| MERCANTILE       | 5.0      | (974,504) (1106,504) (1106,632) (974,632) |
-| ELYSSA_HOUSE     | 5.0      | (1376,454) (1516,454) (1516,618) (1376,618) |
-| GENERAL_STORE    | 5.0      | (470,165) (634,165) (634,355) (470,355) |
-| FORGE            | 5.0      | (1205,244) (1329,244) (1329,340) (1205,340) |
-| STABLE           | 5.0      | (1205,151) (1329,151) (1329,239) (1205,239) |
-| CORRAL           | 5.0      | (1356,139) (1536,139) (1536,315) (1356,315) |
-| FISHERFOLK       | 5.0      | (300,750) (485,750) (485,850) (300,850) |
-| BRIDGE           | 4.5      | (1235,1050) (1305,1050) (1305,1215) (1235,1215) |
-| GARDEN           | 4.0      | (667,150) (1090,150) (1090,338) (667,338) |
-| DOCKS            | 5.0      | (300,700) (50,700) (50,850) (300,850) |
-| AZURE_SEA        | 0.0      | (0,1462) (300,1462) (300,0) (0,0) |
-| GREYWATER_RIVER  | 0.0      | (300,1072) (1625,1072) (1625,1200) (300,1200) |
-| NORTH_BANK       | 2.0      | (300,1200) (1625,1200) (1625,1462) (300,1462) |
-| TOWN_COMMON      | 2.0      | (300,0) (1625,0) (1625,1072) (300,1072) |
+| GRAVEYARD        | 5.0      | (348,630) (513,630) (513,718) (348,718) |
+| CHURCH           | 5.0      | (520.5,630) (632.5,630) (632.5,718) (520.5,718) |
+| DUSTCLOAKS_HOUSE | 5.0      | (212.5,600.5) (290.5,600.5) (290.5,682.5) (212.5,682.5) |
+| MAYORS_HALL      | 5.0      | (655,423) (710,423) (710,519) (655,519) |
+| MIDWIFE          | 5.0      | (712,475.5) (750,475.5) (750,531.5) (712,531.5) |
+| TANNERY          | 5.0      | (323,466.5) (375,466.5) (375,524.5) (323,524.5) |
+| CARPENTER        | 5.0      | (279.5,443) (321.5,443) (321.5,499) (279.5,499) |
+| TAILOR           | 5.0      | (384,447) (444,447) (444,495) (384,495) |
+| WEAVER           | 5.0      | (451.5,447) (506.5,447) (506.5,495) (451.5,495) |
+| COOPER           | 5.0      | (265,388) (320,388) (320,440) (265,440) |
+| COBBLER          | 5.0      | (352,364) (395,364) (395,416) (352,416) |
+| BARBER           | 5.0      | (397.5,364) (430.5,364) (430.5,416) (397.5,416) |
+| ROOMING_HOUSE    | 5.0      | (435,361) (491,361) (491,419) (435,419) |
+| APOTHECARY       | 5.0      | (494,364) (546,364) (546,416) (494,416) |
+| SCHOOLHOUSE      | 5.0      | (642.5,343.5) (722.5,343.5) (722.5,403.5) (642.5,403.5) |
+| WATCHTOWER       | 5.0      | (300,332.5) (333,332.5) (333,365.5) (300,365.5) |
+| WELL             | 5.0      | (490,340) (495,340) (495,335) (490,335) |
+| FISHMONGER       | 5.0      | (198.5,313.5) (256.5,313.5) (256.5,368.5) (198.5,368.5) |
+| BAKERY           | 5.0      | (313,252) (369,252) (369,316) (313,316) |
+| PAWN_SHOP        | 5.0      | (371.5,252) (424.5,252) (424.5,316) (371.5,316) |
+| TAVERN           | 5.0      | (427.5,252) (482.5,252) (482.5,316) (427.5,316) |
+| MERCANTILE       | 5.0      | (487,252) (553,252) (553,316) (487,316) |
+| ELYSSA_HOUSE     | 5.0      | (688,227) (758,227) (758,309) (688,309) |
+| GENERAL_STORE    | 5.0      | (235,82.5) (317,82.5) (317,177.5) (235,177.5) |
+| FORGE            | 5.0      | (602.5,122) (664.5,122) (664.5,170) (602.5,170) |
+| STABLE           | 5.0      | (602.5,75.5) (664.5,75.5) (664.5,119.5) (602.5,119.5) |
+| CORRAL           | 5.0      | (678,69.5) (768,69.5) (768,157.5) (678,157.5) |
+| FISHERFOLK       | 5.0      | (150,375) (242.5,375) (242.5,425) (150,425) |
+| BRIDGE           | 4.5      | (617.5,525) (652.5,525) (652.5,607.5) (617.5,607.5) |
+| GARDEN           | 4.0      | (333.5,75) (545,75) (545,169) (333.5,169) |
+| DOCKS            | 5.0      | (150,350) (25,350) (25,425) (150,425) |
+| AZURE_SEA        | 0.0      | (0,731) (150,731) (150,0) (0,0) |
+| GREYWATER_RIVER  | 0.0      | (150,536) (812.5,536) (812.5,600) (150,600) |
+| NORTH_BANK       | 2.0      | (150,600) (812.5,600) (812.5,731) (150,731) |
+| TOWN_COMMON      | 2.0      | (150,0) (812.5,0) (812.5,536) (150,536) |
 ---
 
 ## Impassable
 
 | description                      | vertices                                          |
 |----------------------------------|---------------------------------------------------|
-| Greywater River (west of bridge) | (260,1072) (1235,1072) (1235,1180) (260,1170)     |
-| Greywater River (east of bridge) | (1305,1072) (1625,1072) (1625,1200) (1305,1200)   |
-| Harbor water                     | (0,560) (250,560) (250,1072) (0,1072)             |
-| Azure Sea                        | (0,1072) (300,1072) (300,1462) (0,1462)           |
+| Greywater River (west of bridge) | (130,536) (617.5,536) (617.5,590) (130,585)     |
+| Greywater River (east of bridge) | (652.5,536) (812.5,536) (812.5,600) (652.5,600)   |
+| Harbor water                     | (0,280) (125,280) (125,536) (0,536)             |
+| Azure Sea                        | (0,536) (150,536) (150,731) (0,731)           |
 
 ---
 
@@ -108,35 +109,35 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 
 | name                   | x     | y     | destination                              |
 |------------------------|-------|-------|------------------------------------------|
-| to_region              | 812 | 731 | places/                                  |
-| to_harbor_water        | 97  | 877 | places/azure_sea                         |
-| to_dustcloaks_house    | 503 | 1283 | places/driftmoor/dustcloaks_curios       |
-| to_church              | 1153 | 1300 | places/driftmoor/beacon_church           |
-| to_graveyard           | 861 | 1348 | places/driftmoor/graveyard               |
-| to_mayors_hall         | 1365 | 942 | places/driftmoor/mayors_hall             |
-| to_tavern              | 910 | 568 | places/driftmoor/broken_lantern          |
-| to_salt_and_iron       | 1040 | 568 | places/driftmoor/salt_and_iron           |
-| to_forge               | 1267 | 292  | places/driftmoor/forge                   |
-| to_stable              | 1267 | 195  | places/driftmoor/stables                 |
-| to_corral              | 1446 | 227  | places/driftmoor/corral                  |
-| to_elyssa_house        | 1446 | 536 | places/driftmoor/elyssa_cottage           |
-| to_apothecary          | 1040 | 780 | places/driftmoor/bitter_remedy           |
-| to_gilded_trinket      | 796 | 568 | places/driftmoor/gilded_trinket          |
-| to_rooming_house       | 926 | 780 | places/driftmoor/weary_traveler          |
-| to_bakery              | 682 | 568 | places/driftmoor/bakery                  |
-| to_cobbler             | 747 | 780 | places/driftmoor/cobblers_shop           |
-| to_barber              | 828 | 780 | places/driftmoor/rusty_razor             |
-| to_cooper              | 585 | 828 | places/driftmoor/coopers_shed            |
-| to_carpenter           | 601 | 942 | places/driftmoor/carpenters_workshop     |
-| to_weaver              | 958 | 942 | places/driftmoor/weavers_cottage         |
-| to_tailor              | 828 | 942 | places/driftmoor/tailors_shop            |
-| to_tannery             | 698 | 991 | places/driftmoor/tannery                 |
-| to_fishmonger          | 455 | 682 | places/driftmoor/fishmongers_shack       |
-| to_fisherfolk          | 392 | 800 | places/driftmoor/fisherfolk              |
-| to_schoolhouse         | 1365 | 747 | places/driftmoor/schoolhouse            |
-| to_midwife             | 1462 | 1007 | places/driftmoor/midwifes_home         |
-| to_watchtower          | 633 | 698 | places/driftmoor/watchtower              |
-| to_general_store       | 552 | 260 | places/driftmoor/general_store           |
+| to_region              | 406 | 365.5 | places/                                  |
+| to_harbor_water        | 48.5  | 438.5 | places/azure_sea                         |
+| to_dustcloaks_house    | 251.5 | 641.5 | places/driftmoor/dustcloaks_curios       |
+| to_church              | 576.5 | 650 | places/driftmoor/beacon_church           |
+| to_graveyard           | 430.5 | 674 | places/driftmoor/graveyard               |
+| to_mayors_hall         | 682.5 | 471 | places/driftmoor/mayors_hall             |
+| to_tavern              | 455 | 284 | places/driftmoor/broken_lantern          |
+| to_salt_and_iron       | 520 | 284 | places/driftmoor/salt_and_iron           |
+| to_forge               | 633.5 | 146  | places/driftmoor/forge                   |
+| to_stable              | 633.5 | 97.5  | places/driftmoor/stables                 |
+| to_corral              | 723 | 113.5  | places/driftmoor/corral                  |
+| to_elyssa_house        | 723 | 268 | places/driftmoor/elyssa_cottage           |
+| to_apothecary          | 520 | 390 | places/driftmoor/bitter_remedy           |
+| to_gilded_trinket      | 398 | 284 | places/driftmoor/gilded_trinket          |
+| to_rooming_house       | 463 | 390 | places/driftmoor/weary_traveler          |
+| to_bakery              | 341 | 284 | places/driftmoor/bakery                  |
+| to_cobbler             | 373.5 | 390 | places/driftmoor/cobblers_shop           |
+| to_barber              | 414 | 390 | places/driftmoor/rusty_razor             |
+| to_cooper              | 292.5 | 414 | places/driftmoor/coopers_shed            |
+| to_carpenter           | 300.5 | 471 | places/driftmoor/carpenters_workshop     |
+| to_weaver              | 479 | 471 | places/driftmoor/weavers_cottage         |
+| to_tailor              | 414 | 471 | places/driftmoor/tailors_shop            |
+| to_tannery             | 349 | 495.5 | places/driftmoor/tannery                 |
+| to_fishmonger          | 227.5 | 341 | places/driftmoor/fishmongers_shack       |
+| to_fisherfolk          | 196 | 400 | places/driftmoor/fisherfolk              |
+| to_schoolhouse         | 682.5 | 373.5 | places/driftmoor/schoolhouse            |
+| to_midwife             | 731 | 503.5 | places/driftmoor/midwifes_home         |
+| to_watchtower          | 316.5 | 349 | places/driftmoor/watchtower              |
+| to_general_store       | 276 | 130 | places/driftmoor/general_store           |
 
 ---
 
@@ -147,6 +148,6 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 - **type:** conditional
 - **blocks:** none
 - **effect:** beyond this line is wilderness; shadowbeast sightings increase sharply
-- **vertices:** (0,0) (1625,0) (1625,1462) (0,1462)
+- **vertices:** (0,0) (812.5,0) (812.5,731) (0,731)
 
 ---

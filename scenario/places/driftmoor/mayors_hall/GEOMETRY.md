@@ -5,9 +5,9 @@
 - **name:** The Mayor's Hall
 - **place_path:** places/driftmoor/mayors_hall
 - **z_level:** 16.25
-- **width:** 71.5
-- **height:** 65.0
-- **origin:** 9779.25, 8710.0, 16.25
+- **width:** 35.75
+- **height:** 32.5
+- **origin:** 655, 423, 0
 
 Notes: Largest building in Driftmoor. Two stories. Origin at
 southwest corner. Main hall (public) in front, mayor's office
@@ -20,15 +20,15 @@ Stone construction, iron-banded door.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| main_entrance   | 35 | 0  |
-| great_table     | 35 | 16  |
-| hearth          | 6  | 16  |
-| notice_board    | 9  | 3  |
-| office_door     | 52 | 22  |
-| mayor_desk      | 58 | 32 |
-| records_door    | 26  | 32 |
-| filing_shelves  | 16  | 45 |
-| staircase       | 65 | 45 |
+| main_entrance   | 17.5 | 0  |
+| great_table     | 17.5 | 8  |
+| hearth          | 3  | 8  |
+| notice_board    | 4.5  | 1.5  |
+| office_door     | 26 | 11  |
+| mayor_desk      | 29 | 16 |
+| records_door    | 13  | 16 |
+| filing_shelves  | 8  | 22.5 |
+| staircase       | 32.5 | 22.5 |
 
 ---
 
@@ -36,11 +36,11 @@ Stone construction, iron-banded door.
 
 | name            | render_z | vertices                        |
 |-----------------|----------|---------------------------------|
-| LIVING_QUARTERS | 9.75        | (32,39) (71,39) (71,65) (32,65) |
-| RECORDS_ROOM    | 6.5        | (0,32) (32,32) (32,65) (0,65)   |
-| OFFICE          | 6.5        | (45,22) (71,22) (71,39) (45,39)   |
-| MAIN_HALL       | 3.25        | (0,0) (71,0) (71,32) (0,32)     |
-| EXTERIOR        | 0.0        | (-9,-9) (81,-9) (81,74) (-9,74)  |
+| LIVING_QUARTERS | 9.75        | (16,19.5) (35.5,19.5) (35.5,32.5) (16,32.5) |
+| RECORDS_ROOM    | 6.5        | (0,16) (16,16) (16,32.5) (0,32.5)   |
+| OFFICE          | 6.5        | (22.5,11) (35.5,11) (35.5,19.5) (22.5,19.5)   |
+| MAIN_HALL       | 3.25        | (0,0) (35.5,0) (35.5,16) (0,16)     |
+| EXTERIOR        | 0.0        | (-4.5,-4.5) (40.5,-4.5) (40.5,37) (-4.5,37)  |
 
 ---
 
@@ -48,8 +48,8 @@ Stone construction, iron-banded door.
 
 | description        | vertices                        |
 |--------------------|---------------------------------|
-| Hall back wall     | (0,32) (71,32) (71,35) (0,35)    |
-| Office divider     | (45,22) (45,39) (48,39) (48,22)    |
+| Hall back wall     | (0,16) (35.5,16) (35.5,17.5) (0,17.5)    |
+| Office divider     | (22.5,11) (22.5,19.5) (24,19.5) (24,11)    |
 
 ---
 
@@ -57,7 +57,7 @@ Stone construction, iron-banded door.
 
 | name           | x    | y   | destination      |
 |----------------|------|-----|------------------|
-| main_entrance  | 35 | 0 | places/driftmoor |
+| main_entrance  | 17.5 | 0 | places/driftmoor |
 
 ---
 
@@ -68,4 +68,4 @@ Stone construction, iron-banded door.
 - **type:** conditional
 - **blocks:** all
 - **effect:** locked door; town records and correspondence; requires mayor's permission
-- **vertices:** (0,32) (32,32) (32,65) (0,65)
+- **vertices:** (0,16) (16,16) (16,32.5) (0,32.5)

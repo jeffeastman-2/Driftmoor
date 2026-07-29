@@ -5,9 +5,9 @@
 - **name:** Driftmoor Graveyard
 - **place_path:** places/driftmoor/graveyard
 - **z_level:** 16.25
-- **width:** 102
-- **height:** 58
-- **origin:** 810, 1319, 16.25
+- **width:** 51
+- **height:** 29
+- **origin:** 348, 630, 0
 
 ---
 
@@ -15,12 +15,12 @@
 
 | name              | x  | y  |
 |-------------------|----|----|
-| iron_gate         | 51 | 0  |
-| central_path      | 51 | 29 |
-| old_gravestones   | 25 | 35 |
-| newer_graves      | 77 | 35 |
-| offering_shelf    | 88 | 12 |
-| church_wall_path  | 102 | 29 |
+| iron_gate         | 25.5 | 0  |
+| central_path      | 25.5 | 14.5 |
+| old_gravestones   | 12.5 | 17.5 |
+| newer_graves      | 38.5 | 17.5 |
+| offering_shelf    | 44 | 6 |
+| church_wall_path  | 51 | 14.5 |
 
 ---
 
@@ -28,8 +28,8 @@
 
 | name      | render_z | vertices                          |
 |-----------|----------|-----------------------------------|
-| GRAVEYARD | 5.0      | (0,0) (102,0) (102,58) (0,58)   |
-| EXTERIOR  | 0.0      | (-8,-8) (110,-8) (110,66) (-8,66) |
+| GRAVEYARD | 5.0      | (0,0) (51,0) (51,29) (0,29)   |
+| EXTERIOR  | 0.0      | (-4,-4) (55,-4) (55,33) (-4,33) |
 
 ---
 
@@ -37,9 +37,9 @@
 
 | description | vertices                         |
 |-------------|----------------------------------|
-| North wall  | (0,54) (102,54) (102,58) (0,58) |
-| West wall   | (0,0) (4,0) (4,58) (0,58)       |
-| East wall   | (98,0) (102,0) (102,58) (98,58) |
+| North wall  | (0,27) (51,27) (51,29) (0,29) |
+| West wall   | (0,0) (2,0) (2,29) (0,29)       |
+| East wall   | (49,0) (51,0) (51,29) (49,29) |
 
 ---
 
@@ -47,4 +47,4 @@
 
 | name                | x  | y | destination      |
 |---------------------|----|---|------------------|
-| graveyard_to_street | 51 | 0 | places/driftmoor |
+| graveyard_to_street | 25.5 | 0 | places/driftmoor |

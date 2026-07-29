@@ -242,3 +242,10 @@ class TestLoadAllPlaces:
         by_id = {p.id: p for p in places}
         office = by_id["mayors_office"]
         assert office.parent_id == "mayors_hall"
+
+    def test_explicit_nested_id_avoids_reused_directory_name_collision(self):
+        places = load_all_places(PLACES_DIR)
+        by_id = {p.id: p for p in places}
+        upstairs = by_id["weary_traveler_upstairs"]
+        assert upstairs.parent_id == "weary_traveler"
+        assert upstairs.name == "The Weary Traveler Upstairs"

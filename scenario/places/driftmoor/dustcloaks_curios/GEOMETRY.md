@@ -5,9 +5,9 @@
 - **name:** Dustcloak's Curios
 - **place_path:** places/driftmoor/dustcloaks_curios
 - **z_level:** 16.25
-- **width:** 52.0
-- **height:** 52.0
-- **origin:** 8927.75, 9064.25, 16.25
+- **width:** 26
+- **height:** 26
+- **origin:** 212.5, 600.5, 0
 
 Notes: Squat crooked structure on the outskirts near the Mistwood
 Hills edge. Origin at southwest corner. Three levels: shopfront
@@ -20,14 +20,14 @@ doorway), and living loft above. Yard with organized chaos outside.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_gate      | 26  | 0  |
-| shopfront_ctr   | 26  | 13  |
-| curiosity_shelf | 9  | 16  |
-| curtain_door    | 26  | 22  |
-| backroom_desk   | 26  | 35 |
-| loft_staircase  | 45 | 35 |
-| obelisk_cache   | 13  | 39 |
-| yard_junk       | 26  | -6 |
+| front_gate      | 13  | 0  |
+| shopfront_ctr   | 13  | 6.5  |
+| curiosity_shelf | 4.5  | 8  |
+| curtain_door    | 13  | 11  |
+| backroom_desk   | 13  | 17.5 |
+| loft_staircase  | 22.5 | 17.5 |
+| obelisk_cache   | 6.5  | 19.5 |
+| yard_junk       | 13  | -3 |
 
 ---
 
@@ -35,11 +35,11 @@ doorway), and living loft above. Yard with organized chaos outside.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| LOFT       | 9.75        | (13,26) (52,26) (52,52) (13,52)     |
-| BACKROOM   | 6.5        | (0,22) (52,22) (52,52) (0,52)     |
-| SHOPFRONT  | 3.25        | (0,0) (52,0) (52,22) (0,22)       |
-| YARD       | 0.0        | (6,-13) (45,-13) (45,0) (6,0)     |
-| EXTERIOR   | 0.0        | (-9,-19) (61,-19) (61,61) (-9,61)  |
+| LOFT       | 9.75        | (6.5,13) (26,13) (26,26) (6.5,26)     |
+| BACKROOM   | 6.5        | (0,11) (26,11) (26,26) (0,26)     |
+| SHOPFRONT  | 3.25        | (0,0) (26,0) (26,11) (0,11)       |
+| YARD       | 0.0        | (3,-6.5) (22.5,-6.5) (22.5,0) (3,0)     |
+| EXTERIOR   | 0.0        | (-4.5,-9.5) (30.5,-9.5) (30.5,30.5) (-4.5,30.5)  |
 
 ---
 
@@ -47,8 +47,8 @@ doorway), and living loft above. Yard with organized chaos outside.
 
 | description      | vertices                        |
 |------------------|---------------------------------|
-| Dividing wall    | (0,22) (52,22) (52,26) (0,26)       |
-| Back wall        | (0,48) (52,48) (52,52) (0,52)   |
+| Dividing wall    | (0,11) (26,11) (26,13) (0,13)       |
+| Back wall        | (0,24) (26,24) (26,26) (0,26)   |
 
 ---
 
@@ -56,7 +56,7 @@ doorway), and living loft above. Yard with organized chaos outside.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_gate | 26 | 0 | places/driftmoor |
+| front_gate | 13 | 0 | places/driftmoor |
 
 ---
 
@@ -67,4 +67,4 @@ doorway), and living loft above. Yard with organized chaos outside.
 - **type:** conditional
 - **blocks:** all
 - **effect:** curtained doorway; Kelem's private workspace with obelisk fragments; requires trust or deception to access
-- **vertices:** (0,22) (52,22) (52,52) (0,52)
+- **vertices:** (0,11) (26,11) (26,26) (0,26)

@@ -5,9 +5,9 @@
 - **name:** Carpenter's Workshop
 - **place_path:** places/driftmoor/carpenters_workshop
 - **z_level:** 16.25
-- **width:** 52.0
-- **height:** 39.0
-- **origin:** 9028.5, 8723.0, 16.25
+- **width:** 26
+- **height:** 19.5
+- **origin:** 279.5, 443, 0
 
 Notes: Timber-framed with an open front facing south. Origin at
 southwest corner. Workshop area with workbenches and lumber storage.
@@ -20,12 +20,12 @@ near the entrance.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| open_front      | 26  | 0  |
-| main_workbench  | 26  | 19  |
-| lumber_pile     | 45 | 29  |
-| tool_wall       | 0  | 19  |
-| display_area    | 13  | 6  |
-| sawdust_pile    | 39 | 13  |
+| open_front      | 13  | 0  |
+| main_workbench  | 13  | 9.5  |
+| lumber_pile     | 22.5 | 14.5  |
+| tool_wall       | 0  | 9.5  |
+| display_area    | 6.5  | 3  |
+| sawdust_pile    | 19.5 | 6.5  |
 
 ---
 
@@ -33,9 +33,9 @@ near the entrance.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| STORAGE    | 6.5        | (32,19) (52,19) (52,39) (32,39)  |
-| WORKSHOP   | 3.25        | (0,0) (52,0) (52,39) (0,39)    |
-| EXTERIOR   | 0.0        | (-9,-9) (61,-9) (61,48) (-9,48) |
+| STORAGE    | 6.5        | (16,9.5) (26,9.5) (26,19.5) (16,19.5)  |
+| WORKSHOP   | 3.25        | (0,0) (26,0) (26,19.5) (0,19.5)    |
+| EXTERIOR   | 0.0        | (-4.5,-4.5) (30.5,-4.5) (30.5,24) (-4.5,24) |
 
 ---
 
@@ -43,7 +43,7 @@ near the entrance.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0,35) (52,35) (52,39) (0,39) |
+| Back wall   | (0,17.5) (26,17.5) (26,19.5) (0,19.5) |
 
 ---
 
@@ -51,4 +51,4 @@ near the entrance.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| open_front | 26 | 0 | places/driftmoor |
+| open_front | 13 | 0 | places/driftmoor |

@@ -5,9 +5,9 @@
 - **name:** The Cooper's Shed
 - **place_path:** places/driftmoor/coopers_shed
 - **z_level:** 16.25
-- **width:** 45.5
-- **height:** 32.5
-- **origin:** 9012.25, 8609.25, 16.25
+- **width:** 22.75
+- **height:** 16.25
+- **origin:** 265, 388, 0
 
 Notes: Utilitarian structure near the harbor. Origin at southwest
 corner. Open workspace with barrel-making tools. Yard with wooden
@@ -19,12 +19,12 @@ staves and iron hoops. Small toys near entrance.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22  | 0  |
-| main_workspace  | 22  | 16  |
-| stave_pile      | 39 | 22  |
-| hoop_rack       | 6  | 22  |
-| toy_shelf       | 9  | 3  |
-| yard_area       | 22  | -6 |
+| front_door      | 11  | 0  |
+| main_workspace  | 11  | 8  |
+| stave_pile      | 19.5 | 11  |
+| hoop_rack       | 3  | 11  |
+| toy_shelf       | 4.5  | 1.5  |
+| yard_area       | 11  | -3 |
 
 ---
 
@@ -32,9 +32,9 @@ staves and iron hoops. Small toys near entrance.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| WORKSPACE  | 3.25        | (0,0) (45,0) (45,32) (0,32)   |
-| YARD       | 0.0        | (6,-13) (39,-13) (39,0) (6,0)   |
-| EXTERIOR   | 0.0        | (-9,-19) (55,-19) (55,42) (-9,42) |
+| WORKSPACE  | 3.25        | (0,0) (22.5,0) (22.5,16) (0,16)   |
+| YARD       | 0.0        | (3,-6.5) (19.5,-6.5) (19.5,0) (3,0)   |
+| EXTERIOR   | 0.0        | (-4.5,-9.5) (27.5,-9.5) (27.5,21) (-4.5,21) |
 
 ---
 
@@ -42,7 +42,7 @@ staves and iron hoops. Small toys near entrance.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0,29) (45,29) (45,32) (0,32)   |
+| Back wall   | (0,14.5) (22.5,14.5) (22.5,16) (0,16)   |
 
 ---
 
@@ -50,4 +50,4 @@ staves and iron hoops. Small toys near entrance.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 22 | 0 | places/driftmoor |
+| front_door | 11 | 0 | places/driftmoor |

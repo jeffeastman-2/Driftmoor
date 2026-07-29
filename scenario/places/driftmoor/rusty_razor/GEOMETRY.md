@@ -5,9 +5,9 @@
 - **name:** The Rusty Razor
 - **place_path:** places/driftmoor/rusty_razor
 - **z_level:** 16.25
-- **width:** 26.0
-- **height:** 26.0
-- **origin:** 9265.75, 8567.0, 16.25
+- **width:** 13
+- **height:** 13
+- **origin:** 397.5, 364, 0
 
 Notes: Small wooden-fronted barbershop. Origin at southwest corner.
 Single room with two chairs, mirror, and a shelf of tonics.
@@ -19,12 +19,12 @@ Striped pole outside the door.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 13 | 0 |
-| barber_chair_3.25  | 9 | 13 |
-| barber_chair_6.5  | 19 | 13 |
-| mirror          | 13 | 22 |
-| tonic_shelf     | 3 | 19 |
-| striped_pole    | 16 | -3|
+| front_door      | 6.5 | 0 |
+| barber_chair_3.25  | 4.5 | 6.5 |
+| barber_chair_6.5  | 9.5 | 6.5 |
+| mirror          | 6.5 | 11 |
+| tonic_shelf     | 1.5 | 9.5 |
+| striped_pole    | 8 | -1.5|
 
 ---
 
@@ -32,8 +32,8 @@ Striped pole outside the door.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| SHOP       | 3.25        | (0,0) (26,0) (26,26) (0,26)     |
-| EXTERIOR   | 0.0        | (-9,-9) (35,-9) (35,35) (-9,35) |
+| SHOP       | 3.25        | (0,0) (13,0) (13,13) (0,13)     |
+| EXTERIOR   | 0.0        | (-4.5,-4.5) (17.5,-4.5) (17.5,17.5) (-4.5,17.5) |
 
 ---
 
@@ -41,7 +41,7 @@ Striped pole outside the door.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Back wall   | (0,22) (26,22) (26,26) (0,26)     |
+| Back wall   | (0,11) (13,11) (13,13) (0,13)     |
 
 ---
 
@@ -49,4 +49,4 @@ Striped pole outside the door.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 13 | 0 | places/driftmoor |
+| front_door | 6.5 | 0 | places/driftmoor |

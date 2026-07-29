@@ -23,25 +23,25 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tess/SOUL.md
 - **identity_file:** scenario/people/npcs/tess/IDENTITY.md
-- **position:** 65, 26
+- **position:** 32.5, 13
 
 ### wilfred
 - **type:** npc
 - **soul_file:** scenario/people/npcs/wilfred/SOUL.md
 - **identity_file:** scenario/people/npcs/wilfred/IDENTITY.md
-- **position:** 56, 26
+- **position:** 28, 13
 
 ### bran
 - **type:** npc
 - **soul_file:** scenario/people/npcs/bran/SOUL.md
 - **identity_file:** scenario/people/npcs/bran/IDENTITY.md
-- **position:** 14, 52
+- **position:** 7, 26
 
 ### marda
 - **type:** npc
 - **soul_file:** scenario/people/npcs/marda/SOUL.md
 - **identity_file:** scenario/people/npcs/marda/IDENTITY.md
-- **position:** 11, 52
+- **position:** 5.5, 26
 
 ## Who Is Normally Here
 - **Tess Malwin** — owner, behind the bar or moving through the room

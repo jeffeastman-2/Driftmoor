@@ -13,7 +13,7 @@ A utilitarian structure near the harbor. The yard is littered with wooden staves
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tomas/SOUL.md
 - **identity_file:** scenario/people/npcs/tomas/IDENTITY.md
-- **position:** 22, 16
+- **position:** 11, 8
 
 ## Scene Introductions
 

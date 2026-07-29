@@ -5,9 +5,9 @@
 - **name:** The Beacon
 - **place_path:** places/driftmoor/beacon_church
 - **z_level:** 26.0
-- **width:** 97.5
-- **height:** 81.25
-- **origin:** 9603.75, 9100.0, 26.0
+- **width:** 48.75
+- **height:** 40.625
+- **origin:** 520.5, 630, 9.75
 
 Notes: The Beacon sits on a small rise north of the Greywater, slightly
 elevated above town (z=26.0 vs town z=16.25). Origin at southwest corner
@@ -21,14 +21,14 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_doors     | 48 | 0  |
-| altar           | 48 | 58 |
-| hearth          | 16  | 32 |
-| bench_left      | 26  | 32 |
-| bench_right     | 71 | 32 |
-| lantern_pole    | 48 | 78 |
-| garden_center   | 48 | 104 |
-| steeple_base    | 42 | 65 |
+| front_doors     | 24 | 0  |
+| altar           | 24 | 29 |
+| hearth          | 8  | 16 |
+| bench_left      | 13  | 16 |
+| bench_right     | 35.5 | 16 |
+| lantern_pole    | 24 | 39 |
+| garden_center   | 24 | 52 |
+| steeple_base    | 21 | 32.5 |
 
 ---
 
@@ -36,11 +36,11 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 | name      | render_z | vertices                              |
 |-----------|----------|---------------------------------------|
-| ALTAR     | 6.5        | (32,48) (65,48) (65,71) (32,71)       |
-| SACRISTY  | 6.5        | (71,45) (91,45) (91,71) (71,71)       |
-| CHAPEL    | 3.25        | (6,6) (91,6) (91,71) (6,71)           |
-| GARDEN    | 3.25        | (6,71) (91,71) (91,123) (6,123)         |
-| EXTERIOR  | 0.0        | (-16,-16) (113,-16) (113,139) (-16,139)       |
+| ALTAR     | 6.5        | (16,24) (32.5,24) (32.5,35.5) (16,35.5)       |
+| SACRISTY  | 6.5        | (35.5,22.5) (45.5,22.5) (45.5,35.5) (35.5,35.5)       |
+| CHAPEL    | 3.25        | (3,3) (45.5,3) (45.5,35.5) (3,35.5)           |
+| GARDEN    | 3.25        | (3,35.5) (45.5,35.5) (45.5,61.5) (3,61.5)         |
+| EXTERIOR  | 0.0        | (-8,-8) (56.5,-8) (56.5,69.5) (-8,69.5)       |
 
 ---
 
@@ -48,9 +48,9 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 | description      | vertices                              |
 |------------------|---------------------------------------|
-| North wall       | (6,71) (91,71) (91,78) (6,78)         |
-| Garden wall      | (0,117) (97,117) (97,123) (0,123)         |
-| Steeple interior | (42,58) (55,58) (55,71) (42,71)       |
+| North wall       | (3,35.5) (45.5,35.5) (45.5,39) (3,39)         |
+| Garden wall      | (0,58.5) (48.5,58.5) (48.5,61.5) (0,61.5)         |
+| Steeple interior | (21,29) (27.5,29) (27.5,35.5) (21,35.5)       |
 
 ---
 
@@ -58,9 +58,9 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 | name            | x    | y    | destination              |
 |-----------------|------|------|--------------------------|
-| front_doors     | 48 | 0  | places/driftmoor         |
-| garden_gate     | 48 | 120 | places/driftmoor         |
-| sacristy_door   | 91 | 58 | places/driftmoor         |
+| front_doors     | 24 | 0  | places/driftmoor         |
+| garden_gate     | 24 | 60 | places/driftmoor         |
+| sacristy_door   | 45.5 | 29 | places/driftmoor         |
 
 ---
 
@@ -71,13 +71,13 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 - **type:** magical
 - **blocks:** undead, shadow_creature, shadowbeast
 - **effect:** sacred ground — undead cannot enter; shadowbeasts feel wrongness and recoil
-- **vertices:** (6,6) (91,6) (91,123) (6,123)
+- **vertices:** (3,3) (45.5,3) (45.5,61.5) (3,61.5)
 
 ### The Beacon Lantern Aura
 
 - **type:** magical
 - **blocks:** none
 - **effect:** lantern atop steeple emits Pelor's light; currently flickering with dark energy — radius of comfort reduced, locals uneasy
-- **vertices:** (32,58) (65,58) (65,81) (32,81)
+- **vertices:** (16,29) (32.5,29) (32.5,40.5) (16,40.5)
 
 ---

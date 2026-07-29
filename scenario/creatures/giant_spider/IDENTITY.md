@@ -15,7 +15,6 @@ Giant Spider.
 - **faction:** hostile
 - **pronouns:** it/its
 - **weapons:** spider_bite+5
-- **armor:** natural_armor_spider
 - **STR:** 14 | **DEX:** 16 (+3) | **CON:** 12 (+1)
 - **INT:** 2 (-4) | **WIS:** 11 (+1) | **CHA:** 4
 

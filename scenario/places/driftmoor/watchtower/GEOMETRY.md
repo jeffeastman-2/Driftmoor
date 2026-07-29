@@ -5,9 +5,9 @@
 - **name:** The Watchtower
 - **place_path:** places/driftmoor/watchtower
 - **z_level:** 16.25
-- **width:** 32.5
-- **height:** 32.5
-- **origin:** 9067.5, 8479.25, 16.25
+- **width:** 16.25
+- **height:** 16.25
+- **origin:** 300, 332.5, 0
 
 Notes: Squat stone tower. Origin at southwest corner. Ground floor
 is a single room with weapon rack and cot. Ladder leads to the roof
@@ -19,11 +19,11 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 16 | 0 |
-| weapon_rack     | 6 | 22 |
-| cot             | 26 | 22 |
-| ladder          | 16 | 29 |
-| center          | 16 | 16 |
+| front_door      | 8 | 0 |
+| weapon_rack     | 3 | 11 |
+| cot             | 13 | 11 |
+| ladder          | 8 | 14.5 |
+| center          | 8 | 8 |
 
 ---
 
@@ -31,9 +31,9 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name            | render_z | vertices                    |
 |-----------------|----------|-----------------------------|
-| ROOF_PLATFORM   | 6.5        | (3,3) (29,3) (29,29) (3,29)     |
-| GROUND_FLOOR    | 3.25        | (0,0) (32,0) (32,32) (0,32)  |
-| EXTERIOR        | 0.0        | (-9,-9) (42,-9) (42,42) (-9,42) |
+| ROOF_PLATFORM   | 6.5        | (1.5,1.5) (14.5,1.5) (14.5,14.5) (1.5,14.5)     |
+| GROUND_FLOOR    | 3.25        | (0,0) (16,0) (16,16) (0,16)  |
+| EXTERIOR        | 0.0        | (-4.5,-4.5) (21,-4.5) (21,21) (-4.5,21) |
 
 ---
 
@@ -41,11 +41,11 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | description      | vertices                         |
 |------------------|----------------------------------|
-| North tower wall | (0,29) (32,29) (32,32) (0,32)  |
-| West tower wall  | (0,0) (3,0) (3,32) (0,32)      |
-| East tower wall  | (29,0) (32,0) (32,32) (29,32)  |
-| South wall west  | (0,0) (13,0) (13,3) (0,3)      |
-| South wall east  | (19,0) (32,0) (32,3) (19,3)    |
+| North tower wall | (0,14.5) (16,14.5) (16,16) (0,16)  |
+| West tower wall  | (0,0) (1.5,0) (1.5,16) (0,16)      |
+| East tower wall  | (14.5,0) (16,0) (16,16) (14.5,16)  |
+| South wall west  | (0,0) (6.5,0) (6.5,1.5) (0,1.5)      |
+| South wall east  | (9.5,0) (16,0) (16,1.5) (9.5,1.5)    |
 
 ---
 
@@ -53,4 +53,4 @@ platform with views over the town and harbor. Oil lamps at top.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 16 | 0 | places/driftmoor |
+| front_door | 8 | 0 | places/driftmoor |

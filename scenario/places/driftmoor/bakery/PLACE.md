@@ -13,13 +13,13 @@ A warm inviting building. The chimney perpetually wafts the smell of fresh bread
 - **type:** npc
 - **soul_file:** scenario/people/npcs/maribel/SOUL.md
 - **identity_file:** scenario/people/npcs/maribel/IDENTITY.md
-- **position:** 23, 19
+- **position:** 11.5, 9.5
 
 ### lottie
 - **type:** npc
 - **soul_file:** scenario/people/npcs/lottie/SOUL.md
 - **identity_file:** scenario/people/npcs/lottie/IDENTITY.md
-- **position:** 30, 19
+- **position:** 15, 9.5
 
 ## Who Is Normally Here
 - **Maribel Crust**

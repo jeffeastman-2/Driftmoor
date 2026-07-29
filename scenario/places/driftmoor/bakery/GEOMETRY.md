@@ -5,9 +5,9 @@
 - **name:** The Bakery
 - **place_path:** places/driftmoor/bakery
 - **z_level:** 16.25
-- **width:** 39.0
-- **height:** 32.5
-- **origin:** 9113.0, 8352.5, 16.25
+- **width:** 19.5
+- **height:** 16.25
+- **origin:** 313, 252, 0
 
 Notes: A warm single-storey building on the south row. Origin at
 southwest corner. Front counter faces south toward the street.
@@ -19,12 +19,12 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 19  | 0  |
-| front_counter   | 19  | 9  |
-| ovens           | 9  | 26  |
-| workspace       | 29  | 22  |
-| chimney         | 19  | 32 |
-| display_shelves | 9  | 9  |
+| front_door      | 9.5  | 0  |
+| front_counter   | 9.5  | 4.5  |
+| ovens           | 4.5  | 13  |
+| workspace       | 14.5  | 11  |
+| chimney         | 9.5  | 16 |
+| display_shelves | 4.5  | 4.5  |
 
 ---
 
@@ -32,9 +32,9 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| KITCHEN    | 6.5        | (0,16) (39,16) (39,32) (0,32) |
-| SHOPFRONT  | 3.25        | (0,0) (39,0) (39,16) (0,16)   |
-| EXTERIOR   | 0.0        | (-9,-9) (48,-9) (48,42) (-9,42) |
+| KITCHEN    | 6.5        | (0,8) (19.5,8) (19.5,16) (0,16) |
+| SHOPFRONT  | 3.25        | (0,0) (19.5,0) (19.5,8) (0,8)   |
+| EXTERIOR   | 0.0        | (-4.5,-4.5) (24,-4.5) (24,21) (-4.5,21) |
 
 ---
 
@@ -42,8 +42,8 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | description   | vertices                    |
 |---------------|-----------------------------|
-| Oven wall     | (0,22) (19,22) (19,32) (0,32)   |
-| Back wall     | (0,29) (39,29) (39,32) (0,32) |
+| Oven wall     | (0,11) (9.5,11) (9.5,16) (0,16)   |
+| Back wall     | (0,14.5) (19.5,14.5) (19.5,16) (0,16) |
 
 ---
 
@@ -51,4 +51,4 @@ Ovens and workspace behind. Chimney on the north wall.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 19 | 0 | places/driftmoor |
+| front_door | 9.5 | 0 | places/driftmoor |

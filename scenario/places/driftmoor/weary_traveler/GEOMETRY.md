@@ -5,42 +5,39 @@
 - **name:** The Weary Traveler
 - **place_path:** places/driftmoor/weary_traveler
 - **z_level:** 16.25
-- **width:** 65.0
-- **height:** 52.0
-- **origin:** 9343.75, 8554.0, 16.25
+- **width:** 32.5
+- **height:** 26
+- **origin:** 435, 361, 0
 
-Notes: Two-story timber-framed rooming house. Origin at southwest
-corner. Common room on the ground floor (tables, hearth), guest
-rooms upstairs along a corridor. Storage shed attached to the east.
-Martha Greaves runs it.
+Notes: Ground floor of a two-story timber-framed rooming house.
+Origin is at the southwest corner. The common room fills the main
+building footprint; a stair rises along the east wall to the guest
+rooms, and a storage shed is attached outside that wall. Martha
+Greaves runs the house from behind the counter.
 
 ---
 
 ## Landmarks
 
-| name            | x    | y    |
-|-----------------|------|------|
-| front_door      | 32 | 0  |
-| hearth          | 9  | 13  |
-| dining_table    | 26  | 13  |
-| bar_counter     | 45 | 13  |
-| staircase       | 55 | 19  |
-| upstairs_hall   | 32 | 39 |
-| guest_room_1    | 13  | 39 |
-| guest_room_2    | 32 | 45 |
-| guest_room_3    | 52 | 39 |
-| storage_shed    | 71 | 13  |
+| name            | x    | y    | z    |
+|-----------------|------|------|------|
+| front_door      | 16 | 0  | 4 |
+| hearth          | 4.5  | 6.5  | 4 |
+| dining_table    | 13  | 13  | 4 |
+| bar_counter     | 22.5 | 8  | 4 |
+| stair_foot      | 27.5 | 18  | 0 |
+| storage_shed    | 36.5 | 13 | 4 |
 
 ---
 
 ## Zones
 
-| name            | render_z | vertices                        |
-|-----------------|----------|---------------------------------|
-| GUEST_ROOMS     | 9.75        | (0,26) (65,26) (65,52) (0,52)      |
-| COMMON_ROOM     | 3.25        | (0,0) (65,0) (65,26) (0,26)        |
-| STORAGE_SHED    | 3.25        | (65,0) (84,0) (84,26) (65,26)      |
-| EXTERIOR        | 0.0        | (-9,-9) (94,-9) (94,61) (-9,61)  |
+| name            | floor_z | ceiling_z | render_z | vertices                        |
+|-----------------|---------|-----------|----------|---------------------------------|
+| STAIRWAY        | 0       | 8         | 7.0      | (26,14) (32.5,14) (32.5,24) (26,24) |
+| COMMON_ROOM     | 0       | 8         | 3.25     | (0,0) (32.5,0) (32.5,26) (0,26)    |
+| STORAGE_SHED    | 0       | 8         | 3.25     | (32.5,8) (40.5,8) (40.5,18) (32.5,18) |
+| EXTERIOR        | 0       | 8         | 0.0      | (-4.5,-4.5) (45,-4.5) (45,30.5) (-4.5,30.5) |
 
 ---
 
@@ -48,24 +45,14 @@ Martha Greaves runs it.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Floor division | (0,26) (65,26) (65,29) (0,29)        |
-| Back wall      | (0,48) (65,48) (65,52) (0,52)    |
+| Back wall       | (0,24) (26,24) (26,26) (0,26) |
+| Hearth masonry  | (2,16) (5,16) (5,22) (2,22)   |
 
 ---
 
 ## Connections
 
-| name       | x    | y   | destination      |
-|------------|------|-----|------------------|
-| front_door | 32 | 0 | places/driftmoor |
-
----
-
-## Boundaries
-
-### Guest Rooms — Rented Access
-
-- **type:** conditional
-- **blocks:** all
-- **effect:** upstairs corridor and guest rooms; must rent a room or be invited
-- **vertices:** (0,26) (65,26) (65,52) (0,52)
+| name        | x    | y   | destination                                |
+|-------------|------|-----|--------------------------------------------|
+| front_door  | 16   | 0   | places/driftmoor                           |
+| to_upstairs | 27.5 | 18  | places/driftmoor/weary_traveler/upstairs  |

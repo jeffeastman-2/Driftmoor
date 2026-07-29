@@ -5,9 +5,9 @@
 - **name:** The Stables
 - **place_path:** places/driftmoor/stables
 - **z_level:** 16.25
-- **width:** 88
-- **height:** 113
-- **origin:** 1263, 151, 16.25
+- **width:** 44
+- **height:** 56.5
+- **origin:** 602.5, 75.5, 0
 
 ---
 
@@ -15,11 +15,11 @@
 
 | name             | x  | y  |
 |------------------|----|----|
-| stable_entrance  | 7  | 0  |
-| saddle_racks     | 13 | 26 |
-| stall_row_center | 46 | 55 |
-| feed_bins        | 65 | 26 |
-| forge_door       | 0  | 65 |
+| stable_entrance  | 3.5  | 0  |
+| saddle_racks     | 6.5 | 13 |
+| stall_row_center | 23 | 27.5 |
+| feed_bins        | 32.5 | 13 |
+| forge_door       | 0  | 32.5 |
 
 ---
 
@@ -27,8 +27,8 @@
 
 | name     | render_z | vertices                         |
 |----------|----------|----------------------------------|
-| STABLES  | 5.0      | (0,0) (88,0) (88,113) (0,113)  |
-| EXTERIOR | 0.0      | (-8,-8) (96,-8) (96,121) (-8,121) |
+| STABLES  | 5.0      | (0,0) (44,0) (44,56.5) (0,56.5)  |
+| EXTERIOR | 0.0      | (-4,-4) (48,-4) (48,60.5) (-4,60.5) |
 
 ---
 
@@ -36,8 +36,8 @@
 
 | description      | vertices                         |
 |------------------|----------------------------------|
-| West stall wall  | (0,107) (38,107) (38,113) (0,113) |
-| East stall wall  | (50,107) (88,107) (88,113) (50,113) |
+| West stall wall  | (0,53.5) (19,53.5) (19,56.5) (0,56.5) |
+| East stall wall  | (25,53.5) (44,53.5) (44,56.5) (25,56.5) |
 
 ---
 
@@ -45,5 +45,5 @@
 
 | name             | x | y | destination      |
 |------------------|---|---|------------------|
-| stable_to_street | 7 | 0 | places/driftmoor |
-| stable_to_forge  | 0 | 65 | places/driftmoor/forge |
+| stable_to_street | 3.5 | 0 | places/driftmoor |
+| stable_to_forge  | 0 | 32.5 | places/driftmoor/forge |

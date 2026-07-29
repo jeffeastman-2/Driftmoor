@@ -5,9 +5,9 @@
 - **name:** The Fishmonger's Shack
 - **place_path:** places/driftmoor/fishmongers_shack
 - **z_level:** 16.25
-- **width:** 32.5
-- **height:** 26.0
-- **origin:** 8882.25, 8463.0, 16.25
+- **width:** 16.25
+- **height:** 13
+- **origin:** 198.5, 313.5, 0
 
 Notes: Small weathered shack near the harbor. Origin at southwest
 corner. Single room with crates of fish, hanging nets, and hooks.
@@ -19,12 +19,12 @@ Slanted roof. Fish-shaped sign outside.
 
 | name            | x   | y   |
 |-----------------|-----|-----|
-| front_door      | 16 | 0 |
-| fish_crates     | 9 | 16 |
-| salt_barrels    | 26 | 19 |
-| hanging_nets    | 16 | 22 |
-| counter         | 16 | 9 |
-| fish_sign       | 16 | -3|
+| front_door      | 8 | 0 |
+| fish_crates     | 4.5 | 8 |
+| salt_barrels    | 13 | 9.5 |
+| hanging_nets    | 8 | 11 |
+| counter         | 8 | 4.5 |
+| fish_sign       | 8 | -1.5|
 
 ---
 
@@ -32,8 +32,8 @@ Slanted roof. Fish-shaped sign outside.
 
 | name       | render_z | vertices                    |
 |------------|----------|-----------------------------|
-| SHACK      | 3.25        | (0,0) (32,0) (32,26) (0,26)   |
-| EXTERIOR   | 0.0        | (-9,-9) (42,-9) (42,35) (-9,35) |
+| SHACK      | 3.25        | (0,0) (16,0) (16,13) (0,13)   |
+| EXTERIOR   | 0.0        | (-4.5,-4.5) (21,-4.5) (21,17.5) (-4.5,17.5) |
 
 ---
 
@@ -41,7 +41,7 @@ Slanted roof. Fish-shaped sign outside.
 
 | description | vertices                    |
 |-------------|-----------------------------|
-| Back wall   | (0,22) (32,22) (32,26) (0,26)   |
+| Back wall   | (0,11) (16,11) (16,13) (0,13)   |
 
 ---
 
@@ -49,4 +49,4 @@ Slanted roof. Fish-shaped sign outside.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 16 | 0 | places/driftmoor |
+| front_door | 8 | 0 | places/driftmoor |

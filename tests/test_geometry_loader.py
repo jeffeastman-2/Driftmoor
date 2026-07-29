@@ -10,6 +10,12 @@ from models.space_time import Position, Polygon, SceneGeometry, MagicalBoundary
 
 
 FEY_GLADE_PATH = Path("scenario/places/mistwood_hills/fey_glade/GEOMETRY.md")
+WEARY_TRAVELER_PATH = Path(
+    "scenario/places/driftmoor/weary_traveler/GEOMETRY.md"
+)
+WEARY_TRAVELER_UPSTAIRS_PATH = Path(
+    "scenario/places/driftmoor/weary_traveler/upstairs/GEOMETRY.md"
+)
 
 
 class TestParseGeometryMd:
@@ -105,6 +111,33 @@ class TestParseGeometryMd:
         # Placement is a scene concern now; GEOMETRY.md is a pure stage.
         assert "starting_positions" not in fey_glade_data
 
+    def test_legacy_zones_default_to_eight_foot_extrusions(self, fey_glade_data):
+        assert fey_glade_data["zone_floor_z"]["GLADE"] == 0.0
+        assert fey_glade_data["zone_ceiling_z"]["GLADE"] == 8.0
+        assert fey_glade_data["zone_z_explicit"] == set()
+
+    def test_explicit_vertical_zone_columns_are_loaded(self):
+        data = parse_geometry_md(
+            WEARY_TRAVELER_PATH.read_text(encoding="utf-8"))
+        assert data["zone_floor_z"]["COMMON_ROOM"] == 0.0
+        assert data["zone_ceiling_z"]["COMMON_ROOM"] == 8.0
+        assert data["zone_ceiling_z"]["STAIRWAY"] == 8.0
+        assert "COMMON_ROOM" in data["zone_z_explicit"]
+
+        upstairs = parse_geometry_md(
+            WEARY_TRAVELER_UPSTAIRS_PATH.read_text(encoding="utf-8"))
+        assert upstairs["zone_floor_z"]["GUEST_ROOM_1"] == 0.0
+        assert upstairs["zone_ceiling_z"]["GUEST_ROOM_1"] == 8.0
+        assert "GUEST_ROOM_1" in upstairs["zone_z_explicit"]
+
+    def test_landmarks_accept_optional_z(self):
+        data = parse_geometry_md(
+            WEARY_TRAVELER_PATH.read_text(encoding="utf-8"))
+        assert data["landmarks"]["hearth"] == Position(4.5, 6.5, 4.0)
+        upstairs = parse_geometry_md(
+            WEARY_TRAVELER_UPSTAIRS_PATH.read_text(encoding="utf-8"))
+        assert upstairs["landmarks"]["upstairs_hall"] == Position(16.0, 5.0, 4.0)
+
 
 class TestLoadGeometry:
     """Test loading from file to SceneGeometry."""
@@ -136,3 +169,20 @@ class TestLoadGeometry:
         geo, _ = load_geometry_full(FEY_GLADE_PATH)
         assert geo.zones["POOL"].z == pytest.approx(0.97)
         assert geo.zones["FOREST"].z == pytest.approx(0.0)
+
+    def test_weary_traveler_floors_are_stacked_first_class_places(self):
+        ground = load_geometry(WEARY_TRAVELER_PATH)
+        upstairs = load_geometry(WEARY_TRAVELER_UPSTAIRS_PATH)
+
+        assert (ground.width, ground.height) == (32.5, 26.0)
+        assert (upstairs.width, upstairs.height) == (32.5, 26.0)
+        assert upstairs.origin == Position(0.0, 0.0, 9.0)
+        assert upstairs.z_level == ground.z_level + upstairs.origin.z
+
+        assert ground.zone_at(Position(10, 15, 4)) == "COMMON_ROOM"
+        assert ground.zone_at(Position(27.5, 18, 4)) == "STAIRWAY"
+        assert upstairs.zone_at(Position(27.5, 5, 4)) == "STAIR_LANDING"
+        assert upstairs.zone_at(Position(16, 19, 4)) == "GUEST_ROOM_2"
+        assert ground.zone_center("COMMON_ROOM").z == 4.0
+        assert upstairs.zone_center("GUEST_ROOM_2").z == 4.0
+        assert upstairs.ceiling_z_at(Position(16, 19, 4)) == 8.0

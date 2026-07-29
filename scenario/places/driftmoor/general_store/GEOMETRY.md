@@ -5,9 +5,9 @@
 - **name:** The General Store
 - **place_path:** places/driftmoor/general_store
 - **z_level:** 16.25
-- **width:** 45.5
-- **height:** 58.5
-- **origin:** 8979.75, 8040.5, 16.25
+- **width:** 22.75
+- **height:** 29.25
+- **origin:** 235, 82.5, 0
 
 Notes: Stone-and-wood building in the south quarter. Origin at
 southwest corner. Shop in front, garden behind (north). Counter
@@ -19,14 +19,14 @@ at the back of the shop area.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 22  | 0  |
-| counter         | 22  | 22  |
-| tool_shelves    | 6  | 13  |
-| rope_rack       | 39 | 13  |
-| candle_shelf    | 6  | 19  |
-| back_door       | 22  | 29  |
-| garden_center   | 22  | 45 |
-| garden_gate     | 22  | 29  |
+| front_door      | 11  | 0  |
+| counter         | 11  | 11  |
+| tool_shelves    | 3  | 6.5  |
+| rope_rack       | 19.5 | 6.5  |
+| candle_shelf    | 3  | 9.5  |
+| back_door       | 11  | 14.5  |
+| garden_center   | 11  | 22.5 |
+| garden_gate     | 11  | 14.5  |
 
 ---
 
@@ -34,9 +34,9 @@ at the back of the shop area.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| SHOP       | 3.25        | (0,0) (45,0) (45,29) (0,29)       |
-| GARDEN     | 3.25        | (6,29) (39,29) (39,58) (6,58)     |
-| EXTERIOR   | 0.0        | (-9,-9) (55,-9) (55,68) (-9,68)  |
+| SHOP       | 3.25        | (0,0) (22.5,0) (22.5,14.5) (0,14.5)       |
+| GARDEN     | 3.25        | (3,14.5) (19.5,14.5) (19.5,29) (3,29)     |
+| EXTERIOR   | 0.0        | (-4.5,-4.5) (27.5,-4.5) (27.5,34) (-4.5,34)  |
 
 ---
 
@@ -44,8 +44,8 @@ at the back of the shop area.
 
 | description  | vertices                        |
 |--------------|---------------------------------|
-| Back wall    | (0,26) (45,26) (45,29) (0,29)       |
-| Garden fence | (6,55) (39,55) (39,58) (6,58)   |
+| Back wall    | (0,13) (22.5,13) (22.5,14.5) (0,14.5)       |
+| Garden fence | (3,27.5) (19.5,27.5) (19.5,29) (3,29)   |
 
 ---
 
@@ -53,4 +53,4 @@ at the back of the shop area.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 22 | 0 | places/driftmoor |
+| front_door | 11 | 0 | places/driftmoor |

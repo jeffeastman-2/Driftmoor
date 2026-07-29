@@ -1509,7 +1509,8 @@ _CONNECTOR_NAME_TOKENS = {
 def _normalize_venue_intent_text(text: str) -> str:
     """Normalize common typo seams in venue-enter/exit phrases.
 
-    Example: ``enterthe bitter remedy`` -> ``enter the bitter remedy``.
+    Examples: ``enterthe bitter remedy`` -> ``enter the bitter remedy`` and
+    vertical stair travel -> the same enter/leave semantics used by doorways.
     """
     t = (text or "").strip().lower()
     if not t:
@@ -1519,6 +1520,21 @@ def _normalize_venue_intent_text(text: str) -> str:
         r"\1 \2",
         t,
     )
+    if re.fullmatch(
+        r"(?:i\s+)?(?:go|walk|head|climb|move)\s+"
+        r"(?:upstairs|up\s+(?:the\s+)?stairs|(?:the\s+)?stairs)",
+        t,
+    ):
+        return "enter upstairs"
+    if re.fullmatch(
+        r"(?:i\s+)?(?:go|walk|head|move)\s+"
+        r"(?:downstairs|down\s+(?:the\s+)?stairs)",
+        t,
+    ) or re.fullmatch(
+        r"(?:i\s+)?descend\s+(?:downstairs|(?:the\s+)?stairs)",
+        t,
+    ):
+        return "leave"
     return t
 
 
@@ -1700,6 +1716,59 @@ def _driftmoor_place_registry() -> tuple[_SceneNode, ...]:
                 )
             nodes.append(node)
     return tuple(nodes)
+
+
+def _transition_target_place_path(
+    target_scene_name: str,
+    source_place_path: str,
+) -> str:
+    """Resolve a transition's scene basename within its place hierarchy.
+
+    Scene basenames are intentionally reusable (many buildings can have an
+    ``upstairs``). Prefer a direct child, parent, or sibling of the source
+    before considering a globally unique legacy basename.
+    """
+    target = (target_scene_name or "").strip().lower()
+    source = (source_place_path or "").strip().lower().strip("/")
+    if not target:
+        return ""
+    if target == "driftmoor":
+        return "places/driftmoor"
+
+    registry = _driftmoor_place_registry()
+    source_node = next((node for node in registry if node.place_path == source), None)
+    candidates = [node for node in registry if node.scene_name == target]
+
+    direct_child = next(
+        (node for node in candidates if node.parent_place_path == source),
+        None,
+    )
+    if direct_child is not None:
+        return direct_child.place_path
+
+    if source_node is not None:
+        parent = next(
+            (
+                node for node in candidates
+                if node.place_path == source_node.parent_place_path
+            ),
+            None,
+        )
+        if parent is not None:
+            return parent.place_path
+
+        sibling = next(
+            (
+                node for node in candidates
+                if node.parent_place_path == source_node.parent_place_path
+            ),
+            None,
+        )
+        if sibling is not None:
+            return sibling.place_path
+
+    # Preserve legacy behavior only when the basename is globally unambiguous.
+    return candidates[0].place_path if len(candidates) == 1 else ""
 
 
 def _entry_point_from_target_geometry(
@@ -6830,13 +6899,10 @@ async def iter_session(
 
                 # Place-driven transition loading: scene transitions derive from
                 # authored place paths (scenario/places/...), not scenes/*.md.
-                target_place_path = ""
-                for _node in _driftmoor_place_registry():
-                    if _node.scene_name == target_scene_name:
-                        target_place_path = _node.place_path
-                        break
-                if not target_place_path and target_scene_name == "driftmoor":
-                    target_place_path = "places/driftmoor"
+                target_place_path = _transition_target_place_path(
+                    target_scene_name,
+                    source_place_path,
+                )
 
                 if target_place_path:
                     cfg = configure_from_place_path(

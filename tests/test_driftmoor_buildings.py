@@ -14,6 +14,8 @@ from engine.session import (
     _place_identity_metadata,
 )
 from models.game_init import INITIAL_LOCATIONS
+from models.geometry_loader import load_geometry
+from models.space_time import Position
 
 
 ROOT = Path(__file__).parent.parent
@@ -107,3 +109,35 @@ def test_driftmoor_building_is_enterable_and_loads_its_npcs(
         accepted_names.add(display_name.split()[0])
     for display_name in named_here:
         assert display_name.lower() in accepted_names
+
+
+@pytest.mark.parametrize(
+    "place_id,connection_name,door_x,door_y",
+    _town_buildings(),
+    ids=lambda value: str(value),
+)
+def test_driftmoor_child_origins_are_parent_local(
+    place_id, connection_name, door_x, door_y
+):
+    town = load_geometry(DRIFTMOOR / "GEOMETRY.md")
+    child = load_geometry(DRIFTMOOR / place_id / "GEOMETRY.md")
+
+    footprint_name = town.zone_at(Position(door_x, door_y))
+    assert footprint_name is not None
+    footprint = town.zones[footprint_name]
+    expected_x = min(vertex[0] for vertex in footprint.vertices)
+    expected_y = min(vertex[1] for vertex in footprint.vertices)
+
+    assert child.origin.x == pytest.approx(expected_x)
+    assert child.origin.y == pytest.approx(expected_y)
+    assert child.origin.z == pytest.approx(child.z_level - town.z_level)
+
+
+def test_weary_traveler_upstairs_origin_is_parent_local():
+    ground = load_geometry(DRIFTMOOR / "weary_traveler" / "GEOMETRY.md")
+    upstairs = load_geometry(
+        DRIFTMOOR / "weary_traveler" / "upstairs" / "GEOMETRY.md"
+    )
+
+    assert upstairs.origin == Position(0, 0, 9)
+    assert upstairs.z_level == pytest.approx(ground.z_level + upstairs.origin.z)

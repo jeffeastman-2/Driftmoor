@@ -13,7 +13,7 @@ Timber-framed with an open front. The smell of freshly cut wood and sawdust. Pil
 - **type:** npc
 - **soul_file:** scenario/people/npcs/hilda/SOUL.md
 - **identity_file:** scenario/people/npcs/hilda/IDENTITY.md
-- **position:** 26, 19
+- **position:** 13, 9.5
 
 ## Scene Introductions
 

@@ -5,7 +5,7 @@
 - **aliases:** rooming house, lodging, guesthouse, Weary Traveler, The Weary Traveler
 
 ## Description and Atmosphere
-A sturdy two-story timber building just off the main square, near the mercantile. A sign depicting a worn boot hangs above the entrance. The common room downstairs serves as dining area and gathering space — large hearth, mismatched wooden chairs and tables. Upstairs: small, clean guest rooms. Out back: a storage shed used as overflow housing.
+A sturdy two-story timber building just off the main square, near the mercantile. A sign depicting a worn boot hangs above the entrance. The ground floor serves as dining area and gathering space — a large hearth, mismatched wooden chairs and tables, and a counter from which Martha runs the house. A stair along the east wall leads to the guest rooms. Out back, an attached storage shed holds laundry and overflow trunks.
 
 Smells of lamb stew, almost always. Martha Greaves is almost always cooking.
 
@@ -15,7 +15,7 @@ Smells of lamb stew, almost always. Martha Greaves is almost always cooking.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/martha/SOUL.md
 - **identity_file:** scenario/people/npcs/martha/IDENTITY.md
-- **position:** 45, 13
+- **position:** 22.5, 6.5
 
 ## Who Is Normally Here
 - **Martha Greaves** — managing everything
@@ -34,6 +34,6 @@ The door opens and a traveler steps in from the evening square. You clock them i
 ## Dynamic State
 *(Updated by monitor agent)*
 
-- **Current occupants:** Martha Greaves; one suspicious long-term guest
-- **Recent events:** One previous guest missing after trip to Obelisk Reach
-- **Active conditions:** Suspicious guest receiving strange late-night deliveries
+- **Current occupants:** Martha Greaves downstairs; current guests upstairs
+- **Recent events:** Martha has become guarded when asked about one former guest
+- **Active conditions:** Rooms, guests, and guest belongings are tracked in the upstairs sub-place

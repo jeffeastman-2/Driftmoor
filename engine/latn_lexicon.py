@@ -193,6 +193,9 @@ _DIRECTION_VOCAB: list[tuple[str, dict[str, float]]] = [
     ("w", {"locx": -1.0}),
     ("up", {"locz": 1.0}),
     ("down", {"locz": -1.0}),
+    # "Upstairs" is learned dynamically as a child-venue alias. "Downstairs"
+    # means returning to the parent, so it needs scene-independent vocabulary.
+    ("downstairs", {"locz": -1.0}),
 ]
 
 # Explicit linear distance units (feet).

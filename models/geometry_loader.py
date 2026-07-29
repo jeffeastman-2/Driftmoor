@@ -109,22 +109,52 @@ def parse_geometry_md(text: str) -> dict:
             name = row[0].strip()
             if name == "name":  # skip header
                 continue
-            landmarks[name] = Position(float(row[1]), float(row[2]))
+            z = float(row[3]) if len(row) >= 4 else 0.0
+            landmarks[name] = Position(float(row[1]), float(row[2]), z)
     result["landmarks"] = landmarks
 
     # --- Zones ---
     zones_section = _extract_section(text, "Zones")
     zone_rows = _parse_table_rows(zones_section)
     zones: dict[str, Polygon] = {}
-    for row in zone_rows:
+    zone_floor_z: dict[str, float] = {}
+    zone_ceiling_z: dict[str, float] = {}
+    zone_z_explicit: set[str] = set()
+    zone_headers = {
+        cell.strip().lower(): i
+        for i, cell in enumerate(zone_rows[0])
+    } if zone_rows else {}
+    for row in zone_rows[1:] if zone_rows else []:
         if len(row) >= 2:
             name = row[0].strip()
-            if name == "name":
-                continue
             # Vertices are in the last column (supports 2-col or 3-col tables)
             verts = _parse_vertices(row[-1])
             zones[name] = Polygon(verts)
+            floor_idx = zone_headers.get("floor_z")
+            ceiling_idx = zone_headers.get("ceiling_z")
+            if floor_idx is not None or ceiling_idx is not None:
+                zone_z_explicit.add(name)
+            try:
+                floor = float(row[floor_idx]) if floor_idx is not None else 0.0
+            except (ValueError, IndexError):
+                floor = 0.0
+            try:
+                ceiling = (
+                    float(row[ceiling_idx]) if ceiling_idx is not None else 8.0
+                )
+            except (ValueError, IndexError):
+                ceiling = 8.0
+            if ceiling <= floor:
+                raise ValueError(
+                    f"Zone {name!r} ceiling_z ({ceiling}) must exceed "
+                    f"floor_z ({floor})"
+                )
+            zone_floor_z[name] = floor
+            zone_ceiling_z[name] = ceiling
     result["zones"] = zones
+    result["zone_floor_z"] = zone_floor_z
+    result["zone_ceiling_z"] = zone_ceiling_z
+    result["zone_z_explicit"] = zone_z_explicit
 
     # --- Impassable ---
     impassable_section = _extract_section(text, "Impassable")
@@ -266,6 +296,9 @@ def load_geometry(path: Path) -> SceneGeometry:
         origin=data["origin"],
         landmarks=data["landmarks"],
         zones=data["zones"],
+        zone_floor_z=data.get("zone_floor_z", {}),
+        zone_ceiling_z=data.get("zone_ceiling_z", {}),
+        zone_z_explicit=data.get("zone_z_explicit", set()),
         impassable=data["impassable"],
         connections=data["connections"],
         visibility_rules=data.get("visibility", {}),
@@ -291,6 +324,9 @@ def load_geometry_full(path: Path) -> tuple[SceneGeometry, list[MagicalBoundary]
         origin=data["origin"],
         landmarks=data["landmarks"],
         zones=data["zones"],
+        zone_floor_z=data.get("zone_floor_z", {}),
+        zone_ceiling_z=data.get("zone_ceiling_z", {}),
+        zone_z_explicit=data.get("zone_z_explicit", set()),
         impassable=data["impassable"],
         connections=data["connections"],
     )

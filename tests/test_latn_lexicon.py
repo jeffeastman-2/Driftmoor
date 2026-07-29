@@ -128,6 +128,17 @@ def test_conversation_commerce_and_spell_words_are_known():
     assert _tok_map(lex, "teleport")["teleport"].isa("cast")
 
 
+def test_downstairs_is_known_as_a_parentward_direction():
+    pytest.importorskip("latn.lexer.vector_space")
+    from engine.latn_lexicon import build_driftmoor_lexicon
+    lex = build_driftmoor_lexicon([], [])
+
+    downstairs = _tok_map(lex, "go downstairs")["downstairs"]
+    assert downstairs.isa("adv")
+    # isa() tests positive activation, so inspect the vector for negative Z.
+    assert "locz=-1.00" in downstairs.non_zero_dims()
+
+
 def test_authored_character_spell_names_are_world_vocabulary():
     pytest.importorskip("latn.lexer.vector_space")
     from models.spellcasting import Spell, SpellcastingProfile

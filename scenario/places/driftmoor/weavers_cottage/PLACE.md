@@ -13,7 +13,7 @@ A quaint stone-and-thatch cottage surrounded by colorful cloth drying on lines. 
 - **type:** npc
 - **soul_file:** scenario/people/npcs/eadric/SOUL.md
 - **identity_file:** scenario/people/npcs/eadric/IDENTITY.md
-- **position:** 19, 13
+- **position:** 9.5, 6.5
 
 ## Scene Introductions
 

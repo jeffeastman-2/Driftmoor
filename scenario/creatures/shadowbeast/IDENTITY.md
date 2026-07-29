@@ -15,7 +15,6 @@ Shadowbeast. CR ½.
 - **faction:** hostile
 - **pronouns:** it/its
 - **weapons:** shadowbeast_claw+4
-- **armor:** natural_armor_shadowbeast
 
 
 ## Neurochemical Baseline

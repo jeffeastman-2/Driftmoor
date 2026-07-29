@@ -65,6 +65,10 @@ def parse_place_md(text: str) -> dict:
     m = re.search(r"^#\s+PLACE\.md\s*[—–\-]\s*(.+)", text, re.MULTILINE)
     result["name"] = m.group(1).strip() if m else ""
 
+    identity = _extract_section(text, "Place Identity")
+    identity_fields = _parse_dynamic_state(identity) if identity else {}
+    result["id"] = identity_fields.get("id", "").strip()
+
     # Description
     result["description"] = _extract_section(text, "Description and Atmosphere")
 
@@ -105,7 +109,10 @@ def load_place(
 
     p = parse_place_md(place_raw)
 
-    resolved_id = place_id or directory.name
+    # An explicit identity decouples the globally unique game-state id from the
+    # directory basename. This matters for naturally recurring nested names
+    # such as ``upstairs`` under more than one building.
+    resolved_id = p["id"] or place_id or directory.name
 
     return Place(
         id=resolved_id,
@@ -147,7 +154,7 @@ def _load_recursive(
         if child_dir.is_dir() and (child_dir / "PLACE.md").exists():
             _load_recursive(
                 child_dir,
-                parent_id=place_id,
+                parent_id=place.id,
                 place_id=child_dir.name,
                 places=places,
             )

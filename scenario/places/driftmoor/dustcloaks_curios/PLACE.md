@@ -20,7 +20,7 @@ Inside smells of incense masking mildew. Every surface is covered with something
 - **type:** npc
 - **soul_file:** scenario/people/npcs/kelem/SOUL.md
 - **identity_file:** scenario/people/npcs/kelem/IDENTITY.md
-- **position:** 26, 13
+- **position:** 13, 6.5
 
 ## Scene Introductions
 

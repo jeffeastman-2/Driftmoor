@@ -38,7 +38,7 @@ Characters may leave this scene.
 - **player_transport:** telegram
 - **channel:** telegram
 - **host:** ultra
-- **position:** 812, 682
+- **position:** 406, 341
 
 ## Scene Introductions
 

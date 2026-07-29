@@ -5,9 +5,9 @@
 - **name:** The Corral
 - **place_path:** places/driftmoor/corral
 - **z_level:** 16.25
-- **width:** 65
-- **height:** 81
-- **origin:** 1356, 139, 16.25
+- **width:** 32.5
+- **height:** 40.5
+- **origin:** 678, 69.5, 0
 
 ---
 
@@ -15,10 +15,10 @@
 
 | name          | x  | y  |
 |---------------|----|----|
-| main_gate     | 65 | 40 |
-| stable_gate   | 0  | 40 |
-| water_trough  | 12 | 16 |
-| corral_center | 33 | 41 |
+| main_gate     | 32.5 | 20 |
+| stable_gate   | 0  | 20 |
+| water_trough  | 6 | 8 |
+| corral_center | 16.5 | 20.5 |
 
 ---
 
@@ -26,8 +26,8 @@
 
 | name     | render_z | vertices                        |
 |----------|----------|---------------------------------|
-| CORRAL   | 5.0      | (0,0) (65,0) (65,81) (0,81)   |
-| EXTERIOR | 0.0      | (-8,-8) (73,-8) (73,89) (-8,89) |
+| CORRAL   | 5.0      | (0,0) (32.5,0) (32.5,40.5) (0,40.5)   |
+| EXTERIOR | 0.0      | (-4,-4) (36.5,-4) (36.5,44.5) (-4,44.5) |
 
 ---
 
@@ -35,8 +35,8 @@
 
 | description  | vertices                         |
 |--------------|----------------------------------|
-| North fence  | (0,75) (65,75) (65,81) (0,81)  |
-| South fence  | (0,0) (65,0) (65,6) (0,6)      |
+| North fence  | (0,37.5) (32.5,37.5) (32.5,40.5) (0,40.5)  |
+| South fence  | (0,0) (32.5,0) (32.5,3) (0,3)      |
 
 ---
 
@@ -44,4 +44,4 @@
 
 | name             | x  | y  | destination      |
 |------------------|----|----|------------------|
-| corral_to_street | 65 | 40 | places/driftmoor |
+| corral_to_street | 32.5 | 20 | places/driftmoor |

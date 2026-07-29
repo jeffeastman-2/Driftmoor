@@ -5,9 +5,9 @@
 - **name:** The Tailor's Shop
 - **place_path:** places/driftmoor/tailors_shop
 - **z_level:** 16.25
-- **width:** 39.0
-- **height:** 32.5
-- **origin:** 9259.25, 8723.0, 16.25
+- **width:** 19.5
+- **height:** 16.25
+- **origin:** 384, 447, 0
 
 Notes: Tidy shop with mannequins and fabric. Origin at southwest
 corner. Display area with mannequins in front, sewing workspace
@@ -19,12 +19,12 @@ in the back with bolts of cloth and a cutting table.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 19  | 0  |
-| mannequin_3.25     | 9  | 6  |
-| mannequin_6.5     | 29  | 6  |
-| cutting_table   | 19  | 22  |
-| fabric_bolts    | 35 | 26  |
-| sewing_station  | 6  | 22  |
+| front_door      | 9.5  | 0  |
+| mannequin_3.25     | 4.5  | 3  |
+| mannequin_6.5     | 14.5  | 3  |
+| cutting_table   | 9.5  | 11  |
+| fabric_bolts    | 17.5 | 13  |
+| sewing_station  | 3  | 11  |
 
 ---
 
@@ -32,9 +32,9 @@ in the back with bolts of cloth and a cutting table.
 
 | name       | render_z | vertices                      |
 |------------|----------|-------------------------------|
-| WORKSPACE  | 6.5        | (0,16) (39,16) (39,32) (0,32)   |
-| DISPLAY    | 3.25        | (0,0) (39,0) (39,16) (0,16)     |
-| EXTERIOR   | 0.0        | (-9,-9) (48,-9) (48,42) (-9,42) |
+| WORKSPACE  | 6.5        | (0,8) (19.5,8) (19.5,16) (0,16)   |
+| DISPLAY    | 3.25        | (0,0) (19.5,0) (19.5,8) (0,8)     |
+| EXTERIOR   | 0.0        | (-4.5,-4.5) (24,-4.5) (24,21) (-4.5,21) |
 
 ---
 
@@ -42,7 +42,7 @@ in the back with bolts of cloth and a cutting table.
 
 | description | vertices                      |
 |-------------|-------------------------------|
-| Back wall   | (0,29) (39,29) (39,32) (0,32)   |
+| Back wall   | (0,14.5) (19.5,14.5) (19.5,16) (0,16)   |
 
 ---
 
@@ -50,4 +50,4 @@ in the back with bolts of cloth and a cutting table.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_door | 19 | 0 | places/driftmoor |
+| front_door | 9.5 | 0 | places/driftmoor |

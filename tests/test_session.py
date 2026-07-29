@@ -859,8 +859,8 @@ class TestInferDriftmoorVenueTransition:
             (child, (x, y)) for child, _conn, x, y in
             _driftmoor_source_doorways("places/driftmoor")
         )
-        # authored `to_apothecary | 1040 | 780 | .../bitter_remedy`
-        assert doors.get("bitter_remedy") == (1040.0, 780.0)
+        # authored `to_apothecary | 520 | 390 | .../bitter_remedy`
+        assert doors.get("bitter_remedy") == (520.0, 390.0)
         # region/exit connections (to_region, to_harbor_water, …) are not venues
         assert "" not in doors
         assert "azure_sea" not in doors
@@ -872,7 +872,7 @@ class TestInferDriftmoorVenueTransition:
         assert out is not None
         scene, (x, y, _zone) = out
         assert scene == "bitter_remedy"
-        assert (x, y) == (1040.0, 780.0)
+        assert (x, y) == (520.0, 390.0)
 
     def test_first_class_forge_stables_and_corral_have_distinct_doorways(self):
         from engine.session import (
@@ -881,9 +881,9 @@ class TestInferDriftmoorVenueTransition:
         )
 
         expected = {
-            "I enter the forge": ("forge", (1267.0, 292.0)),
-            "I enter the stable": ("stables", (1267.0, 195.0)),
-            "I enter the corral": ("corral", (1446.0, 227.0)),
+            "I enter the forge": ("forge", (633.5, 146.0)),
+            "I enter the stable": ("stables", (633.5, 97.5)),
+            "I enter the corral": ("corral", (723.0, 113.5)),
         }
         for phrase, (scene_name, point) in expected.items():
             assert _infer_driftmoor_venue_transition(
@@ -948,6 +948,53 @@ class TestInferDriftmoorVenueTransition:
         from engine.session import _driftmoor_enter_doorway
         assert _driftmoor_enter_doorway(
             "I look around the square", "places/driftmoor", "TOWN_COMMON", None) is None
+
+    def test_weary_traveler_upstairs_is_a_reciprocal_child_place(self):
+        from engine.md_loader import configure_from_place_path
+        from engine.session import (
+            _driftmoor_enter_doorway,
+            _entry_point_from_target_geometry,
+            _infer_driftmoor_venue_transition,
+        )
+
+        parent_path = "places/driftmoor/weary_traveler"
+        upstairs_path = f"{parent_path}/upstairs"
+        parent = configure_from_place_path(parent_path)
+        upstairs = configure_from_place_path(upstairs_path)
+
+        for phrase in (
+            "I enter the upstairs",
+            "I enter the guest rooms",
+            "I go upstairs",
+            "I climb the stairs",
+        ):
+            assert _infer_driftmoor_venue_transition(
+                phrase, parent_path, "COMMON_ROOM"
+            ) == "upstairs"
+        assert _driftmoor_enter_doorway(
+            "I enter the upstairs", parent_path, "COMMON_ROOM",
+            parent.scene_geometry,
+        ) == ("upstairs", (27.5, 18.0, "STAIRWAY"))
+        assert _entry_point_from_target_geometry(
+            upstairs_path, parent_path, upstairs.scene_geometry
+        ) == (27.5, 5.0, "STAIR_LANDING")
+        for phrase in ("I exit", "I go downstairs", "I descend the stairs"):
+            assert _infer_driftmoor_venue_transition(
+                phrase, upstairs_path, "UPSTAIRS_HALL"
+            ) == "weary_traveler"
+
+    def test_duplicate_upstairs_basename_resolves_within_source_hierarchy(self):
+        from engine.session import _transition_target_place_path
+
+        assert _transition_target_place_path(
+            "upstairs", "places/driftmoor/weary_traveler"
+        ) == "places/driftmoor/weary_traveler/upstairs"
+        assert _transition_target_place_path(
+            "upstairs", "places/driftmoor/broken_lantern"
+        ) == "places/driftmoor/broken_lantern/upstairs"
+        assert _transition_target_place_path(
+            "weary_traveler", "places/driftmoor/weary_traveler/upstairs"
+        ) == "places/driftmoor/weary_traveler"
 
 
 class TestMovementInferenceWithoutZoneCenterHints:
@@ -2765,10 +2812,10 @@ class TestWhereQuestion:
         venues = _driftmoor_child_venues(getattr(sg, "place_path", "") or "")
         ans = _answer_where_question(
             "where is the tavern", characters=cfg.characters, actor_zone="",
-            scene_geometry=sg, venues=venues, player_xy=(900.0, 400.0))
+            scene_geometry=sg, venues=venues, player_xy=(450.0, 200.0))
         assert ans is not None
         assert "Broken Lantern" in ans and "ft away" in ans
-        # north of the player (tavern door y=568 > player y=400).
+        # north of the player (tavern door y=284 > player y=200).
         assert "north" in ans
 
     def test_where_question_declines_non_where(self):
