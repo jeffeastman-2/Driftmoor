@@ -322,6 +322,31 @@ def test_find_consumed_scene_thing_explains_repeat_use():
     assert found is ale
 
 
+def test_consuming_last_held_item_clears_hand_inventory_and_holder():
+    from models.thing import CarryState, DRINKABLE, HOLDABLE, CARRIED, CONSUMED
+
+    cs = _cs(wielded=[])
+    ale = Thing(id="ale_i1", name="Driftmoor Ale", holder="gil")
+    ale.affordances.update({DRINKABLE, HOLDABLE})
+    ale.carry = CarryState(location=CARRIED)
+    cs.pack = [ale]
+    cs.held_items = ["ale_i1"]
+    cs.character.inventory = ["ale_i1"]
+
+    result = manipulation.apply_manipulation(
+        cs, "drink", ale, items={"ale_i1": ale},
+        actor_pos=(0.0, 0.0, "BAR"), actor_zone="BAR",
+        character_id="gil", game_time=None, turn_num=1,
+    )
+
+    assert result.applied
+    assert ale.carry.location == CONSUMED
+    assert ale.holder is None
+    assert ale not in cs.pack
+    assert "ale_i1" not in cs.held_items
+    assert "ale_i1" not in cs.character.inventory
+
+
 def test_backpack_does_not_match_old_pouch_container():
     from models.thing import CarryState, derive_affordances
 

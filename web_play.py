@@ -26,7 +26,7 @@ from env_boot import load_project_dotenv
 load_project_dotenv()  # provider keys / env, same as run_scene
 
 from engine.md_loader import configure_from_md          # noqa: E402
-from engine.session import run_session                  # noqa: E402
+from engine.session import run_session, _clean_spoken_output  # noqa: E402
 from engine.map_renderer import render_turn_slider_html  # noqa: E402
 from engine import web_transport                         # noqa: E402
 
@@ -44,9 +44,8 @@ def _turn_entries(checkpoint_dir: Path) -> list[dict]:
         lines = []
         for cr in data.get("character_results", []):
             prose = ((cr.get("narration") or {}).get("prose") or "").strip()
-            spoken = ((cr.get("output") or {}).get("spoken") or "").strip()
-            if spoken.lower() in {"", "(none)", "(silent)", "(silence)"}:
-                spoken = ""
+            spoken = _clean_spoken_output(
+                (cr.get("output") or {}).get("spoken") or "")
             if prose or spoken:
                 lines.append({"cid": cr.get("character_id", "?"),
                               "prose": prose, "spoken": spoken})
@@ -351,9 +350,8 @@ async def _session_task(app: web.Application) -> None:
         web_transport.publish_positions(positions)
         _render_map(app, live_positions=positions)
         prose = (getattr(cr.narration, "prose", "") or "").strip()
-        spoken = (getattr(cr.output, "spoken", "") or "").strip()
-        if spoken.lower() in {"", "(none)", "(silent)", "(silence)"}:
-            spoken = ""
+        spoken = _clean_spoken_output(
+            getattr(cr.output, "spoken", "") or "")
         if prose or spoken:
             web_transport.publish_action(
                 {"turn": turn, "cid": cid, "prose": prose, "spoken": spoken})
@@ -470,8 +468,11 @@ function lineHTML(l){
   const repeated=l.spoken&&l.prose&&speechKey(l.prose).includes(speechKey(l.spoken));
   if(l.spoken&&!repeated)body+='<span class="spoken">“'+qhi(l.spoken)+'”</span> ';
   if(l.prose){
-    let prose=hi(esc(l.prose));
+    // Mark quotation spans while this is still plain escaped text. Doing this
+    // after hi() would mistake class="name" in its generated markup for speech.
+    let prose=esc(l.prose);
     prose=prose.replace(/([“"])([^“”"]+)([”"])/g,'<span class="spoken">$1$2$3</span>');
+    prose=hi(prose);
     body+=prose;
   }
   else if(l.spoken)body='<span class="name">'+esc(nameOf(l.cid))+'</span>: '+body;

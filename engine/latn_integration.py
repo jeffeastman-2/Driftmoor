@@ -39,7 +39,20 @@ def build_context(items: dict, characters: dict, actor_zone: str,
     from engine.latn_adapter import DriftmoorSceneAdapter
 
     char_list = list(characters.values()) if hasattr(characters, "values") else list(characters)
-    item_list = list(items.values()) if hasattr(items, "values") else list(items)
+    # Possessions remain groundable after a scene transition even when they
+    # were created at runtime and therefore have no row in the destination
+    # scene's CONTENTS. Keep scene items authoritative on id collisions.
+    context_items = dict(items or {})
+    for cs in char_list:
+        for thing in (getattr(cs, "pack", None) or []):
+            iid = getattr(thing, "id", "")
+            if iid:
+                context_items.setdefault(iid, thing)
+        for thing in (getattr(cs, "things", None) or []):
+            iid = getattr(thing, "id", "")
+            if iid:
+                context_items.setdefault(iid, thing)
+    item_list = list(context_items.values())
     zones = list(getattr(scene_geometry, "zones", {}) or {}) if scene_geometry is not None else []
     landmarks = list(getattr(scene_geometry, "landmarks", {}) or {}) if scene_geometry is not None else []
     venue_list = list(venues or [])
@@ -49,7 +62,7 @@ def build_context(items: dict, characters: dict, actor_zone: str,
         catalog=catalog_list,
     )
     adapter = DriftmoorSceneAdapter(
-        items=items, characters=characters, actor_zone=actor_zone,
+        items=context_items, characters=characters, actor_zone=actor_zone,
         venues=venue_list, catalog=catalog_list)
     return lexicon, adapter
 

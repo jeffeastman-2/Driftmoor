@@ -72,6 +72,23 @@ def test_build_context_returns_lexicon_and_adapter():
     assert lexicon is not None and adapter is not None
 
 
+def test_build_context_includes_runtime_pack_possessions_after_transition():
+    from models.thing import Thing
+    from engine.latn_resolver import resolve_actions
+
+    _items, chars = _scene()
+    ale = Thing(id="driftmoor_ale_i1", name="Driftmoor Ale",
+                holder="amara", owner="amara")
+    chars["amara"].pack = [ale]
+    chars["amara"].things = [ale]
+    lexicon, adapter = latn_integration.build_context({}, chars, "MEETING_ROOM")
+
+    actions = resolve_actions(
+        "drink the ale", lexicon=lexicon, adapter=adapter)
+    assert actions
+    assert any(action.item is ale for action in actions)
+
+
 # --- resolve_query: LATN answers shop questions, DM gets out of the picture ---
 
 def _shop_catalog():

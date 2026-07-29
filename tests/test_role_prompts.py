@@ -664,4 +664,18 @@ class TestDMRightLLM:
                 "Gilthaness uses it up. Narrate it."
             ],
         ))
-        assert result.prose == "Drinks Driftmoor Ale."
+        assert result.prose == "Gilthaness drinks Driftmoor Ale."
+
+    def test_stub_surfaces_authoritative_purchase(self):
+        adj = Adjudication(character_id="gilthaness", turn=2, approved=True)
+        output = CharacterOutput(
+            character_id="gilthaness", turn=2, action="I buy some ale")
+        result = asyncio.run(DMRight().narrate(
+            adj, output, "",
+            resolution_log=[
+                "[COMMERCE] SETTLED by the engine — do not alter: gilthaness "
+                "bought Driftmoor Ale from tess for exactly 4 cp; it is now in "
+                "their possession."
+            ],
+        ))
+        assert result.prose == "Gilthaness buys Driftmoor Ale for 4 cp."

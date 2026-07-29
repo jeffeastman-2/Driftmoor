@@ -65,6 +65,7 @@ _PANZOOM_JS = (
     r"return{x:v.x+(e.clientX-r.left)/r.width*v.w,y:v.y+(e.clientY-r.top)/r.height*v.h};}"
     r"var ii=Array.prototype.slice.call(document.querySelectorAll('.char-icon-img'));"
     r"var id=Array.prototype.slice.call(document.querySelectorAll('.char-icon-dot'));"
+    r"var ti=Array.prototype.slice.call(document.querySelectorAll('.item-icon'));"
     r"var IK=K+':iconScale';var iconScale=1.0;"
     r"function SI(n){iconScale=Math.max(0.2,Math.min(8,Number(n)||1));"
     r"for(var i=0;i<ii.length;i++){var bz=Number(ii[i].getAttribute('data-base-z'))||6;"
@@ -73,6 +74,8 @@ _PANZOOM_JS = (
     r"for(var j=0;j<id.length;j++){var br=Number(id[j].getAttribute('data-base-r'))||0.75;"
     r"var bw=Number(id[j].getAttribute('data-base-sw'))||0.35;"
     r"id[j].setAttribute('r',(br*iconScale).toFixed(2));id[j].setAttribute('stroke-width',(bw*iconScale).toFixed(2));}"
+    r"for(var q=0;q<ti.length;q++){var bf=Number(ti[q].getAttribute('data-base-fs'))||3.2;"
+    r"ti[q].setAttribute('font-size',(bf*iconScale).toFixed(2));}"
     r"var iv=document.getElementById('iconScaleVal');if(iv)iv.textContent=iconScale.toFixed(2)+'x';"
     r"try{sessionStorage.setItem(IK,String(iconScale));}catch(_){}}"
     r"function SIS(d){SI(iconScale*(d>0?1.18:0.85));}"
@@ -276,8 +279,10 @@ def _item_is_loose(detail: object | None) -> bool:
     if detail is None:
         return True
     if isinstance(detail, dict):
-        return not bool(detail.get("holder"))
-    return not bool(getattr(detail, "holder", None))
+        return (not bool(detail.get("holder"))
+                and detail.get("carry_location") != "consumed")
+    carry_location = getattr(getattr(detail, "carry", None), "location", "")
+    return not bool(getattr(detail, "holder", None)) and carry_location != "consumed"
 
 
 def _item_is_pickable(detail: object | None) -> bool:
@@ -1057,6 +1062,23 @@ def render_turn_slider_html(
     seeded (so a scene-placed dormant entry never leaks by default).
     """
     g = parse_geometry(geometry_path.read_text(encoding="utf-8"))
+    # Runtime-created loose items (purchases subsequently dropped, disarmed
+    # weapons, etc.) have no authored GEOMETRY row. Add them to this render from
+    # their live Thing position; authored ids retain their authored marker.
+    zone_names = {name.upper() for name in g["zones"]}
+    for iid, detail in (item_details or {}).items():
+        if iid in g["items"] or not _item_is_loose(detail):
+            continue
+        pos = getattr(detail, "position", None)
+        zone = str(getattr(detail, "zone", "") or "").upper()
+        if pos is None or (zone_names and zone not in zone_names):
+            continue
+        label = (
+            getattr(detail, "label", None)
+            or getattr(detail, "name", None)
+            or str(iid).replace("_", " ")
+        )
+        g["items"][iid] = (float(pos.x), float(pos.y), label)
     # Character placement is a scene concern: the caller supplies the
     # scene-resolved starting positions (GEOMETRY is a pure stage and carries no
     # placement). Without them, only snapshot-recorded characters are plotted.
@@ -1334,7 +1356,8 @@ def render_turn_slider_html(
         if _item_is_pickable(detail):
             from engine.item_icons import item_icon
             marker = (
-                f"<text x='{x:.2f}' y='{fy(y):.2f}' text-anchor='middle' "
+                f"<text class='item-icon' data-base-fs='{3.2*sc:.2f}' "
+                f"x='{x:.2f}' y='{fy(y):.2f}' text-anchor='middle' "
                 f"dominant-baseline='central' font-size='{3.2*sc:.2f}'>"
                 f"{item_icon(label)}<title>{html.escape(tooltip)}</title></text>"
             )

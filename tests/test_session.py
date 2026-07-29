@@ -14,6 +14,7 @@ from engine.session import (
     run_session,
     iter_session,
     _split_transport_utterance,
+    _clean_spoken_output,
     _build_context,
     _save_turn,
     _checkpoint_filename,
@@ -209,6 +210,11 @@ class TestTransportUtteranceSplit:
             "Are the fragments the ones here in your study?"
         )
         assert action == "I look at her data. I point to the shard glowing slowly."
+
+    def test_no_dialogue_sentinel_is_suppressed(self):
+        assert _clean_spoken_output(
+            "(No spoken dialogue directed at anyone perceivable in this turn)"
+        ) == ""
 
 
 class TestTransportPromptAndPacketFormatting:

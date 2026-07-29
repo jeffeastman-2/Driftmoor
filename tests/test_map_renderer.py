@@ -221,7 +221,37 @@ def test_turn_slider_uses_icon_for_loose_pickable_item(tmp_path):
         start_characters=["thorgrim"],
         item_details={"snapped_torch": detail},
     )
-    assert "🔥" in out.read_text(encoding="utf-8")
+    rendered = out.read_text(encoding="utf-8")
+    assert "🔥" in rendered
+    assert "class='item-icon'" in rendered
+    assert "data-base-fs=" in rendered
+
+
+def test_shift_scroll_scales_item_icons_with_character_icons():
+    from engine.map_renderer import _PANZOOM_JS
+
+    assert "querySelectorAll('.item-icon')" in _PANZOOM_JS
+    assert "bf*iconScale" in _PANZOOM_JS
+
+
+def test_turn_slider_adds_runtime_dropped_item_without_geometry_row(tmp_path):
+    from types import SimpleNamespace as NS
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "dropped.html"
+    detail = NS(
+        label="Driftmoor Ale", description="", appearance_bands={},
+        holder=None, pickable=True, position=NS(x=138.0, y=295.0),
+        zone="ENTRY CHAMBER", carry=NS(location="in_world"),
+    )
+    render_turn_slider_html(
+        GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+        start_characters=["thorgrim"],
+        item_details={"driftmoor_ale_i1": detail},
+    )
+    rendered = out.read_text(encoding="utf-8")
+    assert "Driftmoor Ale" in rendered
+    assert "🍺" in rendered
 
 
 def test_building_zone_tooltip_title_cases_type(tmp_path):

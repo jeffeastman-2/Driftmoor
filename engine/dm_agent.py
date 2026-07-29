@@ -663,10 +663,24 @@ class DMRight:
                     prose = entry.split(": ", 1)[1].strip()
                     break
                 if entry.startswith("[ITEM]"):
-                    clean = re.sub(r"^\[ITEM\]\s+\S+\s+", "", entry)
+                    match = re.match(r"^\[ITEM\]\s+(\S+)\s+(.+)$", entry)
+                    actor = ""
+                    clean = entry
+                    if match:
+                        actor = match.group(1).replace("_", " ").title()
+                        clean = match.group(2)
                     clean = clean.split(": ", 1)[0].replace("_", " ").strip()
                     if clean:
-                        prose = clean[:1].upper() + clean[1:] + "."
+                        prose = f"{actor} {clean}.".strip()
+                        break
+                if entry.startswith("[COMMERCE]") and " bought " in entry:
+                    match = re.search(
+                        r"\b(\S+) bought (.+?) from \S+ for exactly ([^;]+)",
+                        entry,
+                    )
+                    if match:
+                        actor = match.group(1).replace("_", " ").title()
+                        prose = f"{actor} buys {match.group(2)} for {match.group(3)}."
                         break
             return Narration(
                 character_id=adjudication.character_id,

@@ -139,7 +139,8 @@ def find_consumed_scene_thing(cs, intent_text: str, items: Optional[dict]):
     actor_id = getattr(getattr(cs, "character", None), "id", "")
     text = (intent_text or "").lower()
     for thing in (items or {}).values():
-        if getattr(thing, "holder", None) != actor_id:
+        if (getattr(thing, "holder", None) != actor_id
+                and getattr(thing, "owner", None) != actor_id):
             continue
         if getattr(getattr(thing, "carry", None), "location", "") != CONSUMED:
             continue
@@ -289,10 +290,15 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
         if qty > 1:
             thing.quantity = qty - 1           # deplete one from the stack; the rest remain
         else:
+            loadout.stow_item(cs, thing_id)     # consumed things occupy no hand
             thing.carry.location = CONSUMED    # last one — used up, leaves the pack
             pack = getattr(cs, "pack", None)
             if pack is not None:
                 cs.pack = [p for p in pack if p is not thing]
+            inv = getattr(getattr(cs, "character", None), "inventory", None)
+            if inv is not None and thing_id in inv:
+                inv.remove(thing_id)
+            thing.holder = None
         detail = (" (" + ", ".join(notes) + ")") if notes else ""
         pres, past = ("drinks", "drank") if verb == "drink" else ("eats", "ate")
         res.log.append(

@@ -4650,6 +4650,17 @@ def _split_transport_utterance(text: str) -> tuple[str, str]:
     return "", action
 
 
+def _clean_spoken_output(text: str) -> str:
+    """Remove model sentinel text that explicitly means no dialogue."""
+    spoken = (text or "").strip()
+    low = spoken.lower().strip("*_ ")
+    if low in {"", "(none)", "(silent)", "(silence)"}:
+        return ""
+    if "no spoken dialogue" in low:
+        return ""
+    return spoken
+
+
 async def _transport_send(character_id: str, cs: "CharacterSession", text: str) -> None:
     """Send out-of-turn text to a human player over Telegram, if configured.
 
@@ -5347,6 +5358,7 @@ async def iter_session(
                 current_positions=current_positions,
                 answer_query=_answer_query,
             )
+            output.spoken = _clean_spoken_output(output.spoken)
 
             # Parser honesty: when a human's line grounds to NO action, and it
             # uses words the lexicon doesn't know, the DM names them (+ near
@@ -6956,7 +6968,12 @@ async def iter_session(
                     game_state_summary = cfg.game_state_summary
                     geometry_summary = cfg.geometry_summary
                     scene_geometry = cfg.scene_geometry
+                    carried_items = {
+                        iid: thing for iid, thing in (items or {}).items()
+                        if getattr(thing, "holder", None) == actor_id
+                    }
                     items = cfg.items or {}
+                    items.update(carried_items)
                     puzzle_registry = cfg.puzzles if cfg.puzzles is not None else PuzzleRegistry()
                     cfg.characters = characters
                     cfg.roles = character_roles

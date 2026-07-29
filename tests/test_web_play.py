@@ -79,6 +79,10 @@ def test_page_deduplicates_spoken_words_and_highlights_prose_dialogue():
     assert "function qhi(s){return esc(s);}" in web_play._PAGE
     assert "speechKey(l.prose).includes(speechKey(l.spoken))" in web_play._PAGE
     assert "prose.replace" in web_play._PAGE
+    # Quote markup must be inserted before name markup; otherwise the quote
+    # regex consumes class="name" and leaks `"name">` into the transcript.
+    assert web_play._PAGE.index("prose=prose.replace") < web_play._PAGE.index(
+        "prose=hi(prose)")
 
 
 def test_inventory_weapons_split_by_wielded():

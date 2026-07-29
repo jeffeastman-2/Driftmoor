@@ -258,7 +258,9 @@ class DriftmoorSceneAdapter:
         for item in self._items.values():
             if self._actor_zone:
                 zone = (getattr(item, "zone", "") or "").upper()
-                if zone != self._actor_zone:
+                # A held possession travels with its holder; its authored zone
+                # may belong to the scene where it was acquired.
+                if zone != self._actor_zone and not getattr(item, "holder", None):
                     continue
             iid = (getattr(item, "id", "") or "").lower()
             label = (getattr(item, "label", "") or "").lower()
