@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Midwife and healer, The Midwife's Home
 - **Race:** Human, Female, age 67
+- **Pronouns:** she/her
 - **Location:** Cozy cottage with herb garden and painted door
 
 ## Combat Statistics

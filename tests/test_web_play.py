@@ -56,6 +56,8 @@ def test_item_icon_keyword_and_fallback():
     assert web_play._item_icon("Snapped torch") == "🔥"
     assert web_play._item_icon("Rapier") == "🗡️"
     assert web_play._item_icon("Light crossbow") == "🏹"
+    assert web_play._item_icon("Sealed letter") == "✉️"
+    assert web_play._item_icon("Silver handled longsword") == "🗡️"
     assert web_play._item_icon("Glowing orb") == "📦"  # no keyword -> fallback
 
 
@@ -73,9 +75,10 @@ def test_inventory_default_markup_shows_empty_in_hand_group():
     assert "chip hand empty" in web_play._PAGE
 
 
-def test_page_highlights_names_only_in_narration_not_quoted_speech():
+def test_page_deduplicates_spoken_words_and_highlights_prose_dialogue():
     assert "function qhi(s){return esc(s);}" in web_play._PAGE
-    assert "if(l.spoken)body+='<span class=\"spoken\">“'+qhi(l.spoken)+'”</span> ';" in web_play._PAGE
+    assert "speechKey(l.prose).includes(speechKey(l.spoken))" in web_play._PAGE
+    assert "prose.replace" in web_play._PAGE
 
 
 def test_inventory_weapons_split_by_wielded():

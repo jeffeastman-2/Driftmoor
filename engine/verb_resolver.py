@@ -30,6 +30,7 @@ _VERB_LEXICON: list[tuple[str, list[str]]] = [
     ("search", ["search", "rummage", "rifle", "investigate", "comb",
                 "look", "scan", "check", "sift"]),
     ("read", ["read", "decipher", "transcribe"]),
+    ("open", ["open", "unseal", "break the seal"]),
     ("press", ["press", "push", "depress", "tap", "trigger", "activate"]),
 ]
 
@@ -116,7 +117,7 @@ _MATCH_STOPWORDS = {
     "the", "a", "an", "this", "that", "these", "those", "i", "my", "it",
     "its", "to", "toward", "towards", "on", "at", "of", "and", "in", "into",
     "with", "then", "finally", "first", "again", "press", "pressing", "push",
-    "examine", "search", "look", "inspect", "study", "read",
+    "examine", "search", "look", "inspect", "study", "read", "open", "unseal",
 }
 
 

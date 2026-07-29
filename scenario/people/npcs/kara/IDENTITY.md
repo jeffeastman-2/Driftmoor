@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Stable manager, Ironhoof Forge
 - **Race:** Human, Female, age 20
+- **Pronouns:** she/her
 - **Location:** Ironhoof Forge stables
 
 ## Combat Statistics

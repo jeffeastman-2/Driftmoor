@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Owner, The Weary Traveler rooming house
 - **Race:** Human, Female, age 52
+- **Pronouns:** she/her
 - **Location:** The Weary Traveler, just off main square
 
 ## Combat Statistics

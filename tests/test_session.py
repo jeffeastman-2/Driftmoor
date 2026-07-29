@@ -983,6 +983,15 @@ class TestInferDriftmoorVenueTransition:
                 phrase, upstairs_path, "UPSTAIRS_HALL"
             ) == "weary_traveler"
 
+    def test_go_into_is_an_enterable_venue_phrase(self):
+        from engine.session import _infer_driftmoor_venue_transition
+
+        assert _infer_driftmoor_venue_transition(
+            "I go into the meeting room",
+            "places/driftmoor/broken_lantern",
+            "MAIN_ROOM",
+        ) == "meeting_room"
+
     def test_duplicate_upstairs_basename_resolves_within_source_hierarchy(self):
         from engine.session import _transition_target_place_path
 

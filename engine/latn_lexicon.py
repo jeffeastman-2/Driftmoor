@@ -48,7 +48,7 @@ from engine.latn_dimensions import (
 _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("attack", ["attack", "strike", "hit", "swing", "swing at", "slash",
                 "stab", "thrust", "shoot", "fire", "fire at", "loose", "lunge",
-                "lunge at", "charge", "aim"]),
+                "lunge at", "charge", "aim", "throw", "hurl"]),
     # A known spell name can also be used as the command itself ("teleport to
     # the bridge").  Register Teleport as a cast verb as well as matching it by
     # name in the spell resolver; this keeps the natural shorthand actionable.
@@ -86,8 +86,9 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
 # fork). Multi-word compounds ("goes inside") aren't single-word-reducible, so
 # they stay.
 _ENTER_VERB_WORDS: list[str] = [
-    "enter", "go inside", "go in", "goes inside",
-    "step inside", "steps inside", "walk inside", "head inside", "duck inside",
+    "enter", "go inside", "go in", "go into", "goes inside",
+    "step inside", "step into", "steps inside", "walk inside", "walk into",
+    "head inside", "head into", "duck inside",
     "venture inside", "visit",
 ]
 _LEAVE_VERB_WORDS: list[str] = [

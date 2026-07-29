@@ -54,6 +54,10 @@ class TestVerbDetection:
     def test_empty(self):
         assert _detect_verb("") is None
 
+    def test_open_and_read_are_distinct_interactions(self):
+        assert _detect_verb("I open the sealed letter") == "open"
+        assert _detect_verb("I read the sealed letter") == "read"
+
 
 class TestTransferVerbDetection:
     def test_take_phrases(self):

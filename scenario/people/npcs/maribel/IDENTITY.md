@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Master baker and owner, The Bakery
 - **Race:** Human, Female, age 46
+- **Pronouns:** she/her
 - **Location:** The Bakery, on the main street off the square
 
 ## Combat Statistics

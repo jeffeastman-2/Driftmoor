@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Apothecary and herbalist
 - **Race:** Half-Elf, Female, age 53
+- **Pronouns:** she/her
 - **Location:** The Bitter Remedy, near Greywater River
 
 ## Combat Statistics

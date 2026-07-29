@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Tailor, The Tailor's Shop
 - **Race:** Half-Elf, Female, age 58
+- **Pronouns:** she/her
 - **Location:** Tidy building with needle-and-thread sign
 
 ## Combat Statistics

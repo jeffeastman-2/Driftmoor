@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Apprentice baker, The Bakery (Maribel's daughter)
 - **Race:** Human, Female, age 16
+- **Pronouns:** she/her
 - **Location:** The Bakery, on the main street off the square
 
 ## Combat Statistics

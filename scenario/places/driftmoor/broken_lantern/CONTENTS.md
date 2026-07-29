@@ -13,10 +13,15 @@ A cracked iron lantern hangs above the front door on a bent bracket. The glass i
 
 *(Not pickup-able; flavor.)*
 
-### bar_stools
-A row of mismatched stools lines the bar: two heavy oak seats, one repaired with rope lashings, and one with a split leg braced by iron strap. They creak loudly under shifting weight.
+### bar_stool
+One loose, mismatched oak stool stands at the end of the bar, repaired with rope lashings and light enough to lift in a hurry. The remaining stools are ordinary fixed furnishings.
 
-*(Not pickup-able; flavor.)*
+*(Pickup-able.)*
+
+*Weapon:* improvised_stool
+
+*Interactions (DM ground truth):*
+- **pick up / take** → Awkward but sturdy enough to wield or throw as an improvised weapon.
 
 ### service_bell
 A brass hand-bell sits near the center of the bar where Tess can reach it without turning. The handle is polished from constant use, while the base is sticky with old ale.
@@ -28,7 +33,7 @@ A brass hand-bell sits near the center of the bar where Tess can reach it withou
 - **pick up / take** → The bell lifts easily. Taking it openly annoys Tess unless returned quickly.
 
 ### room_key_ring
-A thick iron ring holds six stamped room keys and one smaller key for the upstairs linen chest. It usually sits beside Tess while she tracks paid rooms.
+A thick iron ring holds three stamped room keys and one smaller key for the upstairs linen chest. It usually sits beside Tess while she tracks paid rooms.
 
 *(Pickup-able.)*
 
@@ -72,41 +77,6 @@ A chipped clay dice cup lies on a side table with four bone dice and a scoring s
 - **roll** → Produces a simple gambling beat for roleplay; nearby patrons may join.
 - **pick up / take** → Easy to pocket; considered petty theft if witnessed.
 
-### ledger_book
-A heavy bound ledger sits in the meeting room with pages of room tabs, supply costs, and fish-delivery payments. Recent entries have corrections in two different inks.
-
-*(Pickup-able.)*
-
-*Interactions (DM ground truth):*
-- **examine** → Reveals disputed payout lines and room-rental records from the last week.
-- **pick up / take** → Portable but conspicuous; removing it escalates social conflict quickly.
-
-### sealed_letter
-A folded letter stamped with dark wax rests under the edge of the ledger. The seal shows no family crest, only a plain circular press.
-
-*(Pickup-able.)*
-
-*Interactions (DM ground truth):*
-- **examine** → Addressee line references a late-night meeting in the back room.
-- **open** → Mentions a delivery route and concern about "north-road witnesses."
-
-### spare_blanket
-A rolled wool blanket sits on a storage shelf, patched but clean. It smells of soap and cedar from recent airing.
-
-*(Pickup-able.)*
-
-*Interactions (DM ground truth):*
-- **pick up / take** → Usable as bedroll, cloak layer, or improvised wrap.
-
-### crate_saltfish
-A low crate of wrapped saltfish rests in storage, marked with dock tally chalk and a cracked twine seal. The top layer is fresh enough to serve; the lower layer is hard as board.
-
-*(Pickup-able with effort.)*
-
-*Interactions (DM ground truth):*
-- **open** → Exposes trade marks from two different suppliers, suggesting mixed stock.
-- **pick up / take** → One person can drag it; two can carry it cleanly.
-
 ### kitchen_knife
 A broad kitchen knife lies on the prep table beside chopped onions and carrots. The edge is kept practical-sharp, not ceremonial.
 
@@ -131,14 +101,6 @@ A dented iron coal scuttle sits near the hearth with enough fuel for one long ev
 
 *Interactions (DM ground truth):*
 - **pick up / take** → Portable but heavy when full; leaves visible soot traces.
-
-### candle_stub_bundle
-A tied bundle of old candle stubs rests on a shelf near the back rooms, kept for emergency light when lamp oil runs low.
-
-*(Pickup-able.)*
-
-*Interactions (DM ground truth):*
-- **pick up / take** → Provides several short-duration light sources.
 
 ---
 

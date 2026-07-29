@@ -311,6 +311,17 @@ def test_find_possessed_scene_thing_finds_held_scene_item():
     assert thing.id == "discarded_pack"
 
 
+def test_find_consumed_scene_thing_explains_repeat_use():
+    from models.thing import CarryState, CONSUMED
+
+    cs = _cs(wielded=[])
+    ale = Thing(id="ale_i1", name="Driftmoor Ale", holder="gil")
+    ale.carry = CarryState(location=CONSUMED)
+    found = manipulation.find_consumed_scene_thing(
+        cs, "I drink the ale", {"ale_i1": ale})
+    assert found is ale
+
+
 def test_backpack_does_not_match_old_pouch_container():
     from models.thing import CarryState, derive_affordances
 

@@ -654,10 +654,24 @@ class DMRight:
     ) -> Narration:
         if self._call_llm is None:
             action_text = character_output.action or "(no action)"
+            prose = f"{character_output.character_id} {action_text}."
+            # Human-player roles intentionally have no narrator LLM. Surface
+            # Python's authoritative item outcome instead of echoing the intent
+            # as though opening, reading, eating, or drinking did nothing.
+            for entry in reversed(resolution_log or []):
+                if entry.startswith("[ITEM-INTERACTION]") and ": " in entry:
+                    prose = entry.split(": ", 1)[1].strip()
+                    break
+                if entry.startswith("[ITEM]"):
+                    clean = re.sub(r"^\[ITEM\]\s+\S+\s+", "", entry)
+                    clean = clean.split(": ", 1)[0].replace("_", " ").strip()
+                    if clean:
+                        prose = clean[:1].upper() + clean[1:] + "."
+                        break
             return Narration(
                 character_id=adjudication.character_id,
                 turn=adjudication.turn,
-                prose=f"{character_output.character_id} {action_text}.",
+                prose=prose,
                 visible_to=[],
             )
         system = self.build_system_prompt(character_pronouns=character_pronouns)

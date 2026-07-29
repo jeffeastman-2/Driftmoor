@@ -609,6 +609,16 @@ class TestDMRightParsing:
         assert result.character_id == "fennel"
         assert result.turn == 2
 
+    def test_configured_pronouns_correct_misgendered_tavern_prose(self):
+        raw = (
+            "Tess stops polishing an ale tankard and leans his weight onto "
+            "the bar. He keeps his gaze fixed on the door."
+        )
+        result = DMRight().parse_response(
+            raw, "tess", 1, character_pronouns={"tess": "she/her"})
+        assert "leans her weight" in result.prose
+        assert "She keeps her gaze" in result.prose
+
 
 class TestDMRightLLM:
     def test_calls_llm_when_configured(self):
@@ -629,3 +639,29 @@ class TestDMRightLLM:
         output = CharacterOutput(character_id="aeliana", turn=1, action="advance")
         result = asyncio.run(DMRight().narrate(adj, output, ""))
         assert "aeliana" in result.prose
+
+    def test_stub_surfaces_authoritative_item_interaction(self):
+        adj = Adjudication(character_id="gilthaness", turn=6, approved=True)
+        output = CharacterOutput(
+            character_id="gilthaness", turn=6, action="I unseal the letter")
+        result = asyncio.run(DMRight().narrate(
+            adj, output, "",
+            resolution_log=[
+                "[ITEM-INTERACTION] gilthaness open Sealed letter: "
+                "Breaking the wax reveals the note."
+            ],
+        ))
+        assert result.prose == "Breaking the wax reveals the note."
+
+    def test_stub_surfaces_authoritative_consumption(self):
+        adj = Adjudication(character_id="gilthaness", turn=3, approved=True)
+        output = CharacterOutput(
+            character_id="gilthaness", turn=3, action="I drink the ale")
+        result = asyncio.run(DMRight().narrate(
+            adj, output, "",
+            resolution_log=[
+                "[ITEM] gilthaness drinks Driftmoor Ale: "
+                "Gilthaness uses it up. Narrate it."
+            ],
+        ))
+        assert result.prose == "Drinks Driftmoor Ale."

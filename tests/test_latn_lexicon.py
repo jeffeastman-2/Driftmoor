@@ -61,6 +61,7 @@ def test_lexicon_tokenizes_actions_recipients_and_descriptors():
     # surface-verb convergence: synonyms hit the canonical action dim
     assert _tok_map(lex, "shoot the fighter")["shoot"].isa("attack")
     assert _tok_map(lex, "pick up the mace")["pick up"].isa("take")  # compound synonym
+    assert _tok_map(lex, "break the seal on the letter")["break the seal"].isa("open")
 
     # function base still present (prepositions/determiners reused from Engraf)
     assert _tok_map(lex, "examine the shimmering patch")["the"].isa("det")

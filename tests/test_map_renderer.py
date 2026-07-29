@@ -194,6 +194,36 @@ def test_item_tooltip_label_only_without_detail():
     assert _item_tooltip("Torch bracket", None) == "Torch bracket"
 
 
+def test_turn_slider_hides_item_after_pickup(tmp_path):
+    from types import SimpleNamespace as NS
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "held.html"
+    detail = NS(description="A snapped torch.", appearance_bands={},
+                holder="thorgrim")
+    render_turn_slider_html(
+        GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+        start_characters=["thorgrim"],
+        item_details={"snapped_torch": detail},
+    )
+    assert "Snapped torch" not in out.read_text(encoding="utf-8")
+
+
+def test_turn_slider_uses_icon_for_loose_pickable_item(tmp_path):
+    from types import SimpleNamespace as NS
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "pickable.html"
+    detail = NS(description="A snapped torch.", appearance_bands={},
+                holder=None, pickable=True)
+    render_turn_slider_html(
+        GEOMETRY, out, snapshot_dir=tmp_path, title="EC",
+        start_characters=["thorgrim"],
+        item_details={"snapped_torch": detail},
+    )
+    assert "🔥" in out.read_text(encoding="utf-8")
+
+
 def test_building_zone_tooltip_title_cases_type(tmp_path):
     from engine.map_renderer import _zone_tooltip
 

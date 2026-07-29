@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Carpenter, Carpenter's Workshop
 - **Race:** Dwarf, Female, age 112
+- **Pronouns:** she/her
 - **Location:** Timber-framed workshop, open front
 
 ## Combat Statistics

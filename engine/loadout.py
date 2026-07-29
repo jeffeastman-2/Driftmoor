@@ -70,7 +70,10 @@ def hold_item(cs, item_id: str, log: list | None = None) -> bool:
         if log is not None:
             log.append(f"sheathes {victim.name}")
     if hands_free(cs) >= 1:
-        cs.held_items.append(item_id)
+        if hasattr(cs.held_items, "add"):
+            cs.held_items.add(item_id)
+        else:
+            cs.held_items.append(item_id)
         return True
     return False
 

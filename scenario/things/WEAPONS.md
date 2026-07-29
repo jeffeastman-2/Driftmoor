@@ -25,3 +25,4 @@ proficiency.
 | dagger | 2 gp | Dagger | 1d4 | piercing | 5 | 20 | 60 | finesse,light,thrown | simple,dagger,blade |
 | belt_knife | 2 sp | Belt Knife | 1d4 | piercing | 5 | 0 | 0 | light | simple,dagger,blade |
 | improvised_spear |  | Improvised Spear | 1d8 | piercing | 5 | 0 | 0 | two_handed | simple,spear |
+| improvised_stool |  | Bar Stool | 1d4 | bludgeoning | 5 | 20 | 60 | thrown,two_handed | improvised,stool |

@@ -67,6 +67,8 @@ class TestBuyQuoteConfirm:
         assert chars["player"].character.purse_cp == 96
         assert chars["maribel"].character.purse_cp == 4
         assert any(getattr(p, "id", "").startswith("meat_pie") for p in chars["player"].pack)
+        bought = next(p for p in chars["player"].pack if p.id.startswith("meat_pie"))
+        assert bought.id in chars["player"].held_items
         assert any("SETTLED" in l and "bought" in l for l in log)
 
     def test_take_a_shop_good_also_quotes(self):

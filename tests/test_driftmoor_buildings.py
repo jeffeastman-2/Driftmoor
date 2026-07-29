@@ -11,8 +11,11 @@ from engine.session import (
     _driftmoor_source_doorways,
     _entry_point_from_target_geometry,
     _infer_driftmoor_venue_transition,
+    _next_zone_toward,
     _place_identity_metadata,
+    _waypoint_for_zone,
 )
+from engine.geometry import _check_impassable
 from models.game_init import INITIAL_LOCATIONS
 from models.geometry_loader import load_geometry
 from models.space_time import Position
@@ -141,3 +144,95 @@ def test_weary_traveler_upstairs_origin_is_parent_local():
 
     assert upstairs.origin == Position(0, 0, 9)
     assert upstairs.z_level == pytest.approx(ground.z_level + upstairs.origin.z)
+
+
+def test_broken_lantern_subplaces_have_geometry_and_reciprocal_entries():
+    parent_path = "places/driftmoor/broken_lantern"
+    parent = configure_from_place_path(parent_path)
+    assert parent.scene_geometry is not None
+    assert parent.scene_geometry.boundaries == []
+    assert {
+        "MAIN_ROOM", "STAGE", "BOOTHS", "BAR", "KITCHEN",
+        "MEETING_ROOM", "STORAGE_ROOM", "STAIRWAY",
+    } <= set(parent.scene_geometry.zones)
+
+    expected = {
+        "meeting_room": ("I enter the meeting room", (6.0, 23.0), (0, 23, 0)),
+        "storage_room": ("I enter the storage room", (17.0, 23.0), (12.5, 23, 0)),
+        "upstairs": ("I go upstairs", (24.5, 27.5), (0, 0, 9)),
+    }
+    for child_id, (phrase, doorway_xy, expected_origin) in expected.items():
+        child_path = f"{parent_path}/{child_id}"
+        child = configure_from_place_path(child_path)
+        assert child.scene_geometry is not None
+        assert child.scene_geometry.origin == Position(*expected_origin)
+        assert _infer_driftmoor_venue_transition(
+            phrase, parent_path, "MAIN_ROOM"
+        ) == child_id
+        doorway = _driftmoor_enter_doorway(
+            phrase, parent_path, "MAIN_ROOM", parent.scene_geometry
+        )
+        assert doorway is not None
+        assert doorway[0] == child_id
+        assert doorway[1][:2] == doorway_xy
+        assert _entry_point_from_target_geometry(
+            child_path, parent_path, child.scene_geometry
+        ) is not None
+        assert _infer_driftmoor_venue_transition(
+            "I exit", child_path, next(iter(child.scene_geometry.zones))
+        ) == "broken_lantern"
+
+
+def test_broken_lantern_items_live_in_their_physical_subplaces():
+    base = "places/driftmoor/broken_lantern"
+    main = configure_from_place_path(base)
+    meeting = configure_from_place_path(f"{base}/meeting_room")
+    storage = configure_from_place_path(f"{base}/storage_room")
+
+    assert {"ledger_book", "sealed_letter"}.isdisjoint(main.items)
+    assert set(meeting.items) == {"ledger_book", "sealed_letter"}
+    assert {
+        "spare_blanket", "crate_saltfish", "candle_stub_bundle"
+    }.isdisjoint(main.items)
+    assert set(storage.items) == {
+        "spare_blanket", "crate_saltfish", "candle_stub_bundle"
+    }
+
+
+@pytest.mark.parametrize(
+    "start",
+    [
+        (24.5, 27.5, "STAIRWAY"),
+        (17.0, 27.0, "STORAGE_ROOM"),
+        (15.0, 10.0, "MAIN_ROOM"),
+        (7.0, 17.0, "STAGE"),
+    ],
+)
+def test_broken_lantern_meeting_room_has_a_clear_routed_approach(start):
+    geometry = load_geometry(DRIFTMOOR / "broken_lantern" / "GEOMETRY.md")
+    position = start
+
+    for _ in range(3):
+        if position[2] == "MEETING_ROOM":
+            break
+        next_zone = _next_zone_toward(
+            geometry, position[2], "MEETING_ROOM"
+        ) or "MEETING_ROOM"
+        waypoint = _waypoint_for_zone(
+            character_id="visitor",
+            current_positions={"visitor": position},
+            scene_geometry=geometry,
+            target_zone=next_zone,
+        )
+        assert waypoint is not None
+        allowed, log, _stop = _check_impassable(
+            "visitor",
+            position,
+            (waypoint[0], waypoint[1], next_zone),
+            geometry.impassable,
+            geometry.zones,
+        )
+        assert allowed, log
+        position = (waypoint[0], waypoint[1], next_zone)
+
+    assert position[2] == "MEETING_ROOM"

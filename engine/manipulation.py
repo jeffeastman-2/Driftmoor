@@ -133,6 +133,22 @@ def find_possessed_scene_thing(cs, intent_text: str, items: Optional[dict],
     return None
 
 
+def find_consumed_scene_thing(cs, intent_text: str, items: Optional[dict]):
+    """A formerly possessed consumable named by an attempted repeat use."""
+    from models.thing import CONSUMED
+    actor_id = getattr(getattr(cs, "character", None), "id", "")
+    text = (intent_text or "").lower()
+    for thing in (items or {}).values():
+        if getattr(thing, "holder", None) != actor_id:
+            continue
+        if getattr(getattr(thing, "carry", None), "location", "") != CONSUMED:
+            continue
+        if any(re.search(rf"\b{re.escape(tok)}\b", text)
+               for tok in _name_tokens(thing)):
+            return thing
+    return None
+
+
 def classify_verb(intent_text: str, thing) -> Optional[str]:
     """Map free-text intent + the target's affordances to a canonical verb:
     ``drop`` / ``sheathe`` / ``draw`` / ``wear`` / ``remove`` / ``eat`` (or None).
@@ -200,7 +216,11 @@ def apply_manipulation(cs, verb: str, thing, *, items, actor_pos, actor_zone: st
     res = ManipulationResult()
     handle = getattr(cs, "scene_handle", "") or getattr(
         getattr(cs, "character", None), "name", "") or character_id
-    name = getattr(thing, "label", None) or getattr(thing, "id", "")
+    name = (
+        getattr(thing, "label", None)
+        or getattr(thing, "name", None)
+        or getattr(thing, "id", "")
+    )
     weapon = getattr(thing, "weapon", None)
     ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
     thing_id = getattr(thing, "id", "")

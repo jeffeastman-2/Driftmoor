@@ -5,98 +5,89 @@
 - **name:** The Broken Lantern
 - **place_path:** places/driftmoor/broken_lantern
 - **z_level:** 16.25
-- **width:** 40.625
+- **width:** 40.5
 - **height:** 32.5
 - **origin:** 427.5, 252, 0
 
-Notes: Ground floor contains the main room, bar, stage corner, private
-booths, kitchen, storage room, and meeting room. Upper floor (z=26.0)
-has three guest rooms accessed by a creaky interior staircase. The
-broken lantern hangs above the front door on the south face. The
-building is timber with a sloping roof and ivy on the east wall.
+Notes: Ground floor of a two-story timber tavern. The public room
+occupies the south and west, the bar runs along the east side, and the
+kitchen fills the northeast corner. A meeting room and storage room
+have distinct footprints along the rear wall. The stair rises between
+the back rooms and kitchen. The broken lantern hangs above the south
+entrance.
 
 ---
 
 ## Landmarks
 
-| name             | x    | y    |
-|------------------|------|------|
-| front_door       | 19.5 | 0  |
-| hearth           | 35.5 | 19.5 |
-| bar_counter      | 32.5 | 11  |
-| stage_corner     | 4.5  | 22.5 |
-| booth_row        | 4.5  | 11  |
-| staircase        | 29 | 27.5 |
-| kitchen_center   | 32.5 | 27.5 |
-| storage_center   | 13  | 27.5 |
-| meeting_room_ctr | 4.5  | 27.5 |
-| broken_lantern   | 19.5 | -1.5 |
+| name               | x    | y    | z |
+|--------------------|------|------|---|
+| front_door         | 20   | 0    | 4 |
+| central_tables     | 17   | 11   | 4 |
+| hearth             | 3    | 18   | 4 |
+| stage              | 7    | 17   | 4 |
+| booth_row          | 6    | 7    | 4 |
+| bar_counter        | 28   | 9    | 4 |
+| kitchen_center     | 34   | 25   | 4 |
+| meeting_room_door  | 6    | 23   | 4 |
+| storage_room_door  | 17   | 23   | 4 |
+| stair_foot         | 24.5 | 27.5 | 0 |
+| kitchen_back_door  | 40.5 | 25   | 4 |
+| broken_lantern     | 20   | -1.5 | 5 |
 
 ---
 
 ## Zones
 
-| name          | render_z | vertices                              |
-|---------------|----------|---------------------------------------|
-| STAGE         | 6.5        | (0,19.5) (13,19.5) (13,27.5) (0,27.5)           |
-| BOOTHS        | 6.5        | (0,6.5) (13,6.5) (13,19.5) (0,19.5)             |
-| BAR           | 6.5        | (24,6.5) (37,6.5) (37,22.5) (24,22.5)         |
-| KITCHEN       | 6.5        | (24,22.5) (40.5,22.5) (40.5,32.5) (24,32.5)       |
-| STORAGE_ROOM  | 6.5        | (13,22.5) (24,22.5) (24,32.5) (13,32.5)         |
-| MEETING_ROOM  | 6.5        | (0,22.5) (13,22.5) (13,32.5) (0,32.5)           |
-| MAIN_ROOM     | 3.25        | (0,0) (40.5,0) (40.5,22.5) (0,22.5)           |
-| EXTERIOR      | 0.0        | (-8,-8) (48.5,-8) (48.5,40.5) (-8,40.5)       |
+| name          | floor_z | ceiling_z | render_z | vertices                            |
+|---------------|---------|-----------|----------|-------------------------------------|
+| STAGE         | 0       | 8         | 6.5      | (1,14) (11,14) (11,21.5) (1,21.5) |
+| BOOTHS        | 0       | 8         | 6.5      | (1,3) (11,3) (11,13) (1,13)        |
+| BAR           | 0       | 8         | 6.5      | (27,0) (40.5,0) (40.5,18) (27,18) |
+| KITCHEN       | 0       | 8         | 6.5      | (27,18) (40.5,18) (40.5,32.5) (27,32.5) |
+| MEETING_ROOM  | 0       | 8         | 6.5      | (0,23) (11.5,23) (11.5,32.5) (0,32.5) |
+| STORAGE_ROOM  | 0       | 8         | 6.5      | (12.5,23) (21.5,23) (21.5,32.5) (12.5,32.5) |
+| STAIRWAY      | 0       | 8         | 7.0      | (22.5,23) (27,23) (27,32.5) (22.5,32.5) |
+| MAIN_ROOM     | 0       | 8         | 3.25     | (0,0) (27,0) (27,23) (0,23)       |
+| EXTERIOR      | 0       | 8         | 0.0      | (-4.5,-4.5) (45,-4.5) (45,37) (-4.5,37) |
 
 ---
 
 ## Impassable
 
-| description      | vertices                              |
-|------------------|---------------------------------------|
-| Bar counter      | (24,8) (37,8) (37,11) (24,11)           |
-| Kitchen wall     | (24,22.5) (40.5,22.5) (40.5,24) (24,24)       |
-| Back wall        | (0,30.5) (40.5,30.5) (40.5,32.5) (0,32.5)         |
+| description             | vertices                                  |
+|-------------------------|-------------------------------------------|
+| Bar counter             | (26,2) (28,2) (28,15) (26,15)            |
+| Kitchen partition north | (27,17.5) (33,17.5) (33,18.5) (27,18.5) |
+| Kitchen partition south | (35,17.5) (40.5,17.5) (40.5,18.5) (35,18.5) |
+| Back wall               | (0,31.5) (40.5,31.5) (40.5,32.5) (0,32.5) |
 
 ---
 
 ## Connections
 
-| name              | x    | y    | destination                    |
-|-------------------|------|------|--------------------------------|
-| front_door        | 19.5 | 0  | places/driftmoor               |
-| to_upper_floor    | 29 | 27.5 | places/driftmoor/broken_lantern/upper_floor |
-| kitchen_back_door | 40.5 | 27.5 | places/driftmoor               |
+| name                | x    | y    | destination                                      |
+|---------------------|------|------|--------------------------------------------------|
+| front_door          | 20   | 0    | places/driftmoor                                 |
+| to_meeting_room     | 6    | 23   | places/driftmoor/broken_lantern/meeting_room    |
+| to_storage_room     | 17   | 23   | places/driftmoor/broken_lantern/storage_room    |
+| to_upstairs         | 24.5 | 27.5 | places/driftmoor/broken_lantern/upstairs        |
+| kitchen_back_door   | 40.5 | 25   | places/driftmoor                                 |
+
+---
 
 ## Items
 
-| id                 | x   | y   | label                      |
-|--------------------|-----|-----|----------------------------|
-| broken_lantern_sign| 39  | -3  | Broken lantern sign        |
-| bar_stools         | 60  | 18  | Bar stools                 |
-| service_bell       | 63  | 22  | Service bell               |
-| room_key_ring      | 64  | 23  | Room key ring              |
-| ale_tankards       | 66  | 24  | Ale tankards               |
-| tip_bowl           | 17  | 27  | Tip bowl                   |
-| lute_case          | 14  | 25  | Lute case                  |
-| dice_cup           | 10  | 33  | Dice cup                   |
-| ledger_book        | 13  | 51  | Ledger book                |
-| sealed_letter      | 12  | 52  | Sealed letter              |
-| spare_blanket      | 30  | 56  | Spare blanket              |
-| crate_saltfish     | 34  | 58  | Crate of saltfish          |
-| kitchen_knife      | 67  | 53  | Kitchen knife              |
-| stew_pot           | 71  | 57  | Stew pot                   |
-| coal_scuttle       | 72  | 41  | Coal scuttle               |
-| candle_stub_bundle | 22  | 48  | Bundle of candle stubs     |
-
----
-
-## Boundaries
-
-### Tess's Back Rooms
-
-- **type:** conditional
-- **blocks:** all
-- **effect:** storage room and meeting room require Tess's permission or a successful Persuasion/Deception check to access
-- **vertices:** (0,22.5) (40.5,22.5) (40.5,32.5) (0,32.5)
-
----
+| id                  | x    | y    | label                  |
+|---------------------|------|------|------------------------|
+| broken_lantern_sign | 20   | -1.5 | Broken lantern sign    |
+| bar_stool           | 25   | 8    | Bar stool              |
+| service_bell        | 31   | 9    | Service bell           |
+| room_key_ring       | 33   | 9    | Room key ring          |
+| ale_tankards        | 35   | 9    | Ale tankards           |
+| tip_bowl            | 7    | 15   | Tip bowl               |
+| lute_case           | 8    | 11   | Lute case              |
+| dice_cup            | 15   | 8    | Dice cup               |
+| kitchen_knife       | 33   | 24   | Kitchen knife          |
+| stew_pot            | 36   | 27   | Stew pot               |
+| coal_scuttle        | 38   | 20   | Coal scuttle           |

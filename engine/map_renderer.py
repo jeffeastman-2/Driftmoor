@@ -271,6 +271,21 @@ def _item_tooltip(label: str, detail: object | None) -> str:
     return "\n".join(lines)
 
 
+def _item_is_loose(detail: object | None) -> bool:
+    """Return false once a runtime item has been picked up."""
+    if detail is None:
+        return True
+    if isinstance(detail, dict):
+        return not bool(detail.get("holder"))
+    return not bool(getattr(detail, "holder", None))
+
+
+def _item_is_pickable(detail: object | None) -> bool:
+    if isinstance(detail, dict):
+        return bool(detail.get("pickable"))
+    return bool(getattr(detail, "pickable", False)) if detail is not None else False
+
+
 def _verts(s: str) -> list[tuple[float, float]]:
     out: list[tuple[float, float]] = []
     for m in re.finditer(r"\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)", s):
@@ -1312,11 +1327,25 @@ def render_turn_slider_html(
                  f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{1.1*sc:.2f}' fill='#b9b9b9'>"
                  f"<title>{html.escape(tip)}</title></circle></g>")
     for _iid, (x, y, label) in g["items"].items():
-        tooltip = _item_tooltip(label, (item_details or {}).get(_iid))
-        p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
-                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{0.9*sc:.2f}' fill='#d9c98a'>"
-                 f"<title>{html.escape(tooltip)}</title></circle>"
-                 f"<text x='{x+1.4*sc:.2f}' y='{fy(y):.2f}' class='ilabel'>{html.escape(label)}</text></g>")
+        detail = (item_details or {}).get(_iid)
+        if not _item_is_loose(detail):
+            continue
+        tooltip = _item_tooltip(label, detail)
+        if _item_is_pickable(detail):
+            from engine.item_icons import item_icon
+            marker = (
+                f"<text x='{x:.2f}' y='{fy(y):.2f}' text-anchor='middle' "
+                f"dominant-baseline='central' font-size='{3.2*sc:.2f}'>"
+                f"{item_icon(label)}<title>{html.escape(tooltip)}</title></text>"
+            )
+        else:
+            marker = (
+                f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{0.9*sc:.2f}' "
+                f"fill='#d9c98a'><title>{html.escape(tooltip)}</title></circle>"
+            )
+        p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>{marker}"
+                 f"<text x='{x+1.8*sc:.2f}' y='{fy(y):.2f}' "
+                 f"class='ilabel'>{html.escape(label)}</text></g>")
 
     # Per-character "where you just came from" segment: previous turn -> current.
     # Drawn before the markers so the dot sits on top of its own trail tail.

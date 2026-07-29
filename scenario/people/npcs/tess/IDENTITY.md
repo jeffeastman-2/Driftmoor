@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Tavern owner, The Broken Lantern
 - **Race:** Human, Female, age 42
+- **Pronouns:** she/her
 - **Location:** The Broken Lantern, village center
 
 ## Combat Statistics

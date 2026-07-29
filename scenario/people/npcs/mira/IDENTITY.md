@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Acolyte, The Beacon church
 - **Race:** Human, Female, age 19
+- **Pronouns:** she/her
 - **Location:** The Beacon, small rise above village
 
 ## Combat Statistics

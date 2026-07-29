@@ -23,31 +23,31 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 - **type:** npc
 - **soul_file:** scenario/people/npcs/tess/SOUL.md
 - **identity_file:** scenario/people/npcs/tess/IDENTITY.md
-- **position:** 32.5, 13
+- **position:** 31, 9
 
 ### wilfred
 - **type:** npc
 - **soul_file:** scenario/people/npcs/wilfred/SOUL.md
 - **identity_file:** scenario/people/npcs/wilfred/IDENTITY.md
-- **position:** 28, 13
+- **position:** 19, 8
 
 ### bran
 - **type:** npc
 - **soul_file:** scenario/people/npcs/bran/SOUL.md
 - **identity_file:** scenario/people/npcs/bran/IDENTITY.md
-- **position:** 7, 26
+- **position:** 13, 13
 
 ### marda
 - **type:** npc
 - **soul_file:** scenario/people/npcs/marda/SOUL.md
 - **identity_file:** scenario/people/npcs/marda/IDENTITY.md
-- **position:** 5.5, 26
+- **position:** 16, 13
 
 ## Who Is Normally Here
 - **Tess Malwin** — owner, behind the bar or moving through the room
 - **Wilfred** — regular drunkard, claims to have seen shadow giants near the obelisk
-- **bran** - a bar patron in an argument with marda
-= **marda** - a bar patron in an argument with bran
+- **Bran** — a bar patron in an argument with Marda
+- **Marda** — a bar patron in an argument with Bran
 - Fisherfolk, farmers, occasional travelers
 
 ## Scene Introductions
@@ -66,8 +66,9 @@ You are at a side table with Bran, trying to keep a straightforward accounting a
 
 ## Connections
 - Village center (outside)
-- `main_room/` → `upstairs/` via creaky staircase
-- `main_room/` → `storage_room/` and `meeting_room/` via door behind bar
+- `upstairs/` via the creaky rear staircase
+- `storage_room/` via the door behind the bar
+- `meeting_room/` via a private door at the rear of the public room
 
 ## Dynamic State
 *(Updated by monitor agent)*

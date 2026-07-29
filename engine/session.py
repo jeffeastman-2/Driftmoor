@@ -3343,12 +3343,15 @@ async def _handle_commerce(
         thing = r.thing
         items[thing.id] = thing
         if getattr(thing, "weapon", None) is not None:
-            loadout.register_held_weapon(cs, thing)
+            weapon = loadout.register_held_weapon(cs, thing)
+            if weapon is not None:
+                loadout.draw(cs, weapon)
         else:
             if getattr(cs, "pack", None) is None:
                 cs.pack = []
             if thing not in cs.pack:
                 cs.pack.append(thing)
+            loadout.hold_item(cs, thing.id)
         loadout.materialize_things(cs)
         name = thing.name or thing.id
         _emit(f"[COMMERCE] SETTLED by the engine — do not alter: {character_id} "
@@ -5416,6 +5419,7 @@ async def iter_session(
                 not in_combat
                 and intent.interaction_target
                 and actor_zone_before
+                and _is_search_like_intent(intent.intent or "")
             ):
                 shared_key = _shared_exam_key(actor_zone_before, intent.interaction_target)
                 shared_exam = party_examination_state.get(shared_key) if shared_key else None
@@ -5462,6 +5466,7 @@ async def iter_session(
                 not in_combat
                 and party_focus_zone
                 and turn_num <= party_focus_until_turn
+                and getattr(cs.character, "character_type", "") != "player"
             ):
                 focus_zone = party_focus_zone.upper()
                 if actor_zone_before and actor_zone_before != focus_zone:
@@ -6411,6 +6416,19 @@ async def iter_session(
                             recent_events.extend(_mr.events)
                             for _note in _mr.memory:
                                 _append_memory_note(cs, _note)
+                else:
+                    _used_up = manipulation.find_consumed_scene_thing(
+                        cs, intent.intent, items)
+                    if _used_up is not None:
+                        _used_name = (
+                            getattr(_used_up, "label", None)
+                            or getattr(_used_up, "name", None)
+                            or getattr(_used_up, "id", "item")
+                        )
+                        attack_log.append(
+                            f"[ITEM] {character_id} has no {_used_name} left"
+                        )
+                        _kit_manip_applied = True
 
             # Commerce: buy a shop good / sell a possession to the shopkeeper
             # present in this scene. Runs only where there IS a shopkeeper (so it

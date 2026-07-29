@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Cobbler, The Cobbler's Shop
 - **Race:** Halfling, Female, age 45
+- **Pronouns:** she/her
 - **Location:** Snug brick-walled shop with shoes in the window
 
 ## Combat Statistics

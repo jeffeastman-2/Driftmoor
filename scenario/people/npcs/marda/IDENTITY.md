@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Fish-salter and dock bookkeeper assistant
 - **Race:** Human, Female, age 31
+- **Pronouns:** she/her
 - **Location:** The Broken Lantern, village center
 
 ## Combat Statistics

@@ -3,6 +3,7 @@
 ## Static Profile
 - **Role:** Fishmonger, The Fishmonger's Shack
 - **Race:** Halfling, Female, age 38
+- **Pronouns:** she/her
 - **Location:** Small weathered shack near the harbor
 
 ## Combat Statistics

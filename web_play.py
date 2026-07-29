@@ -56,30 +56,9 @@ def _turn_entries(checkpoint_dir: Path) -> list[dict]:
     return out
 
 
-# Keyword -> emoji "icon" for an item, matched against its label.
-_ITEM_ICONS = (
-    ("torch", "🔥"), ("crossbow", "🏹"), ("bow", "🏹"), ("dagger", "🗡️"),
-    ("rapier", "🗡️"), ("sword", "🗡️"), ("blade", "🗡️"), ("axe", "🪓"),
-    ("mace", "🔨"), ("hammer", "🔨"), ("shield", "🛡️"), ("staff", "🪄"),
-    ("wand", "🪄"), ("potion", "🧪"), ("vial", "🧪"), ("scroll", "📜"),
-    ("key", "🗝️"), ("gem", "💎"), ("shard", "💎"), ("crystal", "💎"),
-    ("coin", "🪙"), ("gold", "🪙"), ("book", "📖"), ("tome", "📖"),
-    ("rope", "🪢"), ("bone", "🦴"), ("skull", "💀"), ("ring", "💍"),
-    ("pack", "🎒"), ("bag", "🎒"), ("chalk", "✏️"), ("charcoal", "✏️"),
-    ("armor", "🛡️"), ("leather", "🛡️"), ("tools", "🛠️"), ("kit", "🧰"),
-    ("bracelet", "💍"), ("amulet", "🔱"), ("cloak", "🧥"), ("boots", "🥾"),
-    ("pemmican", "🥩"), ("tack", "🍪"), ("ration", "🍖"), ("bread", "🍞"),
-    ("waterskin", "💧"), ("water", "💧"), ("mead", "🍺"), ("ale", "🍺"),
-    ("wine", "🍷"), ("flask", "🍶"),
-)
-
-
 def _item_icon(label: str) -> str:
-    low = (label or "").lower()
-    for kw, icon in _ITEM_ICONS:
-        if kw in low:
-            return icon
-    return "📦"
+    from engine.item_icons import item_icon
+    return item_icon(label)
 
 
 # Words that mark a possession as WORN (vs merely carried). (An "Ingested"
@@ -480,6 +459,7 @@ const NAME_PATTERN=__NAME_PATTERN__;
 const NAME_RE=NAME_PATTERN?new RegExp(NAME_PATTERN,'gi'):null;
 function hi(s){return NAME_RE?s.replace(NAME_RE,'<span class="name">$1</span>'):s;}
 function qhi(s){return esc(s);}
+function speechKey(s){return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
 function nameOf(cid){return (cid||'').split('_').map(w=>w?w[0].toUpperCase()+w.slice(1):w).join(' ');}
 // One unified line per character:  "spoken" narration  — every player/monster
 // name is highlighted, and the narration already opens with the actor's name,
@@ -487,8 +467,13 @@ function nameOf(cid){return (cid||'').split('_').map(w=>w?w[0].toUpperCase()+w.s
 // to name the speaker, still gets a name prefix so the quote is attributed.)
 function lineHTML(l){
   let body='';
-    if(l.spoken)body+='<span class="spoken">“'+qhi(l.spoken)+'”</span> ';
-  if(l.prose)body+=hi(esc(l.prose));
+  const repeated=l.spoken&&l.prose&&speechKey(l.prose).includes(speechKey(l.spoken));
+  if(l.spoken&&!repeated)body+='<span class="spoken">“'+qhi(l.spoken)+'”</span> ';
+  if(l.prose){
+    let prose=hi(esc(l.prose));
+    prose=prose.replace(/([“"])([^“”"]+)([”"])/g,'<span class="spoken">$1$2$3</span>');
+    body+=prose;
+  }
   else if(l.spoken)body='<span class="name">'+esc(nameOf(l.cid))+'</span>: '+body;
   return '<p class="line">'+body+'</p>';
 }

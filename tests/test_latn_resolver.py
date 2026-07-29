@@ -46,6 +46,23 @@ def test_examine_resolves_authored_interaction():
     assert a.interaction and "shimmers" in a.interaction.response
 
 
+def test_open_and_read_resolve_authored_interactions():
+    letter = Item(
+        id="letter", label="sealed letter", zone="GLADE",
+        interactions=[
+            Interaction(verb="open", aliases=["unseal"], condition="",
+                        response="The wax breaks."),
+            Interaction(verb="read", aliases=[], condition="",
+                        response="The route is revealed."),
+        ],
+    )
+    lex, adapter, _ = _scene(extra_items={"letter": letter})
+    opened = resolve_actions("unseal the letter", lexicon=lex, adapter=adapter)
+    read = resolve_actions("read the letter", lexicon=lex, adapter=adapter)
+    assert opened[0].interaction and opened[0].interaction.verb == "open"
+    assert read[0].interaction and read[0].interaction.verb == "read"
+
+
 def test_intent_has_action_reads_verb_dims():
     from engine.latn_resolver import intent_has_action
     # Attack vocabulary lives in the lexicon, not a keyword regex.
