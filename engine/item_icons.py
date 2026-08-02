@@ -23,8 +23,10 @@ ITEM_ICONS = (
 )
 
 
-def item_icon(label: str) -> str:
-    """Choose an icon using whole tokens and compound-word suffixes."""
+def item_icon(label: str, authored: str = "") -> str:
+    """Prefer an authored emoji, falling back to legacy name inference."""
+    if (authored or "").strip():
+        return authored.strip()
     tokens = re.findall(r"[a-z0-9]+", (label or "").lower())
     for keyword, icon in ITEM_ICONS:
         if any(token == keyword or token.endswith(keyword) for token in tokens):

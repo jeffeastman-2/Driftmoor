@@ -27,7 +27,7 @@ Creatures of shadow and dark energy connected to the shattered obelisk's destabi
 **Value:**
 - To Lytha Varrow: 8 gp (fresh), 5 gp (cured)
 - General market: 3 gp (decorative use, dye source)
-- Kelem Dustcloak: 6 gp (for distilling Shadowbeast Pelt Dye — see mundane_items.md)
+- Kelem Dustcloak: 6 gp (for distilling Shadowbeast Pelt Dye; see Dustcloak's Curios contents)
 
 **Properties:**
 - Absorbs some light — cloth dyed from it appears to drink in shadow
@@ -43,7 +43,7 @@ Creatures of shadow and dark energy connected to the shattered obelisk's destabi
 
 **Value:**
 - To Lytha Varrow: 2 gp per claw (component use)
-- To Kelem Dustcloak: 3 gp per claw (for Shadowbeast Claw Necklace construction — see mundane_items.md)
+- To Kelem Dustcloak: 3 gp per claw (for Shadowbeast Claw Necklace construction)
 - General market: 1 gp per claw (curiosity value)
 
 **Properties:**

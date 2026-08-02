@@ -59,6 +59,7 @@ def test_item_icon_keyword_and_fallback():
     assert web_play._item_icon("Sealed letter") == "✉️"
     assert web_play._item_icon("Silver handled longsword") == "🗡️"
     assert web_play._item_icon("Glowing orb") == "📦"  # no keyword -> fallback
+    assert web_play._item_icon("Glowing orb", "🔮") == "🔮"
 
 
 def test_inventory_none_character_is_empty():
@@ -219,6 +220,19 @@ def test_inventory_bought_item_shown_once_by_name():
     cs = _cs(inventory=["bolts_20_i1"], pack=[bolt])
     inv = web_play._player_inventory(cs, {})
     assert [c["label"] for c in inv["carried"]] == ["Bolts (20)"]
+
+
+def test_bought_worn_item_uses_authored_emoji_and_worn_bucket():
+    from models.thing import Thing, WEARABLE, WORN
+    necklace = Thing(
+        id="necklace_i1", name="Shadowbeast Claw Necklace", emoji="📿",
+        affordances={WEARABLE},
+    )
+    necklace.carry.location = WORN
+    cs = _cs(inventory=[necklace.id], pack=[necklace])
+    inv = web_play._player_inventory(cs, {})
+    assert inv["carried"] == []
+    assert inv["worn"] == [{"icon": "📿", "label": "Shadowbeast Claw Necklace"}]
 
 
 def test_inventory_surfaces_purse_from_character():

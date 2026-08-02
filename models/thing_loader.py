@@ -106,7 +106,7 @@ def _find_tables(text: str) -> list[tuple[int, list[str]]]:
 # ---------------------------------------------------------------------------
 
 def parse_mundane_items(path: Path) -> list[Thing]:
-    """Parse mundane_items.md into Thing objects."""
+    """Deprecated parser retained only for old external scenario documents."""
     text = path.read_text()
     lines = text.split("\n")
     things: list[Thing] = []
@@ -161,6 +161,22 @@ def parse_mundane_items(path: Path) -> list[Thing]:
                     break
             desc = desc.strip()
 
+            emoji = ""
+            for key in row:
+                if key.lower() in ("emoji", "icon"):
+                    emoji = row[key].strip()
+                    break
+
+            affordances: set[str] = set()
+            for key in row:
+                if key.lower() in ("affordance", "affordances", "kind"):
+                    affordances = {
+                        value.strip().lower()
+                        for value in re.split(r"[,;/]", row[key])
+                        if value.strip()
+                    }
+                    break
+
             # Build unique ID
             base_id = _slugify(name)
             thing_id = base_id
@@ -182,6 +198,8 @@ def parse_mundane_items(path: Path) -> list[Thing]:
                 description=desc,
                 vendor_id=current_vendor_id,
                 location_id=current_location_id,
+                emoji=emoji,
+                affordances=affordances,
             )
             _derive_market_affordances(thing)
             things.append(thing)
@@ -246,7 +264,7 @@ _MAGICAL_VENDOR_MAP: dict[str, tuple[str, str]] = {
 
 
 def parse_magical_items(path: Path) -> list[Thing]:
-    """Parse magical_items.md into Thing objects."""
+    """Deprecated parser retained only for old external scenario documents."""
     text = path.read_text()
     lines = text.split("\n")
     things: list[Thing] = []
@@ -312,6 +330,7 @@ def _parse_magical_block(
     # Extract fields from **Key:** value patterns
     price = _extract_field(block, "asking price") or _extract_field(block, "listed price") or ""
     attunement = _extract_field(block, "attunement") or ""
+    emoji = (_extract_field(block, "emoji") or _extract_field(block, "icon") or "")
 
     # Override location from block if specified
     loc_field = _extract_field(block, "session-start location") or ""
@@ -356,6 +375,7 @@ def _parse_magical_block(
         dm_properties=dm_properties,
         attunement=attunement,
         raw=block.strip(),
+        emoji=emoji,
     )
     # Jewelry and wearable clothing sold as authored magical items must retain
     # their ordinary physical affordances.  Previously a purchased amulet was
@@ -525,33 +545,27 @@ def parse_shadowbeast_parts(path: Path) -> list[Thing]:
 # ---------------------------------------------------------------------------
 
 def load_all_things(things_dir: Path) -> list[Thing]:
-    """Load all things from the scenario/things directory.
+    """Load runtime Things: place CONTENTS stock plus global shard/part types."""
+    from models.place_thing_loader import load_place_things
 
-    When an item appears in both mundane and magical files (e.g. Gilded
-    Trinket curios), the magical version wins since it has richer data.
-    """
-    magical = parse_magical_items(things_dir / "magical_items.md")
-    mundane = parse_mundane_items(things_dir / "mundane_items.md")
+    place_things = load_place_things(things_dir.parent / "places" / "driftmoor")
     shards = parse_obelisk_shards(things_dir / "obelisk_shards.md")
     parts = parse_shadowbeast_parts(things_dir / "shadowbeast_parts.md")
 
-    # Magical items take priority — remove mundane dupes by slug match
-    magical_slugs = {_slugify(t.name) for t in magical}
-    mundane_deduped = [t for t in mundane if _slugify(t.name) not in magical_slugs]
-
-    # Obelisk shards take priority — remove magical cross-references
+    # Canonical extractable shard definitions take priority over placed shard
+    # cross-references, matching by the terminal place id across path styles.
     shard_locations = {t.location_id for t in shards if t.location_id}
-    magical_deduped = [
-        t for t in magical
+    place_deduped = [
+        t for t in place_things
         if not (
-            t.location_id.rstrip("/").split("/")[-1] in shard_locations
+            t.location_id.rstrip("/").split("/")[-1]
+            in {s.rstrip("/").split("/")[-1] for s in shard_locations}
             and "shard" in t.name.lower()
         )
     ]
 
     all_things: list[Thing] = []
-    all_things.extend(mundane_deduped)
-    all_things.extend(magical_deduped)
+    all_things.extend(place_deduped)
     all_things.extend(shards)
     all_things.extend(parts)
     return all_things

@@ -76,7 +76,7 @@ supply chain; NPC-to-NPC trade.
 | LATN grounding (adapter entities, `resolve_actions`, `_TRANSFER_VERBS`) | `engine/latn_adapter.py`, `engine/latn_resolver.py`, `engine/latn_integration.py` |
 | Turn loop (action application) | `engine/session.py` |
 | NPC agents (disposition, neurochemical baseline) | `scenario/people/npcs/<id>/{SOUL,IDENTITY}.md`, condition model |
-| Shop inventory (authored prose) | each shop's `IDENTITY.md` `## Rates and Services`; `scenario/things/mundane_items.md` |
+| Shop inventory | authoritative `## Runtime Things` tables in each place's `CONTENTS.md` |
 
 **Conventions for every phase:**
 - Run `.venv/bin/python -m pytest -q` — it must stay green (currently 1247).
@@ -217,9 +217,8 @@ against, and each good materializes into a full Thing only when needed.
 
 **Changes.**
 - Define a `CatalogEntry` (catalog_id, name, `value_cp`, `listed_price_cp`,
-  `category`, `weight_lb`, source shop id). Parse it from the shop's authored
-  inventory — start from `## Rates and Services` in the shopkeeper's IDENTITY.md
-  (and/or `scenario/things/mundane_items.md`). Keep the prose; derive structure.
+  `category`, `weight_lb`, source shop id). As ultimately normalized, catalog
+  entries are derived from authoritative place-local `CONTENTS.md` manifests.
 - `materialize_catalog_item(catalog_id, *, owner, zone, position) -> Thing`
   — builds a full Thing on demand (owner=shopkeeper, `holder=None`, placed in the
   shop), reusing the existing "materialize kit" pattern in `thing_loader`.
@@ -323,7 +322,7 @@ coin. Straight accept at listed price — haggling is Phase 8.
 >   **As built — ✅ DONE (commit below):** each library table gained a
 >   human-readable `price` column (second column, denominations pp/gp/ep/sp/cp)
 >   parsed once via `currency.parse_coins` — the same authored-price pattern as
->   Phase 1 and `mundane_items.md`, so a Thing's worth lives in one place next to
+>   Phase 1 and the place-local runtime tables, so a Thing's worth lives next to
 >   its other stats. `Weapon`/`Armor` gained a `value_cp` field set from the
 >   column in `engine/weapon_loader.py`; `engine/consumable_loader.py`
 >   (`load_catalog`, shared by consumables/gear/containers) sets `thing.value_cp`
@@ -400,6 +399,13 @@ atomic transfer (or none) commits.
 >   engine-authoritative `[COMMERCE] SETTLED` lines still emit from the turn-loop
 >   hook (where `attack_log`/`recent_events` feed the narrator). The hook only
 >   runs for transport-backed human players (`negotiate is not None`).
+> - **pt8b-3 — ✅ DONE (v0.1 bounded haggling):** a quoted price now accepts a
+>   monetary counteroffer in the same frozen-turn sub-dialog. Merchant-specific
+>   reservation floors encode authored flexibility (Kelem allows up to 20% on
+>   mundane stock and 10% on magical stock). An offer within range settles at
+>   that amount; a lower offer receives one final merchant counter, which the
+>   player may affirm or decline. Open-ended checks, disposition shifts, barter,
+>   and longer negotiations remain in A.
 > - **A (later):** the full multi-round modal haggle (8a suspend/resume primitive
 >   + 8b disposition-driven policy + UI).
 

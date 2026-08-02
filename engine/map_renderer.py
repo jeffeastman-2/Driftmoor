@@ -1359,7 +1359,8 @@ def render_turn_slider_html(
                 f"<text class='item-icon' data-base-fs='{3.2*sc:.2f}' "
                 f"x='{x:.2f}' y='{fy(y):.2f}' text-anchor='middle' "
                 f"dominant-baseline='central' font-size='{3.2*sc:.2f}'>"
-                f"{item_icon(label)}<title>{html.escape(tooltip)}</title></text>"
+                f"{item_icon(label, getattr(detail, 'emoji', ''))}"
+                f"<title>{html.escape(tooltip)}</title></text>"
             )
         else:
             marker = (

@@ -206,7 +206,7 @@ Remaining place work:
       transfer the item.
 - [ ] Verify failed purchases do not alter inventory or currency.
 - [ ] Verify sale and haggling behavior where advertised.
-- [ ] Reconcile `scenario/things/mundane_items.md` with per-place
+- [x] Reconcile legacy global item lists with per-place
       `CONTENTS.md` files.
 - [ ] Decide which services require immediate engine support and which may be
       honestly narrated as deferred work.

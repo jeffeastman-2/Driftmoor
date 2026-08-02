@@ -3363,8 +3363,7 @@ def _handle_item_transfer(
 def _driftmoor_shop_catalog():
     """The town's shop catalog (priced goods as templates), built once."""
     from models.shop_catalog import ShopCatalog
-    things_dir = _DRIFTMOOR_PLACES_ROOT.parent.parent / "things"
-    return ShopCatalog.from_things_dir(things_dir)
+    return ShopCatalog.from_places_root(_DRIFTMOOR_PLACES_ROOT)
 
 
 def _current_shopkeeper(characters, active_characters, catalog):
@@ -3534,13 +3533,15 @@ async def _handle_commerce(
     ``async (prompt) -> reply`` bound to the buyer's transport), the shopkeeper
     quotes a price and the same nested exchange reads the buyer's yes/no reply
     right away — no initiative advances between the quote and the answer. An
-    affirm completes the sale; anything else lets the offer lapse. With no
-    ``negotiate`` (a non-interactive actor) a priced buy settles at the listed
-    price directly. Sells settle in one step (cross-turn item refs are a later
-    refinement)."""
+    affirm completes the sale. A monetary counteroffer is evaluated against the
+    merchant's authored flexibility; the merchant may accept it or make one
+    final counter, still without advancing initiative. Other replies let the
+    offer lapse. With no ``negotiate`` (a non-interactive actor) a priced buy
+    settles at the listed price directly. Sells settle in one step (cross-turn
+    item refs are a later refinement)."""
     from engine import commerce, loadout
     from engine.latn_integration import resolve_commerce, resolve_response
-    from models.currency import format_coins
+    from models.currency import format_coins, parse_coins
 
     loadout.materialize_things(cs)
     possessions = {t.id: t for t in (getattr(cs, "things", None) or [])}
@@ -3555,9 +3556,10 @@ async def _handle_commerce(
         if memory_text:
             _append_memory_note(cs, f"Turn {turn_num}: {memory_text}")
 
-    def _commit_buy(entry) -> None:
+    def _commit_buy(entry, agreed_price_cp: Optional[int] = None) -> None:
         r = commerce.settle_buy(entry, buyer_id=character_id, shopkeeper_id=shopkeeper,
-                                catalog=catalog, characters=characters)
+                                catalog=catalog, characters=characters,
+                                agreed_price_cp=agreed_price_cp)
         price = format_coins(r.price_cp)
         if not r.ok:
             why = {"cannot_afford": f"can't afford the {entry.name} ({price})",
@@ -3641,6 +3643,31 @@ async def _handle_commerce(
         if resolve_response(reply, characters, "") == "affirm":
             _commit_buy(obj)
             return True
+        offered_cp = parse_coins(reply)
+        if offered_cp is not None:
+            from engine.negotiation import (
+                evaluate_counteroffer, merchant_haggle_policy,
+            )
+            decision = evaluate_counteroffer(
+                ask_cp=obj.listed_price_cp,
+                offered_cp=offered_cp,
+                policy=merchant_haggle_policy(
+                    shopkeeper, category=getattr(obj, "category", "") or ""
+                ),
+            )
+            if decision.accepted and decision.agreed_cp is not None:
+                _commit_buy(obj, decision.agreed_cp)
+                return True
+            if decision.counter_cp is not None:
+                offered = format_coins(offered_cp)
+                counter = format_coins(decision.counter_cp)
+                counter_reply = await negotiate(
+                    f'{keep}: "I can\'t do {offered}. I can make it {counter}. '
+                    'Have we a deal?"'
+                )
+                if resolve_response(counter_reply, characters, "") == "affirm":
+                    _commit_buy(obj, decision.counter_cp)
+                    return True
         _emit(f"[COMMERCE] {character_id} does not take {shopkeeper}'s offer of "
               f"{obj.name} at {price}; the offer lapses and nothing changes hands. "
               f"Narrate only that the deal did not happen.",

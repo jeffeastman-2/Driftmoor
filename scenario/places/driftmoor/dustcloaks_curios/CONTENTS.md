@@ -49,3 +49,39 @@ The shopfront catalog and prices are authoritative for ordinary play.
 Kelem will claim the replica is sold out if a customer already possesses a
 real shard. His magical collection is secured privately in the living loft and
 is not part of the initial public catalog.
+
+---
+
+## Runtime Containers
+
+These containers are authoritative for stock placement and access.
+
+| id | name | owner | access | affordances |
+|---|---|---|---|---|
+| merchant_stock | Merchant stock displays | kelem | public | container |
+
+## Runtime Things
+
+This table is the authoritative runtime inventory for this place.
+
+| id | name | emoji | container | owner | price | category | affordances | availability | effect |
+|---|---|---|---|---|---|---|---|---|---|
+| shadowbeast_claw_necklace | Shadowbeast Claw Necklace | 📿 | merchant_stock | kelem | 15 gp | mundane | holdable, wearable | public | +2 bonus to CHA (Intimidation) checks when worn |
+| bone_dice_set | Bone Dice Set | 🎲 | merchant_stock | kelem | 2 gp | mundane | holdable | public | Useful for bluffing or cheating in games |
+| silent_grease_vial | Silent Grease (vial) | 🧴 | merchant_stock | kelem | 20 gp | mundane | holdable | public | No sound when applied; covers 5-ft area; oils hinges, creates slippery surface |
+| weighted_dice | Weighted Dice | 🎲 | merchant_stock | kelem | 5 gp | mundane | holdable | public | Advantage on Sleight of Hand to cheat at dice games |
+| obsidian_mirror | Obsidian Mirror | 🪞 | merchant_stock | kelem | 25 gp | mundane | holdable | public | Peek around corners; signal allies in dim light |
+| pouch_of_glowing_powder | Pouch of Glowing Powder | ✨ | merchant_stock | kelem | 10 gp | mundane | holdable | public | Clings to surfaces; emits dim light 1 hour; reveals invisible creatures it coats |
+| iron_false_key | Iron False Key | 🗝️ | merchant_stock | kelem | 5 gp | mundane | holdable | public | Advantage on Thieves' Tools checks to jam or sabotage simple locks |
+| traveler_s_cloak | Traveler's Cloak | 🧥 | merchant_stock | kelem | 8 gp | mundane | holdable, wearable | public | Weather protection; hidden compartment in lining; advantage on Sleight of Hand to hide small items |
+| smoke_bomb | Smoke Bomb | 💨 | merchant_stock | kelem | 15 gp each | mundane | holdable | public | Smash to create 10-ft radius thick smoke cloud; lasts 1 minute; provides obscurement |
+| boot_blades | Boot Blades | 🥾 | merchant_stock | kelem | 20 gp | mundane | holdable, wearable | public | Concealed retractable blades; 1d4 piercing, finesse, light |
+| weighted_net | Weighted Net | 🕸️ | merchant_stock | kelem | 15 gp | mundane | holdable | public | As standard net but +2 to attack rolls when thrown |
+| obelisk_fragment_replica | Obelisk Fragment Replica | 💎 | merchant_stock | kelem | 50 gp | mundane | holdable | public | Convincing fake; advantage on CHA (Deception) checks re: obelisk lore |
+| bundling_discount | Bundling discount |  |  | kelem |  | service |  | public | Buy 3 smoke bombs, get 1 free; similar deals available |
+| mystery_bag | Mystery Bag |  |  | kelem |  | service |  | public | 10 gp for a grab bag of random items (1d4 mundane items, DM selects) |
+| barter | Barter |  |  | kelem |  | service |  | public | Accepts trade for other rare items; will overpay in trade for obelisk shards |
+| obelisk_shards | Obelisk shards |  |  | kelem | 300 gp+ | service |  | public | Overpays; will not explain why |
+| shadowbeast_parts | Shadowbeast parts |  |  | kelem | Varies | service |  | public | Claws: 3 gp each; blood: 15 gp/vial; pelts: 6 gp |
+| unusual_artifacts | Unusual artifacts |  |  | kelem | Varies | service |  | public | He will assess; legitimate interest |
+| stolen_goods | Stolen goods |  |  | kelem | Varies | service |  | public | He will not ask questions; price accordingly |

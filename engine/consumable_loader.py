@@ -139,9 +139,11 @@ def _parse_table(text: str) -> list[dict[str, str]]:
 
 
 def load_catalog(path: Path, default_kind: str = "eat") -> dict[str, Thing]:
-    """Parse a markdown catalog (id | name | kind | effects) into id -> Thing
-    templates. Works for CONSUMABLES.md (eat/drink) and GEAR.md (tool/wearable)
-    — the ``kind`` column drives the affordance."""
+    """Parse a Thing prototype table into id -> Thing templates.
+
+    ``affordances`` is canonical; ``kind`` remains a compatibility alias for
+    older CONSUMABLES/CONTAINERS tables pending their migration.
+    """
     if not path.exists():
         return {}
     lib: dict[str, Thing] = {}
@@ -151,7 +153,8 @@ def load_catalog(path: Path, default_kind: str = "eat") -> dict[str, Thing]:
             continue
         thing = make_thing(
             cid, (row.get("name") or cid).strip(),
-            (row.get("kind") or default_kind).strip(), parse_effects(row.get("effects", "")))
+            (row.get("affordances") or row.get("kind") or default_kind).strip(),
+            parse_effects(row.get("effects", "")))
         thing.contents = parse_contents(row.get("contents", ""))
         thing.capacity = (row.get("capacity", "") or "").strip()
         if thing.value_cp is None:

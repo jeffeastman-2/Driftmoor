@@ -206,6 +206,9 @@ class Thing:
     position: Optional[object] = None  # models.space_time.Position
     zone: Optional[str] = None
     label: str = ""
+    # Presentation chosen by scenario authors. Renderers prefer this over the
+    # legacy name-based emoji inference table.
+    emoji: str = ""
 
     # Weapon: a pickable item that can be wielded. ``weapon_spec`` is the raw
     # ``<library_id>+<enhancement>`` from CONTENTS (e.g. "mace+1"); ``weapon`` is
@@ -256,6 +259,8 @@ class Thing:
     listed_price_cp: Optional[int] = None  # the ask in copper; None = NOT for sale
     vendor_id: str = ""             # character ID of seller
     location_id: str = ""           # place ID where item currently is
+    container_id: str = ""          # authored container within that place
+    availability: str = "public"    # public | selective | private
     properties: str = ""            # advertised / player-visible properties
     dm_properties: str = ""         # true / hidden properties (DM only)
     attunement: str = ""            # e.g. "Required (1 hour in dim light)"

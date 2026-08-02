@@ -23,3 +23,21 @@ on Driftmoor buildings and the mill.
 
 If the ransacking event triggers, the dome is broken, the shard is missing,
 and scattered notes can be reconstructed with a DC 11 Investigation check.
+
+---
+
+## Runtime Containers
+
+These containers are authoritative for stock placement and access.
+
+| id | name | owner | access | affordances |
+|---|---|---|---|---|
+| merchant_stock | Merchant stock displays | elyssa | public | container |
+
+## Runtime Things
+
+This table is the authoritative runtime inventory for this place.
+
+| id | name | emoji | container | owner | price | category | affordances | availability | effect |
+|---|---|---|---|---|---|---|---|---|---|
+| obelisk_shard_contained_specimen | Obelisk Shard (Contained Specimen) |  | merchant_stock | elyssa |  | magical | holdable | public |  |

@@ -32,12 +32,14 @@ def _chars(player_purse=100, keeper_purse=0):
 class _Reply:
     """A scripted negotiator: returns a fixed reply and records every quote sent."""
 
-    def __init__(self, reply: str):
+    def __init__(self, reply):
         self.reply = reply
         self.prompts: list[str] = []
 
     async def __call__(self, prompt: str) -> str:
         self.prompts.append(prompt)
+        if isinstance(self.reply, list):
+            return self.reply.pop(0)
         return self.reply
 
 
@@ -105,6 +107,92 @@ class TestBuyQuoteConfirm:
         say = _Reply("yes")
         assert _commerce(_chars(), {}, "I look around the shop", say) is False
         assert not say.prompts
+
+    def test_kelem_counters_low_monetary_offer_then_settles_agreed_price(self):
+        catalog = ShopCatalog([
+            Thing(id="bone_dice", name="Bone Dice Set", price="2 gp",
+                  vendor_id="kelem", category="mundane")
+        ])
+        chars = {"player": _cs("player", 500), "kelem": _cs("kelem", 0)}
+        replies, log = _Reply(["will you take 1 gp?", "deal"]), []
+        handled = asyncio.run(_handle_commerce(
+            intent_text="I'd like to buy the bone dice",
+            character_id="player", characters=chars, items={}, cs=chars["player"],
+            turn_num=1, game_time=None, attack_log=log, recent_events=[],
+            shopkeeper="kelem", catalog=catalog, negotiate=replies,
+        ))
+        assert handled is True
+        assert len(replies.prompts) == 2
+        assert "1 gp 6 sp" in replies.prompts[1]
+        assert chars["player"].character.purse_cp == 340
+        assert chars["kelem"].character.purse_cp == 160
+        assert any("exactly 1 gp 6 sp" in line for line in log)
+
+    def test_kelem_accepts_reasonable_counteroffer_without_another_prompt(self):
+        catalog = ShopCatalog([
+            Thing(id="bone_dice", name="Bone Dice Set", price="2 gp",
+                  vendor_id="kelem", category="mundane")
+        ])
+        chars = {"player": _cs("player", 500), "kelem": _cs("kelem", 0)}
+        replies = _Reply("will you take 1 gp 8 sp?")
+        asyncio.run(_handle_commerce(
+            intent_text="buy bone dice", character_id="player", characters=chars,
+            items={}, cs=chars["player"], turn_num=1, game_time=None,
+            attack_log=[], recent_events=[], shopkeeper="kelem",
+            catalog=catalog, negotiate=replies,
+        ))
+        assert len(replies.prompts) == 1
+        assert chars["player"].character.purse_cp == 320
+        assert chars["kelem"].character.purse_cp == 180
+
+    def test_declining_kelem_counter_moves_no_coin_and_delivers_no_item(self):
+        catalog = ShopCatalog([
+            Thing(id="bone_dice", name="Bone Dice Set", price="2 gp",
+                  vendor_id="kelem", category="mundane")
+        ])
+        chars = {"player": _cs("player", 500), "kelem": _cs("kelem", 0)}
+        items, log = {}, []
+        asyncio.run(_handle_commerce(
+            intent_text="buy bone dice", character_id="player", characters=chars,
+            items=items, cs=chars["player"], turn_num=1, game_time=None,
+            attack_log=log, recent_events=[], shopkeeper="kelem",
+            catalog=catalog, negotiate=_Reply(["1 gp", "no"]),
+        ))
+        assert chars["player"].character.purse_cp == 500
+        assert chars["kelem"].character.purse_cp == 0
+        assert not items and not chars["player"].pack
+        assert any("offer lapses" in line for line in log)
+
+    def test_purchased_necklace_can_be_worn(self):
+        from engine import manipulation
+        from engine.session import _DRIFTMOOR_PLACES_ROOT
+        from models.shop_catalog import ShopCatalog
+        from models.thing import WORN
+
+        catalog = ShopCatalog.from_things_dir(
+            _DRIFTMOOR_PLACES_ROOT.parent.parent / "things"
+        )
+        chars = {"player": _cs("player", 2000), "kelem": _cs("kelem", 0)}
+        items = {}
+        asyncio.run(_handle_commerce(
+            intent_text="buy the shadowbeast claw necklace",
+            character_id="player", characters=chars, items=items,
+            cs=chars["player"], turn_num=1, game_time=None, attack_log=[],
+            recent_events=[], shopkeeper="kelem", catalog=catalog,
+            negotiate=_Reply("yes"),
+        ))
+        necklace = manipulation.find_possessed_thing(
+            chars["player"], "I wear the necklace"
+        )
+        assert necklace is not None
+        assert manipulation.classify_verb("I wear the necklace", necklace) == "wear"
+        result = manipulation.apply_manipulation(
+            chars["player"], "wear", necklace, items=items,
+            actor_pos=(0.0, 0.0, "SHOPFRONT"), actor_zone="SHOPFRONT",
+            character_id="player", game_time=None, turn_num=1,
+        )
+        assert result.applied
+        assert necklace.carry.location == WORN
 
 
 class TestSellWiring:

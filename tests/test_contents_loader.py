@@ -368,3 +368,24 @@ class TestWeaponSpec:
         )
         items = parse_contents_md(text)["items"]
         assert items["rock"].weapon_spec is None
+
+
+def test_authored_emoji_is_parsed_and_removed_from_description():
+    text = (
+        "# CONTENTS.md — Test\n\n## Items\n\n"
+        "### hand_bell\n*Emoji:* 🔔\n\nA brass bell.\n\n*(Pickup-able.)*\n"
+    )
+    bell = parse_contents_md(text)["items"]["hand_bell"]
+    assert bell.emoji == "🔔"
+    assert "Emoji:" not in bell.description
+
+
+def test_broken_lantern_pickup_items_all_have_authored_emojis():
+    path = (
+        Path(__file__).resolve().parent.parent
+        / "scenario/places/driftmoor/broken_lantern/CONTENTS.md"
+    )
+    items = parse_contents_md(path.read_text(encoding="utf-8"))["items"]
+    pickable = [item for item in items.values() if item.pickable]
+    assert pickable
+    assert all(item.emoji for item in pickable)

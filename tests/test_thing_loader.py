@@ -5,22 +5,23 @@ from pathlib import Path
 
 from models.thing import Thing
 from models.thing_loader import (
-    parse_mundane_items,
-    parse_magical_items,
     parse_obelisk_shards,
     parse_shadowbeast_parts,
     load_all_things,
 )
+from models.place_thing_loader import load_place_things
 
 THINGS_DIR = Path(__file__).resolve().parent.parent / "scenario" / "things"
+PLACES_DIR = THINGS_DIR.parent / "places" / "driftmoor"
 
 
 # ---- Mundane items parsing ----
 
-class TestParseMundaneItems:
+class TestPlaceMundaneItems:
     @pytest.fixture(scope="class")
     def items(self):
-        return parse_mundane_items(THINGS_DIR / "mundane_items.md")
+        return [t for t in load_place_things(PLACES_DIR)
+                if t.category in {"mundane", "service"}]
 
     def test_returns_list_of_things(self, items):
         assert isinstance(items, list)
@@ -31,7 +32,7 @@ class TestParseMundaneItems:
         assert len(items) >= 60
 
     def test_all_mundane_category(self, items):
-        assert all(t.category == "mundane" for t in items)
+        assert all(t.category in {"mundane", "service"} for t in items)
 
     def test_no_duplicate_ids(self, items):
         ids = [t.id for t in items]
@@ -118,10 +119,11 @@ class TestParseMundaneItems:
 
 # ---- Magical items parsing ----
 
-class TestParseMagicalItems:
+class TestPlaceMagicalItems:
     @pytest.fixture(scope="class")
     def items(self):
-        return parse_magical_items(THINGS_DIR / "magical_items.md")
+        return [t for t in load_place_things(PLACES_DIR)
+                if t.category == "magical"]
 
     def test_returns_list_of_things(self, items):
         assert isinstance(items, list)
@@ -183,9 +185,28 @@ class TestParseMagicalItems:
         assert dagger.price == "1,200 gp"
         assert "+1" in dagger.properties
 
-    def test_all_have_raw(self, items):
-        for t in items:
-            assert t.raw, f"{t.name} has no raw content"
+def test_shadowbeast_necklace_is_authored_wearable_with_emoji():
+    items = load_place_things(PLACES_DIR)
+    necklace = next(t for t in items if t.id == "shadowbeast_claw_necklace")
+    assert {"holdable", "wearable"} <= necklace.affordances
+    assert necklace.emoji == "📿"
+
+
+def test_place_affordances_are_read_from_authoritative_table(tmp_path):
+    place = tmp_path / "shop"
+    place.mkdir()
+    (place / "CONTENTS.md").write_text(
+        """## Runtime Things
+| id | name | owner | price | category | affordances |
+|---|---|---|---|---|---|
+| peculiar_loop | Peculiar Loop | merchant | 3 gp | mundane | holdable, wearable |
+""",
+        encoding="utf-8",
+    )
+    [loop] = load_place_things(tmp_path)
+    # Neither word in the name implies jewelry; these capabilities can only
+    # have come from the authored column.
+    assert loop.affordances == {"holdable", "wearable"}
 
 
 # ---- Obelisk shards parsing ----
@@ -297,7 +318,7 @@ class TestLoadAllThings:
 
     def test_has_all_categories(self, all_things):
         cats = {t.category for t in all_things}
-        assert cats == {"mundane", "magical", "obelisk_shard", "shadowbeast_part"}
+        assert cats == {"mundane", "service", "magical", "obelisk_shard", "shadowbeast_part"}
 
     def test_mundane_majority(self, all_things):
         mundane = [t for t in all_things if t.category == "mundane"]
@@ -305,7 +326,7 @@ class TestLoadAllThings:
 
     def test_magical_items_present(self, all_things):
         magical = [t for t in all_things if t.category == "magical"]
-        # 12 parsed from magical_items.md minus 2 obelisk shard cross-refs
+        # Placed magical stock minus canonical shard cross-references.
         assert len(magical) == 10
 
     def test_shards_present(self, all_things):

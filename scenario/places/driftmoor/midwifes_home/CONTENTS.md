@@ -17,3 +17,22 @@
 ## Notes for DM
 - Gran Lorie is the party's backup healer if Lilar is down
 - Her observation about slow healing near the obelisk is a useful piece of lore she will share freely if asked
+
+---
+
+## Runtime Containers
+
+These containers are authoritative for stock placement and access.
+
+| id | name | owner | access | affordances |
+|---|---|---|---|---|
+
+## Runtime Things
+
+This table is the authoritative runtime inventory for this place.
+
+| id | name | emoji | container | owner | price | category | affordances | availability | effect |
+|---|---|---|---|---|---|---|---|---|---|
+| basic_remedies_and_healing_herbs | Basic remedies and healing herbs |  |  | gran_lorie | 1-5 sp | service |  | public |  |
+| medical_consultation | Medical consultation |  |  | gran_lorie | Free | service |  | public |  |
+| emergency_stabilization | Emergency stabilization |  |  | gran_lorie | Free | service |  | public |  |

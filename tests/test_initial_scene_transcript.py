@@ -164,7 +164,7 @@ def test_initial_things_deployment(capsys):
 
     # Assertions
     assert len(gs.things) >= 75
-    assert len({t.category for t in gs.things}) == 4
+    assert len({t.category for t in gs.things}) == 5
     # Every scene place that is a shop should have things
     for scene in gs.get_active_scenes():
         things = gs.get_things_at(scene.place_id)

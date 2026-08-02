@@ -218,7 +218,7 @@ The previous gazer had connections to the obelisk civilization's
 artifacts — possibly a researcher, possibly Elyssa Moonglow's
 predecessor in studying the region, possibly someone sent by
 an outside party with interest in the obelisk. The amulet's
-hum near obelisk shards (documented in `things/magical_items.md`)
+hum near obelisk shards (documented in the owning place `CONTENTS.md` manifests)
 is a consequence of the gazer's prolonged exposure to the pool
 while already attuned to obelisk energy.
 

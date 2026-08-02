@@ -55,9 +55,9 @@ def _turn_entries(checkpoint_dir: Path) -> list[dict]:
     return out
 
 
-def _item_icon(label: str) -> str:
+def _item_icon(label: str, authored: str = "") -> str:
     from engine.item_icons import item_icon
-    return item_icon(label)
+    return item_icon(label, authored)
 
 
 # Words that mark a possession as WORN (vs merely carried). (An "Ingested"
@@ -102,7 +102,7 @@ def _player_inventory(cs, items: dict | None) -> dict:
         label = ((getattr(it, "label", "") or "").strip()
                  or (getattr(it, "name", "") or "").strip()   # e.g. bought "Bolts (20)"
                  or iid.replace("_", " "))
-        return {"icon": _item_icon(label), "label": label}
+        return {"icon": _item_icon(label, getattr(it, "emoji", "")), "label": label}
 
     def gear_chip(text: str) -> dict:
         label = re.sub(r"\s*\([^)]*\)", "", text).strip()  # drop "(1d8 piercing)"
@@ -133,7 +133,11 @@ def _player_inventory(cs, items: dict | None) -> dict:
     for iid in inv:                        # carried scene gear not in hand
         if iid in weapon_ids or iid in held_set:
             continue                       # already shown as a weapon / in hand
-        carried.append(item_chip(iid))
+        it = (items or {}).get(iid) or pack_by_id.get(iid)
+        chip = item_chip(iid)
+        state = getattr(getattr(it, "carry", None), "location", "")
+        from models.thing import WORN
+        (worn if state == WORN else carried).append(chip)
     # Free-text possessions from the character sheet: worn (armor, trinkets) vs
     # carried (tools, kits). Skip entries that just restate a weapon, or an
     # armor already covered by the structured armor above.
@@ -164,7 +168,7 @@ def _player_inventory(cs, items: dict | None) -> dict:
         qty = int(getattr(prov, "quantity", 1) or 1)
         if qty > 1:
             label = f"{label} ×{qty}"
-        chip = {"icon": _item_icon(label), "label": label}
+        chip = {"icon": _item_icon(label, getattr(prov, "emoji", "")), "label": label}
         state = getattr(getattr(prov, "carry", None), "location", "")
         (worn if state == WORN else carried).append(chip)
 

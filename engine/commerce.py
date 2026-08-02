@@ -4,8 +4,9 @@ Phase 7 of docs/economy-transactions-plan.md. The LATN layer grounds a buy to a
 shop CatalogEntry and a sell to an owned Thing (engine.latn_integration.
 resolve_commerce); this module settles the agreed exchange through the one
 transfer primitive (engine.item_transfer.transfer_thing), with clear refusal
-reasons. Prices are the listed ask (buy) and a fixed fraction of value (sell) —
-haggling is Phase 8.
+reasons. Buy settlement accepts an engine-approved negotiated price; the
+negotiation policy itself lives in ``engine.negotiation``. Sells use a fixed
+fraction of value.
 """
 
 from __future__ import annotations
@@ -35,11 +36,16 @@ class CommerceResult:
 
 
 def settle_buy(entry, *, buyer_id: str, shopkeeper_id: str, catalog,
-               characters: dict) -> CommerceResult:
+               characters: dict, agreed_price_cp: Optional[int] = None) -> CommerceResult:
     """Player buys ``entry`` from the shopkeeper at its listed price. Materializes
     a fresh Thing from the catalog, then moves it (and the coin) via the transfer
     primitive. Refuses if the good isn't for sale or the buyer can't afford it."""
-    price = getattr(entry, "listed_price_cp", None)
+    listed = getattr(entry, "listed_price_cp", None)
+    price = agreed_price_cp if agreed_price_cp is not None else listed
+    if listed is not None and price is not None:
+        # A buyer may negotiate downward, never silently turn settlement into an
+        # overpayment or a free/negative transfer.
+        price = min(int(listed), max(1, int(price)))
     if price is None:
         return CommerceResult(False, "not_for_sale")
     buyer = _char(characters, buyer_id)

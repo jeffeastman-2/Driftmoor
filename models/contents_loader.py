@@ -84,6 +84,11 @@ _WEAPON_LINE_RE = re.compile(
     re.MULTILINE,
 )
 
+_EMOJI_LINE_RE = re.compile(
+    r"^\s*\*Emoji:\*\s*(\S+)\s*$",
+    re.MULTILINE,
+)
+
 # Opener of the optional apparent-size appearance block.
 _APPEARANCE_OPENER_RE = re.compile(
     r"^\s*\*Appearance by distance:\*\s*$",
@@ -102,6 +107,15 @@ def _extract_weapon_spec(body: str) -> tuple[str, Optional[str]]:
     spec = m.group(1).strip()
     new_body = body[: m.start()] + body[m.end():]
     return new_body, spec
+
+
+def _extract_emoji(body: str) -> tuple[str, str]:
+    """Pull an optional authored ``*Emoji:*`` line out of an item body."""
+    m = _EMOJI_LINE_RE.search(body)
+    if not m:
+        return body, ""
+    new_body = body[: m.start()] + body[m.end():]
+    return new_body, m.group(1).strip()
 
 # An appearance bullet: ``- **<band>** → <description>`` where band is one of
 # near / intermediate / far / distant. The arrow may be ``→`` or ``->``.
@@ -481,6 +495,7 @@ def parse_contents_md(text: str) -> dict:
     for item_id, body in _split_item_blocks(items_section):
         body, size_ft = _extract_size(body)
         body, weapon_spec = _extract_weapon_spec(body)
+        body, emoji = _extract_emoji(body)
         body, appearance_bands = _extract_appearance_bands(body)
         prose, interactions_text = _split_prose_and_interactions(body)
         prose_clean, props = _parse_properties(prose)
@@ -496,6 +511,7 @@ def parse_contents_md(text: str) -> dict:
             interactions_ref=props["interactions_ref"],
             size_ft=size_ft,
             weapon_spec=weapon_spec,
+            emoji=emoji,
             appearance_bands=appearance_bands,
         )
 
@@ -709,6 +725,7 @@ def _parse_zone_item_body(body: str) -> Item:
         extra_facts=extra_facts,
         size_ft=_size_to_feet(fields.get("size", "")),
         appearance_bands=appearance,
+        emoji=fields.get("emoji", "") or fields.get("icon", ""),
         interactions=interactions,
         contents=_parse_container_contents(fields.get("contents", "")),
     )

@@ -1,12 +1,9 @@
 """Structured shop catalog + lazy materialization of shop goods.
 
-Phase 4 of docs/economy-transactions-plan.md. The priced shop goods loaded by
-``models.thing_loader.load_all_things`` (already carrying ``value_cp`` /
-``listed_price_cp`` / ``owner`` from the Phase-1 market facet) are the catalog
-*templates*. A shop's stock stays as light templates — not instantiated into the
-live scene — until a player examines or buys, at which point ``materialize``
-clones a template into a concrete ``Thing`` owned by the shopkeeper. Materializing
-twice yields two independent Things, so buying two loaves gives you two loaves.
+Catalog templates are derived exclusively from authoritative ``Runtime Things``
+tables in place-local ``CONTENTS.md`` manifests. Stock stays lightweight until a
+player examines or buys, when ``materialize`` clones the template into a concrete
+``Thing``. Repeated materialization yields independent instances.
 """
 
 from __future__ import annotations
@@ -17,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 from models.thing import Thing
-from models.thing_loader import load_all_things
+from models.place_thing_loader import load_place_things
 
 
 @dataclass(frozen=True)
@@ -56,14 +53,18 @@ class ShopCatalog:
         self._counter: dict[str, int] = {}
 
     @classmethod
-    def from_things_dir(cls, things_dir: Path) -> "ShopCatalog":
-        """Build the catalog from the scenario's things directory. A template is
-        any for-sale good: it has a vendor and a listed price."""
+    def from_places_root(cls, places_root: Path) -> "ShopCatalog":
+        """Build public/selective merchant stock from authoritative CONTENTS."""
         goods = [
-            t for t in load_all_things(things_dir)
+            t for t in load_place_things(places_root)
             if t.vendor_id and t.listed_price_cp is not None
         ]
         return cls(goods)
+
+    @classmethod
+    def from_things_dir(cls, things_dir: Path) -> "ShopCatalog":
+        """Deprecated compatibility wrapper for callers with the scenario path."""
+        return cls.from_places_root(things_dir.parent / "places" / "driftmoor")
 
     def get(self, catalog_id: str) -> Optional[Thing]:
         """The template for ``catalog_id`` (do not mutate it — materialize)."""
@@ -81,7 +82,7 @@ class ShopCatalog:
         return [
             CatalogEntry.from_thing(t) for t in self._templates.values()
             if (t.owner or t.vendor_id) == shop_id
-            and (t.location_id or "").rstrip("/").split("/")[-1] != "living_loft"
+            and (t.availability or "public") == "public"
         ]
 
     def materialize(

@@ -6,7 +6,7 @@ in the flat `## Equipment` list (e.g. `- thieves_tools`), optionally overriding
 the display name for that character's instance (`- bracelet: Wooden vine-carved
 bracelet`).
 
-`kind` drives the affordance (comma-separate several):
+`affordances` declares capabilities (comma-separate several):
 - `tool` — holdable, usable (`use the ...`); may `produce` another Thing
 - `wearable` — occupies a body slot (`wear`/`remove`)
 - `shield` — HAND-held (holdable), not worn; its AC comes from an `ac +N` effect
@@ -15,7 +15,7 @@ bracelet`).
 ring or shield carries `ac +N`). Containers (packs, bags, chests) live in their
 own catalog — see CONTAINERS.md.
 
-| id | price | name | kind | effects |
+| id | price | name | affordances | effects |
 |----|-------|------|------|---------|
 | shield | 10 gp | Shield | shield | ac +2 |
 | bracelet |  | Bracelet | wearable | |
