@@ -91,6 +91,9 @@ VERB_DIMS: tuple[str, ...] = (
     # Body posture -> engine/posture.py. These persist independently of map
     # position; only prone carries default 5e combat consequences.
     "sit", "stand", "kneel", "prone",
+    # First-person state/query semantics. ``possess`` distinguishes inventory
+    # questions from external perception ("what do I see?").
+    "possess", "perceive",
 )
 
 # Bare conversational answers to an offer ("yes" / "no thanks"). The quote->confirm

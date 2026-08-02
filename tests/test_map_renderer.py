@@ -234,6 +234,31 @@ def test_shift_scroll_scales_item_icons_with_character_icons():
     assert "bf*iconScale" in _PANZOOM_JS
 
 
+def test_character_map_icon_omits_embedded_name_banner_but_keeps_tooltip(tmp_path):
+    import base64
+    import re
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "character-icon.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/GEOMETRY.md"),
+        out,
+        snapshot_dir=tmp_path,
+        start_characters=["gilthaness"],
+        start_positions={"gilthaness": (406.0, 341.0)},
+    )
+    rendered = out.read_text(encoding="utf-8")
+    match = re.search(
+        r"class='char-icon-img'[^>]*href='data:image/svg\+xml;base64,([^']+)'",
+        rendered,
+    )
+    assert match
+    embedded = base64.b64decode(match.group(1)).decode("utf-8")
+    assert "name-label" not in embedded
+    assert ">Gilthaness</text>" not in embedded
+    assert "<title>Gilthaness</title>" in rendered
+
+
 def test_turn_slider_adds_runtime_dropped_item_without_geometry_row(tmp_path):
     from types import SimpleNamespace as NS
     from engine.map_renderer import render_turn_slider_html

@@ -14,7 +14,11 @@ from models.character import PlayerCharacter
 from models.item import Interaction, Item
 from engine.latn_lexicon import build_driftmoor_lexicon
 from engine.latn_adapter import DriftmoorSceneAdapter
-from engine.latn_resolver import resolve_actions, resolve_item_interaction
+from engine.latn_resolver import (
+    resolve_actions,
+    resolve_item_interaction,
+    resolve_perception_query,
+)
 
 
 def _pc(cid, name, race, cls):
@@ -78,6 +82,17 @@ def test_intent_has_action_reads_verb_dims():
     assert intent_has_action("scan the room", "search", "examine")
     assert not intent_has_action("cast fireball", "search", "examine")
     assert not intent_has_action("", "attack")
+
+
+def test_perception_query_requires_question_person_and_perception_semantics():
+    lex, adapter, _ = _scene()
+    assert resolve_perception_query("what do I see?", lexicon=lex, adapter=adapter)
+    assert resolve_perception_query("what can I perceive?", lexicon=lex, adapter=adapter)
+    assert resolve_perception_query("can I see a barber shop?", lexicon=lex, adapter=adapter)
+    assert resolve_perception_query("do I see the barber?", lexicon=lex, adapter=adapter)
+    assert resolve_perception_query("is there a well nearby?", lexicon=lex, adapter=adapter)
+    assert not resolve_perception_query("what am I carrying?", lexicon=lex, adapter=adapter)
+    assert not resolve_perception_query("I see the mace", lexicon=lex, adapter=adapter)
 
 
 def test_consumption_verbs_ground_as_actions():

@@ -512,12 +512,9 @@ def resolve_query_action(intent_text: str, *, lexicon, adapter):
 def resolve_self_query(intent_text: str, *, lexicon, adapter) -> Optional[str]:
     """Classify a first-person question about the speaker's own state.
 
-    Returns ``"wealth"`` (a currency word is present -- "how much gold do I
-    have"), ``"possessions"`` (first-person but no currency -- "what am I
-    carrying", "what do I have"), or ``None`` when it isn't a first-person
-    question. Both signals are read as vector dimensions (``first_person`` on the
-    pronoun, ``currency`` on the money word) off the atomic Layer-1 tokens, not a
-    word list -- the host answers from the speaker's character."""
+    Returns ``"wealth"`` or ``"possessions"`` only when the question carries
+    actual possession semantics. A first-person perception question such as
+    "what do I see?" returns None and continues to the external-view path."""
     from engine.latn import (
         LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
         use_sp_policy, PermissiveSPPolicy,
@@ -545,7 +542,43 @@ def resolve_self_query(intent_text: str, *, lexicon, adapter) -> Optional[str]:
             and any(str(getattr(t, "word", "")).lower() in {"you", "your"}
                     for t in tokens)):
         return None
+    possession = any(
+        _isa(t, "possess") or _isa(t, "hold") or _isa(t, "sell")
+        for t in tokens
+    )
+    if not possession:
+        return None
     return "wealth" if any(_isa(t, "currency") for t in tokens) else "possessions"
+
+
+def resolve_perception_query(intent_text: str, *, lexicon, adapter) -> bool:
+    """True for a first-person external-view question such as "what do I see?"."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+        atoms = executor.execute_layer1(intent_text or "")
+    tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
+    words = [str(getattr(token, "word", "")).lower() for token in tokens]
+    # LATN's current SQ pass emits a Question for WH forms but not yet for
+    # auxiliary-led yes/no forms ("can I ...?", "do I ...?"). Keep the
+    # semantic requirements below and admit that grammatical question shape.
+    yesno_shape = (
+        (intent_text or "").strip().endswith("?")
+        and bool(words)
+        and words[0] in {"am", "are", "can", "could", "did", "do", "does", "is"}
+    )
+    if not ((getattr(result, "question_phrases", None) or []) or yesno_shape):
+        return False
+    perspective = (
+        any(_isa(token, "first_person") for token in tokens)
+        or (len(words) >= 2 and words[0] in {"is", "are"} and words[1] == "there")
+    )
+    return perspective and any(_isa(token, "perceive") for token in tokens)
 
 
 def _isa(tok, dim) -> bool:

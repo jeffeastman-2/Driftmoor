@@ -3028,6 +3028,33 @@ class TestWhereQuestion:
             "enter the tavern", characters=cfg.characters, actor_zone="",
             scene_geometry=sg, venues=venues, player_xy=(900.0, 400.0)) is None
 
+    def test_where_is_landmark_reports_bearing_and_distance(self):
+        from engine.session import _answer_where_question, _driftmoor_child_venues
+        from engine.md_loader import configure_from_md
+        cfg = configure_from_md(Path("scenes/driftmoor.md"))
+        sg = cfg.scene_geometry
+        ans = _answer_where_question(
+            "where is a well?", characters=cfg.characters, actor_zone="TOWN_COMMON",
+            scene_geometry=sg,
+            venues=_driftmoor_child_venues(sg.place_path),
+            player_xy=(406.0, 341.0),
+        )
+        assert ans is not None and "Well" in ans and "ft away" in ans
+
+    def test_is_there_venue_in_town_uses_authored_places(self):
+        from engine.session import (
+            _answer_venue_existence_question, _driftmoor_child_venues,
+        )
+        from engine.md_loader import configure_from_md
+        cfg = configure_from_md(Path("scenes/driftmoor.md"))
+        sg = cfg.scene_geometry
+        ans = _answer_venue_existence_question(
+            "Is there a bakery in town?", characters=cfg.characters,
+            actor_zone="TOWN_COMMON", scene_geometry=sg,
+            venues=_driftmoor_child_venues(sg.place_path),
+        )
+        assert ans == "Yes. There is a Bakery in town."
+
 
 class TestSelfQuestion:
     """LATN answers first-person questions about the speaker, no DM/LLM."""
@@ -3056,6 +3083,78 @@ class TestSelfQuestion:
             "what am I carrying", cs=cs, characters=cfg.characters,
             actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
         assert ans is not None and ans.startswith("You are carrying:")
+
+    def test_seeing_question_is_not_misclassified_as_inventory(self):
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        ans = _answer_self_question(
+            "what do I see?", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
+        assert ans is None
+
+    def test_seeing_question_is_answered_from_external_perception(self):
+        from engine.session import _answer_perception_question
+        cfg, cs = self._player()
+        context = _build_context(
+            cs, turn=1, scene_history="", scene_geometry=cfg.scene_geometry,
+            current_positions={cs.character.id: (406.0, 341.0, "TOWN_COMMON")},
+            active_characters={cs.character.id}, characters=cfg.characters,
+            visited_zones={cs.character.id: {"TOWN_COMMON"}}, items=cfg.items,
+        )
+        ans = _answer_perception_question(
+            "what do I see?", context=context, characters=cfg.characters,
+            actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry,
+            items=cfg.items,
+        )
+        assert ans is not None
+        assert "nearby places and landmarks" in ans
+        assert "purse" not in ans.lower()
+
+    def test_can_i_see_named_place_answers_from_visible_pois(self):
+        from engine.session import _answer_perception_question
+        cfg, cs = self._player()
+        context = RoleContext(
+            character_id=cs.character.id, turn=1, condition_text="",
+            scene_context=(
+                "## Where you are and where you can go\n"
+                "- arlan_barber: x=450, y=341 (~44 ft away)\n"
+                "- town_well: x=410, y=340 (~4 ft away)\n"
+            ),
+            soul="", identity="", perception="",
+        )
+        ans = _answer_perception_question(
+            "can I see a barber shop?", context=context,
+            characters=cfg.characters, actor_zone="TOWN_COMMON",
+            scene_geometry=cfg.scene_geometry, items=cfg.items,
+        )
+        assert ans == "Yes. You can see Arlan Barber (~44 ft away)."
+
+    def test_is_there_named_landmark_nearby_uses_visible_pois(self):
+        from engine.session import _answer_perception_question
+        cfg, cs = self._player()
+        context = RoleContext(
+            character_id=cs.character.id, turn=1, condition_text="",
+            scene_context=(
+                "## Where you are and where you can go\n"
+                "- town_well: x=410, y=340 (~4 ft away)\n"
+            ),
+            soul="", identity="", perception="",
+        )
+        ans = _answer_perception_question(
+            "Is there a well nearby?", context=context,
+            characters=cfg.characters, actor_zone="TOWN_COMMON",
+            scene_geometry=cfg.scene_geometry, items=cfg.items,
+        )
+        assert ans == "Yes. You can see Town Well (~4 ft away)."
+
+    def test_have_and_own_questions_still_list_possessions(self):
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        for question in ("what do I have?", "what do I own?"):
+            ans = _answer_self_question(
+                question, cs=cs, characters=cfg.characters,
+                actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
+            assert ans is not None and ans.startswith("You are carrying:")
 
     def test_sell_question_is_about_own_goods(self):
         # "what can I sell" is about the speaker's inventory, not the shop.

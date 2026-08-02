@@ -129,10 +129,12 @@ _ICON_CACHE: dict = {}
 _PLACE_TITLE_CACHE: dict = {}
 
 
-def _icon_data_uri(path: "Path") -> "str | None":
+def _icon_data_uri(
+    path: "Path", *, strip_character_name: bool = False,
+) -> "str | None":
     """Return an ``<image href>`` data-URI for a building ``icon.svg``/png, or
     None if absent. Cached so per-turn map regeneration doesn't re-encode."""
-    key = str(path)
+    key = f"{path}|strip_name={strip_character_name}"
     if not path.exists():
         _ICON_CACHE.pop(key, None)
         return None
@@ -149,7 +151,21 @@ def _icon_data_uri(path: "Path") -> "str | None":
     uri = None
     try:
         mime = "image/svg+xml" if path.suffix == ".svg" else f"image/{path.suffix.lstrip('.')}"
-        uri = f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+        payload = path.read_bytes()
+        if strip_character_name and path.suffix == ".svg":
+            svg = payload.decode("utf-8")
+            # Character portraits consistently tag their optional embedded
+            # banner. Maps already provide a hover <title>, so omit this tiny,
+            # poorly scaling duplicate label at embedding time.
+            svg = re.sub(
+                r"\s*<!--\s*name-label\s*-->\s*"
+                r"<rect\b[^>]*/>\s*<text\b[^>]*>.*?</text>",
+                "",
+                svg,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+            payload = svg.encode("utf-8")
+        uri = f"data:{mime};base64," + base64.b64encode(payload).decode("ascii")
     except Exception:  # noqa: BLE001 — art is best-effort
         uri = None
     _ICON_CACHE[key] = (mtime_ns, size, uri)
@@ -185,7 +201,10 @@ def _char_icon_uri(scenario_root: "Path | None", cid: str) -> "str | None":
     for who in (cid, base):
         for area in ("people/players", "people/npcs", "creatures"):
             for ext in (".svg", ".png", ".webp"):
-                uri = _icon_data_uri(scenario_root / area / who / f"icon{ext}")
+                uri = _icon_data_uri(
+                    scenario_root / area / who / f"icon{ext}",
+                    strip_character_name=True,
+                )
                 if uri:
                     return uri
     return None

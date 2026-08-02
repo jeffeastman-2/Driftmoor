@@ -176,7 +176,16 @@ _DISCOURSE_WORDS: list[str] = ["hi", "hello", "greetings"]
 # as parser errors without pretending that every such word is itself an engine
 # action. ``seek`` is a verb so morphology also recognizes ``seeking``.
 _CONVERSATION_ADJECTIVES: list[str] = ["good"]
-_CONVERSATION_VERBS: list[str] = ["seek", "tell", "see", "suggest"]
+_CONVERSATION_VERBS: list[str] = ["seek", "tell", "suggest"]
+_POSSESSION_VERBS: dict[str, dict[str, float]] = {
+    "have": {"possess": 1.0},
+    "own": {"possess": 1.0},
+    "possess": {"possess": 1.0},
+    # Preserve carry's manipulation meaning while marking inventory semantics.
+    "carry": {"hold": 1.0, "possess": 1.0},
+}
+_PERCEPTION_VERBS: list[str] = ["see", "perceive"]
+_PERCEPTION_ADJECTIVES: list[str] = ["nearby", "visible"]
 
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
@@ -288,6 +297,12 @@ def _build_rpg_layer() -> dict:
         layer.setdefault(word.lower(), _vf("adj"))
     for word in _CONVERSATION_VERBS:
         layer.setdefault(word.lower(), _vf("verb"))
+    for word, dims in _POSSESSION_VERBS.items():
+        layer[word.lower()] = _vf("verb", **dims)
+    for word in _PERCEPTION_VERBS:
+        layer[word.lower()] = _vf("verb", perceive=1.0)
+    for word in _PERCEPTION_ADJECTIVES:
+        layer[word.lower()] = _vf("adj", perceive=1.0)
     # Consumption verbs -> eat/drink/consume dims (state-gated in manipulation).
     for canonical, words in _CONSUME_VERB_SYNONYMS:
         for word in words:
@@ -458,6 +473,11 @@ def build_driftmoor_lexicon(characters: Iterable = (), items: Iterable = (),
     from engine.latn import FUNCTION_WORDS, Lexicon
 
     base = dict(FUNCTION_WORDS)
+    # ``have`` is part of LATN's function backbone and therefore wins the
+    # ChainMap before Driftmoor's RPG layer. Enrich that canonical entry here
+    # so inventory questions retain the possess semantic without changing its
+    # grammatical verb role.
+    base["have"] = _vf("verb", possess=1.0)
     rpg = _build_rpg_layer()
     world = _build_world_layer(characters, items, places, zones, landmarks, venues, catalog)
     # ChainMap lookup is first-wins; we want function/action backbone to take
