@@ -549,6 +549,11 @@ class TestDMRightSystemPrompt:
         prompt = DMRight().build_system_prompt()
         assert "third-person" in prompt
 
+    def test_assigns_dialogue_exclusively_to_structured_spoken_field(self):
+        prompt = DMRight().build_system_prompt().lower()
+        assert "do not include dialogue" in prompt
+        assert "do not invent another character's spoken response" in prompt
+
 
 class TestDMRightUserPrompt:
     def test_has_action(self):
@@ -638,6 +643,43 @@ class TestDMRightParsing:
 
 
 class TestDMRightLLM:
+    def test_removes_near_duplicate_of_structured_spoken_dialogue(self):
+        spoken = (
+            "Well now, if it isn't the most elegant visitor in Driftmoor! "
+            "Come in, come in—don't just stand there letting the breeze in. "
+            "Looking for a trim, or just some much-needed conversation?"
+        )
+
+        async def mock_llm(_system, _user):
+            return (
+                "Arlan sweeps the dark curls toward the dustpan and straightens "
+                "his apron before facing Gil. *\"Well now, if it isn't the most "
+                "elegant visitor in Driftmoor! Come in, come in—don't just stand "
+                "there letting the breeze in. Looking for a trim, or just "
+                "much-needed conversation?\"*"
+            )
+
+        adj = Adjudication(character_id="arlan", turn=2, approved=True)
+        output = CharacterOutput(
+            character_id="arlan", turn=2, action="sweeps the floor", spoken=spoken
+        )
+        result = asyncio.run(DMRight(call_llm=mock_llm).narrate(adj, output, ""))
+        assert "elegant visitor" not in result.prose
+        assert "sweeps the dark curls" in result.prose
+
+    def test_preserves_unrelated_quoted_dialogue(self):
+        spoken = "Good morning."
+
+        async def mock_llm(_system, _user):
+            return 'Arlan turns to Marta. "Your boots are ready," he says.'
+
+        adj = Adjudication(character_id="arlan", turn=2, approved=True)
+        output = CharacterOutput(
+            character_id="arlan", turn=2, action="turns", spoken=spoken
+        )
+        result = asyncio.run(DMRight(call_llm=mock_llm).narrate(adj, output, ""))
+        assert "Your boots are ready" in result.prose
+
     def test_calls_llm_when_configured(self):
         calls = []
 

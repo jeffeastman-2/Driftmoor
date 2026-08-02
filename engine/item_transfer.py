@@ -135,6 +135,29 @@ class TransferResult:
     reason: str = ""
 
 
+def transfer_coins(
+    amount_cp: int,
+    *,
+    from_id: str,
+    to_id: str,
+    characters: dict[str, "CharacterSession"],
+) -> TransferResult:
+    """Atomically move purse currency between two characters."""
+    payer_cs = characters.get(from_id)
+    payee_cs = characters.get(to_id)
+    payer = getattr(payer_cs, "character", None)
+    payee = getattr(payee_cs, "character", None)
+    if amount_cp <= 0:
+        return TransferResult(False, "invalid_amount")
+    if payer is None or payee is None:
+        return TransferResult(False, "invalid_party")
+    if not payer.can_afford(amount_cp):
+        return TransferResult(False, "cannot_afford")
+    payer.debit(amount_cp)
+    payee.credit(amount_cp)
+    return TransferResult(True)
+
+
 def transfer_thing(
     thing: "Item",
     *,

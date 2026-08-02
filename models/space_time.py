@@ -366,6 +366,36 @@ class SceneGeometry:
             dist = math.hypot(pos_b.x - pos_a.x, pos_b.y - pos_a.y)
             return dist <= max_range
 
+        # Driftmoor's town map overlays solid, elevated building footprints on
+        # broad open-ground zones. The union-of-zones ray trace below cannot
+        # treat those volumes as occluders because TOWN_COMMON lies beneath
+        # them. Derive the actual buildings from authored child-place doorway
+        # connections and block a sightline that passes through an intervening
+        # building whose ceiling rises above eye level. The observer's and
+        # target's own buildings are excluded, so one can see within a room and
+        # can see the exterior face of the building being looked at.
+        if (self.place_path or "").strip("/").lower() == "places/driftmoor":
+            opaque: set[str] = set()
+            for cname, cpos in self.connections.items():
+                if cname in {"to_region", "to_harbor_water"}:
+                    continue
+                zname = self.zone_at(cpos)
+                if zname and self.zone_ceiling_z.get(zname, 0.0) > 5.0:
+                    opaque.add(zname.upper())
+            opaque.discard(zone_a)
+            if opaque:
+                dx = pos_b.x - pos_a.x
+                dy = pos_b.y - pos_a.y
+                length = math.hypot(dx, dy)
+                for i in range(1, max(2, int(length))):
+                    t = i / max(2, int(length))
+                    sample = Position(pos_a.x + t * dx, pos_a.y + t * dy)
+                    if any(
+                        self.zones[name].contains(sample)
+                        for name in opaque if name in self.zones
+                    ):
+                        return False
+
         # 2. Same zone: presumed visible.
         if zone_a and zone_a == zone_b:
             return True

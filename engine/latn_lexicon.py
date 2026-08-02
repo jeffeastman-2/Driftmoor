@@ -143,6 +143,13 @@ _KIT_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     ("remove", ["remove", "take off", "doff", "unequip"]),
 ]
 
+_POSTURE_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
+    ("sit", ["sit", "sit down", "take a seat"]),
+    ("stand", ["stand", "stand up", "rise", "get up"]),
+    ("kneel", ["kneel", "crouch"]),
+    ("prone", ["lie down", "lay down", "go prone"]),
+]
+
 # Setting proper nouns -- place/region names that occur in play but aren't a
 # grounded scene entity (so the world layer doesn't derive them). Registered so
 # they tokenize instead of being flagged unknown.
@@ -287,6 +294,9 @@ def _build_rpg_layer() -> dict:
             layer[word.lower()] = _vf("verb", **{canonical: 1.0})
     # Kit-manipulation verb signals -> their dims.
     for canonical, words in _KIT_VERB_SYNONYMS:
+        for word in words:
+            layer[word.lower()] = _vf("verb", **{canonical: 1.0})
+    for canonical, words in _POSTURE_VERB_SYNONYMS:
         for word in words:
             layer[word.lower()] = _vf("verb", **{canonical: 1.0})
     # Setting proper nouns + common content nouns. setdefault so a word already

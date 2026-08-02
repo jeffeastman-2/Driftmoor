@@ -222,7 +222,10 @@ class TestSettleSell:
 class TestResponse:
     def test_affirmations_read_as_affirm(self):
         from engine.latn_integration import resolve_response
-        for w in ("yes", "yeah", "sure", "ok", "deal", "go ahead", "agreed"):
+        for w in (
+            "yes", "yeah", "sure", "ok", "deal", "go ahead", "agreed",
+            '"yes"', "“yes”", '*“yes”*',
+        ):
             assert resolve_response(w, {}, "") == "affirm", w
 
     def test_refusals_read_as_decline(self):
@@ -233,3 +236,13 @@ class TestResponse:
     def test_non_answer_is_none(self):
         from engine.latn_integration import resolve_response
         assert resolve_response("I look around", {}, "") is None
+
+
+def test_how_much_query_quotes_unique_authoritative_catalog_item():
+    from engine.latn_integration import resolve_query
+    catalog = [
+        CatalogEntry("hair_tonic", "Hair tonic", 100, 100, "mundane", 0.0, "arlan"),
+    ]
+    assert resolve_query(
+        '"How much is the tonic?"', {}, {}, "", catalog
+    ) == "Yes — Hair tonic is for sale at 1 gp."

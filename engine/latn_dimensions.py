@@ -88,6 +88,9 @@ VERB_DIMS: tuple[str, ...] = (
     # (draw/hold on a weapon vs a pack, sheathe->sheathe vs stow, etc.). Retires
     # manipulation.py's _DRAW_RE/_HOLD_RE/_SHEATHE_RE/_WEAR_RE/_REMOVE_RE.
     "draw", "hold", "sheathe", "wear", "remove",
+    # Body posture -> engine/posture.py. These persist independently of map
+    # position; only prone carries default 5e combat consequences.
+    "sit", "stand", "kneel", "prone",
 )
 
 # Bare conversational answers to an offer ("yes" / "no thanks"). The quote->confirm

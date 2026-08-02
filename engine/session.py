@@ -27,8 +27,8 @@ from typing import AsyncIterator, Optional, TYPE_CHECKING
 
 from engine.initiative import roll_initiative
 from engine.player_router import RoleContext, ActionIntent, CharacterOutput
-from engine.scene_manager import TurnCycle, TurnResult, RoleSet
-from engine.dm_agent import Adjudication
+from engine.scene_manager import TurnCycle, TurnResult, RoleSet, CharacterTurnResult
+from engine.dm_agent import Adjudication, Narration
 from models.character import Character
 from models.condition import CharacterCondition, render_condition
 from models.geometry_loader import load_geometry
@@ -115,6 +115,8 @@ class CharacterSession:
     # Cursor into raw_history lines for transport prompts; used to send only
     # new statements/actions since this player's last turn.
     transport_history_cursor: int = 0
+    # Python-owned body posture, independent of planar map position.
+    posture: str = "standing"
 
 
 @dataclass
@@ -1416,9 +1418,27 @@ def _build_points_of_interest(
     if current_zone:
         visible_zones.add(current_zone)
     lines: list[str] = []
+    _town_los = (
+        (getattr(scene_geometry, "place_path", "") or "").strip("/").lower()
+        == "places/driftmoor"
+    )
+    _observer = Position(float(px), float(py))
+
+    def _town_point_visible(pos: Position) -> bool:
+        if not _town_los:
+            return True
+        target = pos
+        zone_name = scene_geometry.zone_at(pos)
+        if zone_name and zone_name.upper() != current_zone:
+            poly = scene_geometry.zones.get(zone_name)
+            if poly is not None:
+                target = poly.nearest_point(_observer)
+        return scene_geometry.can_see(_observer, target)
 
     # Landmarks — filtered by zone visibility
     for name, pos in scene_geometry.landmarks.items():
+        if not _town_point_visible(pos):
+            continue
         lm_zones = _zones_for_point(pos, scene_geometry.zones)
         # If a landmark sits in zones the character has not encountered,
         # hide it. If it's not in any zone (lm_zones empty), show it
@@ -1426,11 +1446,16 @@ def _build_points_of_interest(
         if lm_zones and not (lm_zones & visible_zones):
             continue
         dist = ((pos.x - px) ** 2 + (pos.y - py) ** 2) ** 0.5
-        # Mark seam landmarks that open onto a zone the actor has not yet
-        # entered, so the player can tell which way leads onward.
+        # Only an authored connection leads onward. Merely sitting on/near a
+        # zone seam is not an affordance: chairs, shelves, mirrors, and other
+        # ordinary landmarks must never be advertised as exits.
         onward = ""
-        new_zones = lm_zones - visible_zones
-        if new_zones:
+        is_connection = any(
+            abs(pos.x - conn.x) < 0.5 and abs(pos.y - conn.y) < 0.5
+            for conn in (getattr(scene_geometry, "connections", {}) or {}).values()
+        )
+        new_zones = (lm_zones - visible_zones) if is_connection else set()
+        if is_connection and new_zones:
             onward = " — leads onward to " + ", ".join(
                 z.title() for z in sorted(new_zones)
             )
@@ -1447,6 +1472,8 @@ def _build_points_of_interest(
         getattr(scene_geometry, "place_path", "") or ""
     ):
         door = Position(dx, dy)
+        if not _town_point_visible(door):
+            continue
         door_zones = _zones_for_point(door, scene_geometry.zones)
         if door_zones and not (door_zones & visible_zones):
             continue
@@ -1826,6 +1853,18 @@ def _entry_point_from_target_geometry(
         return (x, y, z)
 
     return None
+
+
+def _seed_transition_actor_start(
+    scene_geometry: SceneGeometry | None,
+    actor_id: str,
+    current_positions: dict,
+) -> None:
+    """Give a newly entered map a fog-of-war seed for its preserved actor."""
+    if scene_geometry is None or actor_id not in current_positions:
+        return
+    x, y, _zone = current_positions[actor_id]
+    scene_geometry.starting_positions[actor_id] = Position(float(x), float(y))
 
 
 # An actor must be within this many feet of a venue's authored doorway (its
@@ -2828,6 +2867,10 @@ def _build_context(
             initial_scene,
         )
     scene = initial_scene
+    scene = (
+        f"{scene}\n\n## Current posture (Python-verified)\n"
+        f"- You are {getattr(cs, 'posture', 'standing')}."
+    )
     if scene_history:
         scene = f"{initial_scene}\n\n{scene_history}"
     if recent_events:
@@ -3148,8 +3191,55 @@ from engine.item_transfer import (  # noqa: E402
     _char_handle,
     _character_descriptor_tokens,
     _resolve_recipient_character,
+    transfer_coins,
     transfer_thing,
 )
+
+
+def _handle_coin_transfer(
+    *, intent_text: str, character_id: str,
+    characters: dict[str, "CharacterSession"], active_characters: set[str],
+    turn_num: int, game_time: Optional[GameTime], attack_log: list,
+    recent_events: list, cs: "CharacterSession",
+) -> bool:
+    """Settle an explicit ``give/pay <person> <coins>`` purse transfer."""
+    from models.currency import format_coins, parse_coins
+
+    text = (intent_text or "").strip()
+    if not re.match(r"^(?:i\s+)?(?:give|pay|hand)\b", text, re.IGNORECASE):
+        return False
+    amount_cp = parse_coins(text)
+    if amount_cp is None:
+        return False
+    recipient = _resolve_recipient_character(
+        text, actor_id=character_id, characters=characters,
+        active_characters=active_characters,
+    )
+    if recipient is None:
+        return False
+
+    result = transfer_coins(
+        amount_cp, from_id=character_id, to_id=recipient, characters=characters,
+    )
+    actor = _char_handle(characters[character_id], character_id)
+    receiver = _char_handle(characters[recipient], recipient)
+    amount = format_coins(amount_cp)
+    ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
+    if result.ok:
+        attack_log.append(
+            f"[COIN-TRANSFER] SETTLED by the engine — do not alter: "
+            f"{character_id} gives exactly {amount} to {recipient}; their purses "
+            f"have been updated. Narrate only this outcome."
+        )
+        recent_events.append((turn_num, f"{ts} | {actor} gives {amount} to {receiver}."))
+        _append_memory_note(cs, f"Turn {turn_num}: you gave {amount} to {receiver}.")
+    else:
+        attack_log.append(
+            f"[COIN-TRANSFER] {character_id} cannot give {amount} to {recipient}: "
+            f"{result.reason}; no coin moved. Narrate only this refusal."
+        )
+        recent_events.append((turn_num, f"{ts} | {actor} cannot pay {receiver} {amount}."))
+    return True
 
 
 def _handle_item_transfer(
@@ -3931,6 +4021,11 @@ def _save_turn(
             for char_id, cs in characters.items()
             if char_id in active and (getattr(cs, "held_items", None) or [])
         },
+        "postures": {
+            char_id: getattr(cs, "posture", "standing")
+            for char_id, cs in characters.items()
+            if char_id in active
+        },
     }
     path.write_text(json.dumps(data, indent=2, default=str))
     return path
@@ -4021,6 +4116,13 @@ def load_resume_state(
     for char_id, held in last_data.get("held_items", {}).items():
         if char_id in characters and isinstance(held, list):
             characters[char_id].held_items = list(held)
+
+    for char_id, posture in last_data.get("postures", {}).items():
+        if char_id in characters and posture in {
+            "standing", "seated", "kneeling", "prone"
+        }:
+            from engine.posture import apply_posture
+            apply_posture(characters[char_id], posture)
 
     # Restore active_characters set if the checkpoint recorded it
     if "active_characters" in last_data:
@@ -4958,6 +5060,32 @@ def _is_explicit_spoken_utterance(text: str) -> bool:
     return bool(spoken.strip())
 
 
+def _visible_social_ids(
+    speaker_id: str,
+    *,
+    scene_geometry: Optional[SceneGeometry],
+    current_positions: dict[str, tuple[float, float, str]],
+    active_characters: set[str],
+) -> set[str]:
+    """Character ids the speaker can address in an immediate exchange."""
+    speaker = current_positions.get(speaker_id)
+    if speaker is None:
+        return set()
+    out: set[str] = set()
+    for cid, pos in current_positions.items():
+        if cid == speaker_id or cid not in active_characters:
+            continue
+        if scene_geometry is None:
+            if (pos[2] or "").upper() == (speaker[2] or "").upper():
+                out.add(cid)
+            continue
+        if scene_geometry.can_see(
+            Position(speaker[0], speaker[1]), Position(pos[0], pos[1])
+        ):
+            out.add(cid)
+    return out
+
+
 def _spell_help(text: str, cs: CharacterSession) -> Optional[str]:
     """Answer generic spell prompts without consuming a turn.
 
@@ -5489,6 +5617,10 @@ async def iter_session(
     party_focus_zone: Optional[str] = None
     party_focus_until_turn: int = 0
     pending_scene_transition: tuple[str, str, tuple[float, float, str], str, str] | None = None
+    # NPCs who already supplied an immediate dialogue-only response. Their next
+    # ordinary exploration slot is consumed so they do not answer twice.
+    from engine.social_exchange import SocialExchangeSchedule
+    social_schedule = SocialExchangeSchedule()
 
     while True:
         combat_at_start = in_combat
@@ -5522,6 +5654,8 @@ async def iter_session(
 
         for character_id in order:
             if character_id not in active_characters:
+                continue
+            if social_schedule.suppress_slot(character_id, in_combat=in_combat):
                 continue
 
             # Expire stale focus at character step granularity.
@@ -5623,6 +5757,25 @@ async def iter_session(
                 answer_query=_answer_query,
             )
             output.spoken = _clean_spoken_output(output.spoken)
+            _social_target = None
+            if (
+                not in_combat
+                and output.spoken
+                and (cs.player_transport or "llm").strip().lower()
+                in {"web", "telegram"}
+            ):
+                from engine.social_exchange import directed_social_target
+                _social_target = directed_social_target(
+                    output.spoken,
+                    speaker_id=character_id,
+                    visible_ids=_visible_social_ids(
+                        character_id,
+                        scene_geometry=scene_geometry,
+                        current_positions=current_positions,
+                        active_characters=active_characters,
+                    ),
+                    characters=characters,
+                )
 
             # Parser honesty: when a human's line grounds to NO action, and it
             # uses words the lexicon doesn't know, the DM names them (+ near
@@ -6242,6 +6395,20 @@ async def iter_session(
                 scene_geometry,
             )
 
+            from engine.posture import resolve_posture, posture_landmark_target
+            _posture_requested = resolve_posture(intent.intent or "")
+            _posture_target = posture_landmark_target(
+                intent.intent or "", _posture_requested, scene_geometry,
+                current_positions.get(character_id),
+            )
+            if _posture_target is not None and adjudication.approved:
+                player_target = _posture_target
+                intent.movement_target = _posture_target
+                attack_log.append(
+                    f"[POSTURE] {character_id}: approaches the named seating "
+                    f"at ({_posture_target[0]:.1f},{_posture_target[1]:.1f})."
+                )
+
             # A named venue approach is grounded to its authored front door,
             # overriding an LLM-generated movement coordinate. This prevents
             # phrases such as "move toward Elyssa's cottage" from wandering in
@@ -6589,6 +6756,31 @@ async def iter_session(
                         f"[MOVEMENT] {character_id}: denied — held at origin"
                     )
 
+            if _posture_requested is not None and adjudication.approved:
+                from engine.posture import settle_posture
+                _posture_applied = settle_posture(
+                    cs, _posture_requested,
+                    current_positions.get(character_id),
+                    _posture_target,
+                )
+                if _posture_applied:
+                    attack_log.append(
+                        f"[POSTURE] SETTLED by the engine — {character_id} is "
+                        f"now {_posture_requested}. Narrate the physical posture "
+                        f"without adding dialogue."
+                    )
+                    ts = f"{game_time.hour}:{game_time.minute:02d}" if game_time else f"t{turn_num}"
+                    recent_events.append((
+                        turn_num,
+                        f"{ts} | {_char_handle(cs, character_id)} is now "
+                        f"{_posture_requested}.",
+                    ))
+                else:
+                    attack_log.append(
+                        f"[POSTURE] {character_id} has not reached the seating; "
+                        f"posture remains {cs.posture}."
+                    )
+
             # Python attack resolution — roll d20+bonus vs AC, check range and
             # LOS; DM declared targets via **ATTACKS** but Python owns the dice.
             # Skipped when CombatResolver already resolved the attack.
@@ -6756,6 +6948,25 @@ async def iter_session(
             # present in this scene. Runs only where there IS a shopkeeper (so it
             # costs nothing elsewhere), and only if nothing already handled the
             # intent; marks it handled so it isn't re-processed as an interaction.
+            if (
+                adjudication.approved
+                and not use_resolver
+                and not _kit_manip_applied
+                and intent.intent
+                and _handle_coin_transfer(
+                    intent_text=intent.intent,
+                    character_id=character_id,
+                    characters=characters,
+                    active_characters=active_characters,
+                    turn_num=turn_num,
+                    game_time=game_time,
+                    attack_log=attack_log,
+                    recent_events=recent_events,
+                    cs=cs,
+                )
+            ):
+                _kit_manip_applied = True
+
             _negotiate = _commerce_negotiator(cs, character_id)
             if (
                 adjudication.approved
@@ -7180,11 +7391,101 @@ async def iter_session(
             if history_entry:
                 within_turn_history += history_entry
 
+            # Publish the initiating action before any immediate social reply,
+            # preserving question -> answer ordering in live clients.
+            _speaker_hook_sent = False
+            if on_character_acted is not None:
+                try:
+                    on_character_acted(
+                        character_id, turn_num, dict(current_positions), cr)
+                    _speaker_hook_sent = True
+                except Exception:  # noqa: BLE001
+                    pass
+
+            # Social exchange override: outside combat, a transport-backed
+            # player's directed question receives one immediate dialogue-only
+            # NPC response. This is an adjacency pair, not another physical
+            # action, and consumes the NPC's next exploration initiative slot.
+            if (not in_combat and _social_target is not None
+                    and _social_target in active_characters):
+                from engine.social_exchange import generate_social_reply
+                target_cs = characters[_social_target]
+                speaker_handle = handle
+                target_history = (
+                    f"{scene_history}\n{within_turn_history}"
+                    if scene_history else within_turn_history
+                )
+                target_context = _build_context(
+                    target_cs, turn_num, target_history,
+                    scene_geometry=scene_geometry,
+                    current_positions=current_positions,
+                    active_characters=active_characters,
+                    in_combat=False,
+                    characters=characters,
+                    items=items,
+                    puzzles=puzzle_registry,
+                )
+                reply = await generate_social_reply(
+                    turn_cycle=turn_cycle,
+                    target_id=_social_target,
+                    target_cs=target_cs,
+                    speaker_handle=speaker_handle,
+                    utterance=output.spoken,
+                    scene_context=target_context.scene_context,
+                )
+                if reply:
+                    social_intent = ActionIntent(
+                        character_id=_social_target,
+                        turn=turn_num,
+                        intent=f"answer {character_id}",
+                        interaction_target=character_id,
+                    )
+                    social_output = CharacterOutput(
+                        character_id=_social_target,
+                        turn=turn_num,
+                        spoken=reply,
+                        action="",
+                    )
+                    social_adj = Adjudication(
+                        character_id=_social_target,
+                        turn=turn_num,
+                        approved=True,
+                        notes="Immediate dialogue-only social response; no physical action.",
+                    )
+                    social_cr = CharacterTurnResult(
+                        character_id=_social_target,
+                        turn=turn_num,
+                        intent=social_intent,
+                        output=social_output,
+                        adjudication=social_adj,
+                        narration=Narration(
+                            character_id=_social_target,
+                            turn=turn_num,
+                            prose="",
+                            visible_to=[],
+                        ),
+                    )
+                    turn_result.character_results.append(social_cr)
+                    social_schedule.mark_response(_social_target)
+                    target_handle = target_cs.scene_handle or _social_target
+                    within_turn_history += _history_entry(
+                        target_handle, reply, "", ""
+                    )
+                    ledger.record(social_cr, game_time)
+                    if on_character_acted is not None:
+                        try:
+                            on_character_acted(
+                                _social_target, turn_num,
+                                dict(current_positions), social_cr,
+                            )
+                        except Exception:  # noqa: BLE001
+                            pass
+
             # Per-initiative hook: this character has acted and moved, so callers
             # can refresh live views (e.g. the web map + log) without waiting for
             # the whole turn to finish. ``cr`` carries this character's narration
             # so a live UI can stream it. Best-effort; a failure never aborts play.
-            if on_character_acted is not None:
+            if on_character_acted is not None and not _speaker_hook_sent:
                 try:
                     on_character_acted(
                         character_id, turn_num, dict(current_positions), cr)
@@ -7341,6 +7642,15 @@ async def iter_session(
                             visited_zones.setdefault(_cid, set()).add(_pos[2].upper())
                             if _cid in characters:
                                 characters[_cid].last_zone_seen = _pos[2].upper()
+
+                    # The player is normally not authored in a place-local
+                    # upstairs cast.  Seed their resolved arrival point into the
+                    # destination map so the transition callback can render fog
+                    # of war immediately instead of producing an apparently
+                    # blank screen until another movement event arrives.
+                    _seed_transition_actor_start(
+                        scene_geometry, actor_id, current_positions
+                    )
 
                     party_focus_zone = None
                     party_focus_until_turn = 0

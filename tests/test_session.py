@@ -155,6 +155,57 @@ class TestBuildContext:
         assert "crept toward the treeline" in ctx.scene_context
         assert "Fey Glade" in ctx.scene_context  # initial scene still present
 
+    def test_includes_python_owned_posture(self, aeliana_session):
+        aeliana_session.posture = "kneeling"
+        ctx = _build_context(aeliana_session, turn=2, scene_history="")
+        assert "You are kneeling" in ctx.scene_context
+
+    def test_overlapping_exterior_background_does_not_mark_shop_landmarks_as_exits(self):
+        from engine.md_loader import configure_from_place_path
+
+        cfg = configure_from_place_path("places/driftmoor/rusty_razor")
+        ctx = _build_context(
+            next(iter(cfg.characters.values()), aeliana_session),
+            turn=1,
+            scene_history="",
+            scene_geometry=cfg.scene_geometry,
+            current_positions={
+                next(iter(cfg.characters), "aeliana"): (6.5, 6.5, "SHOP")
+            },
+            visited_zones={next(iter(cfg.characters), "aeliana"): {"SHOP"}},
+        )
+        poi = ctx.scene_context
+        assert "barber_chair_3.25" in poi
+        for landmark in (
+            "barber_chair_3.25", "barber_chair_6.5", "mirror",
+            "tonic_shelf", "striped_pole",
+        ):
+            line = next(line for line in poi.splitlines() if landmark in line)
+            assert "leads onward" not in line
+
+    def test_town_building_doorways_remain_visible_from_town_common(self):
+        from engine.md_loader import configure_from_place_path
+        from engine.session import _build_points_of_interest
+
+        geometry = configure_from_place_path("places/driftmoor").scene_geometry
+        poi = _build_points_of_interest(
+            geometry,
+            my_pos=(406.0, 341.0, "TOWN_COMMON"),
+            visited_zones={"TOWN_COMMON"},
+        )
+        assert "barber" in poi
+        assert "rooming house" in poi
+        assert "enter to go inside" in poi
+        # The barber shop blocks the straight view north to the tailor from
+        # this position; unseen buildings are not leaked into the POI list.
+        blocked = _build_points_of_interest(
+            geometry,
+            my_pos=(414.0, 340.0, "TOWN_COMMON"),
+            visited_zones={"TOWN_COMMON"},
+        )
+        assert "barber" in blocked
+        assert "tailor" not in blocked
+
     def test_empty_history_no_extra_whitespace(self, aeliana_session):
         ctx = _build_context(aeliana_session, turn=1, scene_history="")
         # Should not have trailing newlines from empty history
@@ -1052,6 +1103,22 @@ class TestInferDriftmoorVenueTransition:
                 phrase, upstairs_path, "UPSTAIRS_HALL"
             ) == "weary_traveler"
 
+    def test_upstairs_arrival_seeds_player_marker_for_fog_of_war(self):
+        from engine.md_loader import configure_from_place_path
+        from engine.session import _seed_transition_actor_start
+
+        cfg = configure_from_place_path(
+            "places/driftmoor/weary_traveler/upstairs"
+        )
+        assert "gilthaness" not in cfg.scene_geometry.starting_positions
+        _seed_transition_actor_start(
+            cfg.scene_geometry,
+            "gilthaness",
+            {"gilthaness": (27.5, 5.0, "STAIR_LANDING")},
+        )
+        marker = cfg.scene_geometry.starting_positions["gilthaness"]
+        assert (marker.x, marker.y) == (27.5, 5.0)
+
     def test_go_into_is_an_enterable_venue_phrase(self):
         from engine.session import _infer_driftmoor_venue_transition
 
@@ -1892,6 +1959,23 @@ class TestCheckpointing:
         assert last_turn == 3
         assert "aeliana" in positions
         assert positions["aeliana"] == (202.2, 125.1, "FOREST")
+
+    def test_load_resume_restores_posture_and_prone_condition(
+        self, aeliana_session, tmp_path
+    ):
+        checkpoint_data = {
+            "turn": 3,
+            "active_characters": ["aeliana"],
+            "character_results": [],
+            "conditions": {},
+            "hp": {"aeliana": {"current": 10, "max": 12}},
+            "current_positions": {},
+            "postures": {"aeliana": "prone"},
+        }
+        (tmp_path / "turn_0003.json").write_text(json.dumps(checkpoint_data))
+        load_resume_state(tmp_path, {"aeliana": aeliana_session})
+        assert aeliana_session.posture == "prone"
+        assert "prone" in aeliana_session.character.conditions
 
     def test_resume_positions_override_game_state_summary(self, aeliana_session, tmp_path):
         """iter_session with initial_positions should start from checkpoint positions."""

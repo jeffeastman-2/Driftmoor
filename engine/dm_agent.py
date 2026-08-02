@@ -14,11 +14,11 @@ minimal valid data.  When call_llm is provided it is awaited as:
 
 from __future__ import annotations
 
+from difflib import SequenceMatcher
 from engine.game_rng import rng
 import re
 from dataclasses import dataclass, field
 from typing import Optional
-import re
 
 from engine.player_router import CallLLM, CharacterOutput
 
@@ -541,21 +541,62 @@ class DMRight:
             return rest
         return prose
 
+    @staticmethod
+    def _remove_repeated_structured_speech(prose: str, spoken: str) -> str:
+        """Remove quoted narration that repeats the structured spoken field.
+
+        Models occasionally make tiny edits while repeating speech, so exact
+        substring checks are insufficient. Only quoted spans with strong token
+        similarity are removed; unrelated quoted dialogue remains untouched.
+        """
+        if not prose or not spoken:
+            return prose
+
+        def norm(value: str) -> str:
+            return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+        spoken_norm = norm(spoken)
+        if len(spoken_norm.split()) < 3:
+            return prose
+        removals: list[tuple[int, int]] = []
+        for match in re.finditer(r'(?P<wrap>\*?)(?:“|")(?P<quote>.*?)(?:”|")(?P=wrap)', prose,
+                                 flags=re.DOTALL):
+            quote_norm = norm(match.group("quote"))
+            if not quote_norm:
+                continue
+            similarity = SequenceMatcher(None, spoken_norm, quote_norm).ratio()
+            contained = spoken_norm in quote_norm or quote_norm in spoken_norm
+            if contained or similarity >= 0.82:
+                removals.append(match.span())
+        if not removals:
+            return prose
+        cleaned = prose
+        for start, end in reversed(removals):
+            cleaned = cleaned[:start] + cleaned[end:]
+        cleaned = re.sub(r"\s+([,.;:!?])", r"\1", cleaned)
+        cleaned = re.sub(r"(?:^|(?<=[.!?]))\s*(?:[A-Z][a-z]+|He|She|They)\s+"
+                         r"(?:says|asks|replies)\s*[.]", " ", cleaned)
+        return " ".join(cleaned.split()).strip()
+
     def build_system_prompt(
         self,
         character_pronouns: dict[str, str] | None = None,
     ) -> str:
         prompt = (
             "You are the narrative voice of the DM. Write 2-4 sentences "
-            "of third-person, present-tense prose describing what happens. "
+            "of third-person, present-tense, action-only prose describing what "
+            "happens. "
             "Be concrete and specific — what the character does, what "
             "others can see and hear. No game mechanics, dice, or "
             "meta-commentary. No purple prose — avoid 'seemed to', "
             "'as if', atmospheric clichés, and stacked adjectives. "
             "Plain language. Let the action speak.\n\n"
-            "DIALOGUE: Include each spoken sentence exactly once. Do not place "
-            "the full speech in a decorative opening quotation and then repeat "
-            "it with attribution in the prose.\n\n"
+            "DIALOGUE: The structured spoken field is rendered separately and "
+            "is authoritative. Do not include dialogue in the narration: do not "
+            "quote, repeat, paraphrase, summarize, or attribute what the acting "
+            "character said. Narrate only physical action, reactions, and "
+            "observable consequences. Do not invent another character's spoken "
+            "response; that belongs to their own exchange or turn.\n\n"
             "GROUNDING: Keep descriptions tied to observable facts. Use "
             "counts, distances, times, positions, visible marks, direct speech, "
             "and physical cause/effect. If the scene suggests a theory, keep it "
@@ -628,7 +669,10 @@ class DMRight:
         if spoken.strip() and spoken.strip().lower() not in (
             "(silent)", "(silence)",
         ):
-            spoken_block = f"\n\n## What they said\n\"{spoken.strip()}\""
+            spoken_block = (
+                f"\n\n## Structured speech (context only; omit it entirely "
+                f"from your narration)\n\"{spoken.strip()}\""
+            )
         resolution_block = ""
         if resolution_log:
             resolution_block = (
@@ -736,9 +780,14 @@ class DMRight:
             perception=perception,
         )
         raw = await self._call_llm(system, user)
-        return self.parse_response(
+        narration = self.parse_response(
             raw,
             adjudication.character_id,
             adjudication.turn,
             character_pronouns=character_pronouns,
         )
+        narration.prose = self._remove_repeated_structured_speech(
+            narration.prose,
+            getattr(character_output, "spoken", "") or "",
+        )
+        return narration

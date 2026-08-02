@@ -17,6 +17,7 @@ near-static lexicon per scene is a later optimization.
 
 from __future__ import annotations
 
+import re
 from typing import Optional, Tuple
 
 from models.item import Interaction, Item
@@ -160,6 +161,27 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
         name = getattr(entry, "name", None) or getattr(catalog_focus[0], "name", "that")
         price = format_coins(getattr(entry, "listed_price_cp", None))
         return f"Yes — {name} is for sale at {price}."
+
+    # ``how much is the tonic`` currently yields an SQ with ``wh_word=how``
+    # but no focus NP.  Keep the answer authoritative by matching the remaining
+    # content words against the actual catalog, accepting only one best entry.
+    if rq.wh_word == "how" and re.search(r"\bmuch\b", query_text):
+        query_words = set(re.findall(r"[a-z0-9]+", query_text))
+        ranked = []
+        for entry in catalog or []:
+            name_words = set(re.findall(r"[a-z0-9]+", entry.name.lower()))
+            score = len(query_words & name_words)
+            if score:
+                ranked.append((score, entry))
+        if ranked:
+            top = max(score for score, _entry in ranked)
+            winners = [entry for score, entry in ranked if score == top]
+            if len(winners) == 1:
+                entry = winners[0]
+                return (
+                    f"Yes — {entry.name} is for sale at "
+                    f"{format_coins(entry.listed_price_cp)}."
+                )
 
     # A "what (do you have/sell)" with a shop present -> list the catalog. The
     # passed-in catalog is already the present shopkeeper's goods (empty when no

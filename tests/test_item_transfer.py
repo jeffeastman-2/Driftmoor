@@ -7,7 +7,7 @@ from types import SimpleNamespace as NS
 
 from models.character import Character
 from models.thing import Thing
-from engine.item_transfer import transfer_thing
+from engine.item_transfer import transfer_coins, transfer_thing
 
 
 def _cs(cid, purse=0, inv=None):
@@ -57,6 +57,42 @@ class TestPossessionAndOwnership:
 
 
 class TestCoin:
+    def test_direct_coin_gift_moves_only_currency(self):
+        chars = {"martha": _cs("martha", purse=20), "player": _cs("player", purse=500)}
+        r = transfer_coins(100, from_id="player", to_id="martha", characters=chars)
+        assert r.ok
+        assert chars["player"].character.purse_cp == 400
+        assert chars["martha"].character.purse_cp == 120
+
+    def test_direct_coin_gift_is_atomic_when_payer_is_broke(self):
+        chars = {"martha": _cs("martha", purse=20), "player": _cs("player", purse=50)}
+        r = transfer_coins(100, from_id="player", to_id="martha", characters=chars)
+        assert not r.ok and r.reason == "cannot_afford"
+        assert chars["player"].character.purse_cp == 50
+        assert chars["martha"].character.purse_cp == 20
+
+    def test_explicit_give_coins_routes_to_named_visible_recipient(self):
+        from engine.session import _handle_coin_transfer
+
+        chars = {"martha": _cs("martha", purse=20), "player": _cs("player", purse=500)}
+        chars["player"].episodic_memory = []
+        log, events = [], []
+        handled = _handle_coin_transfer(
+            intent_text="I give Martha 1 gp",
+            character_id="player",
+            characters=chars,
+            active_characters={"player", "martha"},
+            turn_num=3,
+            game_time=None,
+            attack_log=log,
+            recent_events=events,
+            cs=chars["player"],
+        )
+        assert handled
+        assert chars["player"].character.purse_cp == 400
+        assert chars["martha"].character.purse_cp == 120
+        assert any("SETTLED" in line for line in log)
+
     def test_buy_moves_item_and_coin_recipient_pays(self):
         pie = Thing(id="pie", name="Pie", holder=None, owner="maribel")
         chars = {"maribel": _cs("maribel", purse=0), "player": _cs("player", purse=100)}

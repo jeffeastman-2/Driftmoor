@@ -1015,6 +1015,27 @@ def _point_in_poly(x: float, y: float, verts: list[tuple[float, float]]) -> bool
     return inside
 
 
+def _point_in_or_near_poly(
+    x: float, y: float, verts: list[tuple[float, float]], tolerance: float = 0.75,
+) -> bool:
+    """Containment with the same practical edge tolerance used by movement."""
+    if _point_in_poly(x, y, verts):
+        return True
+    if len(verts) < 2:
+        return False
+    for i, (ax, ay) in enumerate(verts):
+        bx, by = verts[(i + 1) % len(verts)]
+        dx, dy = bx - ax, by - ay
+        denom = dx * dx + dy * dy
+        u = 0.0 if denom == 0 else max(
+            0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / denom)
+        )
+        px, py = ax + u * dx, ay + u * dy
+        if (x - px) ** 2 + (y - py) ** 2 <= tolerance ** 2:
+            return True
+    return False
+
+
 def _containing_zone(x: float, y: float, zones: dict) -> str | None:
     for name, verts in zones.items():
         if _point_in_poly(x, y, verts):
@@ -1089,6 +1110,32 @@ def render_turn_slider_html(
     tracks = (load_tracks_from_snapshots(snapshot_dir)
               if snapshot_dir is not None and snapshot_dir.exists() else {})
 
+    # A session keeps one checkpoint directory while moving between place maps.
+    # Snapshot tracks therefore contain coordinates from earlier scenes. Keep
+    # only points whose authoritative zone and coordinates belong to this map;
+    # otherwise an old town-scale point stretches a small upstairs viewBox and
+    # draws a long dashed trail back to the prior scene.
+    zones_by_upper = {name.upper(): verts for name, verts in g["zones"].items()}
+    scoped_tracks: dict[str, list[tuple[int, float, float, str]]] = {}
+    for cid, pts in tracks.items():
+        kept = []
+        for point in pts:
+            turn, x, y, zone = point
+            verts = zones_by_upper.get((zone or "").upper())
+            # The engine's authoritative zone can intentionally use an edge
+            # tolerance wider than SVG polygon containment. Require that the
+            # named zone belongs to this scene, then accept a coordinate inside
+            # any of this scene's polygons.
+            on_this_map = any(
+                _point_in_or_near_poly(float(x), float(y), candidate)
+                for candidate in g["zones"].values()
+            )
+            if verts is not None and on_this_map:
+                kept.append(point)
+        if kept:
+            scoped_tracks[cid] = kept
+    tracks = scoped_tracks
+
     # Seed turn 0 from GEOMETRY starting positions so the slider always opens on
     # the party's initial layout — even before the first turn is taken (live web
     # play, when no snapshots exist yet). The starting zone is resolved by
@@ -1155,6 +1202,14 @@ def render_turn_slider_html(
         # g-name → (sg-name, centroid Position); reveal_zone is keyed by g-name.
         _centroids = {zone_by_upper.get(n.upper(), n): p.centroid()
                       for n, p in sg.zones.items()}
+        _town_buildings: set[str] = set()
+        if (sg.place_path or "").strip("/").lower() == "places/driftmoor":
+            for _cname, _cpos in sg.connections.items():
+                if _cname in {"to_region", "to_harbor_water"}:
+                    continue
+                _czone = sg.zone_at(_cpos)
+                if _czone:
+                    _town_buildings.add(_czone.upper())
 
         def _reveal_seen_from(ox: float, oy: float, ozone: str, t: int) -> None:
             visual = sg.ambient_sight_range(ozone or (sg.zone_at(_Pos(ox, oy)) or ""))
@@ -1163,7 +1218,17 @@ def render_turn_slider_html(
             for gname, c in _centroids.items():
                 if reveal_zone.get(gname, never + 1) <= t:
                     continue                       # already revealed at/before t
-                if _math.hypot(c.x - ox, c.y - oy) <= visual_ft and sg.can_see(obs, c):
+                sight_target = c
+                if gname.upper() in _town_buildings:
+                    _poly = next(
+                        (poly for name, poly in sg.zones.items()
+                         if name.upper() == gname.upper()),
+                        None,
+                    )
+                    if _poly is not None:
+                        sight_target = _poly.nearest_point(obs)
+                if (_math.hypot(sight_target.x - ox, sight_target.y - oy) <= visual_ft
+                        and sg.can_see(obs, sight_target)):
                     reveal_zone[gname] = t
 
         _vis_allowed = set(start_characters) if start_characters is not None else None

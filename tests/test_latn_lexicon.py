@@ -149,6 +149,17 @@ def test_downstairs_is_known_as_a_parentward_direction():
     assert "locz=-1.00" in downstairs.non_zero_dims()
 
 
+def test_posture_verbs_are_known_actions():
+    pytest.importorskip("latn.lexer.vector_space")
+    from engine.latn_lexicon import build_driftmoor_lexicon
+    lex = build_driftmoor_lexicon([], [])
+    tokens = _tok_map(lex, "sit stand kneel lie down")
+    assert tokens["sit"].isa("sit")
+    assert tokens["stand"].isa("stand")
+    assert tokens["kneel"].isa("kneel")
+    assert tokens["lie down"].isa("prone")
+
+
 def test_authored_character_spell_names_are_world_vocabulary():
     pytest.importorskip("latn.lexer.vector_space")
     from models.spellcasting import Spell, SpellcastingProfile

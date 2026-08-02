@@ -294,6 +294,74 @@ def test_render_turn_slider_live_positions_override(tmp_path):
     assert frames[list(frames)[-1]]["thorgrim"] == [137.0, 243.5]
 
 
+def test_subscene_ignores_snapshot_tracks_from_previous_scene(tmp_path):
+    """Town coordinates must not stretch an upstairs map or draw a trail to it."""
+    import re
+    from engine.map_renderer import render_turn_slider_html
+
+    geometry = Path(
+        "scenario/places/driftmoor/weary_traveler/upstairs/GEOMETRY.md"
+    )
+    (tmp_path / "day1_01.json").write_text(json.dumps({
+        "turn": 1,
+        "current_positions": {
+            "gilthaness": {"x": 450.0, "y": 370.0, "zone": "TOWN_COMMON"}
+        },
+    }), encoding="utf-8")
+    (tmp_path / "day1_02.json").write_text(json.dumps({
+        "turn": 2,
+        "current_positions": {
+            "gilthaness": {"x": 27.5, "y": 5.0, "zone": "STAIR_LANDING"}
+        },
+    }), encoding="utf-8")
+    out = tmp_path / "upstairs.html"
+    render_turn_slider_html(
+        geometry, out, snapshot_dir=tmp_path, title="Upstairs",
+        start_characters=["gilthaness"],
+        start_positions={"gilthaness": (27.5, 5.0)},
+    )
+    rendered = out.read_text(encoding="utf-8")
+    viewbox = re.search(r"viewBox='([^']+)'", rendered).group(1).split()
+    assert float(viewbox[2]) < 60.0
+    frames = json.loads(
+        re.search(r"const FRAMES=(\{.*?\});const TURNS", rendered).group(1)
+    )
+    assert all(
+        position[0] < 60.0
+        for frame in frames.values()
+        for position in frame.values()
+    )
+
+
+def test_town_fog_reveals_visible_building_but_hides_one_behind_it(tmp_path):
+    import re
+    from engine.map_renderer import render_turn_slider_html
+
+    geometry = Path("scenario/places/driftmoor/GEOMETRY.md")
+    out = tmp_path / "town.html"
+    render_turn_slider_html(
+        geometry,
+        out,
+        snapshot_dir=tmp_path,
+        title="Driftmoor",
+        start_characters=["gilthaness"],
+        start_positions={"gilthaness": (414.0, 340.0)},
+    )
+    rendered = out.read_text(encoding="utf-8")
+    barber = re.search(
+        r"<g data-reveal='(\d+)'><polygon[^>]*><title>Barber:.*?</title>",
+        rendered,
+        re.DOTALL,
+    )
+    tailor = re.search(
+        r"<g data-reveal='(\d+)'><polygon[^>]*><title>Tailor:.*?</title>",
+        rendered,
+        re.DOTALL,
+    )
+    assert barber and barber.group(1) == "0"
+    assert tailor and tailor.group(1) != "0"
+
+
 def test_render_turn_slider_default_seeds_only_tracked_chars(tmp_path):
     """With no start_characters, only characters recorded in the snapshots are
     seeded at turn 0 — a GEOMETRY-only entry (the spider) never leaks."""

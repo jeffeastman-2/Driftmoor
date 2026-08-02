@@ -5,7 +5,7 @@
 ### For Sale
 - Haircut: 5 sp
 - Shave: 2 sp
-- Pomade and grooming supplies: 1 gp
+- Hair tonic (blue bottle): 1 gp
 
 ### Notable
 - Arlan's old adventure map — available for sale or trade for a favor
@@ -33,5 +33,5 @@ This table is the authoritative runtime inventory for this place.
 |---|---|---|---|---|---|---|---|---|---|
 | haircut | Haircut |  |  | arlan | 5 sp | service |  | public |  |
 | shave | Shave |  |  | arlan | 2 sp | service |  | public |  |
-| pomade_and_grooming_supplies | Pomade and grooming supplies |  | merchant_stock | arlan | 1 gp | mundane | holdable | public |  |
+| hair_tonic | Hair tonic | 🧴 | merchant_stock | arlan | 1 gp | mundane | holdable | public | A blue restorative grooming tonic. |
 | old_adventure_map | Old adventure map |  | merchant_stock | arlan | Negotiable (sale or trade for a favor) | mundane | holdable | public |  |

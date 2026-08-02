@@ -156,6 +156,21 @@ def test_weary_traveler_upstairs_origin_is_parent_local():
     assert upstairs.z_level == pytest.approx(ground.z_level + upstairs.origin.z)
 
 
+def test_town_building_height_occludes_sight_across_common_ground():
+    town = load_geometry(DRIFTMOOR / "GEOMETRY.md")
+    # The barber shop stands directly between these two common-ground points.
+    assert town.zone_at(Position(414, 340)) == "TOWN_COMMON"
+    assert town.zone_at(Position(414, 430)) == "TOWN_COMMON"
+    assert town.zone_ceiling_z["BARBER"] > 5
+    assert not town.can_see(Position(414, 340), Position(414, 430))
+    # The wall itself is visible, but a creature at the interior centroid is not.
+    facade = town.zones["BARBER"].nearest_point(Position(414, 340))
+    assert town.can_see(Position(414, 340), facade)
+    assert not town.can_see(Position(414, 340), Position(414, 390))
+    # A short unobstructed line across the street remains visible.
+    assert town.can_see(Position(400, 340), Position(500, 340))
+
+
 def test_broken_lantern_subplaces_have_geometry_and_reciprocal_entries():
     parent_path = "places/driftmoor/broken_lantern"
     parent = configure_from_place_path(parent_path)

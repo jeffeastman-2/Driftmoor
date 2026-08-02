@@ -561,10 +561,17 @@ def resolve_response(intent_text: str, *, lexicon, adapter) -> Optional[str]:
         LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
         use_sp_policy, PermissiveSPPolicy,
     )
+    # Player transports preserve prose punctuation, including Markdown emphasis
+    # and quotation marks.  Those wrappers are not part of the answer itself:
+    # ``"yes"`` and ``*“yes”*`` must ground exactly like bare ``yes``.
+    answer = (intent_text or "").strip()
+    answer = answer.strip("*_` ")
+    answer = answer.strip("\"'“”‘’ ")
+    answer = answer.strip("*_` ")
     executor = LATNLayerExecutor(adapter)
     with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
             use_sp_policy(PermissiveSPPolicy()):
-        result = executor.execute_layer5(intent_text or "")
+        result = executor.execute_layer5(answer)
     l4 = getattr(result, "layer4_result", None)
     for hyp in (getattr(l4, "hypotheses", None) or []):
         for tok in getattr(hyp, "tokens", None) or []:
