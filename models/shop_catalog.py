@@ -73,10 +73,15 @@ class ShopCatalog:
         return [CatalogEntry.from_thing(t) for t in self._templates.values()]
 
     def entries_for(self, shop_id: str) -> list[CatalogEntry]:
-        """The for-sale goods a given shopkeeper offers."""
+        """The goods a shopkeeper openly advertises in their public shop.
+
+        Priced stock kept in a private sub-place remains a valid Thing but is
+        not part of the initial ``what do you have for sale?`` response.
+        """
         return [
             CatalogEntry.from_thing(t) for t in self._templates.values()
             if (t.owner or t.vendor_id) == shop_id
+            and (t.location_id or "").rstrip("/").split("/")[-1] != "living_loft"
         ]
 
     def materialize(

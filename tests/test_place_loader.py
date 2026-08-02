@@ -163,7 +163,9 @@ class TestLoadPlace:
         )
         assert p.name == "The Mayor's Hall"
         assert p.parent_id == "driftmoor"
-        assert "mayors_office" in p.children
+        assert p.children == []
+        assert "Mayor's office" in p.place_raw
+        assert "Records Room" in p.contents_raw
 
     def test_load_salt_and_iron(self):
         p = load_place(
@@ -240,8 +242,8 @@ class TestLoadAllPlaces:
     def test_sub_places_have_parent(self):
         places = load_all_places(PLACES_DIR)
         by_id = {p.id: p for p in places}
-        office = by_id["mayors_office"]
-        assert office.parent_id == "mayors_hall"
+        meeting_room = by_id["meeting_room"]
+        assert meeting_room.parent_id == "broken_lantern"
 
     def test_explicit_nested_id_avoids_reused_directory_name_collision(self):
         places = load_all_places(PLACES_DIR)

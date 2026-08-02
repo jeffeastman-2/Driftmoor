@@ -9,10 +9,10 @@ A simple stone building with slate roof and ivy up the walls on a low hill overl
 
 Inside: part library, part laboratory, part living space. Every surface serves a purpose.
 
-## Sub-Places
-- `study/` — main room, library and workspace
-- `laboratory/` — side room, experiments and obelisk research
-- Bedroom (covered here — too sparse for its own directory)
+## Interior Areas
+- **Study** — main room, library and workspace
+- **Laboratory** — restricted side room for experiments and obelisk research
+- **Bedroom** — sparse private room behind the study
 
 ## Bedroom
 Small, sparsely furnished. Narrow bed, wardrobe, table with single candle. Elyssa rarely uses it — she falls asleep at her desk more often than not.

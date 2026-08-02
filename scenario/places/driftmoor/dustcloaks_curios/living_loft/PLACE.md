@@ -1,17 +1,30 @@
 # PLACE.md — Dustcloak's Curios: Living Loft
 
+## Place Identity
+- **id:** dustcloaks_living_loft
+- **type:** living loft
+- **aliases:** living loft, loft, upstairs, private quarters
+
 ## Description and Atmosphere
-A narrow staircase leads to a small, dark loft. Low ceiling, cramped. A narrow bed, a rickety wardrobe, a chest locked with several reinforced mechanisms. Smells of incense and mildew. The incense is deliberate — the mildew is losing the battle. This is a space Kelem tolerates rather than inhabits.
+A cramped upper story beneath low rafters, reached by a narrow staircase from
+the backroom. A bed and wardrobe occupy one end. Reinforced cabinets and a
+many-locked chest line the other, well away from casual customers downstairs.
+
+## Resident NPCs and Creatures
+
+No permanent resident is initialized here. Kelem uses the loft after hours or
+when retrieving secured stock.
 
 ## Who Is Normally Here
-- **Kelem Dustcloak** — sleeping hours only
+- Kelem during sleeping hours or by special arrangement
+
+## Scene Introductions
+
+No permanent resident requires a scene introduction.
 
 ## Connections
-- Backroom (narrow staircase)
+- Backroom downstairs via the narrow staircase
 
 ## Dynamic State
-*(Updated by monitor agent)*
-
 - **Current occupants:** Empty during shop hours
-- **Recent events:** None
-- **Active conditions:** Reinforced chest undisturbed
+- **Active conditions:** Magical collection secured in reinforced cabinets

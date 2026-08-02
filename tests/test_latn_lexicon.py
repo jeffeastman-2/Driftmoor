@@ -121,12 +121,21 @@ def test_setting_and_common_nouns_registered():
 def test_conversation_commerce_and_spell_words_are_known():
     pytest.importorskip("latn.lexer.vector_space")
     from engine.latn_lexicon import build_driftmoor_lexicon
-    lex = build_driftmoor_lexicon([], [])
+    lex = build_driftmoor_lexicon([_Ch(name="Gilthaness")], [])
 
     assert not _tok_map(lex, "hello")["hello"].isa("unknown")
     assert _tok_map(lex, "for sale")["sale"].isa("noun")
     assert _tok_map(lex, "a spell")["spell"].isa("noun")
     assert _tok_map(lex, "teleport")["teleport"].isa("cast")
+
+    for sentence in (
+        "good day madam i am Gilthaness",
+        "my name is Gilthaness and I come seeking your knowledge",
+        "what can you tell me",
+        "I see what you are suggesting",
+    ):
+        unknown = [t.word for t in _tok_map(lex, sentence).values() if t.isa("unknown")]
+        assert unknown == [], (sentence, unknown)
 
 
 def test_downstairs_is_known_as_a_parentward_direction():

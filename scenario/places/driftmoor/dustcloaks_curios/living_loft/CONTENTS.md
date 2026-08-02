@@ -1,19 +1,19 @@
-# CONTENTS.md — Living Loft
+# CONTENTS.md — Dustcloak's Living Loft
 
-## Items Present
+## Furnishings
+- Narrow bed and rickety wardrobe
+- Reinforced chest with multiple locks (DC 18 Thieves' Tools, or Kelem's keys)
+- Locked cabinets containing Kelem's secured magical collection
 
-### Mundane
-- Narrow bed
-- Rickety wardrobe (clothing, nothing notable)
+## Secured Magical Collection
+1. Obelisk Shard (Unstable Fragment) — 250 gp
+2. Shadow Cloak — 500 gp
+3. Lantern of Revealing — 400 gp
+4. Potion of Shadow Sight — 100 gp/vial
+5. Ring of Obfuscation — 750 gp
+6. Orb of Whispering Echoes — 1,000 gp
+7. Shadowbane Dagger — 1,200 gp
 
-### Notable
-- Reinforced chest with multiple lock mechanisms (DC 18 Thieves' Tools, or all three keys carried on Kelem's person)
-
-### Chest Contents (DM's discretion — suggestions)
-- His most prized possession — a genuine obelisk fragment of unusual size or clarity
-- Correspondence revealing his connection to a larger organization interested in the obelisk
-- Something personal that explains why he never removes his cloak
-
-## Notes for DM
-- The chest is the most secure object in the building — cracking it should feel like a significant achievement
-- Whatever is inside should reframe Kelem's motivations when discovered
+These objects have prices because Kelem may offer them selectively after trust,
+negotiation, or a specific request. They are not advertised in the public
+shopfront catalog. Full properties remain in `scenario/things/magical_items.md`.

@@ -6,15 +6,15 @@ All magical items in the campaign, their true properties (including what vendors
 ---
 
 ## Kelem Dustcloak's Inventory
-*Location: `places/driftmoor/dustcloaks_curios/shopfront` (locked cabinet)*
-*See also: `places/driftmoor/dustcloaks_curios/shopfront/CONTENTS.md`*
+*Location: `places/driftmoor/dustcloaks_curios/living_loft` (locked cabinets)*
+*See also: `places/driftmoor/dustcloaks_curios/living_loft/CONTENTS.md`*
 
 ---
 
 ### Obelisk Shard (Unstable Fragment)
 **Asking price:** 250 gp
 **Attunement:** Not required
-**Session-start location:** Dustcloak's shopfront (locked cabinet)
+**Session-start location:** Dustcloak's living loft (locked cabinet)
 
 **Advertised properties:**
 - Once/day bonus action: +1d6 necrotic on next attack
@@ -31,7 +31,7 @@ All magical items in the campaign, their true properties (including what vendors
 ### Shadow Cloak
 **Asking price:** 500 gp
 **Attunement:** Required (1 hour in dim light or darkness)
-**Session-start location:** Dustcloak's shopfront (locked cabinet)
+**Session-start location:** Dustcloak's living loft (locked cabinet)
 
 **Advertised properties:**
 - Advantage on Stealth in dim light or darkness
@@ -48,7 +48,7 @@ All magical items in the campaign, their true properties (including what vendors
 ### Lantern of Revealing
 **Asking price:** 400 gp
 **Attunement:** Not required
-**Session-start location:** Dustcloak's shopfront (locked cabinet)
+**Session-start location:** Dustcloak's living loft (locked cabinet)
 
 **Advertised properties:**
 - Reveals invisible creatures and objects in light radius (30-ft bright, 30-ft dim)
@@ -64,7 +64,7 @@ All magical items in the campaign, their true properties (including what vendors
 ### Potion of Shadow Sight
 **Asking price:** 100 gp per vial
 **Attunement:** Not applicable (consumable)
-**Session-start location:** Dustcloak's shopfront (locked cabinet, 3 vials)
+**Session-start location:** Dustcloak's living loft (locked cabinet, 3 vials)
 
 **Advertised properties:**
 - Darkvision 60 ft for 1 hour (or +30 ft if already has darkvision)
@@ -80,7 +80,7 @@ All magical items in the campaign, their true properties (including what vendors
 ### Ring of Obfuscation
 **Asking price:** 750 gp
 **Attunement:** Required (worn for 24 hours)
-**Session-start location:** Dustcloak's shopfront (locked cabinet)
+**Session-start location:** Dustcloak's living loft (locked cabinet)
 
 **Advertised properties:**
 - Cast Disguise Self once/day without spell slot
@@ -97,7 +97,7 @@ All magical items in the campaign, their true properties (including what vendors
 ### Orb of Whispering Echoes
 **Asking price:** 1,000 gp
 **Attunement:** Required (meditate with orb for 1 hour)
-**Session-start location:** Dustcloak's shopfront (locked cabinet)
+**Session-start location:** Dustcloak's living loft (locked cabinet)
 
 **Advertised properties:**
 - Once/day: cast Detect Thoughts
@@ -114,7 +114,7 @@ All magical items in the campaign, their true properties (including what vendors
 ### Shadowbane Dagger
 **Asking price:** 1,200 gp
 **Attunement:** Required (spend a short rest with the dagger drawn)
-**Session-start location:** Dustcloak's shopfront (locked cabinet)
+**Session-start location:** Dustcloak's living loft (locked cabinet)
 
 **Advertised properties:**
 - +1 to attack and damage rolls

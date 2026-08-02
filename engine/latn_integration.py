@@ -108,11 +108,16 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
     from engine import latn_resolver
     from models.currency import format_coins
 
+    query_text = (intent_text or "").strip()
+    if len(query_text) >= 2 and query_text[0] in {'"', '“'} and query_text[-1] in {'"', '”'}:
+        query_text = query_text[1:-1].strip()
+    query_text = query_text.rstrip("?!.").strip().lower()
+
     lexicon, adapter = build_context(
         items or {}, characters or {}, actor_zone or "", scene_geometry,
         catalog=catalog)
     rq = latn_resolver.resolve_query_action(
-        intent_text or "", lexicon=lexicon, adapter=adapter)
+        query_text, lexicon=lexicon, adapter=adapter)
     if rq is None:
         # Defensive punctuation-independent shop-question fallback.  Some LATN
         # grammar paths can reduce "what are you selling" as a statement when
@@ -125,7 +130,7 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
         executor = LATNLayerExecutor(adapter)
         with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
                 use_sp_policy(PermissiveSPPolicy()):
-            atoms = executor.execute_layer1(intent_text or "")
+            atoms = executor.execute_layer1(query_text)
         tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
         surfaces = {
             str(getattr(t, "word", "") or "").strip().lower()

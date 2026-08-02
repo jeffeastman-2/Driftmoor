@@ -144,7 +144,7 @@ class TestParseMagicalItems:
         assert cloak.price == "500 gp"
         assert "Required" in cloak.attunement
         assert cloak.vendor_id == "kelem"
-        assert cloak.location_id == "dustcloaks_curios"
+        assert cloak.location_id == "dustcloaks_curios/living_loft"
 
     def test_shadow_cloak_properties(self, items):
         cloak = next((t for t in items if "shadow cloak" in t.name.lower()), None)

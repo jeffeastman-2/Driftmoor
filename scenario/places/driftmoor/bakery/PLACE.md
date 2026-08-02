@@ -39,6 +39,6 @@ You are at the far oven mid-experiment, flour to your elbows and a pepper-dusted
 ## Dynamic State
 *(Updated by monitor agent)*
 
-- **Current occupants:** Maribel Crust
+- **Current occupants:** Maribel Crust, Lottie Crust
 - **Recent events:** None yet — session not started
 - **Active conditions:** None established

@@ -10,9 +10,9 @@
 - **origin:** 212.5, 600.5, 0
 
 Notes: Squat crooked structure on the outskirts near the Mistwood
-Hills edge. Origin at southwest corner. Three levels: shopfront
-(ground floor front), backroom (ground floor rear through curtained
-doorway), and living loft above. Yard with organized chaos outside.
+Hills edge. Origin at southwest corner. The shopfront and backroom occupy the
+ground floor; the living loft is a separate enterable scene above. Yard with
+organized chaos outside.
 
 ---
 
@@ -35,7 +35,6 @@ doorway), and living loft above. Yard with organized chaos outside.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| LOFT       | 9.75        | (6.5,13) (26,13) (26,26) (6.5,26)     |
 | BACKROOM   | 6.5        | (0,11) (26,11) (26,26) (0,26)     |
 | SHOPFRONT  | 3.25        | (0,0) (26,0) (26,11) (0,11)       |
 | YARD       | 0.0        | (3,-6.5) (22.5,-6.5) (22.5,0) (3,0)     |
@@ -54,9 +53,10 @@ doorway), and living loft above. Yard with organized chaos outside.
 
 ## Connections
 
-| name       | x   | y   | destination      |
-|------------|-----|-----|------------------|
-| front_gate | 13 | 0 | places/driftmoor |
+| name           | x    | y    | destination                                             |
+|----------------|------|------|---------------------------------------------------------|
+| front_gate     | 13   | 0    | places/driftmoor                                        |
+| to_living_loft | 22.5 | 17.5 | places/driftmoor/dustcloaks_curios/living_loft         |
 
 ---
 

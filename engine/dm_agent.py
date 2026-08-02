@@ -504,6 +504,43 @@ class DMRight:
 
         return prose
 
+    @staticmethod
+    def _dedupe_repeated_opening_dialogue(prose: str) -> str:
+        """Remove a decorative opening quote repeated in the narration body.
+
+        Some narrators emit ``*“\"full speech\"”*`` and then narrate the same
+        speech again, split across ordinary quoted sentences with attribution.
+        The history-level speech guard cannot catch this because both copies are
+        already inside one narration response.
+        """
+        if not prose:
+            return prose
+        match = re.match(
+            r'^\s*\*[“"]+\"?(?P<quote>.*?)\"?[”"]+\*\s*(?P<rest>.+)$',
+            prose,
+            flags=re.DOTALL,
+        )
+        if match is None:
+            return prose
+
+        def norm(value: str) -> str:
+            return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+        quote = match.group("quote").strip().strip('"“”')
+        rest = match.group("rest").strip()
+        # Attribution inserted between sentences prevents a whole-quote
+        # substring comparison. Require every meaningful sentence from the
+        # decorative quote to recur in the remaining prose before deleting it.
+        chunks = [
+            norm(chunk)
+            for chunk in re.split(r"(?<=[.!?])\s+", quote)
+            if len(norm(chunk).split()) >= 3
+        ]
+        rest_norm = norm(rest)
+        if chunks and all(chunk in rest_norm for chunk in chunks):
+            return rest
+        return prose
+
     def build_system_prompt(
         self,
         character_pronouns: dict[str, str] | None = None,
@@ -516,6 +553,9 @@ class DMRight:
             "meta-commentary. No purple prose — avoid 'seemed to', "
             "'as if', atmospheric clichés, and stacked adjectives. "
             "Plain language. Let the action speak.\n\n"
+            "DIALOGUE: Include each spoken sentence exactly once. Do not place "
+            "the full speech in a decorative opening quotation and then repeat "
+            "it with attribution in the prose.\n\n"
             "GROUNDING: Keep descriptions tied to observable facts. Use "
             "counts, distances, times, positions, visible marks, direct speech, "
             "and physical cause/effect. If the scene suggests a theory, keep it "
@@ -636,6 +676,7 @@ class DMRight:
             character_pronouns,
         )
         prose = self._enforce_character_style(prose, character_id)
+        prose = self._dedupe_repeated_opening_dialogue(prose)
         return Narration(
             character_id=character_id,
             turn=turn,

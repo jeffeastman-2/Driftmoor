@@ -18,6 +18,6 @@ Tess has a hidden compartment under one of the floorboards. Only she knows about
 ## Dynamic State
 *(Updated by monitor agent)*
 
-- **Current occupants:** Empty (unless rented)
+- **Current occupants:** Empty unless Tess is restocking
 - **Recent events:** None
 - **Active conditions:** Hidden compartment undisturbed

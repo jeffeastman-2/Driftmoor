@@ -609,6 +609,23 @@ class TestDMRightParsing:
         assert result.character_id == "fennel"
         assert result.turn == 2
 
+    def test_removes_decorative_opening_when_dialogue_repeats_in_prose(self):
+        speech = (
+            "An adventurer's journey often leaves one with a certain... hunger "
+            "for the peculiar. Tell me, does your path require something "
+            "functional, perhaps a relic with a bit of spark?"
+        )
+        raw = (
+            f'*“"{speech}"”* Kelem leans against the shop counter. '
+            '"An adventurer\'s journey often leaves one with a certain... hunger '
+            'for the peculiar," Kelem says. "Tell me, does your path require '
+            'something functional, perhaps a relic with a bit of spark?"'
+        )
+        result = DMRight().parse_response(raw, "kelem", 4)
+        assert not result.prose.startswith("*“")
+        assert result.prose.count("An adventurer's journey") == 1
+        assert result.prose.count("Tell me, does your path") == 1
+
     def test_configured_pronouns_correct_misgendered_tavern_prose(self):
         raw = (
             "Tess stops polishing an ale tankard and leans his weight onto "

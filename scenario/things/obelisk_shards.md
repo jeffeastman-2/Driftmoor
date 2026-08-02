@@ -43,7 +43,7 @@ An uncontained shard is mildly hazardous to carry. Elyssa Moonglow uses a reinfo
 | Location | Description | Status |
 |----------|-------------|--------|
 | `places/driftmoor/elyssa_cottage/laboratory` | Full shard in reinforced dome | Present (until ransacking event) |
-| `places/driftmoor/dustcloaks_curios/shopfront` | Standard extractable shard | For sale, 250 gp |
+| `places/driftmoor/dustcloaks_curios/living_loft` | Standard extractable shard | Secured; selectively offered at 250 gp |
 | `places/driftmoor/dustcloaks_curios/backroom` | Multiple fragments, various sizes | Kelem's research collection, not for sale |
 | `places/obelisk_reach/shattered_obelisk` | Multiple cliff-embedded fragments | Extractable with tools, 10 min each |
 | `places/obelisk_reach/echoing_caverns` | Large fragment embedded in cavern floor | Not removable without destroying surrounding stone |

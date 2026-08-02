@@ -321,6 +321,8 @@ def _parse_magical_block(
             location_id = "elyssa_cottage"
         elif "gilded trinket" in loc_field.lower():
             location_id = "gilded_trinket"
+        elif "dustcloak" in loc_field.lower() and "living loft" in loc_field.lower():
+            location_id = "dustcloaks_curios/living_loft"
         elif "dustcloak" in loc_field.lower():
             location_id = "dustcloaks_curios"
 
@@ -541,7 +543,10 @@ def load_all_things(things_dir: Path) -> list[Thing]:
     shard_locations = {t.location_id for t in shards if t.location_id}
     magical_deduped = [
         t for t in magical
-        if not (t.location_id in shard_locations and "shard" in t.name.lower())
+        if not (
+            t.location_id.rstrip("/").split("/")[-1] in shard_locations
+            and "shard" in t.name.lower()
+        )
     ]
 
     all_things: list[Thing] = []

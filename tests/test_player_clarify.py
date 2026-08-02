@@ -6,7 +6,14 @@ the rephrase, and is bounded."""
 
 import asyncio
 
-from engine.session import _clarify_unknown_words, _format_unknown_word_prompt
+from engine.session import (
+    _ambiguous_driftmoor_venues,
+    _clarify_ambiguous_venue,
+    _clarify_unknown_words,
+    _format_ambiguous_venue_prompt,
+    _format_unknown_word_prompt,
+    _filter_presented_unknowns,
+)
 
 
 class _Ask:
@@ -45,6 +52,13 @@ class TestPrompt:
         msg = _format_unknown_word_prompt([("floober", []), ("grommit", ["grommet"])])
         assert "some of those words" in msg and "floober" in msg and "grommit" in msg
 
+    def test_words_previously_spoken_by_the_game_are_not_unknown(self):
+        unknowns = [("conduit", []), ("glyphs", []), ("unrelated", [])]
+        history = "Elyssa says the glyphs suggest a conduit, not a boundary."
+        assert _filter_presented_unknowns(unknowns, history) == [
+            ("unrelated", [])
+        ]
+
 
 class TestClarifyLoop:
     def test_no_unknowns_returns_immediately(self):
@@ -71,6 +85,27 @@ class TestClarifyLoop:
         out = _run("first", _seq_diagnose([("x", [])]), ask)   # always unknown
         assert out == "off again"                     # last reply within 3 rounds
         assert len(ask.prompts) == 3
+
+
+class TestVenueClarification:
+    def test_cottage_lists_the_two_matching_destinations(self):
+        choices = _ambiguous_driftmoor_venues(
+            "I enter the cottage", "places/driftmoor"
+        )
+        assert {scene for scene, _label in choices} == {
+            "elyssa_cottage", "weavers_cottage"
+        }
+        prompt = _format_ambiguous_venue_prompt(choices)
+        assert "ambiguous" in prompt and "Elyssa" in prompt and "Weaver" in prompt
+
+    def test_short_answer_becomes_an_enter_intent(self):
+        ask = _Ask("Elyssa's cottage")
+        out = asyncio.run(_clarify_ambiguous_venue(
+            "I enter the cottage", ask=ask,
+            candidates=(("elyssa_cottage", "Elyssa's Cottage"),
+                        ("weavers_cottage", "Weaver's Cottage")),
+        ))
+        assert out == "enter Elyssa's cottage"
 
 
 class TestGroundingGate:

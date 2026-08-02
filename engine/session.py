@@ -1886,6 +1886,7 @@ def _driftmoor_enter_doorway(
     current_place_path: str,
     actor_zone: str,
     scene_geometry: "SceneGeometry | None",
+    actor_position: Optional[tuple] = None,
 ) -> Optional[tuple[str, tuple[float, float, str]]]:
     """For an "enter <child>" intent, return ``(target_scene, (x, y, zone))`` of
     the child venue's authored doorway in the current scene, so the turn loop can
@@ -1894,7 +1895,7 @@ def _driftmoor_enter_doorway(
     a non-Driftmoor scene, or a child with no authored doorway (those keep the
     legacy immediate transition)."""
     target_scene = _infer_driftmoor_venue_transition(
-        intent_text, current_place_path, actor_zone)
+        intent_text, current_place_path, actor_zone, actor_position)
     if target_scene is None:
         return None
     # Only descents (entering a child of the current place) are doorway-gated;
@@ -1958,10 +1959,136 @@ def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[s
     )
 
 
+def _venue_candidates_at_door(
+    current_place_path: str,
+    actor_zone: str,
+    candidates: tuple[tuple[str, tuple[str, ...]], ...],
+    actor_position: Optional[tuple] = None,
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Narrow venue candidates to a clearly nearest authored doorway.
+
+    Generic aliases such as ``cottage`` may legitimately name more than one
+    town destination. A building footprint is decisive. On nearby open ground,
+    choose the nearest doorway only when it is materially closer than second
+    place; otherwise preserve the ambiguity and ask.
+    """
+    zone = (actor_zone or "").upper()
+    place = (current_place_path or "").strip().lower().strip("/")
+    if not zone or not place:
+        return ()
+    rel = place.removeprefix("places/driftmoor").strip("/")
+    geom_path = (
+        _DRIFTMOOR_PLACES_ROOT / rel / "GEOMETRY.md"
+        if rel else _DRIFTMOOR_PLACES_ROOT / "GEOMETRY.md"
+    )
+    try:
+        geometry = load_geometry(geom_path)
+    except (OSError, ValueError):
+        return ()
+    names = {
+        child
+        for child, _connection, x, y in _driftmoor_source_doorways(place)
+        if (geometry.zone_at(Position(x, y, 0.0)) or "").upper() == zone
+    }
+    narrowed = tuple(candidate for candidate in candidates if candidate[0] in names)
+    if len(narrowed) == 1:
+        return narrowed
+    if actor_position is None or len(actor_position) < 2:
+        return ()
+    px, py = float(actor_position[0]), float(actor_position[1])
+    candidate_names = {candidate[0] for candidate in candidates}
+    ranked = sorted(
+        (
+            ((x - px) ** 2 + (y - py) ** 2) ** 0.5,
+            child,
+        )
+        for child, _connection, x, y in _driftmoor_source_doorways(place)
+        if child in candidate_names
+    )
+    if len(ranked) < 2:
+        return ()
+    nearest, second = ranked[0], ranked[1]
+    # Both an absolute and relative margin: 40 ft vs 55 ft remains ambiguous;
+    # 40 ft vs 100 ft is a reasonable location-based inference.
+    if second[0] - nearest[0] < 20.0 or nearest[0] > second[0] * 0.7:
+        return ()
+    return tuple(candidate for candidate in candidates if candidate[0] == nearest[1])
+
+
+def _driftmoor_approach_doorway(
+    intent_text: str,
+    current_place_path: str,
+) -> Optional[tuple[str, tuple[float, float, str]]]:
+    """Resolve a uniquely named venue in a movement phrase to its front door."""
+    words = _dest_tokens(intent_text)
+    if not words or not (words & (_MOVE_CUE_WORDS | {"teleport"})):
+        return None
+    generic = _VENUE_ALIAS_GENERIC | {"cottage"}
+    scored: list[tuple[int, str]] = []
+    for scene_name, aliases in _driftmoor_child_venues(current_place_path):
+        best = 0
+        for alias in aliases:
+            alias_words = _dest_tokens(alias)
+            identifying = alias_words - generic
+            if identifying and identifying <= words:
+                best = max(best, len(identifying))
+        if best:
+            scored.append((best, scene_name))
+    if not scored:
+        return None
+    top = max(score for score, _scene in scored)
+    winners = {scene for score, scene in scored if score == top}
+    if len(winners) != 1:
+        return None
+    winner = next(iter(winners))
+    for child, _connection, x, y in _driftmoor_source_doorways(current_place_path):
+        if child == winner:
+            return (child, (x, y, ""))
+    return None
+
+
+def _ambiguous_driftmoor_venues(
+    intent_text: str,
+    current_place_path: str,
+) -> tuple[tuple[str, str], ...]:
+    """Return matching child venues for an ambiguous ``enter`` target.
+
+    This is only explanatory: actual transition authority remains with LATN.
+    Exact aliases and standalone alias words are considered so a bare generic
+    noun such as ``cottage`` can produce a useful choice list.
+    """
+    text = _normalize_venue_intent_text(intent_text)
+    if not re.search(r"\b(?:enter|visit|go inside|go in|go into|step inside|walk inside)\b", text):
+        return ()
+    match = re.search(
+        r"\b(?:enter|visit|go inside|go in|go into|step inside|walk inside)\s+"
+        r"(?:the\s+|a\s+|an\s+)?(.+?)\s*$",
+        text,
+    )
+    if not match:
+        return ()
+    target = re.sub(r"[^a-z0-9]+", " ", match.group(1).lower()).strip()
+    if not target:
+        return ()
+    out: list[tuple[str, str]] = []
+    by_path = {node.scene_name: node for node in _driftmoor_place_registry()}
+    for scene_name, aliases in _driftmoor_child_venues(current_place_path):
+        if any(target == alias or target in alias.split() for alias in aliases):
+            node = by_path.get(scene_name)
+            label = scene_name.replace("_", " ").title()
+            if node is not None:
+                explicit = next((a for a in node.aliases if " " in a), "")
+                if explicit:
+                    label = explicit.title()
+            out.append((scene_name, label))
+    return tuple(out) if len(out) > 1 else ()
+
+
 def _infer_driftmoor_venue_transition(
     intent_text: str,
     current_place_path: str,
     actor_zone: str,
+    actor_position: Optional[tuple] = None,
 ) -> Optional[str]:
     """Detect hierarchy-based Driftmoor scene transitions via LATN.
 
@@ -2020,6 +2147,22 @@ def _infer_driftmoor_venue_transition(
     candidates = children + ((current.scene_name, _clean_venue_aliases(current.aliases)),)
 
     res = latn_integration.resolve_venue_transition(text, {}, actor_zone or "", candidates)
+    if res == ("enter", None):
+        ambiguous_names = {
+            scene_name
+            for scene_name, _label in _ambiguous_driftmoor_venues(text, place)
+        }
+        proximity_candidates = tuple(
+            candidate for candidate in children
+            if not ambiguous_names or candidate[0] in ambiguous_names
+        )
+        at_door = _venue_candidates_at_door(
+            place, actor_zone, proximity_candidates, actor_position
+        )
+        if at_door:
+            res = latn_integration.resolve_venue_transition(
+                text, {}, actor_zone or "", at_door
+            )
     if res is None:
         return None
     kind, target = res
@@ -2233,6 +2376,11 @@ def _coordinate_authoritative_target(
     )
 
 
+def _should_apply_cross_zone_routing(explicit_coordinate) -> bool:
+    """Semantic waypoint routing must never replace a player coordinate."""
+    return explicit_coordinate is None
+
+
 def _infer_cardinal_destination(
     intent_text: str,
     my_pos: Optional[tuple[float, float, str]],
@@ -2349,12 +2497,14 @@ def _infer_character_destination(
     if not words or not (words & _MOVE_CUE_WORDS):
         return None
     matches: list[tuple[float, float, str]] = []
+    other_positions: list[tuple[float, float, str]] = []
     for cid in active_characters:
         if cid == self_id or cid not in characters:
             continue
         pos = current_positions.get(cid)
         if pos is None:
             continue
+        other_positions.append(pos)
         cs = characters[cid]
         name = getattr(getattr(cs, "character", None), "name", "") or ""
         handle = getattr(cs, "scene_handle", "") or ""
@@ -2364,8 +2514,14 @@ def _infer_character_destination(
                 cands.add(tok)
         if words & cands:
             matches.append(pos)
-    # Exactly one named character -> its position; zero or ambiguous -> None.
-    return matches[0] if len(matches) == 1 else None
+    # Exactly one named character -> its position.
+    if len(matches) == 1:
+        return matches[0]
+    # In a one-on-one scene, "move closer" has a single reasonable referent.
+    # Preserve ambiguity whenever two or more other characters are present.
+    if not matches and words & {"closer", "nearer"} and len(other_positions) == 1:
+        return other_positions[0]
+    return None
 
 
 def _infer_movement_destination(
@@ -2600,7 +2756,14 @@ def _history_entry(handle: str, spoken: str, action: str, prose: str) -> str:
     when multiple characters speak and act in sequence.
     """
     parts: list[str] = []
-    if spoken.strip() and spoken.strip().lower() not in ("(silent)", "(silence)"):
+    spoken_norm = re.sub(r"[^a-z0-9]+", " ", spoken.lower()).strip()
+    prose_norm = re.sub(r"[^a-z0-9]+", " ", prose.lower()).strip()
+    # Narration frequently embeds the exact spoken line. Do not add a second
+    # explicit `says:` copy to history/prompt context when it already does.
+    spoken_is_in_prose = bool(spoken_norm and spoken_norm in prose_norm)
+    if (spoken.strip()
+            and spoken.strip().lower() not in ("(silent)", "(silence)")
+            and not spoken_is_in_prose):
         parts.append(f'{handle} says: "{spoken.strip()}"')
     if action.strip():
         parts.append(f"{handle} acts: {action.strip()}")
@@ -2808,6 +2971,16 @@ def _resolve_teleport_destination(
         if zone:
             return (cx, cy, zone)
 
+    # Town venues are authored as child scenes whose doors live in the current
+    # scene's Connections table. Resolve their aliases before generic zones so
+    # "Teleport to Dustcloak's Curios" lands at that specific front door.
+    place_path = getattr(scene_geometry, "place_path", "") or ""
+    venue = _driftmoor_approach_doorway(intent_text, place_path)
+    if venue is not None:
+        _scene_name, (vx, vy, _zone) = venue
+        zone = (scene_geometry.zone_at(Position(vx, vy)) or "").upper()
+        return (vx, vy, zone)
+
     def _best(candidates: list[tuple[str, float, float, str]]):
         best = None
         best_score = 0
@@ -2910,6 +3083,34 @@ def _extract_spell_name_from_intent(intent_text: str, cs: CharacterSession) -> s
             if hinted == name.lower():
                 return name
     return None
+
+
+def _teleport_venue_arrival_fact(
+    character_id: str,
+    intent_text: str,
+    scene_geometry: Optional[SceneGeometry],
+) -> Optional[str]:
+    """Authoritative narration fact for a teleport aimed at a town venue.
+
+    Venue teleportation deliberately targets the exterior connection point.  A
+    narrator otherwise tends to interpret the venue name as permission to put
+    the caster inside the building, contradicting the position map and bypassing
+    the separate ``enter`` action.
+    """
+    if scene_geometry is None:
+        return None
+    place_path = getattr(scene_geometry, "place_path", "") or ""
+    venue = _driftmoor_approach_doorway(intent_text, place_path)
+    if venue is None:
+        return None
+    scene_name, _door = venue
+    venue_label = scene_name.replace("_", " ")
+    return (
+        f"[TELEPORT ARRIVAL] {character_id} materialized outside "
+        f"{venue_label}, at its exterior doorway. They did not enter the "
+        "building; do not narrate them inside, among its shelves, or in its "
+        "rooms."
+    )
 
 
 def _resolve_spell_targets(
@@ -3232,6 +3433,33 @@ def _format_unknown_word_prompt(unknowns: list) -> str:
             else "I don't know some of those words:")
     return (f'The Dungeon Master pauses: "{head} {listing}. '
             f'Could you put it another way?"')
+
+
+def _filter_presented_unknowns(unknowns, presented_text: str):
+    """Do not reject vocabulary the game itself recently showed the player."""
+    presented = set(re.findall(r"[a-z0-9]+", (presented_text or "").lower()))
+    return [entry for entry in unknowns if entry[0].lower() not in presented]
+
+
+def _format_ambiguous_venue_prompt(candidates) -> str:
+    labels = [label for _scene_name, label in candidates]
+    choices = ", ".join(labels[:-1]) + f" or {labels[-1]}"
+    return (
+        'The Dungeon Master pauses: "That place name is ambiguous. '
+        f'Did you mean {choices}?"'
+    )
+
+
+async def _clarify_ambiguous_venue(intent_text, *, ask, candidates):
+    """Ask once which venue was meant, preserving the original enter verb."""
+    if not candidates:
+        return intent_text
+    reply = (await ask(_format_ambiguous_venue_prompt(candidates)) or "").strip()
+    if not reply:
+        return intent_text
+    if re.search(r"\b(?:enter|visit|go|step|walk)\b", reply.lower()):
+        return reply
+    return f"enter {reply}"
 
 
 async def _clarify_unknown_words(intent_text, *, ask, diagnose_fn, max_rounds: int = 3):
@@ -4689,10 +4917,18 @@ def _looks_like_question(text: str) -> bool:
     t = (text or "").strip()
     if not t:
         return False
+    if len(t) >= 2 and t[0] in {'"', '“'} and t[-1] in {'"', '”'}:
+        t = t[1:-1].strip()
     if t.endswith("?"):
         return True
     first = t.lower().split()[0].strip(",.!:;\"'“”")
     return first in _WH_WORDS
+
+
+def _is_explicit_spoken_utterance(text: str) -> bool:
+    """True when transport input contains player-authored quoted dialogue."""
+    spoken, _action = _split_transport_utterance(text)
+    return bool(spoken.strip())
 
 
 def _spell_help(text: str, cs: CharacterSession) -> Optional[str]:
@@ -4847,7 +5083,8 @@ async def _player_roles_via_transport(
             continue
         # A question goes to the DM, not the action resolver: answer it and keep
         # the dialog open (no cap) until the player states an actual intent.
-        if _looks_like_question(inbound):
+        if (_looks_like_question(inbound)
+                and not _is_explicit_spoken_utterance(inbound)):
             answer = await _dm_answer(turn_cycle, context, inbound)
             # Flag DM/LLM involvement: these questions are answered by the model,
             # not LATN+the engine, so the player can see where the parser hasn't
@@ -5369,7 +5606,10 @@ async def iter_session(
             # hooks' (scene items, characters, zones, venues, present shop goods)
             # so real words aren't flagged. Transport-backed human players only.
             _asker = _commerce_negotiator(cs, character_id)
-            if _asker is not None and intent.intent:
+            # Quoted human input is free-form character speech, not an engine
+            # command. NPC/DM dialogue owns its interpretation, so the action
+            # lexicon must never demand that spoken prose be rephrased.
+            if _asker is not None and intent.intent and not output.spoken:
                 try:
                     from engine.latn_integration import build_context as _dm_build_ctx
                     from engine.latn import use_lexicon as _dm_use_lex
@@ -5388,6 +5628,25 @@ async def iter_session(
                         items or {}, characters or {}, _dm_zone, scene_geometry,
                         venues=_dm_venues, catalog=_dm_entries)
 
+                    _place_path = (
+                        getattr(scene_geometry, "place_path", "") or ""
+                        if scene_geometry is not None else ""
+                    )
+                    _venue_choices = _ambiguous_driftmoor_venues(
+                        intent.intent, _place_path
+                    )
+                    if _venue_choices and _infer_driftmoor_venue_transition(
+                        intent.intent, _place_path, _dm_zone,
+                        current_positions.get(character_id),
+                    ) is None:
+                        _refined = await _clarify_ambiguous_venue(
+                            intent.intent, ask=_asker,
+                            candidates=_venue_choices,
+                        )
+                        if _refined and _refined != intent.intent:
+                            intent.intent = _refined
+                            output.action = _refined
+
                     if not _player_intent_grounds(
                         intent.intent, lexicon=_dm_lex, adapter=_dm_adp,
                         items=items or {}, characters=characters or {},
@@ -5395,7 +5654,10 @@ async def iter_session(
                     ):
                         def _dm_diag(_t, _lex=_dm_lex):
                             with _dm_use_lex(_lex):
-                                return _dm_diagnose(_t)
+                                diagnosed = _dm_diagnose(_t)
+                            return _filter_presented_unknowns(
+                                diagnosed, combined_history
+                            )
 
                         # Record the out-of-vocabulary words so real gaps (e.g.
                         # "eat") accumulate for review and can be added to the
@@ -5719,6 +5981,11 @@ async def iter_session(
                                         f"[TELEPORT] {character_id}: → "
                                         f"({tx:.1f},{ty:.1f},{new_pos[2]})"
                                     )
+                                venue_arrival = _teleport_venue_arrival_fact(
+                                    character_id, intent.intent, scene_geometry
+                                )
+                                if venue_arrival is not None:
+                                    attack_log.append(venue_arrival)
                             else:
                                 attack_log.append(
                                     f"[TELEPORT] {character_id}: no recognizable "
@@ -5948,6 +6215,20 @@ async def iter_session(
                 scene_geometry,
             )
 
+            # A named venue approach is grounded to its authored front door,
+            # overriding an LLM-generated movement coordinate. This prevents
+            # phrases such as "move toward Elyssa's cottage" from wandering in
+            # an invented direction.
+            _approach_info = None
+            if scene_geometry is not None and intent.intent:
+                _approach_info = _driftmoor_approach_doorway(
+                    intent.intent,
+                    getattr(scene_geometry, "place_path", "") or "",
+                )
+            if _approach_info is not None and adjudication.approved:
+                player_target = _approach_info[1]
+                intent.movement_target = player_target
+
             # An explicit coordinate in the intent is authoritative over a
             # model-generated MOVEMENT field. This is especially important for
             # map double-click commands: the language model may otherwise emit
@@ -5978,6 +6259,7 @@ async def iter_session(
                     getattr(scene_geometry, "place_path", "") or "",
                     current_positions.get(character_id, ("", "", ""))[2],
                     scene_geometry,
+                    current_positions.get(character_id),
                 )
             if _enter_info is not None and adjudication.approved:
                 _door = _enter_info[1]
@@ -6139,7 +6421,8 @@ async def iter_session(
                 # the actor's, redirect this turn's move to the entry point of
                 # the next zone along the adjacency graph — one hop per turn,
                 # arriving over several turns. Same-zone targets are unaffected.
-                if scene_geometry is not None:
+                if (scene_geometry is not None
+                        and _should_apply_cross_zone_routing(_explicit_coordinate)):
                     _az = (current_positions.get(
                         character_id, ("", "", ""))[2] or "").upper()
                     _dz = ""

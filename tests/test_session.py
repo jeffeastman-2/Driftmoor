@@ -27,6 +27,7 @@ from engine.session import (
     _has_vicious_mockery_disadvantage,
     _consume_vicious_mockery_disadvantage,
     _resolve_teleport_destination,
+    _teleport_venue_arrival_fact,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -510,9 +511,18 @@ class TestTransportPromptAndPacketFormatting:
         assert _looks_like_question("What is behind the door?")
         assert _looks_like_question("where do the passages lead")  # wh, no '?'
         assert _looks_like_question("Is it safe?")                  # '?', no wh
+        assert _looks_like_question('"What are you selling?"')
+        assert _looks_like_question('"Blorple snazzit?"')
         assert not _looks_like_question("attack the giant spider")
         assert not _looks_like_question("move to the rocky passage")
         assert not _looks_like_question("")
+
+    def test_quoted_question_is_character_speech_not_dm_helper_input(self):
+        from engine.session import _is_explicit_spoken_utterance
+        assert _is_explicit_spoken_utterance(
+            '"Hello, my name is Gilthaness. May I come in?"'
+        )
+        assert not _is_explicit_spoken_utterance("What does the map show?")
 
     def test_dm_answer_uses_character_llm_bounded_to_perception(self):
         import asyncio
@@ -613,6 +623,23 @@ class TestInferCharacterDestination:
             {"gilthaness"},
         )
         assert dest is None
+
+    def test_move_closer_uses_sole_other_character(self):
+        from engine.session import _infer_character_destination
+        dest = _infer_character_destination(
+            'I move closer "I understand your research"', "gilthaness",
+            self._chars(), self._positions(),
+            {"gilthaness", "amara"},
+        )
+        assert dest == (137.0, 227.0, "FIRST PASSAGE")
+
+    def test_move_closer_stays_ambiguous_with_multiple_others(self):
+        from engine.session import _infer_character_destination
+        assert _infer_character_destination(
+            "I move closer", "gilthaness",
+            self._chars(), self._positions(),
+            {"gilthaness", "amara", "thorgrim"},
+        ) is None
 
 
 class TestInferCardinalDestination:
@@ -725,6 +752,13 @@ class TestInferCoordinateDestination:
         assert target is not None
         assert target[:2] == (1272.7, 1008.1)
 
+    def test_explicit_coordinate_disables_semantic_waypoint_routing(self):
+        from engine.session import _should_apply_cross_zone_routing
+        assert not _should_apply_cross_zone_routing(
+            (635.0, 614.0, "NORTH_BANK")
+        )
+        assert _should_apply_cross_zone_routing(None)
+
 
 class TestMovementBudgetPerTurn:
     """Speed is per melee round; exploration turns span multiple rounds."""
@@ -806,6 +840,35 @@ class TestInferDriftmoorVenueTransition:
             "TOWN_COMMON",
         )
         assert out == "beacon_church"
+
+    def test_bare_cottage_uses_the_doorway_zone_to_break_the_tie(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        assert _infer_driftmoor_venue_transition(
+            "I enter the cottage", "places/driftmoor", "ELYSSA_COTTAGE"
+        ) == "elyssa_cottage"
+
+    def test_bare_cottage_uses_clear_distance_advantage(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        assert _infer_driftmoor_venue_transition(
+            "I enter the cottage", "places/driftmoor", "TOWN_COMMON",
+            (680.0, 268.0, "TOWN_COMMON"),
+        ) == "elyssa_cottage"
+        assert _infer_driftmoor_venue_transition(
+            "I enter the cottage", "places/driftmoor", "TOWN_COMMON",
+            (480.0, 430.0, "TOWN_COMMON"),
+        ) == "weavers_cottage"
+
+    def test_bare_cottage_away_from_a_door_remains_ambiguous(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        assert _infer_driftmoor_venue_transition(
+            "I enter the cottage", "places/driftmoor", "TOWN_COMMON"
+        ) is None
+
+    def test_named_venue_approach_uses_authored_door(self):
+        from engine.session import _driftmoor_approach_doorway
+        assert _driftmoor_approach_doorway(
+            "I move towards Elyssa's cottage", "places/driftmoor"
+        ) == ("elyssa_cottage", (723.0, 268.0, ""))
 
     def test_go_to_venue_is_not_entry(self):
         # "go to / head to / walk to" walk you to the door; they do not cross
@@ -1087,6 +1150,16 @@ class TestHistoryEntryFormatting:
         assert out.startswith("\n\nGil says: \"Hello there\"")
         assert "\nGil acts: waves\n" in out
         assert out.endswith("The innkeeper watches him.")
+
+    def test_embedded_spoken_line_is_not_added_twice(self):
+        from engine.session import _history_entry
+        spoken = "Look here. The energy is pooling densely."
+        prose = (
+            'Elyssa taps the map. "Look here. The energy is pooling densely."'
+        )
+        out = _history_entry("Elyssa", spoken, "points to the map", prose)
+        assert "Elyssa says:" not in out
+        assert out.count(spoken) == 1
 
 
 class TestHumanizeRecentContext:
@@ -2801,6 +2874,31 @@ class TestResolveTeleportDestination:
         assert label == "ECHO CHAMBER"
         assert geo.zone_at(Position(x, y)) == "Echo Chamber"
 
+    def test_named_driftmoor_venue_resolves_to_authored_door(self):
+        from models.geometry_loader import load_geometry
+        town = load_geometry(
+            Path(__file__).parent.parent
+            / "scenario/places/driftmoor/GEOMETRY.md"
+        )
+        for spelling in ("Dustcloak's Curios", "Duskcloak's Curios"):
+            assert _resolve_teleport_destination(
+                f"I cast Teleport spell to {spelling}", town
+            ) == (251.5, 641.5, "DUSTCLOAKS_CURIOS")
+
+    def test_named_venue_arrival_fact_forbids_interior_narration(self):
+        from models.geometry_loader import load_geometry
+        town = load_geometry(
+            Path(__file__).parent.parent
+            / "scenario/places/driftmoor/GEOMETRY.md"
+        )
+        fact = _teleport_venue_arrival_fact(
+            "gilthaness", "I teleport to Duskcloak's curios", town
+        )
+        assert fact is not None
+        assert "materialized outside dustcloaks curios" in fact.lower()
+        assert "exterior doorway" in fact.lower()
+        assert "did not enter" in fact.lower()
+
 
 
 
@@ -2883,6 +2981,14 @@ class TestSelfQuestion:
             "what can I sell", cs=cs, characters=cfg.characters,
             actor_zone="", scene_geometry=cfg.scene_geometry, items=cfg.items)
         assert ans is not None and ans.startswith("You are carrying:")
+
+    def test_merchant_sell_me_question_defers_to_catalog(self):
+        from engine.session import _answer_self_question
+        cfg, cs = self._player()
+        assert _answer_self_question(
+            "what can you sell me", cs=cs, characters=cfg.characters,
+            actor_zone="", scene_geometry=cfg.scene_geometry,
+            items=cfg.items) is None
 
     def test_purchase_question_defers_to_catalog(self):
         # "what can I buy" is about the shop -> self-answer declines (None).

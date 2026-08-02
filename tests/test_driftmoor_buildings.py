@@ -31,6 +31,16 @@ def _town_buildings():
     return tuple(_driftmoor_source_doorways("places/driftmoor"))
 
 
+def test_every_authored_driftmoor_place_is_enterable():
+    """A PLACE.md must not advertise a runtime place without geometry."""
+    for place_file in DRIFTMOOR.glob("**/PLACE.md"):
+        assert (place_file.parent / "GEOMETRY.md").is_file(), (
+            f"{place_file.parent.relative_to(DRIFTMOOR)} has PLACE.md but no "
+            "GEOMETRY.md; model it as an area in its parent or author an "
+            "enterable scene"
+        )
+
+
 @pytest.mark.parametrize(
     "place_id,connection_name,door_x,door_y",
     _town_buildings(),
@@ -181,6 +191,24 @@ def test_broken_lantern_subplaces_have_geometry_and_reciprocal_entries():
         assert _infer_driftmoor_venue_transition(
             "I exit", child_path, next(iter(child.scene_geometry.zones))
         ) == "broken_lantern"
+
+
+def test_dustcloaks_living_loft_is_an_enterable_second_story():
+    parent_path = "places/driftmoor/dustcloaks_curios"
+    child_path = f"{parent_path}/living_loft"
+    parent = configure_from_place_path(parent_path)
+    child = configure_from_place_path(child_path)
+
+    assert child.scene_geometry.origin == Position(6.5, 13, 9)
+    assert child.scene_geometry.z_level == pytest.approx(
+        parent.scene_geometry.z_level + 9
+    )
+    assert _infer_driftmoor_venue_transition(
+        "I go upstairs", parent_path, "BACKROOM"
+    ) == "living_loft"
+    assert _entry_point_from_target_geometry(
+        child_path, parent_path, child.scene_geometry
+    ) is not None
 
 
 def test_broken_lantern_items_live_in_their_physical_subplaces():

@@ -160,9 +160,9 @@ Remaining place work:
       directory-derived aliases during migration.
 - [x] Standardize map landmark type labels while retaining proper place names
       in tooltips.
-- [ ] Review every building's description, connections, dynamic state, and
+- [x] Review every building's description, connections, dynamic state, and
       notable contents for contradictions.
-- [ ] Review internal subplaces and remove or repair stale, non-enterable
+- [x] Review internal subplaces and remove or repair stale, non-enterable
       directory/connection references.
 
 ### 2. NPC Completeness
@@ -347,3 +347,6 @@ Record release-focused decisions and milestone completions here.
 - 2026-07-28: Deferred Old Mill and Haverstad first-class NPC work.
 - 2026-07-28: Added automated coverage for all 26 first-class Driftmoor
   destinations and their initialized resident NPCs.
+- 2026-08-02: Reviewed Driftmoor place prose, connections, dynamic state, and
+  contents; consolidated eight stale prose-only room directories into their
+  parent scenes and added an audit requiring geometry for every authored place.

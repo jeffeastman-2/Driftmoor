@@ -2,17 +2,19 @@
 
 ## Place Identity
 - **type:** curios
-- **aliases:** curios, antique shop, oddities shop, Dustcloak's Curios, Dustcloaks house
+- **aliases:** curios, antique shop, oddities shop, Dustcloak's Curios, Duskcloak's Curios
 
 ## Description and Atmosphere
 A squat, crooked structure of mismatched wood and stone on the outskirts of Driftmoor, near the Mistwood Hills edge. Leans slightly to one side. The yard is organized chaos — rusty tools, wagon wheels, broken furniture, a rickety wooden fence with a gate that creaks ominously. The sign reads: "Dustcloak's Curios: Oddities & Antiquities" with an etched question mark.
 
 Inside smells of incense masking mildew. Every surface is covered with something.
 
+## Interior Areas
+- **Shopfront** — main trading space
+- **Backroom** — Kelem's workspace and research area, through a curtained doorway
+
 ## Sub-Places
-- `shopfront/` — main trading space
-- `backroom/` — Kelem's workspace and research area
-- `living_loft/` — his private quarters above the shop
+- `living_loft/` — Kelem's private quarters and secured magical collection upstairs
 
 ## Resident NPCs and Creatures
 
@@ -35,8 +37,8 @@ yard gate gives you warning of anyone coming up the path.
 
 ## Connections
 - Outskirts road near Mistwood Hills edge
-- `shopfront/` → `backroom/` (through curtained doorway)
-- `backroom/` → `living_loft/` (narrow staircase)
+- The shopfront opens into the backroom through a curtained doorway
+- A narrow staircase connects the backroom to the enterable living loft
 
 ## Dynamic State
 *(Updated by monitor agent)*

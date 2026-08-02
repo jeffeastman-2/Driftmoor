@@ -125,6 +125,19 @@ def test_resolve_query_what_can_i_buy_lists_catalog():
     assert ans is not None and ans.startswith("For sale:") and "Bolts (20)" in ans
 
 
+def test_resolve_query_what_can_you_sell_me_lists_catalog():
+    entries = _shop_catalog()
+    for question in (
+        "what can you sell me",
+        "What can you sell me?",
+        '"What can you sell me?"',
+        '"What are you selling?"',
+    ):
+        ans = latn_integration.resolve_query(
+            question, {}, {}, "", catalog=entries)
+        assert ans is not None and ans.startswith("For sale:") and "Bolts (20)" in ans
+
+
 def test_resolve_query_declines_non_question():
     # A command is not a question: resolve_query returns None so the caller
     # routes it to the action resolver, not an answer.

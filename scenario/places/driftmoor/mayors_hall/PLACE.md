@@ -9,11 +9,11 @@ The largest and most prominent building in Driftmoor — two stories of timber a
 
 Inside it smells of old paper, woodsmoke, and the faint whiskey the mayor keeps in his office.
 
-## Sub-Places
-- `mayors_office/` — Aldren Thorne's working space
-- `records_room/` — locked, town documents and historical ledgers
-- `living_quarters/` — Aldren's modest upstairs suite
-- Main Hall (covered in this file — no sub-directory needed)
+## Interior Areas
+- **Main hall** — public meeting space
+- **Mayor's office** — Aldren Thorne's working space
+- **Records room** — locked archive of town documents and historical ledgers
+- **Living quarters** — Aldren's modest upstairs suite
 
 ## Main Hall
 The heart of the building. Rows of simple wooden benches face a raised dais with a long table and high-backed chair. Walls adorned with maps of the surrounding region, fishing nets, and framed sketches of early Driftmoor. A weathered bronze bell near the back — used to call meetings or sound alarms.
@@ -57,9 +57,9 @@ key at your belt and a list of recent archive requests beside the lamp.
 
 ## Connections
 - Village square (outside)
-- `mayors_office/` (left of main hall)
-- `records_room/` (behind the office, locked)
-- `living_quarters/` (upstairs)
+- The mayor's office is left of the main hall
+- The locked records room is behind the office
+- The living quarters are upstairs
 
 ## Dynamic State
 *(Updated by monitor agent)*

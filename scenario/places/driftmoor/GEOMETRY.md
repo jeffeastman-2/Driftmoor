@@ -59,7 +59,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 |-------------------|----------|-------------------------------------------------------------|
 | GRAVEYARD        | 5.0      | (348,630) (513,630) (513,718) (348,718) |
 | CHURCH           | 5.0      | (520.5,630) (632.5,630) (632.5,718) (520.5,718) |
-| DUSTCLOAKS_HOUSE | 5.0      | (212.5,600.5) (290.5,600.5) (290.5,682.5) (212.5,682.5) |
+| DUSTCLOAKS_CURIOS | 5.0     | (212.5,600.5) (290.5,600.5) (290.5,682.5) (212.5,682.5) |
 | MAYORS_HALL      | 5.0      | (655,423) (710,423) (710,519) (655,519) |
 | MIDWIFE          | 5.0      | (712,475.5) (750,475.5) (750,531.5) (712,531.5) |
 | TANNERY          | 5.0      | (323,466.5) (375,466.5) (375,524.5) (323,524.5) |
@@ -79,7 +79,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | PAWN_SHOP        | 5.0      | (371.5,252) (424.5,252) (424.5,316) (371.5,316) |
 | TAVERN           | 5.0      | (427.5,252) (482.5,252) (482.5,316) (427.5,316) |
 | MERCANTILE       | 5.0      | (487,252) (553,252) (553,316) (487,316) |
-| ELYSSA_HOUSE     | 5.0      | (688,227) (758,227) (758,309) (688,309) |
+| ELYSSA_COTTAGE   | 5.0      | (688,227) (758,227) (758,309) (688,309) |
 | GENERAL_STORE    | 5.0      | (235,82.5) (317,82.5) (317,177.5) (235,177.5) |
 | FORGE            | 5.0      | (602.5,122) (664.5,122) (664.5,170) (602.5,170) |
 | STABLE           | 5.0      | (602.5,75.5) (664.5,75.5) (664.5,119.5) (602.5,119.5) |
@@ -111,7 +111,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 |------------------------|-------|-------|------------------------------------------|
 | to_region              | 406 | 365.5 | places/                                  |
 | to_harbor_water        | 48.5  | 438.5 | places/azure_sea                         |
-| to_dustcloaks_house    | 251.5 | 641.5 | places/driftmoor/dustcloaks_curios       |
+| to_dustcloaks_curios   | 251.5 | 641.5 | places/driftmoor/dustcloaks_curios       |
 | to_church              | 576.5 | 650 | places/driftmoor/beacon_church           |
 | to_graveyard           | 430.5 | 674 | places/driftmoor/graveyard               |
 | to_mayors_hall         | 682.5 | 471 | places/driftmoor/mayors_hall             |
@@ -120,7 +120,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | to_forge               | 633.5 | 146  | places/driftmoor/forge                   |
 | to_stable              | 633.5 | 97.5  | places/driftmoor/stables                 |
 | to_corral              | 723 | 113.5  | places/driftmoor/corral                  |
-| to_elyssa_house        | 723 | 268 | places/driftmoor/elyssa_cottage           |
+| to_elyssa_cottage      | 723 | 268 | places/driftmoor/elyssa_cottage           |
 | to_apothecary          | 520 | 390 | places/driftmoor/bitter_remedy           |
 | to_gilded_trinket      | 398 | 284 | places/driftmoor/gilded_trinket          |
 | to_rooming_house       | 463 | 390 | places/driftmoor/weary_traveler          |

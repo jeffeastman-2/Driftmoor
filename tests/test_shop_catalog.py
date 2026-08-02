@@ -36,6 +36,18 @@ class TestCatalogIndex:
         assert c.get("nope") is None
 
 
+def test_kelem_public_catalog_excludes_private_loft_magic():
+    from engine.session import _DRIFTMOOR_PLACES_ROOT
+
+    catalog = ShopCatalog.from_things_dir(
+        _DRIFTMOOR_PLACES_ROOT.parent.parent / "things"
+    )
+    entries = catalog.entries_for("kelem")
+    assert entries
+    assert all(entry.category != "magical" for entry in entries)
+    assert "shadowbeast_claw_necklace" in {entry.catalog_id for entry in entries}
+
+
 class TestMaterialize:
     def test_materialize_makes_a_shop_owned_instance(self):
         c = _catalog()

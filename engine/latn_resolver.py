@@ -534,11 +534,16 @@ def resolve_self_query(intent_text: str, *, lexicon, adapter) -> Optional[str]:
     tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
     if not any(_isa(t, "first_person") for t in tokens):
         return None  # about someone/something else, not the speaker
-    # A first-person PURCHASE question ("what can I buy") is about the shop's
-    # stock, not the speaker -- defer it to the catalog resolver. Selling is
-    # about the speaker's own goods, so it stays here.
+    # A first-person purchase question ("what can I buy") is about the shop's
+    # stock, not the speaker. Likewise "what can you sell me" asks what the
+    # addressed merchant offers; only "what can I sell" asks about my goods.
+    # Defer the former shapes to the catalog resolver.
     if (any(_isa(t, "buy") for t in tokens)
             and not any(_isa(t, "sell") for t in tokens)):
+        return None
+    if (any(_isa(t, "sell") for t in tokens)
+            and any(str(getattr(t, "word", "")).lower() in {"you", "your"}
+                    for t in tokens)):
         return None
     return "wealth" if any(_isa(t, "currency") for t in tokens) else "possessions"
 

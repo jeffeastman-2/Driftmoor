@@ -53,7 +53,7 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     # the bridge").  Register Teleport as a cast verb as well as matching it by
     # name in the spell resolver; this keeps the natural shorthand actionable.
     ("cast", ["cast", "invoke", "channel", "teleport"]),
-    ("move", ["move", "go", "walk", "approach", "advance", "step", "head",
+    ("move", ["move", "go", "come", "walk", "approach", "advance", "step", "head",
               "follow", "continue", "proceed", "return", "climb"]),
     ("dash", ["dash", "sprint", "rush", "run"]),
     ("disengage", ["disengage", "withdraw", "retreat", "fall back", "flee", "escape"]),
@@ -156,13 +156,20 @@ _COMMON_NOUNS: list[str] = [
     "leaf",
     # Conversational/shop/spell vocabulary which need not denote a live scene
     # entity, but must remain valid input to the parser and its honesty check.
-    "sale", "spell",
+    "sale", "spell", "day", "madam", "name", "knowledge",
 ]
 
 # Standalone social openings are discourse acts, not world actions.  Giving
 # them a grammatical reading prevents the unknown-word dialog from rejecting
 # perfectly ordinary greetings; the DM/NPC conversation layer still answers.
 _DISCOURSE_WORDS: list[str] = ["hi", "hello", "greetings"]
+
+# Social and intentional prose frequently surrounds the actionable part of a
+# player's line. These readings keep ordinary introductions from being treated
+# as parser errors without pretending that every such word is itself an engine
+# action. ``seek`` is a verb so morphology also recognizes ``seeking``.
+_CONVERSATION_ADJECTIVES: list[str] = ["good"]
+_CONVERSATION_VERBS: list[str] = ["seek", "tell", "see", "suggest"]
 
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
@@ -270,6 +277,10 @@ def _build_rpg_layer() -> dict:
         layer[word.lower()] = _vf("noun", currency=1.0)
     for word in _DISCOURSE_WORDS:
         layer[word.lower()] = _vf("adv")
+    for word in _CONVERSATION_ADJECTIVES:
+        layer.setdefault(word.lower(), _vf("adj"))
+    for word in _CONVERSATION_VERBS:
+        layer.setdefault(word.lower(), _vf("verb"))
     # Consumption verbs -> eat/drink/consume dims (state-gated in manipulation).
     for canonical, words in _CONSUME_VERB_SYNONYMS:
         for word in words:
