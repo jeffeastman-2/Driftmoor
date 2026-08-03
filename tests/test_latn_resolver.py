@@ -105,6 +105,43 @@ def test_state_queries_are_classified_by_latn_semantics():
     assert resolve_state_query("I am here", lexicon=lex, adapter=adapter) is None
 
 
+def test_unknown_who_focus_is_engine_owned_without_name_matching():
+    chars = {"amara": _pc("amara", "Amara", "High Elf", "Cleric")}
+    venues = [("elyssa_cottage", ("elyssa cottage", "cottage"))]
+    lex = build_driftmoor_lexicon(
+        [c.character for c in chars.values()], [], venues=venues)
+    adapter = DriftmoorSceneAdapter(
+        items={}, characters=chars, actor_zone="TOWN_COMMON", venues=venues)
+    query = resolve_state_query("who is Elyssa?", lexicon=lex, adapter=adapter)
+    assert query is not None and query.kind == "unknown_person"
+    assert getattr(query.query.focus_np, "noun", "").lower() == "elyssa"
+
+
+def test_social_presence_property_and_acquaintance_queries_are_typed():
+    amara = _pc("amara", "Amara", "High Elf", "Cleric")
+    arlan = _pc("arlan", "Arlan Quickstep", "Human", "Commoner")
+    arlan.scene_handle = "Arlan"
+    arlan.character.role = "barber"
+    chars = {"amara": amara, "arlan": arlan}
+    lex = build_driftmoor_lexicon([c.character for c in chars.values()], [])
+    adapter = DriftmoorSceneAdapter(
+        items={}, characters=chars, actor_zone="SHOP")
+
+    assert resolve_state_query(
+        "who is here?", lexicon=lex, adapter=adapter).kind == "visible_people"
+    assert resolve_state_query(
+        "who can I see?", lexicon=lex, adapter=adapter).kind == "visible_people"
+    prop = resolve_state_query(
+        "is Arlan a barber?", lexicon=lex, adapter=adapter)
+    assert prop.kind == "person_property_true"
+    definition = resolve_state_query(
+        "what is Arlan?", lexicon=lex, adapter=adapter)
+    assert definition.kind == "person_definition"
+    known = resolve_state_query(
+        "do I know Arlan?", lexicon=lex, adapter=adapter)
+    assert known.kind == "acquaintance_true"
+
+
 def test_world_queries_use_layer5_sq_grounded_focus():
     from models.space_time import Position
     chars = {"amara": _pc("amara", "Amara", "High Elf", "Cleric")}

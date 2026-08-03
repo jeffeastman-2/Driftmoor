@@ -3092,15 +3092,92 @@ class TestSelfQuestion:
         )
         assert ans == "The game clock is not configured for this scene."
 
+    def test_unknown_person_question_is_engine_owned(self):
+        from engine.session import _answer_basic_state_question
+        cfg, cs = self._player()
+        ans = _answer_basic_state_question(
+            "who is Elyssa?", cs=cs, actor_zone="TOWN_COMMON",
+            scene_geometry=cfg.scene_geometry, game_time=cfg.game_time,
+            characters=cfg.characters,
+        )
+        assert ans == "Your character does not yet know who Elyssa is."
+
+    def test_social_queries_answer_without_consuming_an_action_turn(self):
+        from types import SimpleNamespace as NS
+        from engine.session import _answer_basic_state_question
+        from models.character import PlayerCharacter
+
+        cfg, cs = self._player()
+        arlan_char = PlayerCharacter(
+            id="arlan", name="Arlan Quickstep", race="Human",
+            character_type="npc", character_class="Commoner")
+        arlan_char.role = "barber"
+        arlan = NS(character=arlan_char, scene_handle="Arlan")
+        chars = {cs.character.id: cs, "arlan": arlan}
+        common = dict(
+            cs=cs, actor_zone="SHOP", scene_geometry=None,
+            game_time=cfg.game_time, characters=chars,
+            character_id=cs.character.id,
+            current_positions={
+                cs.character.id: (0.0, 0.0, "SHOP"),
+                "arlan": (3.0, 4.0, "SHOP"),
+            },
+            active_characters={cs.character.id, "arlan"},
+        )
+        assert _answer_basic_state_question("who is here?", **common) == (
+            "You can see:\n- Arlan (~0 ft away)")
+        assert _answer_basic_state_question("who can I see?", **common) == (
+            "You can see:\n- Arlan (~0 ft away)")
+        assert _answer_basic_state_question("is Arlan a barber?", **common) == (
+            "Yes. Arlan Quickstep is a barber.")
+        assert _answer_basic_state_question("what is Arlan?", **common) == (
+            "Arlan Quickstep is a barber.")
+        assert _answer_basic_state_question("do I know Arlan?", **common) == (
+            "Yes. Your character knows Arlan Quickstep.")
+
+    def test_catalog_grounded_get_question_is_not_inventory(self):
+        from engine.session import _answer_self_question
+        from engine.latn_integration import resolve_query
+        from models.thing import Thing
+        from models.shop_catalog import ShopCatalog
+
+        cfg, cs = self._player()
+        entries = ShopCatalog([
+            Thing(id="shave", name="Shave", price="2 sp", vendor_id="arlan"),
+        ]).entries_for("arlan")
+        inventory = _answer_self_question(
+            "can I get a shave?", cs=cs, characters=cfg.characters,
+            actor_zone="SHOP", scene_geometry=cfg.scene_geometry,
+            items=cfg.items, catalog=entries,
+        )
+        assert inventory is None
+        assert resolve_query(
+            "can I get a shave?", cfg.items, cfg.characters, "SHOP",
+            entries, cfg.scene_geometry,
+        ) == "Yes — Shave is for sale at 2 sp."
+
     def test_what_is_named_place_reads_authoritative_place_record(self):
         from engine.session import _answer_place_definition_question
         cfg, _ = self._player()
         ans = _answer_place_definition_question(
             "what is the salt and iron?", characters=cfg.characters,
-            actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry)
+            actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry,
+            player_xy=(406.0, 341.0), visited_zones={"TOWN_COMMON"})
         assert ans is not None
         assert "Salt & Iron Mercantile is a mercantile" in ans
         assert "timber reinforced with iron bands" in ans
+
+    def test_generic_place_definition_grounds_only_visible_venues(self):
+        from engine.session import _answer_place_definition_question
+        cfg, _ = self._player()
+        ans = _answer_place_definition_question(
+            "what is the cottage?", characters=cfg.characters,
+            actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry,
+            player_xy=(406.0, 341.0), visited_zones={"TOWN_COMMON"},
+        )
+        assert ans is not None
+        assert ans.startswith("Elyssa Moonglow's Cottage is a cottage.")
+        assert "Weaver" not in ans
 
     def test_wealth_question_reports_purse(self):
         from engine.session import _answer_self_question

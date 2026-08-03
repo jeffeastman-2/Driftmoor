@@ -477,6 +477,7 @@ class ResolvedQuery:
     focus_np: object
     focus_entities: list        # ranked (score, entity) pairs for the focus NP
     prepositional_phrases: list
+    predicate: object = None
 
 
 @dataclass
@@ -523,6 +524,7 @@ def resolve_query_action(intent_text: str, *, lexicon, adapter):
         focus_np=focus,
         focus_entities=list(grounded or []),
         prepositional_phrases=list(getattr(q, "prepositional_phrases", None) or []),
+        predicate=getattr(q, "predicate", None),
     )
 
 
@@ -549,20 +551,59 @@ def resolve_state_query(intent_text: str, *, lexicon, adapter) -> Optional[Resol
         focus_np=focus,
         focus_entities=grounded,
         prepositional_phrases=list(getattr(q, "prepositional_phrases", None) or []),
+        predicate=getattr(q, "predicate", None),
     )
     tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
     first_person = any(_isa(token, "first_person") for token in tokens)
+    perception = any(_isa(token, "perceive") for token in tokens)
+    local_presence = any(_isa(token, "local_presence") for token in tokens)
+    knows_person = any(_isa(token, "know_person") for token in tokens)
+    if resolved.wh_word == "who" and (perception or local_presence):
+        return ResolvedStateQuery("visible_people", resolved)
     if resolved.wh_word == "who" and first_person:
         return ResolvedStateQuery("identity", resolved)
+    if resolved.wh_word == "who" and focus is not None:
+        people = _entities_of_kind(grounded, "character")
+        person = _unique_winner(people)
+        if person is not None:
+            return ResolvedStateQuery("person_identity", resolved, person)
+        # A grammatical WHO question with a referential focus is still
+        # engine-owned when the known-person registry cannot ground it.
+        return ResolvedStateQuery("unknown_person", resolved)
     if resolved.wh_word == "where" and first_person:
         return ResolvedStateQuery("location", resolved)
     if resolved.wh_word == "what" and any(_isa(token, "query_time") for token in tokens):
         return ResolvedStateQuery("time", resolved)
     if resolved.wh_word == "what":
+        people = _entities_of_kind(grounded, "character")
+        person = _unique_winner(people)
+        if person is not None:
+            return ResolvedStateQuery("person_definition", resolved, person)
         venues = _entities_of_kind(grounded, "venue")
         venue = _unique_winner(venues)
         if venue is not None:
             return ResolvedStateQuery("place_definition", resolved, venue)
+    if resolved.is_yesno and knows_person and focus is not None:
+        people = _entities_of_kind(grounded, "character")
+        person = _unique_winner(people)
+        return ResolvedStateQuery(
+            "acquaintance_true" if person is not None else "acquaintance_false",
+            resolved, person,
+        )
+    if resolved.is_yesno and focus is not None:
+        people = _entities_of_kind(grounded, "character")
+        person = _unique_winner(people)
+        complements = list(
+            getattr(resolved.predicate, "complement_phrases", None) or [])
+        if person is not None and complements:
+            wanted = getattr(complements[0], "vector", None)
+            actual = getattr(person, "vector", None)
+            if wanted is not None and actual is not None:
+                matches = wanted.semantic_similarity(actual) > 0.0
+                return ResolvedStateQuery(
+                    "person_property_true" if matches else "person_property_false",
+                    resolved, person,
+                )
     return None
 
 
@@ -626,6 +667,16 @@ def resolve_self_query(intent_text: str, *, lexicon, adapter) -> Optional[str]:
     tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
     if not any(_isa(t, "first_person") for t in tokens):
         return None  # about someone/something else, not the speaker
+    # "Can I get a shave?" has possession-like GET semantics, but when its SQ
+    # focus grounds to a catalog entity it is a commerce query, not a request
+    # to enumerate the actor's current inventory.
+    question = (getattr(result, "question_phrases", None) or [None])[0]
+    focus = getattr(question, "focus", None)
+    grounded_focus = adapter.resolve_noun_phrase(focus) if focus is not None else []
+    if (_entities_of_kind(grounded_focus, "catalog")
+            and any(_isa(t, "hold") or _isa(t, "take") or _isa(t, "buy")
+                    for t in tokens)):
+        return None
     # A first-person purchase question ("what can I buy") is about the shop's
     # stock, not the speaker. Likewise "what can you sell me" asks what the
     # addressed merchant offers; only "what can I sell" asks about my goods.

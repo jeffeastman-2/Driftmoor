@@ -2365,6 +2365,7 @@ def _answer_self_question(
     actor_zone: str,
     scene_geometry,
     items,
+    catalog=(),
 ) -> Optional[str]:
     """Answer a first-person question about the speaker -- wealth or possessions
     -- from their own character, or None. LATN classifies the question (currency
@@ -2376,7 +2377,8 @@ def _answer_self_question(
     from engine import latn_resolver
     from models.currency import format_coins
     lexicon, adapter = build_context(
-        items or {}, characters or {}, actor_zone or "", scene_geometry)
+        items or {}, characters or {}, actor_zone or "", scene_geometry,
+        catalog=catalog)
     kind = latn_resolver.resolve_self_query(
         intent_text or "", lexicon=lexicon, adapter=adapter)
     if kind is None:
@@ -2391,6 +2393,55 @@ def _answer_self_question(
     return f"You aren't carrying anything. Your purse holds {purse}."
 
 
+def _visible_character_query_records(
+    character_id: str,
+    current_positions: dict,
+    active_characters: set[str],
+    characters: dict,
+    scene_geometry,
+) -> list[tuple[str, str, float]]:
+    """Structured visible-character records used by engine query answers."""
+    import math
+    from models.senses import resolve_senses
+
+    my_pos = current_positions.get(character_id)
+    if my_pos is None:
+        return []
+    if scene_geometry is None:
+        return [
+            (cid, getattr(characters.get(cid), "scene_handle", "") or cid, 0.0)
+            for cid in sorted(active_characters)
+            if cid != character_id
+        ]
+    observer = Position(my_pos[0], my_pos[1])
+    my_zone = my_pos[2] or scene_geometry.zone_at(observer)
+    me = characters.get(character_id)
+    senses = resolve_senses()
+    if me is not None:
+        senses = resolve_senses(
+            race=getattr(me.character, "race", "") or "",
+            senses=getattr(me.character, "senses", None),
+            features=getattr(me.character, "features", None),
+        )
+    ambient = scene_geometry.ambient_sight_range(my_zone)
+    visual_ft = math.inf if ambient is None else max(ambient, senses.darkvision_ft)
+    records: list[tuple[str, str, float]] = []
+    for cid in sorted(active_characters):
+        if cid == character_id or cid not in current_positions:
+            continue
+        other = current_positions[cid]
+        point = Position(other[0], other[1])
+        distance = math.hypot(point.x - observer.x, point.y - observer.y)
+        if distance > visual_ft or not scene_geometry.can_see(observer, point):
+            continue
+        cs = characters.get(cid)
+        label = (getattr(cs, "scene_handle", "") or cid) if cs is not None else cid
+        if cs is not None and label.strip().lower() == cid.strip().lower():
+            label = getattr(cs.character, "name", "") or label
+        records.append((cid, label, round(distance / 5) * 5))
+    return records
+
+
 def _answer_basic_state_question(
     intent_text: str,
     *,
@@ -2399,6 +2450,9 @@ def _answer_basic_state_question(
     scene_geometry,
     game_time,
     characters: dict,
+    character_id: str = "",
+    current_positions: Optional[dict] = None,
+    active_characters: Optional[set[str]] = None,
 ) -> Optional[str]:
     """Answer identity, current-location, and game-clock questions."""
     from engine.latn_integration import build_context
@@ -2409,7 +2463,12 @@ def _answer_basic_state_question(
         {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
     query = latn_resolver.resolve_state_query(
         intent_text or "", lexicon=lexicon, adapter=adapter)
-    if query is None or query.kind not in {"identity", "location", "time"}:
+    if query is None or query.kind not in {
+        "identity", "location", "time", "person_identity", "unknown_person",
+        "person_definition",
+        "visible_people", "person_property_true", "person_property_false",
+        "acquaintance_true", "acquaintance_false",
+    }:
         return None
     char = getattr(cs, "character", None)
 
@@ -2419,6 +2478,55 @@ def _answer_basic_state_question(
         char_class = (getattr(char, "character_class", "") or "").strip()
         description = " ".join(part for part in (race, char_class) if part)
         return f"You are {name}" + (f", a {description}." if description else ".")
+
+    if query.kind == "unknown_person":
+        focus = query.query.focus_np
+        label = (getattr(focus, "noun", None) or "that person")
+        label = str(label).replace("_", " ").strip().title()
+        return f"Your character does not yet know who {label} is."
+
+    if query.kind == "person_identity" and query.focus_entity is not None:
+        known = getattr(query.focus_entity, "session", None)
+        known_char = getattr(known, "character", None)
+        name = getattr(known_char, "name", "") or getattr(query.focus_entity, "name", "")
+        role = (getattr(known_char, "role", "") or "").strip()
+        return f"{name} is {role}." if role else f"That is {name}."
+
+    if query.kind == "person_definition" and query.focus_entity is not None:
+        known = getattr(query.focus_entity, "session", None)
+        known_char = getattr(known, "character", None)
+        name = getattr(known_char, "name", "") or getattr(query.focus_entity, "name", "")
+        role = (getattr(known_char, "role", "") or "person").strip()
+        return f"{name} is a {role}."
+
+    if query.kind == "visible_people":
+        visible = _visible_character_query_records(
+            character_id, current_positions or {}, active_characters or set(),
+            characters, scene_geometry)
+        if not visible:
+            return "You cannot currently see anyone else here."
+        return "You can see:\n" + "\n".join(
+            f"- {label} (~{distance:.0f} ft away)" for _cid, label, distance in visible)
+
+    if query.kind in {"person_property_true", "person_property_false"}:
+        ent = query.focus_entity
+        known = getattr(ent, "session", None)
+        known_char = getattr(known, "character", None)
+        name = getattr(known_char, "name", "") or getattr(ent, "name", "") or "That person"
+        complements = list(getattr(query.query.predicate, "complement_phrases", None) or [])
+        prop = getattr(complements[0], "noun", "") if complements else "that"
+        if query.kind == "person_property_true":
+            return f"Yes. {name} is a {prop}."
+        return f"No. {name} is not a {prop}."
+
+    if query.kind in {"acquaintance_true", "acquaintance_false"}:
+        if query.kind == "acquaintance_false" or query.focus_entity is None:
+            return "No. Your character does not know that person."
+        ent = query.focus_entity
+        known = getattr(ent, "session", None)
+        known_char = getattr(known, "character", None)
+        name = getattr(known_char, "name", "") or getattr(ent, "name", "")
+        return f"Yes. Your character knows {name}."
 
     if query.kind == "location":
         zone = (actor_zone or "").replace("_", " ").strip().title()
@@ -2441,12 +2549,26 @@ def _answer_basic_state_question(
 
 def _answer_place_definition_question(
     intent_text: str, *, characters: dict, actor_zone: str, scene_geometry,
+    player_xy=None, visited_zones: Optional[set[str]] = None,
 ) -> Optional[str]:
     """Answer ``what is <place>?`` from the authoritative PLACE.md record."""
     from engine.latn_integration import build_context
     from engine import latn_resolver
     venues = _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "") \
         if scene_geometry is not None else ()
+    visible_keys = {
+        key
+        for keys, _label, _distance in _visible_query_points(
+            scene_geometry, player_xy, actor_zone, visited_zones or set())
+        for key in keys
+    }
+    # A generic definite NP ("the cottage") must ground in the actor's current
+    # perceptual discourse domain, not against every authored venue in town.
+    # Explicitly remembered places can later be supplied as a separate known-
+    # place scope; today visibility is the authoritative available scope.
+    venues = tuple(
+        venue for venue in venues if f"venue:{venue[0]}" in visible_keys
+    )
     lexicon, adapter = build_context(
         {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
     query = latn_resolver.resolve_state_query(
@@ -5930,13 +6052,18 @@ async def iter_session(
                     ans = _answer_basic_state_question(
                         text, cs=_cs, actor_zone=_q_zone,
                         scene_geometry=scene_geometry, game_time=game_time,
-                        characters=characters or {})
+                        characters=characters or {}, character_id=_char_id,
+                        current_positions=current_positions,
+                        active_characters=active_characters)
                     if ans is not None:
                         return ans
                     # 2) Authored place knowledge.
                     ans = _answer_place_definition_question(
                         text, characters=characters or {}, actor_zone=_q_zone,
-                        scene_geometry=scene_geometry)
+                        scene_geometry=scene_geometry,
+                        player_xy=((current_positions[_char_id][0], current_positions[_char_id][1])
+                                   if _char_id in current_positions else None),
+                        visited_zones=visited_zones.get(_char_id, set()))
                     if ans is not None:
                         return ans
                     # 3) External perception -- engine/fog-of-war authoritative.
@@ -5950,19 +6077,19 @@ async def iter_session(
                     )
                     if ans is not None:
                         return ans
+                    _q_cat = _driftmoor_shop_catalog()
+                    _q_keeper = _current_shopkeeper(characters, active_characters, _q_cat)
+                    _q_entries = _q_cat.entries_for(_q_keeper) if _q_keeper else []
                     # 4) A first-person question about yourself -- "how much gold
                     # do I have", "what am I carrying", "what can I sell".
                     ans = _answer_self_question(
                         text, cs=_cs, characters=characters or {},
                         actor_zone=_q_zone, scene_geometry=scene_geometry,
-                        items=items)
+                        items=items, catalog=_q_entries)
                     if ans is not None:
                         return ans
                     # 5) A shop-catalog question -- "what can I buy", "are your
                     # bolts for sale". (Purchase questions were deferred here.)
-                    _q_cat = _driftmoor_shop_catalog()
-                    _q_keeper = _current_shopkeeper(characters, active_characters, _q_cat)
-                    _q_entries = _q_cat.entries_for(_q_keeper) if _q_keeper else []
                     ans = _resolve_query(
                         text, items or {}, characters or {}, _q_zone,
                         catalog=_q_entries, scene_geometry=scene_geometry)

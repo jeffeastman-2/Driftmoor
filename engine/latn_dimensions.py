@@ -93,7 +93,7 @@ VERB_DIMS: tuple[str, ...] = (
     "sit", "stand", "kneel", "prone",
     # First-person state/query semantics. ``possess`` distinguishes inventory
     # questions from external perception ("what do I see?").
-    "possess", "perceive", "query_time",
+    "possess", "perceive", "query_time", "local_presence", "know_person",
 )
 
 # Bare conversational answers to an offer ("yes" / "no thanks"). The quote->confirm
