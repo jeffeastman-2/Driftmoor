@@ -383,6 +383,81 @@ def test_apothecary_and_mercantile_have_editable_interior_art(tmp_path):
         assert f"data-target='{target}'" in mercantile
 
 
+def test_pawnshop_bakery_and_cobbler_have_editable_interior_art(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    expected = {
+        Path("scenario/places/driftmoor/gilded_trinket/GEOMETRY.md"): (2, 11),
+        Path("scenario/places/driftmoor/bakery/GEOMETRY.md"): (2, 7),
+        Path("scenario/places/driftmoor/cobblers_shop/GEOMETRY.md"): (1, 8),
+    }
+    rendered = {}
+    for index, (geometry, counts) in enumerate(expected.items()):
+        out = tmp_path / f"craft-shop-{index}.html"
+        render_turn_slider_html(geometry, out, snapshot_dir=tmp_path)
+        html = out.read_text(encoding="utf-8")
+        rendered[geometry] = html
+        assert html.count("class='zone-floor-art'") == counts[0]
+        assert html.count("class='visual-overlay'") == counts[1]
+
+    pawnshop = rendered[Path("scenario/places/driftmoor/gilded_trinket/GEOMETRY.md")]
+    assert "data-target='obsidian_ring'" in pawnshop
+    assert "Tavian's Counter Line</title>" not in pawnshop
+    assert "Display Case — Obelisk Ring Aura</title>" not in pawnshop
+
+    bakery = rendered[Path("scenario/places/driftmoor/bakery/GEOMETRY.md")]
+    assert "data-target='ovens'" in bakery
+    assert "data-target='bread_display'" in bakery
+
+    cobbler = rendered[Path("scenario/places/driftmoor/cobblers_shop/GEOMETRY.md")]
+    assert "data-target='workbench'" in cobbler
+    assert "data-target='boot_forms'" in cobbler
+
+
+def test_elyssa_forge_and_stables_have_editable_interior_art(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    expected = {
+        Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"): (4, 12),
+        Path("scenario/places/driftmoor/forge/GEOMETRY.md"): (1, 8),
+        Path("scenario/places/driftmoor/stables/GEOMETRY.md"): (1, 8),
+    }
+    rendered = {}
+    for index, (geometry, counts) in enumerate(expected.items()):
+        out = tmp_path / f"research-smith-{index}.html"
+        render_turn_slider_html(geometry, out, snapshot_dir=tmp_path)
+        html = out.read_text(encoding="utf-8")
+        rendered[geometry] = html
+        assert html.count("class='zone-floor-art'") == counts[0]
+        assert html.count("class='visual-overlay'") == counts[1]
+
+    cottage = rendered[Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md")]
+    assert "data-target='obelisk_shard_contained_specimen'" in cottage
+    assert "Laboratory — Restricted Research</title>" not in cottage
+
+    forge = rendered[Path("scenario/places/driftmoor/forge/GEOMETRY.md")]
+    for target in ("forge_hearth", "anvil", "bellows", "quench_trough"):
+        assert f"data-target='{target}'" in forge
+
+    stables = rendered[Path("scenario/places/driftmoor/stables/GEOMETRY.md")]
+    assert "data-target='empty_stall'" in stables
+    assert "data-target='clawed_tracks'" in stables
+
+
+def test_corral_has_sparse_editable_fixture_art(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    geometry = Path("scenario/places/driftmoor/corral/GEOMETRY.md")
+    out = tmp_path / "corral.html"
+    render_turn_slider_html(geometry, out, snapshot_dir=tmp_path)
+    rendered = out.read_text(encoding="utf-8")
+
+    assert rendered.count("class='zone-floor-art'") == 1
+    assert rendered.count("class='visual-overlay'") == 2
+    assert "data-target='water_trough'" in rendered
+    assert "data-target='hay_bale'" in rendered
+
+
 def test_subscene_filters_same_scale_characters_from_parent_snapshots(tmp_path):
     import json
     from engine.map_renderer import render_turn_slider_html

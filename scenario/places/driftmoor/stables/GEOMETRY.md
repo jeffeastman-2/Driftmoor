@@ -16,10 +16,16 @@
 | name             | x  | y  |
 |------------------|----|----|
 | stable_entrance  | 3.5  | 0  |
-| saddle_racks     | 6.5 | 13 |
+| saddle_racks     | 3.121 | 4.4 |
 | stall_row_center | 23 | 27.5 |
-| feed_bins        | 32.5 | 13 |
+| feed_bins        | 32.431 | 5.629 |
 | forge_door       | 22 | 56.5 |
+| grooming_station | 14.993 | 2.318 |
+| hay_bales        | 39.918 | 3.853 |
+| water_trough     | 31.522 | 2.341 |
+| tack_cabinet     | 8.689 | 5.409 |
+| empty_stall      | 36.386 | 47.529 |
+| clawed_tracks    | 23.334 | 4.768 |
 
 ---
 

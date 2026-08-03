@@ -19,10 +19,14 @@ corner. Front window displays shoes. Workbench and tools in the back.
 | name            | x   | y   |
 |-----------------|-----|-----|
 | front_door      | 8 | 0 |
-| display_window  | 3 | 0 |
-| workbench       | 8 | 9.5 |
-| shoe_racks      | 14.5 | 6.5 |
-| stool           | 4.5 | 8 |
+| display_window  | 12.521 | 1.42 |
+| workbench       | 8.228 | 7.632 |
+| shoe_racks      | 14.454 | 5.999 |
+| stool           | 2.495 | 10.825 |
+| fitting_chair   | 8.007   | 3.999 |
+| leather_rolls   | 12.545  | 11.139 |
+| boot_forms      | 10  | 7.723 |
+| polish_cabinet  | 2.931  | 1.815 |
 
 ---
 

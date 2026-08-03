@@ -24,13 +24,17 @@ sits behind the counter near the back wall.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_door      | 11  | 0  |
-| display_case    | 16 | 19.5 |
-| counter         | 13  | 17.5 |
-| obsidian_ring   | 17 | 21 |
+| display_case    | 18.156 | 2.521 |
+| counter         | 11.895  | 13.067 |
+| obsidian_ring   | 12.059 | 25.492 |
 | safe             | 21 | 24 |
-| shelves_west    | 3  | 13  |
-| shelves_east    | 21 | 13  |
-| oil_lamp_main   | 11  | 11  |
+| shelves_west    | 2  | 11  |
+| shelves_east    | 22 | 11  |
+| oil_lamp_main   | 10.012  | 13.156  |
+| curio_table_w   | 7   | 8   |
+| curio_table_e   | 17  | 8   |
+| weapon_rack     | 2.742   | 24.336  |
+| private_desk    | 10.73  | 26.168  |
 
 ---
 
@@ -39,7 +43,6 @@ sits behind the counter near the back wall.
 | name       | render_z | vertices                              |
 |------------|----------|---------------------------------------|
 | BACK_AREA  | 6.5        | (0,19.5) (24,19.5) (24,29) (0,29)         |
-| DISPLAY    | 6.5        | (11,16) (22.5,16) (22.5,22.5) (11,22.5)         |
 | SHOPFRONT  | 3.25        | (0,0) (24,0) (24,19.5) (0,19.5)           |
 | EXTERIOR   | 0.0        | (-8,-8) (32.5,-8) (32.5,37) (-8,37)       |
 
@@ -71,6 +74,7 @@ sits behind the counter near the back wall.
 
 - **type:** conditional
 - **blocks:** all
+- **render:** hidden
 - **effect:** counter marks the boundary of Tavian's domain; crossing without permission triggers immediate hostile response
 - **vertices:** (0,16) (24,16) (24,29) (0,29)
 
@@ -78,6 +82,7 @@ sits behind the counter near the back wall.
 
 - **type:** magical
 - **blocks:** none
+- **render:** hidden
 - **effect:** the obsidian ring pulses with obelisk energy; characters with obelisk shard attunement feel drawn toward it; Perception DC 45.5 to notice the pulse
 - **vertices:** (11,16) (22.5,16) (22.5,22.5) (11,22.5)
 

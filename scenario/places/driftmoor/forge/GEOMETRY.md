@@ -16,10 +16,15 @@
 | name             | x  | y  |
 |------------------|----|----|
 | forge_entrance   | 0  | 3.5  |
-| anvil            | 13 | 6.5 |
+| anvil            | 15.358 | 6.072 |
 | forge_hearth     | 6.5 | 13 |
-| forge_wall_marks | 16 | 27.5 |
+| forge_wall_marks | 16 | 25.7 |
 | stable_door      | 22 | 0 |
+| workbench        | 22.643 | 13.395 |
+| tool_tray        | 22.286 | 19.809 |
+| scrap_barrels    | 3.035 | 21.086 |
+| bellows          | 13 | 15.443 |
+| quench_trough    | 7.79 | 7.878 |
 
 ---
 
@@ -53,7 +58,7 @@
 
 | id               | x  | y    | label                    |
 |------------------|----|------|--------------------------|
-| forge_wall_marks | 16 | 24.25 | Shadow-burned wall marks |
+| forge_wall_marks | 16 | 25.7 | Shadow-burned wall marks |
 
 ---
 

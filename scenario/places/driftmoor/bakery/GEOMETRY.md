@@ -20,11 +20,14 @@ Ovens and workspace behind. Chimney on the north wall.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_door      | 9.5  | 0  |
-| front_counter   | 9.5  | 4.5  |
-| ovens           | 4.5  | 13  |
-| workspace       | 14.5  | 11  |
+| front_counter   | 9.5  | 5.129  |
+| ovens           | 3.716  | 13.543  |
+| workspace       | 7.139  | 9.914  |
 | chimney         | 9.5  | 16 |
-| display_shelves | 4.5  | 4.5  |
+| display_shelves | 2.035  | 2.793  |
+| bread_display   | 16.189 | 2.389  |
+| flour_sacks     | 16.638   | 13.543   |
+| cooling_rack    | 10.543   | 13.594   |
 
 ---
 
@@ -43,7 +46,7 @@ Ovens and workspace behind. Chimney on the north wall.
 | description   | vertices                    |
 |---------------|-----------------------------|
 | Oven wall     | (0,11) (9.5,11) (9.5,16) (0,16)   |
-| Back wall     | (0,14.5) (19.5,14.5) (19.5,16) (0,16) |
+| Back wall     | (9.5,14.5) (19.5,14.5) (19.5,16) (9.5,16) |
 
 ---
 
