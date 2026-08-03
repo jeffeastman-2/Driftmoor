@@ -395,7 +395,7 @@ def parse_geometry(text: str) -> dict:
     g: dict = {
         "zones": {}, "zone_z": {}, "landmarks": {}, "impassable": [],
         "boundaries": [], "starting_positions": {}, "items": {},
-        "connections": [],
+        "connections": [], "reveal_on_entry": set(),
     }
 
     def _table(section: str) -> list[list[str]]:
@@ -504,6 +504,16 @@ def parse_geometry(text: str) -> dict:
             vm = re.search(r"\*\*vertices:\*\*\s*([^\n]+)", sub.group(2))
             if vm:
                 g["boundaries"].append((sub.group(1).strip(), _verts(vm.group(1))))
+
+    fog = re.search(r"##\s+Fog of War\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
+    if fog:
+        entry = re.search(
+            r"\*\*reveal_on_entry:\*\*\s*([^\n]+)", fog.group(1), re.IGNORECASE)
+        if entry:
+            g["reveal_on_entry"] = {
+                name.strip().upper() for name in entry.group(1).split(",")
+                if name.strip()
+            }
 
     return g
 
@@ -1302,6 +1312,8 @@ def render_turn_slider_html(
             for gname, c in _centroids.items():
                 if reveal_zone.get(gname, never + 1) <= t:
                     continue                       # already revealed at/before t
+                if gname.upper() in g.get("reveal_on_entry", set()):
+                    continue                       # authored closed/private room
                 sight_target = c
                 if gname.upper() in _town_buildings:
                     _poly = next(

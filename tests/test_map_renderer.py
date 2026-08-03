@@ -276,14 +276,43 @@ def test_barbershop_floor_and_fixtures_are_independently_editable(tmp_path):
     rendered = out.read_text(encoding="utf-8")
 
     assert "class='zone-floor-art'" in rendered
-    assert rendered.count("class='visual-overlay'") == 7
+    assert rendered.count("class='visual-overlay'") == 8
     for target in (
         "barber_chair_3.25", "barber_chair_6.5", "mirror", "tonic_shelf",
-        "potbelly_stove", "washstand", "striped_pole",
+        "potbelly_stove", "washstand", "striped_pole", "central_rug",
     ):
         assert f"data-target='{target}'" in rendered
         start = rendered.index(f"data-landmark='{target}'")
         assert "fill='transparent'" in rendered[start:start + 350]
+
+
+def test_weary_traveler_uses_separate_zone_art_downstairs_and_upstairs(tmp_path):
+    import re
+    from engine.map_renderer import render_turn_slider_html
+
+    downstairs = Path("scenario/places/driftmoor/weary_traveler/GEOMETRY.md")
+    upstairs = Path("scenario/places/driftmoor/weary_traveler/upstairs/GEOMETRY.md")
+    down_out, up_out = tmp_path / "down.html", tmp_path / "up.html"
+    render_turn_slider_html(downstairs, down_out, snapshot_dir=tmp_path)
+    render_turn_slider_html(
+        upstairs, up_out, snapshot_dir=tmp_path,
+        start_characters=["gilthaness"],
+        start_positions={"gilthaness": (16, 5)},
+    )
+    down = down_out.read_text(encoding="utf-8")
+    up = up_out.read_text(encoding="utf-8")
+
+    assert down.count("class='zone-floor-art'") == 3
+    assert down.count("class='visual-overlay'") == 4
+    assert up.count("class='zone-floor-art'") == 5
+    assert up.count("class='visual-overlay'") == 10
+    # Private-room access remains mechanical but is not painted as a magical
+    # gold boundary on an ordinary guesthouse floor.
+    assert "Guest Rooms — Rented Access</title>" not in up
+    assert re.search(r"<g data-reveal='0'><polygon[^>]*><title>Upstairs Hall", up)
+    for room in ("Guest Room 1", "Guest Room 2", "Guest Room 3"):
+        assert re.search(
+            rf"<g data-reveal='1'><polygon[^>]*><title>{room}", up)
 
 
 def test_shift_scroll_scales_item_icons_with_character_icons():

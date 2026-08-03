@@ -26,6 +26,12 @@ the stair arrives at the southeast landing.
 | guest_room_2_bed  | 16   | 19   | 4 |
 | guest_room_3_bed  | 27.5 | 19   | 4 |
 | linen_cupboard    | 3    | 5    | 4 |
+| guest_room_1_chest | 2.5 | 13 | 4 |
+| guest_room_1_basin | 8.2 | 13 | 4 |
+| guest_room_2_chest | 13.5 | 13 | 4 |
+| guest_room_2_basin | 19.2 | 13 | 4 |
+| guest_room_3_chest | 24.5 | 13 | 4 |
+| guest_room_3_basin | 30.2 | 13 | 4 |
 
 ---
 
@@ -67,11 +73,18 @@ the stair arrives at the southeast landing.
 
 ---
 
+## Fog of War
+
+- **reveal_on_entry:** GUEST_ROOM_1, GUEST_ROOM_2, GUEST_ROOM_3
+
+---
+
 ## Boundaries
 
 ### Guest Rooms — Rented Access
 
 - **type:** conditional
 - **blocks:** all
+- **render:** hidden
 - **effect:** private guest rooms; must rent a room or be invited
 - **vertices:** (0,10) (32.5,10) (32.5,26) (0,26)

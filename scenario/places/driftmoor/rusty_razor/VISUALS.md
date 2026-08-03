@@ -2,6 +2,7 @@
 
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
+| central_rug_visual | floor/assets/rug.svg | central_rug | 6.5 | 6.5 | 6.5 | 4.7 | 0 | floor_decor |
 | first_barber_chair_visual | floor/assets/barber_chair.svg | barber_chair_3.25 | 4.5 | 6.441 | 3.2 | 4.2 | 0 | fixture |
 | second_barber_chair_visual | floor/assets/barber_chair.svg | barber_chair_6.5 | 8.482 | 6.428 | 3.2 | 4.2 | 0 | fixture |
 | mirror_visual | floor/assets/mirror.svg | mirror | 6.5 | 11 | 7 | 1.4 | 0 | wall |

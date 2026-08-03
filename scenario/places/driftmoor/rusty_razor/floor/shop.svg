@@ -3,9 +3,6 @@
     <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
       <stop stop-color="#9a7450"/><stop offset=".55" stop-color="#806044"/><stop offset="1" stop-color="#6b4d38"/>
     </linearGradient>
-    <linearGradient id="rug" x1="0" y1="0" x2="0" y2="1">
-      <stop stop-color="#7d2f2b"/><stop offset="1" stop-color="#51211f"/>
-    </linearGradient>
   </defs>
   <rect width="13" height="13" fill="#28231f"/>
   <rect x=".55" y=".65" width="11.9" height="11.8" fill="url(#wood)" stroke="#211b17" stroke-width=".55"/>
@@ -13,9 +10,6 @@
     <path d="M.65 2.2H12.35M.65 4.05H12.35M.65 6.15H12.35M.65 8.4H12.35M.65 10.35H12.35"/>
     <path d="M3.1 .75V2.2M8.4 .75V2.2M5.5 2.2V4.05M10.6 2.2V4.05M2 4.05V6.15M7.3 4.05V6.15M4.4 6.15V8.4M9.8 6.15V8.4M2.6 8.4V10.35M7.8 8.4V10.35M5 10.35V12.35M10.1 10.35V12.35"/>
   </g>
-  <rect x="3.25" y="4.15" width="6.5" height="4.7" rx=".45" fill="url(#rug)" stroke="#d1a56b" stroke-width=".22"/>
-  <rect x="3.7" y="4.6" width="5.6" height="3.8" rx=".25" fill="none" stroke="#d1a56b" stroke-width=".13" opacity=".75"/>
-  <path d="M5.15 6.5Q6.5 5.2 7.85 6.5Q6.5 7.8 5.15 6.5Z" fill="none" stroke="#d1a56b" stroke-width=".16" opacity=".65"/>
   <!-- South entrance threshold. -->
   <path d="M4.8 12.15H8.2V13H4.8Z" fill="#bd9b70" stroke="#302218" stroke-width=".18"/>
   <!-- Dark north wall and a narrow ledge beneath the mirror. -->

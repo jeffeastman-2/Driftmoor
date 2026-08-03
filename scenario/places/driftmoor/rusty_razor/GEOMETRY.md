@@ -20,6 +20,7 @@ Striped pole outside the door.
 | name            | x   | y   |
 |-----------------|-----|-----|
 | front_door      | 6.5 | 0 |
+| central_rug | 6.5 | 6.5 |
 | barber_chair_3.25 | 4.5 | 6.441 |
 | barber_chair_6.5 | 8.482 | 6.428 |
 | mirror | 6.5 | 11 |

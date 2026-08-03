@@ -41,7 +41,7 @@ def test_sitting_in_ambiguous_chair_uses_nearest_authored_landmark():
         "I sit in the chair", "seated", geometry, (8.0, 6.5, "SHOP")
     )
     assert target is not None
-    assert target[:2] == (9.5, 6.5)
+    assert target[:2] == (8.482, 6.428)
 
 
 def test_furniture_posture_waits_until_character_is_in_reach():
