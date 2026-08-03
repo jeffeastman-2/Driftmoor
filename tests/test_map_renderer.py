@@ -247,7 +247,8 @@ def test_zone_floor_art_is_embedded_clipped_and_keeps_semantic_hits(tmp_path):
     assert "class='landmark-hit'" in rendered
     assert "shadow-burned wall marks" in rendered.lower()
     assert "id='editArt'" in rendered
-    assert "Copy VISUALS.md" in rendered
+    assert "Save visuals" in rendered
+    assert "fetch('/map-visuals'" in rendered
     assert "!window.__mapArtEditing" in rendered
     assert "window.__mapArtEditing=editing" in rendered
     assert "class='visual-selection'" in rendered
@@ -263,6 +264,26 @@ def test_zone_floor_art_is_embedded_clipped_and_keeps_semantic_hits(tmp_path):
     # The marks are painted into the floor art, so their semantic Item remains
     # hoverable without a duplicate text label on top.
     assert ">Shadow-burned wall marks</text>" not in rendered
+
+
+def test_barbershop_floor_and_fixtures_are_independently_editable(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    geometry = Path("scenario/places/driftmoor/rusty_razor/GEOMETRY.md")
+    out = tmp_path / "barbershop.html"
+    render_turn_slider_html(geometry, out, snapshot_dir=tmp_path,
+                            title="The Rusty Razor")
+    rendered = out.read_text(encoding="utf-8")
+
+    assert "class='zone-floor-art'" in rendered
+    assert rendered.count("class='visual-overlay'") == 7
+    for target in (
+        "barber_chair_3.25", "barber_chair_6.5", "mirror", "tonic_shelf",
+        "potbelly_stove", "washstand", "striped_pole",
+    ):
+        assert f"data-target='{target}'" in rendered
+        start = rendered.index(f"data-landmark='{target}'")
+        assert "fill='transparent'" in rendered[start:start + 350]
 
 
 def test_shift_scroll_scales_item_icons_with_character_icons():

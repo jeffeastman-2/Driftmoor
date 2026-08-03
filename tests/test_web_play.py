@@ -4,8 +4,45 @@ These cover the pure helpers (icon mapping, possession split from the live
 character); the interactive LLM play itself is validated by running the app.
 """
 from types import SimpleNamespace as NS
+import asyncio
+import json
 
 import web_play
+
+
+def test_map_visual_save_is_scoped_and_updates_bound_landmark(tmp_path, monkeypatch):
+    from models.space_time import Position
+
+    geometry = tmp_path / "GEOMETRY.md"
+    geometry.write_text(
+        "## Landmarks\n\n| name | x | y |\n|---|---:|---:|\n"
+        "| chair | 1 | 2 |\n\n## Zones\n",
+        encoding="utf-8",
+    )
+    asset = tmp_path / "floor" / "assets" / "chair.svg"
+    asset.parent.mkdir(parents=True)
+    asset.write_text("<svg xmlns='http://www.w3.org/2000/svg'/>", encoding="utf-8")
+    scene_geometry = NS(landmarks={"chair": Position(1, 2)})
+    cfg = NS(geometry_path=geometry, scene_geometry=scene_geometry)
+    app = {"runtime": {"config": cfg}}
+    payload = {"visuals": [{
+        "id": "chair_visual", "asset": "floor/assets/chair.svg",
+        "target": "chair", "x": 4.5, "y": 6.25,
+        "width": 3, "height": 4, "rotation": 15, "layer": "fixture",
+    }]}
+
+    async def request_json():
+        return payload
+
+    monkeypatch.setattr(web_play, "_render_map", lambda _app: None)
+    response = asyncio.run(web_play.handle_map_visuals(
+        NS(json=request_json, app=app)))
+
+    assert json.loads(response.body)["saved"] == 1
+    assert "| chair | 4.5 | 6.25 |" in geometry.read_text(encoding="utf-8")
+    assert "| chair_visual | floor/assets/chair.svg | chair | 4.5 | 6.25 |" in (
+        tmp_path / "VISUALS.md").read_text(encoding="utf-8")
+    assert scene_geometry.landmarks["chair"] == Position(4.5, 6.25)
 
 
 def test_web_server_defaults_to_localhost():

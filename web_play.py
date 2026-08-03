@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -249,6 +250,91 @@ async def handle_input(request: web.Request) -> web.Response:
     if text:
         web_transport.submit_inbound(request.app["player"], text)
     return web.json_response({"ok": True})
+
+
+def _rewrite_landmark_coordinates(text: str, coordinates: dict[str, tuple[float, float]]) -> str:
+    """Rewrite only rows in GEOMETRY's Landmarks table."""
+    match = re.search(r"(##\s+Landmarks\b.*?)(?=\n##\s+|\Z)", text, re.DOTALL)
+    if not match:
+        raise ValueError("GEOMETRY.md has no Landmarks section")
+    section = match.group(1)
+
+    def replace_row(row_match: re.Match) -> str:
+        name = row_match.group(1).strip()
+        if name not in coordinates:
+            return row_match.group(0)
+        x, y = coordinates[name]
+        return f"| {name} | {x:g} | {y:g} |"
+
+    updated = re.sub(
+        r"^\|\s*([^|]+?)\s*\|\s*[-+0-9.]+\s*\|\s*[-+0-9.]+\s*\|\s*$",
+        replace_row, section, flags=re.MULTILINE)
+    return text[:match.start(1)] + updated + text[match.end(1):]
+
+
+async def handle_map_visuals(request: web.Request) -> web.Response:
+    """Persist validated overlay edits for only the currently loaded place."""
+    data = await request.json()
+    raw_records = data.get("visuals")
+    if not isinstance(raw_records, list) or not 1 <= len(raw_records) <= 200:
+        raise web.HTTPBadRequest(text="visuals must be a non-empty list")
+
+    cfg = _rt(request.app)["config"]
+    geometry_path = Path(cfg.geometry_path).resolve()
+    place_dir = geometry_path.parent
+    landmark_names = set(getattr(cfg.scene_geometry, "landmarks", {}) or {})
+    records: list[dict] = []
+    coordinates: dict[str, tuple[float, float]] = {}
+    for raw in raw_records:
+        if not isinstance(raw, dict):
+            raise web.HTTPBadRequest(text="invalid visual record")
+        rec = {key: str(raw.get(key, "")).strip() for key in
+               ("id", "asset", "target", "layer")}
+        if not re.fullmatch(r"[a-z0-9_.-]+", rec["id"]):
+            raise web.HTTPBadRequest(text="invalid visual id")
+        if not re.fullmatch(r"[a-zA-Z0-9_./-]+\.(?:svg|png|webp)", rec["asset"]):
+            raise web.HTTPBadRequest(text="invalid visual asset")
+        asset_path = (place_dir / rec["asset"]).resolve()
+        if not asset_path.is_relative_to(place_dir) or not asset_path.is_file():
+            raise web.HTTPBadRequest(text="visual asset is outside this place or missing")
+        if rec["target"] not in landmark_names:
+            raise web.HTTPBadRequest(text=f"unknown landmark target: {rec['target']}")
+        if not re.fullmatch(r"[a-z0-9_.-]+", rec["layer"]):
+            raise web.HTTPBadRequest(text="invalid visual layer")
+        try:
+            for key in ("x", "y", "width", "height", "rotation"):
+                rec[key] = float(raw[key])
+        except (KeyError, TypeError, ValueError):
+            raise web.HTTPBadRequest(text="invalid visual coordinates") from None
+        if not all(math.isfinite(rec[key]) for key in ("x", "y", "width", "height", "rotation")):
+            raise web.HTTPBadRequest(text="non-finite visual coordinates")
+        if not (0.05 <= rec["width"] <= 1000 and 0.05 <= rec["height"] <= 1000):
+            raise web.HTTPBadRequest(text="visual size is out of range")
+        coordinates[rec["target"]] = (rec["x"], rec["y"])
+        records.append(rec)
+
+    lines = [
+        f"# VISUALS.md — {place_dir.name.replace('_', ' ').title()} Map Overlays", "",
+        "| id | asset | target | x | y | width | height | rotation | layer |",
+        "|---|---|---|---:|---:|---:|---:|---:|---|",
+    ]
+    for rec in records:
+        lines.append(
+            f"| {rec['id']} | {rec['asset']} | {rec['target']} | "
+            f"{rec['x']:g} | {rec['y']:g} | {rec['width']:g} | "
+            f"{rec['height']:g} | {rec['rotation']:g} | {rec['layer']} |")
+
+    geometry_text = geometry_path.read_text(encoding="utf-8")
+    updated_geometry = _rewrite_landmark_coordinates(geometry_text, coordinates)
+    (place_dir / "VISUALS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    geometry_path.write_text(updated_geometry, encoding="utf-8")
+
+    # Keep the live in-memory geometry consistent immediately; a full place
+    # reload is not required for subsequent map regeneration in this session.
+    for name, (x, y) in coordinates.items():
+        cfg.scene_geometry.landmarks[name] = type(cfg.scene_geometry.landmarks[name])(x, y)
+    _render_map(request.app)
+    return web.json_response({"ok": True, "saved": len(records)})
 
 
 async def handle_events(request: web.Request) -> web.StreamResponse:
@@ -654,6 +740,7 @@ def main():
         web.get("/map", handle_map),
         web.get("/events", handle_events),
         web.post("/input", handle_input),
+        web.post("/map-visuals", handle_map_visuals),
     ])
     app.on_startup.append(_on_startup)
     app.on_cleanup.append(_on_cleanup)
