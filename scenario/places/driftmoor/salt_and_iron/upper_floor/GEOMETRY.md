@@ -19,11 +19,11 @@ near the northeast corner.
 | name | x | y | z |
 |---|---|---|---|
 | stair_landing | 29 | 26 | 0 |
-| bed | 8 | 22 | 4 |
-| writing_table | 17 | 22 | 4 |
-| iron_chest | 6 | 8 | 4 |
-| small_stove | 30 | 9 | 4 |
-| account_shelves | 3 | 17 | 4 |
+| bed | 8.931 | 25.726 | 4 |
+| writing_table | 17.517 | 28.933 | 4 |
+| iron_chest | 3.93 | 3.551 | 4 |
+| small_stove | 18.928 | 3.619 | 4 |
+| account_shelves | 2.276 | 13.378 | 4 |
 
 ---
 
