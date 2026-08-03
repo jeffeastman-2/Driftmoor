@@ -560,6 +560,8 @@ def resolve_state_query(intent_text: str, *, lexicon, adapter) -> Optional[Resol
     knows_person = any(_isa(token, "know_person") for token in tokens)
     if resolved.wh_word == "who" and (perception or local_presence):
         return ResolvedStateQuery("visible_people", resolved)
+    if resolved.wh_word == "who" and knows_person:
+        return ResolvedStateQuery("known_people", resolved)
     if resolved.wh_word == "who" and first_person:
         return ResolvedStateQuery("identity", resolved)
     if resolved.wh_word == "who" and focus is not None:

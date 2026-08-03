@@ -3134,6 +3134,18 @@ class TestSelfQuestion:
             "Arlan Quickstep is a barber.")
         assert _answer_basic_state_question("do I know Arlan?", **common) == (
             "Yes. Your character knows Arlan Quickstep.")
+        assert cs.known_people == {"arlan": "Arlan Quickstep"}
+        assert _answer_basic_state_question("who do I know?", **common) == (
+            "Your character knows:\n- Arlan Quickstep")
+
+        # Acquaintances remain known after their scene is unloaded.
+        outside = dict(common, characters={cs.character.id: cs},
+                       current_positions={cs.character.id: (0.0, 0.0, "STREET")},
+                       active_characters={cs.character.id})
+        assert _answer_basic_state_question("who do I know?", **outside) == (
+            "Your character knows:\n- Arlan Quickstep")
+        assert _answer_basic_state_question("do I know Arlan?", **outside) == (
+            "Yes. Your character knows Arlan Quickstep.")
 
     def test_catalog_grounded_get_question_is_not_inventory(self):
         from engine.session import _answer_self_question

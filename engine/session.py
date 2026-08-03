@@ -23,6 +23,7 @@ from functools import lru_cache
 from collections import deque
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import AsyncIterator, Optional, TYPE_CHECKING
 
 from engine.initiative import roll_initiative
@@ -103,6 +104,9 @@ class CharacterSession:
     # Python-owned episodic memory used to reinforce continuity in prompts.
     episodic_memory: list[str] = field(default_factory=list)
     recent_interactions: list[str] = field(default_factory=list)
+    # People this character has encountered, keyed by stable character id.
+    # Unlike the scene cast, this survives transitions and checkpoint reloads.
+    known_people: dict[str, str] = field(default_factory=dict)
     last_zone_seen: str = ""
     # Input routing metadata for player-controlled characters.
     # Current engine behavior remains LLM-driven; transport fields are used by
@@ -2459,8 +2463,9 @@ def _answer_basic_state_question(
     from engine import latn_resolver
     venues = _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "") \
         if scene_geometry is not None else ()
+    grounding_characters = _characters_with_acquaintances(characters, cs)
     lexicon, adapter = build_context(
-        {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
+        {}, grounding_characters, actor_zone or "", scene_geometry, venues=venues)
     query = latn_resolver.resolve_state_query(
         intent_text or "", lexicon=lexicon, adapter=adapter)
     if query is None or query.kind not in {
@@ -2468,6 +2473,7 @@ def _answer_basic_state_question(
         "person_definition",
         "visible_people", "person_property_true", "person_property_false",
         "acquaintance_true", "acquaintance_false",
+        "known_people",
     }:
         return None
     char = getattr(cs, "character", None)
@@ -2508,6 +2514,22 @@ def _answer_basic_state_question(
         return "You can see:\n" + "\n".join(
             f"- {label} (~{distance:.0f} ft away)" for _cid, label, distance in visible)
 
+    if query.kind == "known_people":
+        known = dict(getattr(cs, "known_people", None) or {})
+        visible = _visible_character_query_records(
+            character_id, current_positions or {}, active_characters or set(),
+            characters, scene_geometry)
+        for cid, _label, _distance in visible:
+            other = characters.get(cid)
+            known_char = getattr(other, "character", None)
+            name = getattr(known_char, "name", "") or getattr(other, "scene_handle", "") or cid
+            known[cid] = name
+        cs.known_people = known
+        if not known:
+            return "Your character does not yet know anyone else."
+        return "Your character knows:\n" + "\n".join(
+            f"- {name}" for _cid, name in sorted(known.items()))
+
     if query.kind in {"person_property_true", "person_property_false"}:
         ent = query.focus_entity
         known = getattr(ent, "session", None)
@@ -2526,6 +2548,9 @@ def _answer_basic_state_question(
         known = getattr(ent, "session", None)
         known_char = getattr(known, "character", None)
         name = getattr(known_char, "name", "") or getattr(ent, "name", "")
+        known_id = getattr(ent, "entity_id", "") or getattr(known_char, "id", "")
+        if known_id:
+            cs.known_people[known_id] = name or known_id
         return f"Yes. Your character knows {name}."
 
     if query.kind == "location":
@@ -2545,6 +2570,18 @@ def _answer_basic_state_question(
             f"{game_time.day} ({game_time.period}, {game_time.season})."
         )
     return None
+
+
+def _characters_with_acquaintances(characters: dict, cs) -> dict:
+    """Add remembered people to LATN grounding without making them present."""
+    grounded = dict(characters or {})
+    for cid, name in (getattr(cs, "known_people", None) or {}).items():
+        if cid in grounded:
+            continue
+        remembered = SimpleNamespace(
+            id=cid, name=name, race="", character_class="", role="", faction="")
+        grounded[cid] = SimpleNamespace(character=remembered, scene_handle=name)
+    return grounded
 
 
 def _answer_place_definition_question(
@@ -4334,6 +4371,7 @@ def _save_turn(
             char_id: {
                 "episodic": cs.episodic_memory,
                 "recent_interactions": cs.recent_interactions,
+                "known_people": cs.known_people,
                 "last_zone_seen": cs.last_zone_seen,
             }
             for char_id, cs in characters.items()
@@ -4470,6 +4508,7 @@ def load_resume_state(
         cs = characters[char_id]
         cs.episodic_memory = list(mem.get("episodic", []))
         cs.recent_interactions = list(mem.get("recent_interactions", []))
+        cs.known_people = dict(mem.get("known_people", {}))
         cs.last_zone_seen = (mem.get("last_zone_seen") or "").upper()
 
     # Restore positions from last checkpoint (may be absent in older checkpoints)
@@ -6173,8 +6212,9 @@ async def iter_session(
                     # items is None for an item-less scene (web_play passes
                     # `cfg.items or None`); build_context needs a dict like every
                     # other caller's `items or {}`.
+                    _dm_characters = _characters_with_acquaintances(characters, cs)
                     _dm_lex, _dm_adp = _dm_build_ctx(
-                        items or {}, characters or {}, _dm_zone, scene_geometry,
+                        items or {}, _dm_characters, _dm_zone, scene_geometry,
                         venues=_dm_venues, catalog=_dm_entries)
 
                     _place_path = (
@@ -6198,7 +6238,7 @@ async def iter_session(
 
                     if not _player_intent_grounds(
                         intent.intent, lexicon=_dm_lex, adapter=_dm_adp,
-                        items=items or {}, characters=characters or {},
+                        items=items or {}, characters=_dm_characters,
                         actor_zone=_dm_zone, entries=_dm_entries,
                     ):
                         def _dm_diag(_t, _lex=_dm_lex):

@@ -131,6 +131,8 @@ def test_social_presence_property_and_acquaintance_queries_are_typed():
         "who is here?", lexicon=lex, adapter=adapter).kind == "visible_people"
     assert resolve_state_query(
         "who can I see?", lexicon=lex, adapter=adapter).kind == "visible_people"
+    assert resolve_state_query(
+        "who do I know?", lexicon=lex, adapter=adapter).kind == "known_people"
     prop = resolve_state_query(
         "is Arlan a barber?", lexicon=lex, adapter=adapter)
     assert prop.kind == "person_property_true"
