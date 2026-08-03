@@ -359,6 +359,30 @@ def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
             rf"<g data-reveal='0'><polygon[^>]*><title>{room}", upstairs)
 
 
+def test_apothecary_and_mercantile_have_editable_interior_art(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    expected = {
+        Path("scenario/places/driftmoor/bitter_remedy/GEOMETRY.md"): (2, 8),
+        Path("scenario/places/driftmoor/salt_and_iron/GEOMETRY.md"): (2, 13),
+        Path("scenario/places/driftmoor/salt_and_iron/upper_floor/GEOMETRY.md"): (2, 6),
+    }
+    for index, (geometry, counts) in enumerate(expected.items()):
+        out = tmp_path / f"shop-{index}.html"
+        render_turn_slider_html(geometry, out, snapshot_dir=tmp_path)
+        rendered = out.read_text(encoding="utf-8")
+        assert rendered.count("class='zone-floor-art'") == counts[0]
+        assert rendered.count("class='visual-overlay'") == counts[1]
+
+    apothecary = (tmp_path / "shop-0.html").read_text(encoding="utf-8")
+    assert "data-target='back_room_vines'" in apothecary
+    assert "Back Room — Restricted</title>" not in apothecary
+
+    mercantile = (tmp_path / "shop-1.html").read_text(encoding="utf-8")
+    for target in ("counter_center", "central_display_w", "central_display_e", "clock"):
+        assert f"data-target='{target}'" in mercantile
+
+
 def test_subscene_filters_same_scale_characters_from_parent_snapshots(tmp_path):
     import json
     from engine.map_renderer import render_turn_slider_html

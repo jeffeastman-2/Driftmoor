@@ -32,6 +32,11 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 | clock           | 17.5 | 30.5 |
 | cudgel_under_counter | 21 | 16 |
 | ledger          | 16 | 16 |
+| counter_center  | 19.25 | 15 |
+| central_display_w | 8 | 8 |
+| central_display_e | 25 | 8 |
+| rope_coils      | 6 | 19 |
+| salt_sacks      | 32 | 19 |
 
 ---
 
@@ -40,7 +45,6 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 | name       | render_z | vertices                              |
 |------------|----------|---------------------------------------|
 | BACK_STORE | 6.5        | (0,22.5) (35.5,22.5) (35.5,32.5) (0,32.5)         |
-| COUNTER    | 6.5        | (9.5,12.5) (29,12.5) (29,17.5) (9.5,17.5)         |
 | SHOP_FLOOR | 3.25        | (0,0) (35.5,0) (35.5,22.5) (0,22.5)           |
 | EXTERIOR   | 0.0        | (-8,-8) (43.5,-8) (43.5,40.5) (-8,40.5)       |
 

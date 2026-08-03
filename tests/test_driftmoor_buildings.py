@@ -264,6 +264,25 @@ def test_broken_lantern_bedroom_is_a_first_class_movement_target():
     assert destination[1] > 10
 
 
+def test_salt_and_iron_upper_floor_is_a_reciprocal_place():
+    parent_path = "places/driftmoor/salt_and_iron"
+    child_path = f"{parent_path}/upper_floor"
+    parent = configure_from_place_path(parent_path)
+    child = configure_from_place_path(child_path)
+
+    assert child.scene_geometry.origin == Position(0, 0, 9)
+    assert _infer_driftmoor_venue_transition(
+        "I go upstairs", parent_path, "BACK_STORE"
+    ) == "upper_floor"
+    doorway = _driftmoor_enter_doorway(
+        "I go upstairs", parent_path, "BACK_STORE", parent.scene_geometry
+    )
+    assert doorway == ("upper_floor", (29.0, 26.0, "BACK_STORE"))
+    assert _infer_driftmoor_venue_transition(
+        "I go downstairs", child_path, "STAIR_LANDING"
+    ) == "salt_and_iron"
+
+
 def test_dustcloaks_living_loft_is_an_enterable_second_story():
     parent_path = "places/driftmoor/dustcloaks_curios"
     child_path = f"{parent_path}/living_loft"

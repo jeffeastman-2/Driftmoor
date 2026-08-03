@@ -28,6 +28,8 @@ on exterior walls. Crooked chimney.
 | back_room_door  | 11  | 11  |
 | experiment_table| 11  | 16 |
 | volatile_shelf  | 19.5 | 16 |
+| back_room_vines | 4    | 16 |
+| alchemy_stove   | 15.5 | 16 |
 
 ---
 
@@ -46,7 +48,8 @@ on exterior walls. Crooked chimney.
 | description    | vertices                      |
 |----------------|-------------------------------|
 | Counter        | (4.5,6.5) (17.5,6.5) (17.5,8) (4.5,8)     |
-| Dividing wall  | (0,11) (22.5,11) (22.5,13) (0,13)     |
+| Dividing wall west | (0,11) (10,11) (10,12) (0,12)     |
+| Dividing wall east | (12,11) (22.5,11) (22.5,12) (12,12) |
 
 ---
 
@@ -64,5 +67,6 @@ on exterior walls. Crooked chimney.
 
 - **type:** conditional
 - **blocks:** all
+- **render:** hidden
 - **effect:** back room off-limits to customers; contains volatile ingredients and personal experiments
 - **vertices:** (0,11) (22.5,11) (22.5,19.5) (0,19.5)
