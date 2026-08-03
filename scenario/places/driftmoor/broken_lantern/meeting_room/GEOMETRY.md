@@ -5,7 +5,7 @@
 - **name:** The Broken Lantern Meeting Room
 - **place_path:** places/driftmoor/broken_lantern/meeting_room
 - **z_level:** 16.25
-- **width:** 11.5
+- **width:** 16
 - **height:** 9.5
 - **origin:** 0, 23, 0
 
@@ -18,10 +18,10 @@ ground floor. Its south door opens into the public room.
 
 | name             | x | y   | z |
 |------------------|---|-----|---|
-| main_room_door   | 6   | 0 | 4 |
-| round_table      | 5.75 | 5 | 4 |
+| main_room_door   | 8   | 0 | 4 |
+| round_table      | 8   | 5 | 4 |
 | ledger_corner    | 3   | 7 | 4 |
-| lamp             | 9   | 7 | 5 |
+| lamp             | 8.709   | 6.156 | 5 |
 
 ---
 
@@ -29,7 +29,7 @@ ground floor. Its south door opens into the public room.
 
 | name         | floor_z | ceiling_z | render_z | vertices                    |
 |--------------|---------|-----------|----------|-----------------------------|
-| MEETING_ROOM | 0       | 8         | 3.25     | (0,0) (11.5,0) (11.5,9.5) (0,9.5) |
+| MEETING_ROOM | 0       | 8         | 3.25     | (0,0) (16,0) (16,9.5) (0,9.5) |
 
 ---
 
@@ -37,7 +37,7 @@ ground floor. Its south door opens into the public room.
 
 | description | vertices                         |
 |-------------|----------------------------------|
-| North wall  | (0,8.5) (11.5,8.5) (11.5,9.5) (0,9.5) |
+| North wall  | (0,8.5) (16,8.5) (16,9.5) (0,9.5) |
 
 ---
 
@@ -45,7 +45,7 @@ ground floor. Its south door opens into the public room.
 
 | name         | x | y | destination                              |
 |--------------|---|---|------------------------------------------|
-| to_main_room | 6 | 0 | places/driftmoor/broken_lantern         |
+| to_main_room | 8 | 0 | places/driftmoor/broken_lantern         |
 
 ---
 
@@ -53,5 +53,5 @@ ground floor. Its south door opens into the public room.
 
 | id            | x | y   | label         |
 |---------------|---|-----|---------------|
-| ledger_book   | 3 | 7 | Ledger book   |
-| sealed_letter | 4 | 7 | Sealed letter |
+| ledger_book   | 7.48 | 4.178 | Ledger book   |
+| sealed_letter | 6.996 | 6.447 | Sealed letter |

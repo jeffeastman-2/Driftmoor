@@ -180,3 +180,16 @@ def test_should_not_block_move_to_unseen_zone_from_focus():
         visited={"ENTRY CHAMBER", "FIRST PASSAGE"},
         party_focus_zone="FIRST PASSAGE",
     )
+
+
+def test_only_explicit_companions_follow_party_focus():
+    from types import SimpleNamespace as NS
+    from engine.session import _follows_party_focus
+
+    resident = NS(character=NS(character_type="npc", follows_party=False))
+    companion = NS(character=NS(character_type="npc", follows_party=True))
+    player = NS(character=NS(character_type="player", follows_party=True))
+
+    assert not _follows_party_focus(resident)
+    assert _follows_party_focus(companion)
+    assert not _follows_party_focus(player)

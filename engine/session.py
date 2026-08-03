@@ -600,6 +600,16 @@ def _should_block_backtrack(
     return tz in seen
 
 
+def _follows_party_focus(cs: CharacterSession) -> bool:
+    """Whether this AI character is an explicitly attached companion."""
+    character = getattr(cs, "character", None)
+    return bool(
+        character is not None
+        and getattr(character, "character_type", "") != "player"
+        and getattr(character, "follows_party", False)
+    )
+
+
 def _exploration_redirect_intent(
     *,
     zone_name: str,
@@ -6329,7 +6339,7 @@ async def iter_session(
                 not in_combat
                 and party_focus_zone
                 and turn_num <= party_focus_until_turn
-                and getattr(cs.character, "character_type", "") != "player"
+                and _follows_party_focus(cs)
             ):
                 focus_zone = party_focus_zone.upper()
                 if actor_zone_before and actor_zone_before != focus_zone:

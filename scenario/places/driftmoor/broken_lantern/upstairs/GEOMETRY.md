@@ -10,8 +10,8 @@
 - **origin:** 0, 0, 9
 
 Notes: The upper floor shares the tavern's horizontal footprint. Three
-guest rooms open from a south hall beneath the sloping roof. The stair
-arrives at the southeast landing.
+guest rooms occupy the south side beneath the sloping roof and open north
+into the hall. The stair arrives on the hall's north side.
 
 ---
 
@@ -19,12 +19,18 @@ arrives at the southeast landing.
 
 | name              | x    | y    | z |
 |-------------------|------|------|---|
-| stair_landing     | 37   | 5    | 0 |
-| upstairs_hall     | 20   | 5    | 4 |
-| room_1_bed        | 6.5  | 21   | 4 |
-| room_2_bed        | 20.5 | 21   | 4 |
-| room_3_bed        | 34   | 21   | 4 |
-| linen_chest       | 3    | 5    | 4 |
+| stair_landing     | 18.75 | 27.5 | 0 |
+| upstairs_hall     | 20   | 27.5 | 4 |
+| room_1_bed        | 6.5  | 6.218 | 4 |
+| room_2_bed        | 20.255 | 6.341 | 4 |
+| room_3_bed        | 34   | 6.219 | 4 |
+| linen_chest       | 2.266    | 27.5 | 4 |
+| room_1_desk       | 6.575   | 12.708 | 4 |
+| room_2_desk       | 20.207   | 12.708 | 4 |
+| room_3_desk       | 33.942   | 12.096 | 4 |
+| room_1_basin      | 2.266    | 20.479 | 4 |
+| room_2_basin      | 16.133 | 20.356 | 4 |
+| room_3_basin      | 30.011 | 20.234 | 4 |
 
 ---
 
@@ -32,11 +38,18 @@ arrives at the southeast landing.
 
 | name          | floor_z | ceiling_z | render_z | vertices                                  |
 |---------------|---------|-----------|----------|-------------------------------------------|
-| STAIR_LANDING | 0       | 8         | 7.0      | (33.5,0) (40.5,0) (40.5,10) (33.5,10)   |
-| GUEST_ROOM_1  | 0       | 8         | 6.5      | (0,10) (13,10) (13,32.5) (0,32.5)       |
-| GUEST_ROOM_2  | 0       | 8         | 6.5      | (13.75,10) (27,10) (27,32.5) (13.75,32.5) |
-| GUEST_ROOM_3  | 0       | 8         | 6.5      | (27.75,10) (40.5,10) (40.5,32.5) (27.75,32.5) |
-| UPSTAIRS_HALL | 0       | 8         | 3.25     | (0,0) (40.5,0) (40.5,10) (0,10)         |
+| GUEST_BEDROOM_1 | 0     | 8         | 6.5      | (0,0) (13,0) (13,22.5) (0,22.5)       |
+| GUEST_BEDROOM_2 | 0     | 8         | 6.5      | (13.75,0) (27,0) (27,22.5) (13.75,22.5) |
+| GUEST_BEDROOM_3 | 0     | 8         | 6.5      | (27.75,0) (40.5,0) (40.5,22.5) (27.75,22.5) |
+| UPSTAIRS_HALL | 0       | 8         | 3.25     | (0,22.5) (40.5,22.5) (40.5,32.5) (0,32.5) |
+| STAIR_LANDING | 0       | 8         | 7.0      | (16.5,22.5) (21,22.5) (21,32.5) (16.5,32.5) |
+
+---
+
+## Fog of War
+
+- **reveal_on_entry:** GUEST_BEDROOM_1, GUEST_BEDROOM_2, GUEST_BEDROOM_3
+- **reveal_layout:** GUEST_BEDROOM_1, GUEST_BEDROOM_2, GUEST_BEDROOM_3
 
 ---
 
@@ -44,14 +57,14 @@ arrives at the southeast landing.
 
 | description       | vertices                                  |
 |-------------------|-------------------------------------------|
-| Rooms 1–2 divider | (13,10) (13.75,10) (13.75,32.5) (13,32.5) |
-| Rooms 2–3 divider | (27,10) (27.75,10) (27.75,32.5) (27,32.5) |
-| Room 1 wall west  | (0,9.5) (5.5,9.5) (5.5,10.5) (0,10.5)   |
-| Room 1 wall east  | (7.5,9.5) (13,9.5) (13,10.5) (7.5,10.5) |
-| Room 2 wall west  | (13.75,9.5) (19.5,9.5) (19.5,10.5) (13.75,10.5) |
-| Room 2 wall east  | (21.5,9.5) (27,9.5) (27,10.5) (21.5,10.5) |
-| Room 3 wall west  | (27.75,9.5) (33,9.5) (33,10.5) (27.75,10.5) |
-| Room 3 wall east  | (35,9.5) (40.5,9.5) (40.5,10.5) (35,10.5) |
+| Rooms 1–2 divider | (13,0) (13.75,0) (13.75,22.5) (13,22.5) |
+| Rooms 2–3 divider | (27,0) (27.75,0) (27.75,22.5) (27,22.5) |
+| Room 1 wall west  | (0,22) (5.5,22) (5.5,23) (0,23)   |
+| Room 1 wall east  | (7.5,22) (13,22) (13,23) (7.5,23) |
+| Room 2 wall west  | (13.75,22) (19.5,22) (19.5,23) (13.75,23) |
+| Room 2 wall east  | (21.5,22) (27,22) (27,23) (21.5,23) |
+| Room 3 wall west  | (27.75,22) (33,22) (33,23) (27.75,23) |
+| Room 3 wall east  | (35,22) (40.5,22) (40.5,23) (35,23) |
 
 ---
 
@@ -59,4 +72,4 @@ arrives at the southeast landing.
 
 | name          | x  | y | destination                              |
 |---------------|----|---|------------------------------------------|
-| to_main_room  | 37 | 5 | places/driftmoor/broken_lantern         |
+| to_main_room  | 18.75 | 27.5 | places/driftmoor/broken_lantern   |

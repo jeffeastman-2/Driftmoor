@@ -13,7 +13,7 @@ Tess has a hidden compartment under one of the floorboards. Only she knows about
 - Tess when restocking
 
 ## Connections
-- Main tavern room through the south door behind the bar
+- Kitchen through the east supply door
 
 ## Dynamic State
 *(Updated by monitor agent)*

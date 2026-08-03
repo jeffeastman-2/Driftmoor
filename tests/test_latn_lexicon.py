@@ -149,6 +149,14 @@ def test_downstairs_is_known_as_a_parentward_direction():
     assert "locz=-1.00" in downstairs.non_zero_dims()
 
 
+def test_authored_bedroom_zone_supplies_bedroom_vocabulary():
+    pytest.importorskip("latn.lexer.vector_space")
+    from engine.latn_lexicon import build_driftmoor_lexicon
+
+    lex = build_driftmoor_lexicon([], [], zones=["GUEST_BEDROOM_1"])
+    assert not _tok_map(lex, "enter bedroom 1")["bedroom"].isa("unknown")
+
+
 def test_posture_verbs_are_known_actions():
     pytest.importorskip("latn.lexer.vector_space")
     from engine.latn_lexicon import build_driftmoor_lexicon

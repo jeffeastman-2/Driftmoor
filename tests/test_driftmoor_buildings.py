@@ -11,6 +11,7 @@ from engine.session import (
     _driftmoor_source_doorways,
     _entry_point_from_target_geometry,
     _infer_driftmoor_venue_transition,
+    _infer_movement_destination,
     _next_zone_toward,
     _place_identity_metadata,
     _waypoint_for_zone,
@@ -219,14 +220,14 @@ def test_broken_lantern_subplaces_have_geometry_and_reciprocal_entries():
     assert parent.scene_geometry is not None
     assert parent.scene_geometry.boundaries == []
     assert {
-        "MAIN_ROOM", "STAGE", "BOOTHS", "BAR", "KITCHEN",
+        "MAIN_ROOM", "BAR", "KITCHEN",
         "MEETING_ROOM", "STORAGE_ROOM", "STAIRWAY",
     } <= set(parent.scene_geometry.zones)
 
     expected = {
-        "meeting_room": ("I enter the meeting room", (6.0, 23.0), (0, 23, 0)),
-        "storage_room": ("I enter the storage room", (17.0, 23.0), (12.5, 23, 0)),
-        "upstairs": ("I go upstairs", (24.5, 27.5), (0, 0, 9)),
+        "meeting_room": ("I enter the meeting room", (8.0, 23.0), (0, 23, 0)),
+        "storage_room": ("I enter the storage room", (32.5, 27.75), (21.5, 23, 0)),
+        "upstairs": ("I go upstairs", (18.75, 27.5), (0, 0, 9)),
     }
     for child_id, (phrase, doorway_xy, expected_origin) in expected.items():
         child_path = f"{parent_path}/{child_id}"
@@ -248,6 +249,19 @@ def test_broken_lantern_subplaces_have_geometry_and_reciprocal_entries():
         assert _infer_driftmoor_venue_transition(
             "I exit", child_path, next(iter(child.scene_geometry.zones))
         ) == "broken_lantern"
+
+
+def test_broken_lantern_bedroom_is_a_first_class_movement_target():
+    cfg = configure_from_place_path("places/driftmoor/broken_lantern/upstairs")
+    destination = _infer_movement_destination(
+        "enter bedroom 1",
+        cfg.scene_geometry,
+        (20.0, 27.5, "UPSTAIRS_HALL"),
+        {"UPSTAIRS_HALL"},
+    )
+    assert destination is not None
+    assert destination[0] < 13
+    assert destination[1] > 10
 
 
 def test_dustcloaks_living_loft_is_an_enterable_second_story():

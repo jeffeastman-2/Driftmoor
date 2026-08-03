@@ -22,6 +22,10 @@ class Character:
     mood: str = ""
     disposition: str = ""
     faction: str = "neutral"  # "party", "hostile", "neutral"
+    # Only explicitly attached companions follow another character's temporary
+    # exploration focus. Resident NPCs must never trail a visitor around merely
+    # because their faction is friendly.
+    follows_party: bool = False
     # Item ids currently carried by this character. Kept in sync with each
     # held ``Item.holder`` (see engine.session transfer helpers).
     inventory: list[str] = field(default_factory=list)

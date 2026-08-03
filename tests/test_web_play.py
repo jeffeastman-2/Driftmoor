@@ -45,6 +45,44 @@ def test_map_visual_save_is_scoped_and_updates_bound_landmark(tmp_path, monkeypa
     assert scene_geometry.landmarks["chair"] == Position(4.5, 6.25)
 
 
+def test_map_visual_save_can_update_an_authored_item(tmp_path, monkeypatch):
+    from models.space_time import Position
+
+    geometry = tmp_path / "GEOMETRY.md"
+    geometry.write_text(
+        "## Landmarks\n\n| name | x | y | z |\n|---|---:|---:|---:|\n"
+        "| door | 0 | 0 | 4 |\n\n"
+        "## Items\n\n| id | x | y | label |\n|---|---:|---:|---|\n"
+        "| ledger | 1 | 2 | Ledger |\n",
+        encoding="utf-8",
+    )
+    asset = tmp_path / "floor/assets/ledger.svg"
+    asset.parent.mkdir(parents=True)
+    asset.write_text("<svg xmlns='http://www.w3.org/2000/svg'/>", encoding="utf-8")
+    thing = NS(position=Position(1, 2))
+    cfg = NS(
+        geometry_path=geometry,
+        scene_geometry=NS(landmarks={"door": Position(0, 0)}),
+        items={"ledger": thing},
+    )
+    payload = {"visuals": [{
+        "id": "ledger_visual", "asset": "floor/assets/ledger.svg",
+        "target": "ledger", "x": 4.5, "y": 6.25,
+        "width": 2, "height": 1, "rotation": 0, "layer": "item",
+    }]}
+
+    async def request_json():
+        return payload
+
+    monkeypatch.setattr(web_play, "_render_map", lambda _app: None)
+    asyncio.run(web_play.handle_map_visuals(NS(
+        json=request_json, app={"runtime": {"config": cfg}}
+    )))
+
+    assert "| ledger | 4.5 | 6.25 | Ledger |" in geometry.read_text(encoding="utf-8")
+    assert thing.position == Position(4.5, 6.25)
+
+
 def test_web_server_defaults_to_localhost():
     args = web_play._build_arg_parser().parse_args([])
     assert args.host == "127.0.0.1"

@@ -395,7 +395,7 @@ def parse_geometry(text: str) -> dict:
     g: dict = {
         "zones": {}, "zone_z": {}, "landmarks": {}, "impassable": [],
         "boundaries": [], "starting_positions": {}, "items": {},
-        "connections": [], "reveal_on_entry": set(),
+        "connections": [], "reveal_on_entry": set(), "reveal_layout": set(),
     }
 
     def _table(section: str) -> list[list[str]]:
@@ -512,6 +512,15 @@ def parse_geometry(text: str) -> dict:
         if entry:
             g["reveal_on_entry"] = {
                 name.strip().upper() for name in entry.group(1).split(",")
+                if name.strip()
+            }
+        layout = re.search(
+            r"\*\*reveal_layout:\*\*\s*([^\n]+)",
+            fog.group(1), re.IGNORECASE,
+        )
+        if layout:
+            g["reveal_layout"] = {
+                name.strip().upper() for name in layout.group(1).split(",")
                 if name.strip()
             }
 
@@ -1211,7 +1220,10 @@ def render_turn_slider_html(
     # draws a long dashed trail back to the prior scene.
     zones_by_upper = {name.upper(): verts for name, verts in g["zones"].items()}
     scoped_tracks: dict[str, list[tuple[int, float, float, str]]] = {}
+    scene_cast = set(start_characters) if start_characters is not None else None
     for cid, pts in tracks.items():
+        if scene_cast is not None and cid not in scene_cast:
+            continue
         kept = []
         for point in pts:
             turn, x, y, zone = point
@@ -1496,7 +1508,12 @@ def render_turn_slider_html(
         clip_id = "zone-floor-" + re.sub(r"[^a-zA-Z0-9_-]", "-", zname)
         if icon:
             p.append(f"<defs><clipPath id='{clip_id}'><polygon points='{poly(verts)}'/></clipPath></defs>")
-        p.append(f"<g data-reveal='{reveal_zone.get(zname, never)}'>")
+        zone_reveal = (
+            turn_list[0]
+            if zname.upper() in g.get("reveal_layout", set())
+            else reveal_zone.get(zname, never)
+        )
+        p.append(f"<g data-reveal='{zone_reveal}'>")
         if icon:
             xs = [x for x, _ in verts]
             ys = [y for _, y in verts]
@@ -1563,7 +1580,14 @@ def render_turn_slider_html(
         if not _item_is_loose(detail):
             continue
         tooltip = _item_tooltip(label, detail)
-        if _item_is_pickable(detail):
+        authored_visual = _iid in _visual_targets
+        if authored_visual:
+            marker = (
+                f"<circle class='item-hit' cx='{x:.2f}' cy='{fy(y):.2f}' "
+                f"r='1.8' fill='transparent'>"
+                f"<title>{html.escape(tooltip)}</title></circle>"
+            )
+        elif _item_is_pickable(detail):
             from engine.item_icons import item_icon
             marker = (
                 f"<text class='item-icon' data-base-fs='{3.2*sc:.2f}' "
@@ -1584,7 +1608,7 @@ def render_turn_slider_html(
         zone = _containing_zone(x, y, g["zones"])
         painted_static = bool(
             not _item_is_pickable(detail) and zone and _zone_floors.get(zone))
-        label_markup = "" if painted_static else (
+        label_markup = "" if (painted_static or authored_visual) else (
             f"<text x='{x+1.8*sc:.2f}' y='{fy(y):.2f}' "
             f"class='ilabel'>{html.escape(label)}</text>")
         p.append(f"<g data-reveal='{_elem_reveal(x, y)}' data-item='{html.escape(_iid)}' "

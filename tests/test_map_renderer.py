@@ -315,6 +315,71 @@ def test_weary_traveler_uses_separate_zone_art_downstairs_and_upstairs(tmp_path)
             rf"<g data-reveal='1'><polygon[^>]*><title>{room}", up)
 
 
+def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
+    import re
+    from engine.map_renderer import render_turn_slider_html
+
+    root = Path("scenario/places/driftmoor/broken_lantern")
+    expected = {
+        root / "GEOMETRY.md": (6, 27),
+        root / "meeting_room/GEOMETRY.md": (1, 4),
+        root / "storage_room/GEOMETRY.md": (1, 6),
+        root / "upstairs/GEOMETRY.md": (5, 10),
+    }
+    rendered = {}
+    for index, (geometry, counts) in enumerate(expected.items()):
+        out = tmp_path / f"lantern-{index}.html"
+        kwargs = {}
+        if geometry == root / "upstairs/GEOMETRY.md":
+            kwargs = {
+                "start_characters": ["gilthaness"],
+                "start_positions": {"gilthaness": (20, 27.5)},
+            }
+        render_turn_slider_html(
+            geometry, out, snapshot_dir=tmp_path, **kwargs
+        )
+        html = out.read_text(encoding="utf-8")
+        rendered[geometry] = html
+        assert html.count("class='zone-floor-art'") == counts[0]
+        assert html.count("class='visual-overlay'") == counts[1]
+
+    main = rendered[root / "GEOMETRY.md"]
+    for target in (
+        "hearth", "stage", "booth_1", "booth_2", "booth_3",
+        "table_1", "table_2", "table_3",
+        "bar_counter", "bar_cabinet", "kitchen_center", "stair_foot",
+        "broken_lantern_sign",
+    ):
+        assert f"data-target='{target}'" in main
+
+    upstairs = rendered[root / "upstairs/GEOMETRY.md"]
+    assert re.search(r"<g data-reveal='0'><polygon[^>]*><title>Upstairs Hall", upstairs)
+    for room in ("Guest Bedroom 1", "Guest Bedroom 2", "Guest Bedroom 3"):
+        assert re.search(
+            rf"<g data-reveal='0'><polygon[^>]*><title>{room}", upstairs)
+
+
+def test_subscene_filters_same_scale_characters_from_parent_snapshots(tmp_path):
+    import json
+    from engine.map_renderer import render_turn_slider_html
+
+    (tmp_path / "day1_01.json").write_text(json.dumps({
+        "turn": 1,
+        "current_positions": {
+            "gilthaness": {"x": 8, "y": 5, "zone": "MEETING_ROOM"},
+            "tess": {"x": 9, "y": 5, "zone": "MEETING_ROOM"},
+        },
+    }), encoding="utf-8")
+    out = tmp_path / "meeting.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/broken_lantern/meeting_room/GEOMETRY.md"),
+        out, snapshot_dir=tmp_path, start_characters=["gilthaness"],
+    )
+    rendered = out.read_text(encoding="utf-8")
+    assert "data-char='gilthaness'" in rendered
+    assert "data-char='tess'" not in rendered
+
+
 def test_shift_scroll_scales_item_icons_with_character_icons():
     from engine.map_renderer import _PANZOOM_JS
 

@@ -10,11 +10,11 @@
 - **origin:** 427.5, 252, 0
 
 Notes: Ground floor of a two-story timber tavern. The public room
-occupies the south and west, the bar runs along the east side, and the
-kitchen fills the northeast corner. A meeting room and storage room
-have distinct footprints along the rear wall. The stair rises between
-the back rooms and kitchen. The broken lantern hangs above the south
-entrance.
+occupies most of the south and center. A narrow bar and kitchen service
+strip runs along the east wall. The enlarged meeting room occupies the
+northwest; the stair rises between it and the storeroom, whose east door
+opens directly into the kitchen. The broken lantern hangs above the
+south entrance.
 
 ---
 
@@ -23,17 +23,25 @@ entrance.
 | name               | x    | y    | z |
 |--------------------|------|------|---|
 | front_door         | 20   | 0    | 4 |
-| central_tables     | 17   | 11   | 4 |
-| hearth             | 3    | 18   | 4 |
-| stage              | 7    | 17   | 4 |
-| booth_row          | 6    | 7    | 4 |
-| bar_counter        | 28   | 9    | 4 |
-| kitchen_center     | 34   | 25   | 4 |
-| meeting_room_door  | 6    | 23   | 4 |
-| storage_room_door  | 17   | 23   | 4 |
-| stair_foot         | 24.5 | 27.5 | 0 |
+| table_1            | 12.446   | 5.455    | 4 |
+| table_2            | 23.571   | 5.544   | 4 |
+| table_3            | 12.473   | 11.872   | 4 |
+| table_4            | 23.579   | 11.803   | 4 |
+| hearth             | 29.555    | 18.973   | 4 |
+| stage              | 14.754    | 19.306   | 4 |
+| booth_1            | 2.304 | 3.708   | 4 |
+| booth_2            | 2.304 | 9.07   | 4 |
+| booth_3            | 2.304 | 14.432  | 4 |
+| bar_counter        | 33.195   | 6.665    | 4 |
+| bar_cabinet        | 38.265   | 7.234   | 4 |
+| bar_stool_2        | 31.178   | 7.043   | 4 |
+| bar_stool_3        | 31.178   | 3.899  | 4 |
+| kitchen_center     | 37.211   | 24.675   | 4 |
+| kitchen_stove      | 37.789 | 30.299 | 4 |
+| meeting_room_door  | 8    | 23   | 4 |
+| storage_room_door  | 32.5 | 27.75 | 4 |
+| stair_foot         | 18.75 | 27.5 | 0 |
 | kitchen_back_door  | 40.5 | 25   | 4 |
-| broken_lantern     | 20   | -1.5 | 5 |
 
 ---
 
@@ -41,14 +49,12 @@ entrance.
 
 | name          | floor_z | ceiling_z | render_z | vertices                            |
 |---------------|---------|-----------|----------|-------------------------------------|
-| STAGE         | 0       | 8         | 6.5      | (1,14) (11,14) (11,21.5) (1,21.5) |
-| BOOTHS        | 0       | 8         | 6.5      | (1,3) (11,3) (11,13) (1,13)        |
-| BAR           | 0       | 8         | 6.5      | (27,0) (40.5,0) (40.5,18) (27,18) |
-| KITCHEN       | 0       | 8         | 6.5      | (27,18) (40.5,18) (40.5,32.5) (27,32.5) |
-| MEETING_ROOM  | 0       | 8         | 6.5      | (0,23) (11.5,23) (11.5,32.5) (0,32.5) |
-| STORAGE_ROOM  | 0       | 8         | 6.5      | (12.5,23) (21.5,23) (21.5,32.5) (12.5,32.5) |
-| STAIRWAY      | 0       | 8         | 7.0      | (22.5,23) (27,23) (27,32.5) (22.5,32.5) |
-| MAIN_ROOM     | 0       | 8         | 3.25     | (0,0) (27,0) (27,23) (0,23)       |
+| BAR           | 0       | 8         | 6.5      | (33.5,0) (40.5,0) (40.5,18) (33.5,18) |
+| KITCHEN       | 0       | 8         | 6.5      | (33.5,18) (40.5,18) (40.5,32.5) (33.5,32.5) |
+| MEETING_ROOM  | 0       | 8         | 6.5      | (0,23) (16,23) (16,32.5) (0,32.5) |
+| STAIRWAY      | 0       | 8         | 7.0      | (16.5,23) (21,23) (21,32.5) (16.5,32.5) |
+| STORAGE_ROOM  | 0       | 8         | 6.5      | (21.5,23) (32.5,23) (32.5,32.5) (21.5,32.5) |
+| MAIN_ROOM     | 0       | 8         | 3.25     | (0,0) (33.5,0) (33.5,23) (0,23)       |
 | EXTERIOR      | 0       | 8         | 0.0      | (-4.5,-4.5) (45,-4.5) (45,37) (-4.5,37) |
 
 ---
@@ -57,9 +63,9 @@ entrance.
 
 | description             | vertices                                  |
 |-------------------------|-------------------------------------------|
-| Bar counter             | (26,2) (28,2) (28,15) (26,15)            |
-| Kitchen partition north | (27,17.5) (33,17.5) (33,18.5) (27,18.5) |
-| Kitchen partition south | (35,17.5) (40.5,17.5) (40.5,18.5) (35,18.5) |
+| Bar counter             | (32,2) (34,2) (34,15) (32,15)            |
+| Kitchen partition west  | (33,17.5) (35.5,17.5) (35.5,18.5) (33,18.5) |
+| Kitchen partition east  | (38,17.5) (40.5,17.5) (40.5,18.5) (38,18.5) |
 | Back wall               | (0,31.5) (40.5,31.5) (40.5,32.5) (0,32.5) |
 
 ---
@@ -69,9 +75,9 @@ entrance.
 | name                | x    | y    | destination                                      |
 |---------------------|------|------|--------------------------------------------------|
 | front_door          | 20   | 0    | places/driftmoor                                 |
-| to_meeting_room     | 6    | 23   | places/driftmoor/broken_lantern/meeting_room    |
-| to_storage_room     | 17   | 23   | places/driftmoor/broken_lantern/storage_room    |
-| to_upstairs         | 24.5 | 27.5 | places/driftmoor/broken_lantern/upstairs        |
+| to_meeting_room     | 8    | 23   | places/driftmoor/broken_lantern/meeting_room    |
+| to_storage_room     | 32.5 | 27.75 | places/driftmoor/broken_lantern/storage_room   |
+| to_upstairs         | 18.75 | 27.5 | places/driftmoor/broken_lantern/upstairs       |
 | kitchen_back_door   | 40.5 | 25   | places/driftmoor                                 |
 
 ---
@@ -81,13 +87,13 @@ entrance.
 | id                  | x    | y    | label                  |
 |---------------------|------|------|------------------------|
 | broken_lantern_sign | 20   | -1.5 | Broken lantern sign    |
-| bar_stool           | 25   | 8    | Bar stool              |
-| service_bell        | 31   | 9    | Service bell           |
-| room_key_ring       | 33   | 9    | Room key ring          |
-| ale_tankards        | 35   | 9    | Ale tankards           |
-| tip_bowl            | 7    | 15   | Tip bowl               |
-| lute_case           | 8    | 11   | Lute case              |
-| dice_cup            | 15   | 8    | Dice cup               |
-| kitchen_knife       | 33   | 24   | Kitchen knife          |
-| stew_pot            | 36   | 27   | Stew pot               |
-| coal_scuttle        | 38   | 20   | Coal scuttle           |
+| bar_stool           | 31.128   | 10.724    | Bar stool              |
+| service_bell        | 32.848   | 7.93    | Service bell           |
+| room_key_ring       | 37.961   | 8.125    | Room key ring          |
+| ale_tankards        | 33.833   | 2.58    | Ale tankards           |
+| tip_bowl            | 11.28    | 17.335   | Tip bowl               |
+| lute_case           | 17.144    | 20.63   | Lute case              |
+| dice_cup            | 12.996   | 5.682    | Dice cup               |
+| kitchen_knife       | 37.199   | 24.304   | Kitchen knife          |
+| stew_pot            | 38.36   | 30.036   | Stew pot               |
+| coal_scuttle        | 35.336   | 30.035   | Coal scuttle           |

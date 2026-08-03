@@ -252,24 +252,40 @@ async def handle_input(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
+def _rewrite_geometry_coordinates(
+    text: str, coordinates: dict[str, tuple[float, float]]
+) -> str:
+    """Rewrite matching x/y cells in the Landmarks and Items tables."""
+    for heading in ("Landmarks", "Items"):
+        match = re.search(
+            rf"(##\s+{heading}\b.*?)(?=\n##\s+|\Z)", text, re.DOTALL
+        )
+        if not match:
+            continue
+        section = match.group(1)
+
+        def replace_row(row_match: re.Match) -> str:
+            name = row_match.group(2).strip()
+            if name not in coordinates:
+                return row_match.group(0)
+            x, y = coordinates[name]
+            return (
+                f"{row_match.group(1)}{x:g}{row_match.group(3)}"
+                f"{y:g}{row_match.group(4)}"
+            )
+
+        updated = re.sub(
+            r"^(\|\s*([^|]+?)\s*\|\s*)[-+0-9.]+(\s*\|\s*)"
+            r"[-+0-9.]+(\s*\|.*)$",
+            replace_row, section, flags=re.MULTILINE,
+        )
+        text = text[:match.start(1)] + updated + text[match.end(1):]
+    return text
+
+
 def _rewrite_landmark_coordinates(text: str, coordinates: dict[str, tuple[float, float]]) -> str:
-    """Rewrite only rows in GEOMETRY's Landmarks table."""
-    match = re.search(r"(##\s+Landmarks\b.*?)(?=\n##\s+|\Z)", text, re.DOTALL)
-    if not match:
-        raise ValueError("GEOMETRY.md has no Landmarks section")
-    section = match.group(1)
-
-    def replace_row(row_match: re.Match) -> str:
-        name = row_match.group(1).strip()
-        if name not in coordinates:
-            return row_match.group(0)
-        x, y = coordinates[name]
-        return f"| {name} | {x:g} | {y:g} |"
-
-    updated = re.sub(
-        r"^\|\s*([^|]+?)\s*\|\s*[-+0-9.]+\s*\|\s*[-+0-9.]+\s*\|\s*$",
-        replace_row, section, flags=re.MULTILINE)
-    return text[:match.start(1)] + updated + text[match.end(1):]
+    """Backward-compatible name for geometry target coordinate rewriting."""
+    return _rewrite_geometry_coordinates(text, coordinates)
 
 
 async def handle_map_visuals(request: web.Request) -> web.Response:
@@ -282,7 +298,19 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
     cfg = _rt(request.app)["config"]
     geometry_path = Path(cfg.geometry_path).resolve()
     place_dir = geometry_path.parent
+    geometry_text = geometry_path.read_text(encoding="utf-8")
     landmark_names = set(getattr(cfg.scene_geometry, "landmarks", {}) or {})
+    item_names: set[str] = set()
+    items_section = re.search(
+        r"##\s+Items\b(.*?)(?=\n##\s+|\Z)", geometry_text, re.DOTALL
+    )
+    if items_section:
+        item_names = {
+            match.group(1).strip()
+            for match in re.finditer(r"^\|\s*([^|]+?)\s*\|", items_section.group(1), re.MULTILINE)
+            if match.group(1).strip().lower() not in {"id", "---"}
+        }
+    visual_targets = landmark_names | item_names
     records: list[dict] = []
     coordinates: dict[str, tuple[float, float]] = {}
     for raw in raw_records:
@@ -297,8 +325,8 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
         asset_path = (place_dir / rec["asset"]).resolve()
         if not asset_path.is_relative_to(place_dir) or not asset_path.is_file():
             raise web.HTTPBadRequest(text="visual asset is outside this place or missing")
-        if rec["target"] not in landmark_names:
-            raise web.HTTPBadRequest(text=f"unknown landmark target: {rec['target']}")
+        if rec["target"] not in visual_targets:
+            raise web.HTTPBadRequest(text=f"unknown visual target: {rec['target']}")
         if not re.fullmatch(r"[a-z0-9_.-]+", rec["layer"]):
             raise web.HTTPBadRequest(text="invalid visual layer")
         try:
@@ -324,15 +352,20 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
             f"{rec['x']:g} | {rec['y']:g} | {rec['width']:g} | "
             f"{rec['height']:g} | {rec['rotation']:g} | {rec['layer']} |")
 
-    geometry_text = geometry_path.read_text(encoding="utf-8")
-    updated_geometry = _rewrite_landmark_coordinates(geometry_text, coordinates)
+    updated_geometry = _rewrite_geometry_coordinates(geometry_text, coordinates)
     (place_dir / "VISUALS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     geometry_path.write_text(updated_geometry, encoding="utf-8")
 
     # Keep the live in-memory geometry consistent immediately; a full place
     # reload is not required for subsequent map regeneration in this session.
     for name, (x, y) in coordinates.items():
-        cfg.scene_geometry.landmarks[name] = type(cfg.scene_geometry.landmarks[name])(x, y)
+        if name in cfg.scene_geometry.landmarks:
+            cfg.scene_geometry.landmarks[name] = type(
+                cfg.scene_geometry.landmarks[name]
+            )(x, y)
+        thing = (getattr(cfg, "items", None) or {}).get(name)
+        if thing is not None and getattr(thing, "position", None) is not None:
+            thing.position = type(thing.position)(x, y)
     _render_map(request.app)
     return web.json_response({"ok": True, "saved": len(records)})
 

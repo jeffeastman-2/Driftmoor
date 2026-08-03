@@ -5,12 +5,12 @@
 - **name:** The Broken Lantern Storage Room
 - **place_path:** places/driftmoor/broken_lantern/storage_room
 - **z_level:** 16.25
-- **width:** 9
+- **width:** 11
 - **height:** 9.5
-- **origin:** 12.5, 23, 0
+- **origin:** 21.5, 23, 0
 
-Notes: A compact ground-floor supply room between the meeting room and
-stair bay. Its south door opens behind the bar end.
+Notes: A compact ground-floor supply room east of the stair bay. Its
+east door opens directly into the kitchen.
 
 ---
 
@@ -18,7 +18,7 @@ stair bay. Its south door opens behind the bar end.
 
 | name              | x | y   | z |
 |-------------------|---|-----|---|
-| main_room_door    | 4.5 | 0 | 4 |
+| kitchen_door      | 11 | 4.75 | 4 |
 | ale_barrels       | 2   | 7 | 4 |
 | dry_goods         | 7   | 7 | 4 |
 | hidden_floorboard | 6.5 | 3 | 0 |
@@ -29,7 +29,7 @@ stair bay. Its south door opens behind the bar end.
 
 | name        | floor_z | ceiling_z | render_z | vertices                    |
 |-------------|---------|-----------|----------|-----------------------------|
-| STORAGE_ROOM | 0      | 8         | 3.25     | (0,0) (9,0) (9,9.5) (0,9.5) |
+| STORAGE_ROOM | 0      | 8         | 3.25     | (0,0) (11,0) (11,9.5) (0,9.5) |
 
 ---
 
@@ -38,7 +38,7 @@ stair bay. Its south door opens behind the bar end.
 | description  | vertices                         |
 |--------------|----------------------------------|
 | Barrel stack | (0,6) (4,6) (4,9.5) (0,9.5) |
-| Crate stack  | (6,7) (9,7) (9,9.5) (6,9.5) |
+| Crate stack  | (7.5,7) (11,7) (11,9.5) (7.5,9.5) |
 
 ---
 
@@ -46,7 +46,7 @@ stair bay. Its south door opens behind the bar end.
 
 | name         | x | y | destination                              |
 |--------------|---|---|------------------------------------------|
-| to_main_room | 4.5 | 0 | places/driftmoor/broken_lantern       |
+| to_kitchen | 11 | 4.75 | places/driftmoor/broken_lantern       |
 
 ---
 
