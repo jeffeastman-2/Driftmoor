@@ -131,6 +131,21 @@ class _VenueEntity:
         return "venue"
 
 
+class _LandmarkEntity:
+    """Grounded authored landmark with an engine-space position."""
+
+    def __init__(self, name, position, vector):
+        self.name = name
+        self.object_id = name
+        self.entity_id = name
+        self.vector = vector
+        self.position = _xyz(position.x, position.y, getattr(position, "z", 0.0))
+
+    @property
+    def kind(self) -> str:
+        return "landmark"
+
+
 class _CatalogEntity:
     """GroundedEntity wrapper for a shop CatalogEntry — what a ``buy`` grounds
     against. String-matched on the good's name; carries the catalog id + price
@@ -165,6 +180,7 @@ class DriftmoorSceneAdapter:
         recent: Optional[Iterable] = None,
         venues: Optional[Iterable] = None,
         catalog: Optional[Iterable] = None,
+        landmarks: Optional[dict] = None,
     ):
         # Ensure the property dims exist before building character vectors.
         register_driftmoor_dimensions(
@@ -192,6 +208,10 @@ class DriftmoorSceneAdapter:
             _VenueEntity(sn, aliases, self._empty_vector)
             for sn, aliases in (venues or [])
         ]
+        self._landmark_entities = [
+            _LandmarkEntity(name, position, self._empty_vector)
+            for name, position in (landmarks or {}).items()
+        ]
         # The current shop's for-sale goods (CatalogEntry) -> catalog entities.
         self._catalog_entities = [
             _CatalogEntity(e, self._empty_vector) for e in (catalog or [])
@@ -204,6 +224,7 @@ class DriftmoorSceneAdapter:
         results.extend(self._match_items(np))
         results.extend(self._match_characters(np))
         results.extend(self._match_venues(np))
+        results.extend(self._match_landmarks(np))
         results.extend(self._match_catalog(np))
         results.sort(key=lambda pair: pair[0], reverse=True)
         return results
@@ -342,6 +363,9 @@ class DriftmoorSceneAdapter:
         another venue's multi-word name."""
         from engine.verb_resolver import _normalize_target, _tokens
 
+        vector = getattr(np, "vector", None)
+        if vector is not None and vector.isa("pronoun") and not getattr(np, "noun", None):
+            return []
         target = _np_text(np)
         t = _normalize_target(target)
         if not t:
@@ -364,6 +388,32 @@ class DriftmoorSceneAdapter:
                         best = max(best, 0.6 * len(shared) / len(want))
             if best > 0:
                 out.append((best, ent))
+        return out
+
+    def _match_landmarks(self, np) -> List[Tuple[float, object]]:
+        """Ground landmark NPs through the adapter's standard string scorer."""
+        from engine.verb_resolver import _normalize_target, _tokens
+
+        vector = getattr(np, "vector", None)
+        if vector is not None and vector.isa("pronoun") and not getattr(np, "noun", None):
+            return []
+        target = _np_text(np)
+        normalized = _normalize_target(target)
+        if not normalized:
+            return []
+        wanted = _tokens(target)
+        out: List[Tuple[float, object]] = []
+        for ent in self._landmark_entities:
+            name = _normalize_target(ent.name.replace("_", " "))
+            if normalized == name:
+                score = 1.0
+            elif normalized in name or name in normalized:
+                score = 0.85
+            else:
+                shared = wanted & _tokens(name)
+                score = 0.6 * len(shared) / len(wanted) if wanted and shared else 0.0
+            if score > 0:
+                out.append((score, ent))
         return out
 
     def _match_catalog(self, np) -> List[Tuple[float, object]]:

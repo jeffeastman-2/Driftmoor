@@ -479,6 +479,23 @@ class ResolvedQuery:
     prepositional_phrases: list
 
 
+@dataclass
+class ResolvedStateQuery:
+    """An engine-owned question classified by LATN semantics."""
+
+    kind: str
+    query: ResolvedQuery
+    focus_entity: object = None
+
+
+@dataclass
+class ResolvedWorldQuery:
+    """A spatial/perception question with an optional grounded world focus."""
+
+    kind: str
+    focus_entity: object = None
+
+
 def resolve_query_action(intent_text: str, *, lexicon, adapter):
     """Detect an interrogative (the parallel SQ pass) and ground its focus.
 
@@ -507,6 +524,84 @@ def resolve_query_action(intent_text: str, *, lexicon, adapter):
         focus_entities=list(grounded or []),
         prepositional_phrases=list(getattr(q, "prepositional_phrases", None) or []),
     )
+
+
+def resolve_state_query(intent_text: str, *, lexicon, adapter) -> Optional[ResolvedStateQuery]:
+    """Classify identity/location/time/place-definition questions semantically."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+        atoms = executor.execute_layer1(intent_text or "")
+    questions = getattr(result, "question_phrases", None) or []
+    if not questions:
+        return None
+    q = questions[0]
+    focus = getattr(q, "focus", None)
+    grounded = list(adapter.resolve_noun_phrase(focus) or []) if focus is not None else []
+    resolved = ResolvedQuery(
+        wh_word=getattr(q, "wh_word", None),
+        is_yesno=getattr(q, "is_yesno", False),
+        focus_np=focus,
+        focus_entities=grounded,
+        prepositional_phrases=list(getattr(q, "prepositional_phrases", None) or []),
+    )
+    tokens = list(atoms.hypotheses[0].tokens) if atoms.hypotheses else []
+    first_person = any(_isa(token, "first_person") for token in tokens)
+    if resolved.wh_word == "who" and first_person:
+        return ResolvedStateQuery("identity", resolved)
+    if resolved.wh_word == "where" and first_person:
+        return ResolvedStateQuery("location", resolved)
+    if resolved.wh_word == "what" and any(_isa(token, "query_time") for token in tokens):
+        return ResolvedStateQuery("time", resolved)
+    if resolved.wh_word == "what":
+        venues = _entities_of_kind(grounded, "venue")
+        venue = _unique_winner(venues)
+        if venue is not None:
+            return ResolvedStateQuery("place_definition", resolved, venue)
+    return None
+
+
+def resolve_world_query(intent_text: str, *, lexicon, adapter) -> Optional[ResolvedWorldQuery]:
+    """Resolve perception, geography, and existence without surface patterns."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        layer5 = executor.execute_layer5(intent_text or "")
+        layer1 = executor.execute_layer1(intent_text or "")
+    tokens = list(layer1.hypotheses[0].tokens) if layer1.hypotheses else []
+    questions = getattr(layer5, "question_phrases", None) or []
+    if not questions:
+        return None
+
+    q = questions[0]
+    grounded = list(adapter.resolve_noun_phrase(q.focus) or []) if q.focus is not None else []
+    world_grounded = [
+        pair for pair in grounded
+        if getattr(pair[1], "kind", "") in {"landmark", "venue"}
+    ]
+    focus = _unique_winner(world_grounded)
+    wh_word = getattr(q, "wh_word", None)
+    yesno = bool(getattr(q, "is_yesno", False))
+    perception = any(_isa(token, "perceive") for token in tokens)
+    first_person = any(_isa(token, "first_person") for token in tokens)
+    if perception and first_person:
+        return ResolvedWorldQuery("perception_target" if focus else "perception_list", focus)
+    if perception and yesno and focus is not None:
+        return ResolvedWorldQuery("perception_target", focus)
+    if wh_word == "where" and focus is not None:
+        return ResolvedWorldQuery("geography", focus)
+    if yesno and focus is not None:
+        return ResolvedWorldQuery("existence", focus)
+    return None
 
 
 def resolve_self_query(intent_text: str, *, lexicon, adapter) -> Optional[str]:

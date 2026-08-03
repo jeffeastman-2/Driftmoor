@@ -64,7 +64,9 @@ def build_context(items: dict, characters: dict, actor_zone: str,
     )
     adapter = DriftmoorSceneAdapter(
         items=context_items, characters=characters, actor_zone=actor_zone,
-        venues=venue_list, catalog=catalog_list)
+        venues=venue_list, catalog=catalog_list,
+        landmarks=(getattr(scene_geometry, "landmarks", {}) or {})
+        if scene_geometry is not None else {})
     return lexicon, adapter
 
 

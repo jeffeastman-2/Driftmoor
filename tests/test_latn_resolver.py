@@ -18,6 +18,8 @@ from engine.latn_resolver import (
     resolve_actions,
     resolve_item_interaction,
     resolve_perception_query,
+    resolve_state_query,
+    resolve_world_query,
 )
 
 
@@ -93,6 +95,39 @@ def test_perception_query_requires_question_person_and_perception_semantics():
     assert resolve_perception_query("is there a well nearby?", lexicon=lex, adapter=adapter)
     assert not resolve_perception_query("what am I carrying?", lexicon=lex, adapter=adapter)
     assert not resolve_perception_query("I see the mace", lexicon=lex, adapter=adapter)
+
+
+def test_state_queries_are_classified_by_latn_semantics():
+    lex, adapter, _ = _scene()
+    assert resolve_state_query("who am I?", lexicon=lex, adapter=adapter).kind == "identity"
+    assert resolve_state_query("where am I?", lexicon=lex, adapter=adapter).kind == "location"
+    assert resolve_state_query("what time is it?", lexicon=lex, adapter=adapter).kind == "time"
+    assert resolve_state_query("I am here", lexicon=lex, adapter=adapter) is None
+
+
+def test_world_queries_use_layer5_sq_grounded_focus():
+    from models.space_time import Position
+    chars = {"amara": _pc("amara", "Amara", "High Elf", "Cleric")}
+    venues = [("rusty_razor", ("barber shop", "barber")), ("bakery", ("bakery",))]
+    landmarks = {"well": Position(10, 20)}
+    lex = build_driftmoor_lexicon(
+        [c.character for c in chars.values()], [], landmarks=landmarks,
+        venues=venues,
+    )
+    adapter = DriftmoorSceneAdapter(
+        items={}, characters=chars, actor_zone="TOWN_COMMON",
+        landmarks=landmarks, venues=venues,
+    )
+    seen = resolve_world_query("can I see a barber shop?", lexicon=lex, adapter=adapter)
+    assert seen.kind == "perception_target"
+    assert seen.focus_entity.kind == "venue" and seen.focus_entity.scene_name == "rusty_razor"
+    nearby = resolve_world_query("is there a well nearby?", lexicon=lex, adapter=adapter)
+    assert nearby.kind == "perception_target"
+    assert nearby.focus_entity.kind == "landmark" and nearby.focus_entity.entity_id == "well"
+    exists = resolve_world_query("is there a bakery in town?", lexicon=lex, adapter=adapter)
+    assert exists.kind == "existence" and exists.focus_entity.scene_name == "bakery"
+    located = resolve_world_query("where is a well?", lexicon=lex, adapter=adapter)
+    assert located.kind == "geography" and located.focus_entity.entity_id == "well"
 
 
 def test_consumption_verbs_ground_as_actions():

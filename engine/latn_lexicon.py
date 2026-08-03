@@ -186,6 +186,9 @@ _POSSESSION_VERBS: dict[str, dict[str, float]] = {
 }
 _PERCEPTION_VERBS: list[str] = ["see", "perceive"]
 _PERCEPTION_ADJECTIVES: list[str] = ["nearby", "visible"]
+_QUERY_NOUNS: dict[str, dict[str, float]] = {
+    "time": {"query_time": 1.0},
+}
 
 # Common item modifiers (material/type adjectives) that appear in natural
 # references to goods but not always in the good's own name -- e.g. "crossbow
@@ -303,6 +306,8 @@ def _build_rpg_layer() -> dict:
         layer[word.lower()] = _vf("verb", perceive=1.0)
     for word in _PERCEPTION_ADJECTIVES:
         layer[word.lower()] = _vf("adj", perceive=1.0)
+    for word, dims in _QUERY_NOUNS.items():
+        layer[word.lower()] = _vf("noun", **dims)
     # Consumption verbs -> eat/drink/consume dims (state-gated in manipulation).
     for canonical, words in _CONSUME_VERB_SYNONYMS:
         for word in words:

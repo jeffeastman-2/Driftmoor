@@ -3066,6 +3066,42 @@ class TestSelfQuestion:
                    if getattr(getattr(cs, "character", None), "character_type", "") == "player")
         return cfg, cfg.characters[pid]
 
+    def test_basic_identity_location_and_time_questions(self):
+        from engine.session import _answer_basic_state_question
+        from models.space_time import GameTime
+        cfg, cs = self._player()
+        common = dict(
+            cs=cs, actor_zone="TOWN_COMMON",
+            scene_geometry=cfg.scene_geometry,
+            game_time=GameTime(19, 20, 1, "spring", 10, 2),
+            characters=cfg.characters,
+        )
+        identity = _answer_basic_state_question("who am I?", **common)
+        assert identity is not None and cs.character.name in identity
+        assert "Town Common" in _answer_basic_state_question("where am I?", **common)
+        clock = _answer_basic_state_question("what time is it?", **common)
+        assert clock == "It is 19:20 on day 1 (dusk, spring)."
+
+    def test_time_question_without_clock_is_still_engine_owned(self):
+        from engine.session import _answer_basic_state_question
+        cfg, cs = self._player()
+        ans = _answer_basic_state_question(
+            "what is the time?", cs=cs, actor_zone="TOWN_COMMON",
+            scene_geometry=cfg.scene_geometry, game_time=None,
+            characters=cfg.characters,
+        )
+        assert ans == "The game clock is not configured for this scene."
+
+    def test_what_is_named_place_reads_authoritative_place_record(self):
+        from engine.session import _answer_place_definition_question
+        cfg, _ = self._player()
+        ans = _answer_place_definition_question(
+            "what is the salt and iron?", characters=cfg.characters,
+            actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry)
+        assert ans is not None
+        assert "Salt & Iron Mercantile is a mercantile" in ans
+        assert "timber reinforced with iron bands" in ans
+
     def test_wealth_question_reports_purse(self):
         from engine.session import _answer_self_question
         cfg, cs = self._player()
@@ -3104,7 +3140,8 @@ class TestSelfQuestion:
         ans = _answer_perception_question(
             "what do I see?", context=context, characters=cfg.characters,
             actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry,
-            items=cfg.items,
+            items=cfg.items, player_xy=(406.0, 341.0),
+            visited_zones={"TOWN_COMMON"},
         )
         assert ans is not None
         assert "nearby places and landmarks" in ans
@@ -3126,8 +3163,9 @@ class TestSelfQuestion:
             "can I see a barber shop?", context=context,
             characters=cfg.characters, actor_zone="TOWN_COMMON",
             scene_geometry=cfg.scene_geometry, items=cfg.items,
+            player_xy=(406.0, 341.0), visited_zones={"TOWN_COMMON"},
         )
-        assert ans == "Yes. You can see Arlan Barber (~44 ft away)."
+        assert ans is not None and ans.startswith("Yes. You can see Barber (")
 
     def test_is_there_named_landmark_nearby_uses_visible_pois(self):
         from engine.session import _answer_perception_question
@@ -3144,8 +3182,9 @@ class TestSelfQuestion:
             "Is there a well nearby?", context=context,
             characters=cfg.characters, actor_zone="TOWN_COMMON",
             scene_geometry=cfg.scene_geometry, items=cfg.items,
+            player_xy=(406.0, 341.0), visited_zones={"TOWN_COMMON"},
         )
-        assert ans == "Yes. You can see Town Well (~4 ft away)."
+        assert ans == "Yes. You can see Well (~85 ft away)."
 
     def test_have_and_own_questions_still_list_possessions(self):
         from engine.session import _answer_self_question

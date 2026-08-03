@@ -2283,50 +2283,26 @@ def _answer_where_question(
     from engine import latn_resolver
     lexicon, adapter = build_context(
         {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
-    rq = latn_resolver.resolve_query_action(
+    rq = latn_resolver.resolve_world_query(
         intent_text or "", lexicon=lexicon, adapter=adapter)
-    if rq is None or rq.wh_word != "where":
+    if rq is None or rq.kind != "geography" or rq.focus_entity is None:
         return None
-    venue_ents = [
-        e for _s, e in rq.focus_entities if getattr(e, "kind", None) == "venue"
-    ]
-    if not venue_ents:
-        # Landmarks are lexicalized but not adapter entities yet. The LATN SQ
-        # parse above still establishes a genuine WHERE question; ground its
-        # focus against authored landmark names and choose the nearest match.
-        target_match = re.search(
-            r"^\s*where\s+(?:is|are)\s+(?:a|an|the)?\s*(.+?)[?.!]*$",
-            intent_text, re.I,
-        )
-        target_words = set(re.findall(r"[a-z]+", target_match.group(1).lower())) \
-            if target_match else set()
-        candidates = []
-        for name, point in (getattr(scene_geometry, "landmarks", {}) or {}).items():
-            label_words = set(re.findall(r"[a-z]+", name.lower().replace("_", " ")))
-            if target_words and target_words & label_words:
-                dx, dy = point.x - player_xy[0], point.y - player_xy[1]
-                candidates.append(((dx * dx + dy * dy) ** 0.5, name, dx, dy))
-        if not candidates:
-            return None
-        dist, name, dx, dy = min(candidates)
-        label = name.replace("_", " ").strip().title()
-        if dist < 10.0:
-            return f"The {label} is right here."
-        return (f"The {label} is to the {_compass_label(dx, dy)}, "
-                f"about {dist:.0f} ft away.")
-    # scene_name matches the doorway's child identifier (both the place's dir
-    # segment), so a direct lookup gives the front-door coordinates.
+    ent = rq.focus_entity
     doorways = {
         child: (x, y)
         for child, _conn, x, y in _driftmoor_source_doorways(
             getattr(scene_geometry, "place_path", "") or "")
     }
-    ent = venue_ents[0]
-    pos = doorways.get(ent.scene_name)
+    if getattr(ent, "kind", "") == "venue":
+        pos = doorways.get(ent.scene_name)
+        label = (ent.aliases[0] if getattr(ent, "aliases", None)
+                 else ent.scene_name.replace("_", " ")).title()
+    else:
+        raw = getattr(ent, "position", {}) or {}
+        pos = (raw.get("x"), raw.get("y"))
+        label = (getattr(ent, "name", "") or "landmark").replace("_", " ").title()
     if pos is None:
         return None
-    label = (ent.aliases[0] if getattr(ent, "aliases", None)
-             else ent.scene_name.replace("_", " ")).title()
     dx, dy = pos[0] - player_xy[0], pos[1] - player_xy[1]
     dist = (dx * dx + dy * dy) ** 0.5
     if dist < 10.0:
@@ -2345,22 +2321,15 @@ def _answer_venue_existence_question(
     from engine import latn_resolver
     lexicon, adapter = build_context(
         {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
-    rq = latn_resolver.resolve_query_action(intent_text or "", lexicon=lexicon, adapter=adapter)
-    if rq is None or not rq.is_yesno:
+    rq = latn_resolver.resolve_world_query(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if (rq is None or rq.kind != "existence" or rq.focus_entity is None
+            or getattr(rq.focus_entity, "kind", "") != "venue"):
         return None
-    match = re.search(
-        r"^\s*(?:is|are)\s+there\s+(?:a|an|any|the)?\s*(.+?)\s+in\s+(?:the\s+)?town[?.!]*$",
-        intent_text, re.I,
-    )
-    if not match:
-        return None
-    target_words = set(re.findall(r"[a-z]+", match.group(1).lower()))
-    for scene_name, aliases in venues or ():
-        names = tuple(aliases or ()) + (scene_name.replace("_", " "),)
-        if any(target_words & set(re.findall(r"[a-z]+", name.lower())) for name in names):
-            label = (aliases[0] if aliases else scene_name.replace("_", " ")).title()
-            return f"Yes. There is a {label} in town."
-    return None
+    ent = rq.focus_entity
+    label = (ent.aliases[0] if getattr(ent, "aliases", None)
+             else ent.scene_name.replace("_", " ")).title()
+    return f"Yes. There is a {label} in town."
 
 
 def _character_possessions(cs, items) -> list[str]:
@@ -2422,6 +2391,154 @@ def _answer_self_question(
     return f"You aren't carrying anything. Your purse holds {purse}."
 
 
+def _answer_basic_state_question(
+    intent_text: str,
+    *,
+    cs,
+    actor_zone: str,
+    scene_geometry,
+    game_time,
+    characters: dict,
+) -> Optional[str]:
+    """Answer identity, current-location, and game-clock questions."""
+    from engine.latn_integration import build_context
+    from engine import latn_resolver
+    venues = _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "") \
+        if scene_geometry is not None else ()
+    lexicon, adapter = build_context(
+        {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
+    query = latn_resolver.resolve_state_query(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if query is None or query.kind not in {"identity", "location", "time"}:
+        return None
+    char = getattr(cs, "character", None)
+
+    if query.kind == "identity" and char is not None:
+        name = getattr(char, "name", "") or getattr(char, "id", "") or "your character"
+        race = (getattr(char, "race", "") or "").strip()
+        char_class = (getattr(char, "character_class", "") or "").strip()
+        description = " ".join(part for part in (race, char_class) if part)
+        return f"You are {name}" + (f", a {description}." if description else ".")
+
+    if query.kind == "location":
+        zone = (actor_zone or "").replace("_", " ").strip().title()
+        place = (getattr(scene_geometry, "name", "") or "").replace("_", " ").strip().title()
+        if zone and place and zone.lower() != place.lower():
+            return f"You are in {zone}, in {place}."
+        if zone or place:
+            return f"You are in {zone or place}."
+        return "Your current location is not mapped."
+
+    if query.kind == "time":
+        if game_time is None:
+            return "The game clock is not configured for this scene."
+        return (
+            f"It is {game_time.hour:02d}:{game_time.minute:02d} on day "
+            f"{game_time.day} ({game_time.period}, {game_time.season})."
+        )
+    return None
+
+
+def _answer_place_definition_question(
+    intent_text: str, *, characters: dict, actor_zone: str, scene_geometry,
+) -> Optional[str]:
+    """Answer ``what is <place>?`` from the authoritative PLACE.md record."""
+    from engine.latn_integration import build_context
+    from engine import latn_resolver
+    venues = _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "") \
+        if scene_geometry is not None else ()
+    lexicon, adapter = build_context(
+        {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
+    query = latn_resolver.resolve_state_query(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if query is None or query.kind != "place_definition" or query.focus_entity is None:
+        return None
+    scene_name = getattr(query.focus_entity, "scene_name", "")
+    node = next((n for n in _driftmoor_place_registry() if n.scene_name == scene_name), None)
+    if node is None:
+        return None
+
+    place_file = _DRIFTMOOR_PLACES_ROOT / Path(node.place_path).relative_to("places/driftmoor") / "PLACE.md"
+    try:
+        authored = place_file.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    header = re.search(r"^#\s+(?:PLACE\.md\s+[—-]\s*)?(.+?)\s*$", authored, re.MULTILINE)
+    label = (header.group(1).strip() if header else node.scene_name.replace("_", " ").title())
+    section = re.search(
+        r"^## Description and Atmosphere\s*$\n(.*?)(?=^## |\Z)",
+        authored, re.MULTILINE | re.DOTALL,
+    )
+    prose = ""
+    if section:
+        prose = re.split(r"\n\s*\n", section.group(1).strip(), maxsplit=1)[0].strip()
+        prose = re.sub(r"\s+", " ", prose)
+    kind = node.place_type.replace("_", " ").strip()
+    lead = f"{label} is a {kind}." if kind else f"{label} is a place in Driftmoor."
+    return f"{lead} {prose}".strip()
+
+
+def _visible_query_points(
+    scene_geometry, player_xy, actor_zone: str, visited_zones: set[str],
+) -> list[tuple[frozenset[str], str, float]]:
+    """Return visible ``(entity keys, label, distance)`` records from geometry."""
+    if scene_geometry is None or player_xy is None:
+        return []
+    observer = Position(float(player_xy[0]), float(player_xy[1]))
+    current_zone = (actor_zone or "").upper()
+    visible_zones = {str(zone).upper() for zone in (visited_zones or set())}
+    if current_zone:
+        visible_zones.add(current_zone)
+    town_los = (
+        (getattr(scene_geometry, "place_path", "") or "").strip("/").lower()
+        == "places/driftmoor"
+    )
+
+    def visible(point: Position) -> bool:
+        target = point
+        zone_name = scene_geometry.zone_at(point)
+        if town_los and zone_name and zone_name.upper() != current_zone:
+            poly = scene_geometry.zones.get(zone_name)
+            if poly is not None:
+                target = poly.nearest_point(observer)
+        if town_los and not scene_geometry.can_see(observer, target):
+            return False
+        zones = _zones_for_point(point, scene_geometry.zones)
+        return not zones or bool(zones & visible_zones)
+
+    records: list[tuple[frozenset[str], str, float]] = []
+    landmark_points: list[tuple[float, float, int]] = []
+    for name, point in (getattr(scene_geometry, "landmarks", {}) or {}).items():
+        if visible(point):
+            landmark_points.append((point.x, point.y, len(records)))
+            records.append((
+                frozenset({f"landmark:{name}"}), name.replace("_", " ").title(),
+                ((point.x - observer.x) ** 2 + (point.y - observer.y) ** 2) ** 0.5,
+            ))
+    for child, connection, x, y in _driftmoor_source_doorways(
+        getattr(scene_geometry, "place_path", "") or ""
+    ):
+        point = Position(x, y)
+        # Match the map/POI policy: an authored landmark at the same doorway
+        # owns its presentation, avoiding duplicate entries for one location.
+        overlap = next((
+            index for lx, ly, index in landmark_points
+            if abs(x - lx) < 2.0 and abs(y - ly) < 2.0
+        ), None)
+        if visible(point) and overlap is not None:
+            keys, label, distance = records[overlap]
+            records[overlap] = (keys | {f"venue:{child}"}, label, distance)
+        elif visible(point):
+            label = connection
+            if label.lower().startswith("to_"):
+                label = label[3:]
+            records.append((
+                frozenset({f"venue:{child}"}), label.replace("_", " ").strip().title(),
+                ((x - observer.x) ** 2 + (y - observer.y) ** 2) ** 0.5,
+            ))
+    return records
+
+
 def _answer_perception_question(
     intent_text: str,
     *,
@@ -2430,59 +2547,37 @@ def _answer_perception_question(
     actor_zone: str,
     scene_geometry,
     items,
+    player_xy=None,
+    visited_zones: Optional[set[str]] = None,
 ) -> Optional[str]:
     """Answer an external-view question from Python-filtered perception state."""
     from engine.latn_integration import build_context
     from engine import latn_resolver
 
+    venues = _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "") \
+        if scene_geometry is not None else ()
     lexicon, adapter = build_context(
-        items or {}, characters or {}, actor_zone or "", scene_geometry
+        items or {}, characters or {}, actor_zone or "", scene_geometry,
+        venues=venues,
     )
-    if not latn_resolver.resolve_perception_query(
-        intent_text or "", lexicon=lexicon, adapter=adapter
-    ):
+    query = latn_resolver.resolve_world_query(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    if query is None or query.kind not in {"perception_list", "perception_target"}:
         return None
-
-    poi = _extract_scene_section(
-        context.scene_context, "## Where you are and where you can go"
-    )
-    visible: list[str] = []
-    visible_labels: list[tuple[str, str]] = []
-    for line in poi.splitlines():
-        if not line.startswith("- "):
-            continue
-        label = line[2:].split(": x=", 1)[0].replace("_", " ").strip().title()
-        distance = re.search(r"\(~[^)]+away\)", line)
-        rendered = label + (f" {distance.group(0)}" if distance else "")
-        visible.append(f"- {rendered}")
-        visible_labels.append((label, rendered))
-
-    # A yes/no visibility question asks about one referent, rather than for a
-    # complete view. LATN has already established first-person perception; this
-    # small extraction only selects the referent from the filtered POI names.
-    target_match = re.search(r"\b(?:see|perceive)\b\s+(.+?)[?.!]*$", intent_text, re.I)
-    if not target_match:
-        target_match = re.search(
-            r"^\s*(?:is|are)\s+there\s+(.+?)(?:\s+nearby)?[?.!]*$",
-            intent_text, re.I,
-        )
-    if target_match:
-        target = target_match.group(1).strip()
-        target_words = {
-            word for word in re.findall(r"[a-z]+", target.lower())
-            if word not in {
-                "a", "an", "any", "nearby", "the", "place", "shop", "store",
-            }
-        }
-        if target_words:
-            for label, rendered in visible_labels:
-                label_words = set(re.findall(r"[a-z]+", label.lower()))
-                if target_words & label_words:
-                    return f"Yes. You can see {rendered}."
-            return f"No. You cannot currently see {target.rstrip('?.!')}."
+    records = _visible_query_points(
+        scene_geometry, player_xy, actor_zone, visited_zones or set())
+    if query.kind == "perception_target" and query.focus_entity is not None:
+        ent = query.focus_entity
+        key = f"{getattr(ent, 'kind', '')}:{getattr(ent, 'entity_id', '')}"
+        record = next((record for record in records if key in record[0]), None)
+        label = (getattr(ent, "name", "") or getattr(ent, "entity_id", "") or "that").replace("_", " ").title()
+        if record is not None:
+            return f"Yes. You can see {record[1]} (~{record[2]:.0f} ft away)."
+        return f"No. You cannot currently see {label}."
 
     parts: list[str] = []
-    if visible:
+    if records:
+        visible = [f"- {label} (~{distance:.0f} ft away)" for _key, label, distance in records]
         parts.append("You can see these nearby places and landmarks:\n" + "\n".join(visible))
     perception = (context.perception or "").strip()
     if perception:
@@ -5831,15 +5926,31 @@ async def iter_session(
                 try:
                     from engine.latn_integration import resolve_query as _resolve_query
                     _q_zone = (current_positions.get(_char_id, (0.0, 0.0, ""))[2] or "")
-                    # 1) External perception -- engine/fog-of-war authoritative.
+                    # 1) Identity, location, and game-clock state.
+                    ans = _answer_basic_state_question(
+                        text, cs=_cs, actor_zone=_q_zone,
+                        scene_geometry=scene_geometry, game_time=game_time,
+                        characters=characters or {})
+                    if ans is not None:
+                        return ans
+                    # 2) Authored place knowledge.
+                    ans = _answer_place_definition_question(
+                        text, characters=characters or {}, actor_zone=_q_zone,
+                        scene_geometry=scene_geometry)
+                    if ans is not None:
+                        return ans
+                    # 3) External perception -- engine/fog-of-war authoritative.
                     ans = _answer_perception_question(
                         text, context=context, characters=characters or {},
                         actor_zone=_q_zone, scene_geometry=scene_geometry,
                         items=items,
+                        player_xy=((current_positions[_char_id][0], current_positions[_char_id][1])
+                                   if _char_id in current_positions else None),
+                        visited_zones=visited_zones.get(_char_id, set()),
                     )
                     if ans is not None:
                         return ans
-                    # 2) A first-person question about yourself -- "how much gold
+                    # 4) A first-person question about yourself -- "how much gold
                     # do I have", "what am I carrying", "what can I sell".
                     ans = _answer_self_question(
                         text, cs=_cs, characters=characters or {},
@@ -5847,7 +5958,7 @@ async def iter_session(
                         items=items)
                     if ans is not None:
                         return ans
-                    # 3) A shop-catalog question -- "what can I buy", "are your
+                    # 5) A shop-catalog question -- "what can I buy", "are your
                     # bolts for sale". (Purchase questions were deferred here.)
                     _q_cat = _driftmoor_shop_catalog()
                     _q_keeper = _current_shopkeeper(characters, active_characters, _q_cat)
@@ -5857,7 +5968,7 @@ async def iter_session(
                         catalog=_q_entries, scene_geometry=scene_geometry)
                     if ans is not None:
                         return ans
-                    # 4) Geography: "where is <venue>?" -> bearing + distance to
+                    # 6) Geography: "where is <venue>?" -> bearing + distance to
                     # its door, answered by the engine instead of the DM.
                     _pos = current_positions.get(_char_id)
                     _venues = (
