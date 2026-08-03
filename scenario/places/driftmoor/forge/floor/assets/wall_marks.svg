@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 3">
+  <defs>
+    <filter id="shadow"><feGaussianBlur stdDeviation=".12"/></filter>
+  </defs>
+  <g fill="none" stroke="#08090b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 .15V1.85M4 .65L1.8 1.35M4 .9L6.45 1.65M3.35 .55L4.35 1.2L3.5 2.1"
+          stroke-width=".38"/>
+    <path d="M1.8 1.35L.55 2.2M6.45 1.65L7.55 2.55M3.5 2.1L3.05 2.85"
+          stroke-width=".17"/>
+    <path d="M2.35 1.2L1.15 1.75M5.75 1.45L6.9 2.05" stroke-width=".09" opacity=".85"/>
+  </g>
+  <path d="M.4 2.45Q4 1.95 7.65 2.55" fill="none" stroke="#08090b"
+        stroke-width=".22" opacity=".22" filter="url(#shadow)"/>
+</svg>

@@ -297,6 +297,17 @@ def _check_boundary_crossing(
         if already_inside or not would_enter:
             continue  # not crossing inward
 
+        # Environmental regions such as forge heat do not block anyone, but
+        # crossing into them must still surface their authored warning. They
+        # remain ordinary boundary events so narration and memory receive the
+        # same authoritative engine fact as magical barriers.
+        if not boundary.blocks:
+            effect = (boundary.effect or "An environmental condition takes effect.").strip()
+            log_lines.append(
+                f"[BOUNDARY] {character_id} enters {boundary.name}: {effect}"
+            )
+            return True, 0, log_lines, None
+
         if not (
             boundary.is_blocked(race)
             or boundary.is_blocked(char_type)

@@ -85,16 +85,16 @@ _PANZOOM_JS = (
     r"if(isFinite(zsv))SZ(zsv);else SZ(0.15);}catch(_){SZ(0.15);}"
     r"function WD(e){var dx=Number(e.deltaX)||0,dy=Number(e.deltaY)||0;"
     r"return Math.abs(dy)>=Math.abs(dx)?dy:dx;}"
-    r"s.addEventListener('wheel',function(e){e.preventDefault();I();if(e.shiftKey){"
+    r"s.addEventListener('wheel',function(e){e.preventDefault();if(window.__mapArtEditing)return;I();if(e.shiftKey){"
     r"if(!(ii.length||id.length))return;var wd=WD(e);if(!wd)return;"
     r"SIS(wd<0?1:-1);"
     r"return;}var p=P(e);var wd=WD(e);if(!wd)return;var f=ZF(wd);"
     r"var nw=Math.max(b[2]/20,v.w*f);f=nw/v.w;"
     r"v.x=p.x-(p.x-v.x)*f;v.y=p.y-(p.y-v.y)*f;v.w*=f;v.h*=f;A();},{passive:false});"
     r"var d=false,l=null;"
-    r"s.addEventListener('mousedown',function(e){d=true;I();l={x:e.clientX,y:e.clientY};"
+    r"s.addEventListener('mousedown',function(e){if(window.__mapArtEditing)return;d=true;I();l={x:e.clientX,y:e.clientY};"
     r"s.style.cursor='grabbing';e.preventDefault();});"
-    r"s.addEventListener('dblclick',function(e){e.preventDefault();I();var p=P(e);"
+    r"s.addEventListener('dblclick',function(e){e.preventDefault();if(window.__mapArtEditing)return;I();var p=P(e);"
     r"var x=Math.round(p.x);var y=Math.round(-p.y);"
     r"try{if(window.parent&&window.parent!==window)"
     r"window.parent.postMessage({type:'driftmoor-map-dblclick',x:x,y:y,shift:!!e.shiftKey},'*');}catch(_){}"
@@ -102,9 +102,9 @@ _PANZOOM_JS = (
     r"window.addEventListener('mousemove',function(e){if(!d)return;I();"
     r"var r=s.getBoundingClientRect();v.x-=(e.clientX-l.x)/r.width*v.w;"
     r"v.y-=(e.clientY-l.y)/r.height*v.h;l={x:e.clientX,y:e.clientY};A();});"
-    r"window.addEventListener('mouseup',function(){d=false;s.style.cursor='grab';});"
+    r"window.addEventListener('mouseup',function(){d=false;s.style.cursor=window.__mapArtEditing?'default':'grab';});"
     r"s.style.cursor='grab';"
-    r"window.addEventListener('keydown',function(e){"
+    r"window.addEventListener('keydown',function(e){if(window.__mapArtEditing)return;"
     r"if(!(ii.length||id.length))return;var t=e.target&&e.target.tagName?e.target.tagName.toLowerCase():'';"
     r"if(t==='input'||t==='textarea')return;"
     r"if(e.key==='+'||e.key==='='||e.key===']'){I();SIS(1);e.preventDefault();}"
@@ -190,6 +190,65 @@ def _zone_icon_uri(scenario_root: "Path | None", place_dir: "Path | None",
             if uri:
                 return uri
     return None
+
+
+def _zone_floor_uri(place_dir: "Path | None", zname: str) -> "str | None":
+    """Resolve authored top-down art at ``floor/<normalized-zone>.*``.
+
+    Floor art belongs to the current place, unlike ``icon.svg`` elevations
+    which represent a connected place on its parent's map. It is clipped and
+    revealed with the semantic zone by the renderer.
+    """
+    if place_dir is None:
+        return None
+    stem = re.sub(r"[^a-z0-9]+", "_", (zname or "").strip().lower()).strip("_")
+    if not stem:
+        return None
+    for ext in (".svg", ".png", ".webp"):
+        uri = _icon_data_uri(place_dir / "floor" / f"{stem}{ext}")
+        if uri:
+            return uri
+    return None
+
+
+def _load_visual_overlays(place_dir: "Path | None") -> list[dict]:
+    """Load optional positioned artwork from a place's ``VISUALS.md`` table."""
+    if place_dir is None:
+        return []
+    path = place_dir / "VISUALS.md"
+    if not path.is_file():
+        return []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    out: list[dict] = []
+    for i, line in enumerate(lines[:-2]):
+        if not line.strip().startswith("|") or "asset" not in line.lower():
+            continue
+        if not re.match(r"^\|[\s\-:|]+\|$", lines[i + 1].strip()):
+            continue
+        headers = [h.strip().lower() for h in line.strip().strip("|").split("|")]
+        for row_line in lines[i + 2:]:
+            if not row_line.strip().startswith("|"):
+                break
+            cells = [c.strip() for c in row_line.strip().strip("|").split("|")]
+            row = dict(zip(headers, cells))
+            try:
+                rec = {
+                    "id": row.get("id", ""), "asset": row.get("asset", ""),
+                    "target": row.get("target", ""),
+                    "x": float(row.get("x", "0")), "y": float(row.get("y", "0")),
+                    "width": float(row.get("width", "4")),
+                    "height": float(row.get("height", "4")),
+                    "rotation": float(row.get("rotation", "0")),
+                    "layer": row.get("layer", "fixture") or "fixture",
+                }
+            except ValueError:
+                continue
+            asset_path = place_dir / rec["asset"]
+            rec["uri"] = _icon_data_uri(asset_path)
+            if rec["id"] and rec["uri"]:
+                out.append(rec)
+        break
+    return out
 
 
 def _char_icon_uri(scenario_root: "Path | None", cid: str) -> "str | None":
@@ -436,6 +495,12 @@ def parse_geometry(text: str) -> dict:
     if bm:
         for sub in re.finditer(r"###\s+(.+?)\n(.*?)(?=\n###|\Z)",
                                bm.group(1), re.DOTALL):
+            render_mode = re.search(
+                r"\*\*render:\*\*\s*([^\n]+)", sub.group(2), re.IGNORECASE)
+            if render_mode and render_mode.group(1).strip().lower() in {
+                "hidden", "none", "false", "no"
+            }:
+                continue
             vm = re.search(r"\*\*vertices:\*\*\s*([^\n]+)", sub.group(2))
             if vm:
                 g["boundaries"].append((sub.group(1).strip(), _verts(vm.group(1))))
@@ -1344,6 +1409,7 @@ def render_turn_slider_html(
              ".zctl{display:inline-flex;align-items:center;gap:6px;}"
              ".zctl input{width:88px;}"
              ".hint{color:#555;font-size:12px;white-space:nowrap;}"
+             ".artctl{display:none;gap:4px}.artctl.on{display:inline-flex;}"
              "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;"
              "background:#0e0e12;}button{font:inherit;padding:3px 10px;cursor:pointer;}")
     # font-size is a JS-controlled var (constant on-screen size across zoom); the
@@ -1357,6 +1423,11 @@ def render_turn_slider_html(
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              "<button id='fit' title='Reset map view (key: F)'>Fit</button>"
+             "<button id='editArt' title='Move, rotate, and scale authored visual overlays'>Edit art</button>"
+             "<span id='artctl' class='artctl'><button id='rotL'>↶</button>"
+             "<button id='rotR'>↷</button><button id='smaller'>−</button>"
+             "<button id='larger'>+</button><button id='copyVisuals'>Copy VISUALS.md</button>"
+             "<button id='copyGeometry'>Copy coordinates</button></span>"
              "<span class='zctl'><span class='hint'>Zoom</span>"
              "<input id='zoomSpeed' type='range' min='5' max='40' value='15' step='1'>"
              "<span class='hint' id='zoomSpeedVal'>15%</span></span>"
@@ -1368,13 +1439,22 @@ def render_turn_slider_html(
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
-    # Building art: a zone whose connection leads to a place dir with an
-    # icon.svg is drawn as that illustration (clipped to its footprint) instead
-    # of a flat rectangle; others keep the palette fill.
+    # Art has two distinct conventions: ``floor/<zone>.svg`` is top-down art
+    # for a zone in this place; a connected sub-place's ``icon.svg`` is its
+    # exterior elevation on the parent map. Both retain semantic polygon
+    # boundaries and fog-of-war reveal.
     _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
     _place_rel = (geometry_path.parent.relative_to(_scenario_root).as_posix()
                   if _scenario_root else None)
     _zone_dest = _zone_icon_dirs(g, _place_rel)
+    _zone_floors = {
+        zname: _zone_floor_uri(geometry_path.parent, zname)
+        for zname in g["zones"]
+    }
+    _visual_overlays = _load_visual_overlays(geometry_path.parent)
+    _visual_targets = {
+        visual["target"] for visual in _visual_overlays if visual.get("target")
+    }
 
     # Exclusion (impassable) overlays are drawn *under* the zone layer so that
     # illustrated zones (e.g. a bridge spanning the river) paint on top of the
@@ -1398,8 +1478,12 @@ def render_turn_slider_html(
         if _is_water_zone(zname):
             color, alpha = _WATER_FILL, 0.85
         zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
-        icon = _zone_icon_uri(_scenario_root, geometry_path.parent, zname,
-                              _zone_dest.get(zname))
+        floor_art = _zone_floors.get(zname)
+        icon = floor_art or _zone_icon_uri(
+            _scenario_root, geometry_path.parent, zname, _zone_dest.get(zname))
+        clip_id = "zone-floor-" + re.sub(r"[^a-zA-Z0-9_-]", "-", zname)
+        if icon:
+            p.append(f"<defs><clipPath id='{clip_id}'><polygon points='{poly(verts)}'/></clipPath></defs>")
         p.append(f"<g data-reveal='{reveal_zone.get(zname, never)}'>")
         if icon:
             xs = [x for x, _ in verts]
@@ -1407,15 +1491,39 @@ def render_turn_slider_html(
             p.append(f"<polygon points='{poly(verts)}' fill='none' "
                      f"stroke='#888' stroke-width='{0.6*sc:.2f}'>"
                      f"<title>{html.escape(zone_tip)}</title></polygon>")
-            p.append(f"<image href='{icon}' x='{min(xs):.1f}' y='{fy(max(ys)):.1f}' "
+            art_class = "zone-floor-art" if floor_art else "zone-icon-art"
+            p.append(f"<image class='{art_class}' href='{icon}' "
+                     f"x='{min(xs):.1f}' y='{fy(max(ys)):.1f}' "
                      f"width='{max(xs)-min(xs):.1f}' height='{max(ys)-min(ys):.1f}' "
-                     "preserveAspectRatio='xMidYMid meet'>"
+                     f"clip-path='url(#{clip_id})' preserveAspectRatio='none'>"
                      f"<title>{html.escape(zone_tip)}</title></image>")
         else:
             p.append(f"<polygon points='{poly(verts)}' fill='{color}' "
                      f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='{0.6*sc:.2f}'>"
                      f"<title>{html.escape(zone_tip)}</title></polygon>")
         p.append("</g>")
+
+    # Positioned authored art sits above the floor and below semantic targets,
+    # items, and characters. The data attributes are the editor's source of
+    # truth and can be copied back as a complete VISUALS.md table.
+    for visual in _visual_overlays:
+        x, y = visual["x"], visual["y"]
+        w, h = visual["width"], visual["height"]
+        rotation = visual["rotation"]
+        p.append(
+            f"<g class='visual-overlay' data-visual='{html.escape(visual['id'])}' "
+            f"data-asset='{html.escape(visual['asset'])}' "
+            f"data-target='{html.escape(visual['target'])}' data-x='{x:.3f}' "
+            f"data-y='{y:.3f}' data-width='{w:.3f}' data-height='{h:.3f}' "
+            f"data-rotation='{rotation:.3f}' data-layer='{html.escape(visual['layer'])}' "
+            f"data-reveal='{_elem_reveal(x, y)}' "
+            f"transform='translate({x:.3f},{fy(y):.3f}) rotate({-rotation:.3f})'>"
+            f"<rect class='visual-selection' x='{-w/2:.3f}' y='{-h/2:.3f}' "
+            f"width='{w:.3f}' height='{h:.3f}' fill='none' stroke='#55ffff' "
+            f"stroke-width='.18' stroke-dasharray='.45,.3' style='display:none'/>"
+            f"<image href='{visual['uri']}' x='{-w/2:.3f}' y='{-h/2:.3f}' "
+            f"width='{w:.3f}' height='{h:.3f}' preserveAspectRatio='none'/>"
+            f"<title>{html.escape(visual['id'].replace('_', ' ').title())}</title></g>")
 
     for bname, verts in g["boundaries"]:
         if not verts:
@@ -1429,8 +1537,14 @@ def render_turn_slider_html(
 
     for name, (x, y) in g["landmarks"].items():
         tip = _landmark_tooltip(name, x, y, g["zones"])
-        p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>"
-                 f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{1.1*sc:.2f}' fill='#b9b9b9'>"
+        zone = _containing_zone(x, y, g["zones"])
+        painted = bool(zone and _zone_floors.get(zone)) or name in _visual_targets
+        fill = "transparent" if painted else "#b9b9b9"
+        radius = 1.8 if painted else 1.1 * sc
+        p.append(f"<g data-reveal='{_elem_reveal(x, y)}' "
+                 f"data-landmark='{html.escape(name)}' data-x='{x:.3f}' data-y='{y:.3f}'>"
+                 f"<circle class='landmark-hit' cx='{x:.2f}' cy='{fy(y):.2f}' "
+                 f"r='{radius:.2f}' fill='{fill}'>"
                  f"<title>{html.escape(tip)}</title></circle></g>")
     for _iid, (x, y, label) in g["items"].items():
         detail = (item_details or {}).get(_iid)
@@ -1447,13 +1561,23 @@ def render_turn_slider_html(
                 f"<title>{html.escape(tooltip)}</title></text>"
             )
         else:
+            zone = _containing_zone(x, y, g["zones"])
+            painted = bool(zone and _zone_floors.get(zone))
             marker = (
-                f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' r='{0.9*sc:.2f}' "
-                f"fill='#d9c98a'><title>{html.escape(tooltip)}</title></circle>"
+                f"<circle cx='{x:.2f}' cy='{fy(y):.2f}' "
+                f"r='{1.8 if painted else 0.9*sc:.2f}' "
+                f"fill='{'transparent' if painted else '#d9c98a'}'>"
+                f"<title>{html.escape(tooltip)}</title></circle>"
             )
-        p.append(f"<g data-reveal='{_elem_reveal(x, y)}'>{marker}"
-                 f"<text x='{x+1.8*sc:.2f}' y='{fy(y):.2f}' "
-                 f"class='ilabel'>{html.escape(label)}</text></g>")
+        zone = _containing_zone(x, y, g["zones"])
+        painted_static = bool(
+            not _item_is_pickable(detail) and zone and _zone_floors.get(zone))
+        label_markup = "" if painted_static else (
+            f"<text x='{x+1.8*sc:.2f}' y='{fy(y):.2f}' "
+            f"class='ilabel'>{html.escape(label)}</text>")
+        p.append(f"<g data-reveal='{_elem_reveal(x, y)}' data-item='{html.escape(_iid)}' "
+                 f"data-x='{x:.3f}' data-y='{y:.3f}'>{marker}"
+                 f"{label_markup}</g>")
 
     # Per-character "where you just came from" segment: previous turn -> current.
     # Drawn before the markers so the dot sits on top of its own trail tail.
@@ -1516,8 +1640,47 @@ def render_turn_slider_html(
         # viewBox is restored on the reloads that do fire.
         p.append(
             f"setInterval(function(){{if(+sl.value>=TURNS.length-1&&"
+            f"!window.__mapArtEditing&&"
             f"(Date.now()-(window.__mapLastInteract||0))>2500)"
             f"{{location.reload();}}}},{int(live_refresh_secs) * 1000});")
+    p.append(
+        "(function(){const s=document.getElementById('map'),objs=[...document.querySelectorAll('.visual-overlay')],"
+        "eb=document.getElementById('editArt'),ctl=document.getElementById('artctl');"
+        "if(!objs.length){eb.style.display='none';return;}let editing=false,sel=null,drag=null;"
+        "function syncTarget(o){let t=o.dataset.target;if(!t)return;let x=+o.dataset.x,y=+o.dataset.y;"
+        "let matches=[...document.querySelectorAll('[data-landmark]')].filter(n=>n.dataset.landmark===t);"
+        "if(!matches.length)matches=[...document.querySelectorAll('[data-item]')].filter(n=>n.dataset.item===t);"
+        "matches.forEach(n=>{let ox=+n.dataset.x,oy=+n.dataset.y;"
+        "n.setAttribute('transform','translate('+(x-ox)+','+(-(y-oy))+')');n.dataset.editX=x.toFixed(3);n.dataset.editY=y.toFixed(3);});}"
+        "function apply(o){let x=+o.dataset.x,y=+o.dataset.y,r=+o.dataset.rotation;"
+        "o.setAttribute('transform','translate('+x+','+(-y)+') rotate('+(-r)+')');"
+        "let im=o.querySelector('image'),w=+o.dataset.width,h=+o.dataset.height;"
+        "im.setAttribute('x',-w/2);im.setAttribute('y',-h/2);im.setAttribute('width',w);im.setAttribute('height',h);"
+        "let box=o.querySelector('.visual-selection');box.setAttribute('x',-w/2);box.setAttribute('y',-h/2);box.setAttribute('width',w);box.setAttribute('height',h);syncTarget(o);}"
+        "function pick(o){if(sel)sel.querySelector('.visual-selection').style.display='none';sel=o;"
+        "if(sel)sel.querySelector('.visual-selection').style.display='';}"
+        "function pt(e){let p=s.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(s.getScreenCTM().inverse());}"
+        "eb.onclick=function(){editing=!editing;window.__mapArtEditing=editing;"
+        "eb.textContent=editing?'Done editing':'Edit art';"
+        "ctl.classList.toggle('on',editing);s.style.cursor=editing?'default':'grab';"
+        "if(editing)objs.forEach(o=>s.appendChild(o));"
+        "else if(sel){sel.querySelector('.visual-selection').style.display='none';sel=null;}"
+        "objs.forEach(o=>o.style.cursor=editing?'move':'');};"
+        "objs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pick(o);"
+        "let p=pt(e);drag={o:o,px:p.x,py:p.y,x:+o.dataset.x,y:+o.dataset.y};e.preventDefault();});});"
+        "window.addEventListener('mousemove',e=>{if(!drag)return;let p=pt(e);drag.o.dataset.x=(drag.x+p.x-drag.px).toFixed(3);"
+        "drag.o.dataset.y=(drag.y-(p.y-drag.py)).toFixed(3);apply(drag.o);});"
+        "window.addEventListener('mouseup',()=>drag=null);"
+        "function change(kind,n){if(!sel)return;if(kind==='r')sel.dataset.rotation=(+sel.dataset.rotation+n).toFixed(3);"
+        "else{sel.dataset.width=(+sel.dataset.width*n).toFixed(3);sel.dataset.height=(+sel.dataset.height*n).toFixed(3);}apply(sel);}"
+        "document.getElementById('rotL').onclick=()=>change('r',-15);document.getElementById('rotR').onclick=()=>change('r',15);"
+        "document.getElementById('smaller').onclick=()=>change('s',.9);document.getElementById('larger').onclick=()=>change('s',1.1);"
+        "document.getElementById('copyVisuals').onclick=async function(){let rows=['# VISUALS.md — Authored Map Overlays','','| id | asset | target | x | y | width | height | rotation | layer |','|---|---|---|---:|---:|---:|---:|---:|---|'];"
+        "objs.forEach(o=>rows.push('| '+o.dataset.visual+' | '+o.dataset.asset+' | '+o.dataset.target+' | '+o.dataset.x+' | '+o.dataset.y+' | '+o.dataset.width+' | '+o.dataset.height+' | '+o.dataset.rotation+' | '+o.dataset.layer+' |'));"
+        "await navigator.clipboard.writeText(rows.join('\\n'));this.textContent='Copied';setTimeout(()=>this.textContent='Copy VISUALS.md',1200);};"
+        "document.getElementById('copyGeometry').onclick=async function(){let rows=['## Landmark coordinate updates','','| name | x | y |','|---|---:|---:|'];"
+        "let seen=new Set();objs.forEach(o=>{let t=o.dataset.target;if(!t||seen.has(t))return;seen.add(t);rows.push('| '+t+' | '+o.dataset.x+' | '+o.dataset.y+' |');});"
+        "await navigator.clipboard.writeText(rows.join('\\n'));this.textContent='Copied';setTimeout(()=>this.textContent='Copy coordinates',1200);};})();")
     p.append(_PANZOOM_JS)
     p.append("</script></body></html>")
     output_path.parent.mkdir(parents=True, exist_ok=True)

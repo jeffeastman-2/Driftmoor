@@ -255,7 +255,10 @@ def _parse_boundaries(text: str) -> list[MagicalBoundary]:
         meta = _parse_metadata(sub)
 
         blocks_str = meta.get("blocks", "")
-        blocks = [b.strip() for b in blocks_str.split(",") if b.strip()]
+        blocks = [
+            b.strip() for b in blocks_str.split(",")
+            if b.strip() and b.strip().lower() not in {"none", "nothing", "no"}
+        ]
 
         verts_str = meta.get("vertices", "")
         verts = _parse_vertices(verts_str)

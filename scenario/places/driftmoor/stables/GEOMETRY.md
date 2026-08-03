@@ -19,7 +19,7 @@
 | saddle_racks     | 6.5 | 13 |
 | stall_row_center | 23 | 27.5 |
 | feed_bins        | 32.5 | 13 |
-| forge_door       | 0  | 32.5 |
+| forge_door       | 22 | 56.5 |
 
 ---
 
@@ -46,4 +46,4 @@
 | name             | x | y | destination      |
 |------------------|---|---|------------------|
 | stable_to_street | 3.5 | 0 | places/driftmoor |
-| stable_to_forge  | 0 | 32.5 | places/driftmoor/forge |
+| stable_to_forge  | 22 | 56.5 | places/driftmoor/forge |

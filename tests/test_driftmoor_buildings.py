@@ -15,7 +15,7 @@ from engine.session import (
     _place_identity_metadata,
     _waypoint_for_zone,
 )
-from engine.geometry import _check_impassable
+from engine.geometry import _check_boundary_crossing, _check_impassable
 from models.game_init import INITIAL_LOCATIONS
 from models.geometry_loader import load_geometry
 from models.space_time import Position
@@ -39,6 +39,48 @@ def test_every_authored_driftmoor_place_is_enterable():
             "GEOMETRY.md; model it as an area in its parent or author an "
             "enterable scene"
         )
+
+
+def test_forge_wall_marks_are_investigable_lore_bearing_item():
+    cfg = configure_from_place_path("places/driftmoor/forge")
+    marks = cfg.items["forge_wall_marks"]
+
+    assert marks.position is not None
+    assert marks.zone == "FORGE"
+    assert marks.pickable is False
+    assert "cold" in marks.description.lower()
+    assert marks.find_interaction("examine") is not None
+    assert marks.find_interaction("search") is not None
+    assert (DRIFTMOOR / "forge" / "LORE.md").is_file()
+
+
+def test_forge_and_stables_share_reciprocal_south_north_doorway():
+    forge = load_geometry(DRIFTMOOR / "forge" / "GEOMETRY.md")
+    stables = load_geometry(DRIFTMOOR / "stables" / "GEOMETRY.md")
+
+    assert forge.connections["forge_to_stables"] == Position(22, 0)
+    assert stables.connections["stable_to_forge"] == Position(22, 56.5)
+
+
+def test_forge_heat_zone_is_hidden_but_warns_on_entry():
+    from types import SimpleNamespace
+
+    forge_path = DRIFTMOOR / "forge" / "GEOMETRY.md"
+    forge = load_geometry(forge_path)
+    from engine.map_renderer import parse_geometry
+
+    # It remains an engine boundary but is absent from presentation geometry.
+    assert len(forge.boundaries) == 1
+    assert parse_geometry(forge_path.read_text(encoding="utf-8"))["boundaries"] == []
+
+    allowed, damage, log, stop = _check_boundary_crossing(
+        "gilthaness", (15, 7, "FORGE"), (6.5, 13, "FORGE"),
+        SimpleNamespace(race="wood elf", character_type="player"),
+        forge.boundaries, None,
+    )
+    assert allowed and damage == 0 and stop is None
+    assert "enters Forge Heat Zone" in log[0]
+    assert "extreme heat" in log[0]
 
 
 @pytest.mark.parametrize(

@@ -227,6 +227,44 @@ def test_turn_slider_uses_icon_for_loose_pickable_item(tmp_path):
     assert "data-base-fs=" in rendered
 
 
+def test_zone_floor_art_is_embedded_clipped_and_keeps_semantic_hits(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+    from engine.md_loader import configure_from_place_path
+
+    geometry = Path("scenario/places/driftmoor/forge/GEOMETRY.md")
+    cfg = configure_from_place_path("places/driftmoor/forge")
+    out = tmp_path / "forge.html"
+    render_turn_slider_html(
+        geometry, out, snapshot_dir=tmp_path, title="Forge",
+        item_details=cfg.items, live_refresh_secs=2,
+    )
+    rendered = out.read_text(encoding="utf-8")
+
+    assert "class='zone-floor-art'" in rendered
+    assert "class='visual-overlay'" in rendered
+    assert "data-visual='forge_wall_marks_visual'" in rendered
+    assert "clip-path='url(#zone-floor-FORGE)'" in rendered
+    assert "class='landmark-hit'" in rendered
+    assert "shadow-burned wall marks" in rendered.lower()
+    assert "id='editArt'" in rendered
+    assert "Copy VISUALS.md" in rendered
+    assert "!window.__mapArtEditing" in rendered
+    assert "window.__mapArtEditing=editing" in rendered
+    assert "class='visual-selection'" in rendered
+    assert "if(window.__mapArtEditing)return" in rendered
+    assert "s.appendChild(o)" in rendered
+    assert "data-landmark='forge_wall_marks'" in rendered
+    assert "Copy coordinates" in rendered
+    assert "function syncTarget(o)" in rendered
+    assert "data-landmark='forge_wall_marks'" in rendered
+    landmark_start = rendered.index("data-landmark='forge_wall_marks'")
+    landmark_markup = rendered[landmark_start:landmark_start + 350]
+    assert "fill='transparent'" in landmark_markup
+    # The marks are painted into the floor art, so their semantic Item remains
+    # hoverable without a duplicate text label on top.
+    assert ">Shadow-burned wall marks</text>" not in rendered
+
+
 def test_shift_scroll_scales_item_icons_with_character_icons():
     from engine.map_renderer import _PANZOOM_JS
 

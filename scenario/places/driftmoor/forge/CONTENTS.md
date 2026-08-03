@@ -1,5 +1,32 @@
 # CONTENTS.md — The Forge
 
+## Items
+
+### forge_wall_marks
+
+A handspan-wide network of blackened grooves scars the north wall above the
+forge floor. The strokes are too regular to be cracks and too deep to be soot:
+the stone itself has darkened and drawn inward along each line. Angular branches
+converge on a hooked central glyph, with several hair-thin veins trailing toward
+the hearth. Even in the forge's heat, the marked stone feels distinctly cold.
+
+The pattern does not resemble a mason's mark or ordinary writing. Careful study
+shows that the grooves were formed from within the stone rather than cut from
+the surface. A faint charcoal-colored residue clings to the deepest junctions,
+but rubbing or scraping it only exposes more blackened stone beneath.
+
+*(Not pickup-able.)*
+
+*Size:* medium
+
+*Interactions (DM ground truth):*
+- **examine / inspect / study** → The branching strokes repeat a hooked three-line motif. The marks are cold, fused into the stone, and subtly oriented toward the forge hearth. Anyone familiar with Elyssa's research or another obelisk-related site recognizes the same visual grammar, though this pattern appears to describe a flow or conduit rather than a boundary.
+- **search / investigate** → Close inspection finds no tool cuts, pigment, or mundane burn pattern. Fine dark residue is concentrated where the branches intersect; a careful sample could be collected with a clean blade or vial for later comparison.
+- **touch** → The grooves are unnaturally cold. For a heartbeat, the nearest hair-thin vein darkens toward the point of contact, then returns to its previous state.
+- **scrape / clean** → Soot comes away around the marks, but the black grooves remain unchanged because the discoloration runs through the stone.
+
+---
+
 ## Items Present
 
 ### Mundane
@@ -16,7 +43,7 @@
 - Custom orders: varies, discuss with Darrin
 
 ### Notable
-- Shadowy symbols on the walls — appear to have been carved or burned in, not painted
+- Shadow-burned wall marks on the north wall — detailed above
 
 ## Notes for DM
 - Custom orders take 1d4 days depending on complexity

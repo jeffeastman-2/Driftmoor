@@ -18,8 +18,8 @@
 | forge_entrance   | 0  | 3.5  |
 | anvil            | 13 | 6.5 |
 | forge_hearth     | 6.5 | 13 |
-| forge_wall_marks | 16 | 16.5 |
-| stable_door      | 29 | 5 |
+| forge_wall_marks | 16 | 27.5 |
+| stable_door      | 22 | 0 |
 
 ---
 
@@ -45,7 +45,15 @@
 | name            | x  | y  | destination              |
 |-----------------|----|----|--------------------------|
 | forge_to_street | 0  | 3.5  | places/driftmoor         |
-| forge_to_stables | 29 | 5 | places/driftmoor/stables |
+| forge_to_stables | 22 | 0 | places/driftmoor/stables |
+
+---
+
+## Items
+
+| id               | x  | y    | label                    |
+|------------------|----|------|--------------------------|
+| forge_wall_marks | 16 | 24.25 | Shadow-burned wall marks |
 
 ---
 
@@ -55,5 +63,6 @@
 
 - **type:** conditional
 - **blocks:** none
+- **render:** hidden
 - **effect:** within 10 ft of the hearth — extreme heat; prolonged unprotected exposure risks exhaustion
 - **vertices:** (1.5,8) (11.5,8) (11.5,18) (1.5,18)

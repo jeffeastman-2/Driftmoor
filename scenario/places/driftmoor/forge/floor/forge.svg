@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 27.5">
+  <defs>
+    <radialGradient id="fireGlow" cx="50%" cy="50%" r="65%">
+      <stop offset="0" stop-color="#ffd36a" stop-opacity=".95"/>
+      <stop offset=".38" stop-color="#dc692d" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#49271c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="dirt" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#68533d"/><stop offset=".55" stop-color="#564331"/>
+      <stop offset="1" stop-color="#46372b"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation=".45"/></filter>
+  </defs>
+
+  <!-- Stone shell around a hard-packed dirt working floor. -->
+  <rect width="29" height="27.5" fill="#242526"/>
+  <rect x=".7" y=".8" width="27.6" height="25.9" rx=".25"
+        fill="url(#dirt)" stroke="#151617" stroke-width=".7"/>
+  <g fill="#2d241d" opacity=".35">
+    <circle cx="3.2" cy="8.8" r=".12"/><circle cx="9.1" cy="5.4" r=".08"/>
+    <circle cx="17.8" cy="10.1" r=".11"/><circle cx="26.1" cy="7.3" r=".09"/>
+    <circle cx="11.4" cy="25.4" r=".1"/><circle cx="23.7" cy="17.2" r=".07"/>
+  </g>
+  <g fill="none" stroke="#8a7052" stroke-width=".1" opacity=".24">
+    <path d="M2 19q3-1.1 5.5-.2M12 8.4q4 1.2 7.2-.1M20.5 22q2.7-.8 5.4.1"/>
+    <path d="M8 12.5q1.8-.7 3.5.15M14 18q2.4.8 4.3-.2"/>
+  </g>
+  <path d="M1.1 1.2H27.9" stroke="#171819" stroke-width="1.25" opacity=".8"/>
+  <path d="M1.2 2.2C8 3.1 20 3.3 27.8 2.1" stroke="#171819"
+        stroke-width="1.4" opacity=".34" filter="url(#soft)"/>
+
+  <!-- Open street entrance at west-south and shared stable door in south wall. -->
+  <path d="M0 22.2V27.2H1.05V22.2" fill="#8e7759" stroke="#1d1813" stroke-width=".28"/>
+  <path d="M19 26.45V27.5H25V26.45Z" fill="#765c43" stroke="#19140f" stroke-width=".25"/>
+  <path d="M19.25 26.35H24.75" stroke="#b69a70" stroke-width=".18"/>
+
+  <!-- Hearth from directly above: masonry rim, coal bed, and hot coals. -->
+  <ellipse cx="6.5" cy="14.5" rx="7" ry="6.1" fill="url(#fireGlow)" opacity=".72"/>
+  <rect x="2.1" y="11.1" width="8.8" height="6.8" rx=".35"
+        fill="#77716a" stroke="#171719" stroke-width=".45"/>
+  <rect x="2.9" y="11.9" width="7.2" height="5.2" rx=".25"
+        fill="#211b19" stroke="#a08768" stroke-width=".18"/>
+  <g fill="#d55c29" stroke="#f4ae4b" stroke-width=".1">
+    <ellipse cx="4.1" cy="13.2" rx=".7" ry=".42"/>
+    <ellipse cx="6.2" cy="14.6" rx=".9" ry=".5"/>
+    <ellipse cx="8.5" cy="13.4" rx=".65" ry=".4"/>
+    <ellipse cx="4.8" cy="16" rx=".8" ry=".38"/>
+    <ellipse cx="8" cy="15.8" rx=".75" ry=".42"/>
+  </g>
+  <g fill="#303033"><circle cx="5.3" cy="12.8" r=".32"/><circle cx="7.35" cy="13.3" r=".4"/>
+    <circle cx="3.8" cy="14.8" r=".35"/><circle cx="6.8" cy="16" r=".38"/></g>
+
+  <!-- Main anvil from above: horn at west, heel and hardy hole at east. -->
+  <ellipse cx="13" cy="23.25" rx="3.2" ry="1.35" fill="#17191a" opacity=".45"/>
+  <ellipse cx="13" cy="23" rx="1.8" ry="1.25" fill="#5a3b27" stroke="#24180f" stroke-width=".28"/>
+  <path d="M8.4 22.25L10.8 21.45H15.95L17.45 22.1L16.1 23.75H10.7L8.4 22.9Z"
+        fill="#8d9698" stroke="#25292b" stroke-width=".35"/>
+  <path d="M9 22.55L10.9 22.05H15.7" stroke="#d0d4d2" stroke-width=".18" opacity=".68"/>
+  <rect x="15.35" y="22.25" width=".45" height=".45" fill="#34383a"/>
+
+  <!-- Workbench and shallow tool tray, both seen from above. -->
+  <rect x="18.2" y="18.7" width="7.8" height="2.2" rx=".18"
+        fill="#725038" stroke="#251a13" stroke-width=".32"/>
+  <path d="M18.7 19.2H25.5M18.7 20.35H25.5" stroke="#977052" stroke-width=".12" opacity=".55"/>
+  <rect x="19" y="11.2" width="7" height="2.25" rx=".18"
+        fill="#4b3528" stroke="#211812" stroke-width=".28"/>
+  <g fill="none" stroke="#b7b9b5" stroke-width=".32" stroke-linecap="round">
+    <path d="M19.6 12.3H21.1M20.35 11.75V12.85"/>
+    <path d="M21.7 11.7L23 12.9M22 11.7L21.65 12.05"/>
+    <path d="M23.5 12.3H25.4M24.95 11.9L25.4 12.3L24.95 12.7"/>
+  </g>
+
+  <!-- Open barrels from above: circular rims with coal and scrap visible. -->
+  <g stroke="#241a13" stroke-width=".25">
+    <circle cx="2.5" cy="6.2" r="1.45" fill="#67452f"/>
+    <circle cx="2.5" cy="6.2" r="1.12" fill="#222426" stroke="#9b7650"/>
+    <circle cx="5.45" cy="6.2" r="1.35" fill="#67452f"/>
+    <circle cx="5.45" cy="6.2" r="1.02" fill="#62686a" stroke="#9b7650"/>
+  </g>
+  <g fill="#85898a" stroke="#27292a" stroke-width=".15">
+    <path d="M4.55 6.1L5.05 5.3L5.4 6.3Z"/><path d="M5.3 6.05L6 5.35L6.1 6.45Z"/>
+  </g>
+
+  <!-- Bellows and quench trough. -->
+  <path d="M11.7 12.1Q14.3 10.7 16 12.4Q14.4 14.2 11.7 13.4Z"
+        fill="#7b4f35" stroke="#271a12" stroke-width=".3"/>
+  <path d="M15.8 12.75L18 12.2" stroke="#474b4b" stroke-width=".45"/>
+  <rect x="13.2" y="15.2" width="4.4" height="2.2" rx=".2"
+        fill="#455357" stroke="#171b1c" stroke-width=".32"/>
+  <path d="M13.6 15.65H17.2" stroke="#91a9ad" stroke-width=".18" opacity=".75"/>
+
+  <!-- Soot, hammer scars, and scattered stock make the floor feel worked-in. -->
+  <g fill="none" stroke="#1e2021" stroke-width=".16" opacity=".6">
+    <path d="M10 24.7l-1.4.5m7.6-.6l1.2.45M12 18.4l-1.1.7m6.8 4.3l.9.6M4 21l1.2.35"/>
+    <path d="M18 7.4h5.4m-4.7.55h4.1m-3.25.55h3.2" stroke="#777b7a" stroke-width=".28"/>
+  </g>
+</svg>
