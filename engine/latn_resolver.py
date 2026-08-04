@@ -576,6 +576,12 @@ def resolve_state_query(intent_text: str, *, lexicon, adapter) -> Optional[Resol
         return ResolvedStateQuery("location", resolved)
     if resolved.wh_word == "what" and any(_isa(token, "query_time") for token in tokens):
         return ResolvedStateQuery("time", resolved)
+    # In modal perception questions ("what can I see?"), SQ may preserve the
+    # first-person subject as its focus.  That focus is the experiencer, not
+    # the entity being defined.  Leave the question to resolve_world_query,
+    # which owns external perception and filters its focus to world entities.
+    if resolved.wh_word == "what" and perception and first_person:
+        return None
     if resolved.wh_word == "what":
         people = _entities_of_kind(grounded, "character")
         person = _unique_winner(people)

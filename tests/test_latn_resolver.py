@@ -103,6 +103,11 @@ def test_state_queries_are_classified_by_latn_semantics():
     assert resolve_state_query("where am I?", lexicon=lex, adapter=adapter).kind == "location"
     assert resolve_state_query("what time is it?", lexicon=lex, adapter=adapter).kind == "time"
     assert resolve_state_query("I am here", lexicon=lex, adapter=adapter) is None
+    # The subject of a perception question is not its definitional focus.
+    assert resolve_state_query("what can I see?", lexicon=lex, adapter=adapter) is None
+    assert resolve_world_query(
+        "what can I see?", lexicon=lex, adapter=adapter
+    ).kind == "perception_list"
 
 
 def test_unknown_who_focus_is_engine_owned_without_name_matching():

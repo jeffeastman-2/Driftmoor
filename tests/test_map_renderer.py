@@ -653,3 +653,33 @@ def test_render_turn_slider_default_seeds_only_tracked_chars(tmp_path):
     t = out.read_text(encoding="utf-8")
     assert "thorgrim" in t
     assert "giant_spider" not in t
+
+
+def test_north_bank_places_have_authored_editable_art(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    expected = {
+        Path("scenario/places/driftmoor/dustcloaks_curios/GEOMETRY.md"): (3, 14),
+        Path("scenario/places/driftmoor/dustcloaks_curios/living_loft/GEOMETRY.md"): (1, 5),
+        Path("scenario/places/driftmoor/graveyard/GEOMETRY.md"): (1, 7),
+        Path("scenario/places/driftmoor/beacon_church/GEOMETRY.md"): (4, 13),
+    }
+    rendered = {}
+    for index, (geometry, counts) in enumerate(expected.items()):
+        out = tmp_path / f"north-bank-{index}.html"
+        render_turn_slider_html(geometry, out, snapshot_dir=tmp_path)
+        html = out.read_text(encoding="utf-8")
+        rendered[geometry] = html
+        assert html.count("class='zone-floor-art'") == counts[0]
+        assert html.count("class='visual-overlay'") == counts[1]
+
+    curios = rendered[Path("scenario/places/driftmoor/dustcloaks_curios/GEOMETRY.md")]
+    for target in ("shop_counter", "display_table_w", "display_table_e", "locked_box"):
+        assert f"data-target='{target}'" in curios
+    assert "Backroom — Private Research</title>" not in curios
+
+    church = rendered[Path("scenario/places/driftmoor/beacon_church/GEOMETRY.md")]
+    for target in ("altar", "pew_sw", "pew_se", "pew_nw", "pew_ne", "herb_bed_w", "herb_bed_e"):
+        assert f"data-target='{target}'" in church
+    assert "Pelor's Sanctified Ground</title>" not in church
+    assert "The Beacon Lantern Aura</title>" not in church

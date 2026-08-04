@@ -300,6 +300,17 @@ def test_dustcloaks_living_loft_is_an_enterable_second_story():
         child_path, parent_path, child.scene_geometry
     ) is not None
 
+    # A direct "go upstairs" route from the public shop must pass through
+    # the broad curtained arch instead of clipping the partition wall.
+    allowed, log, _stop = _check_impassable(
+        "visitor",
+        (13.0, 6.5, "SHOPFRONT"),
+        (22.5, 18.0, "BACKROOM"),
+        parent.scene_geometry.impassable,
+        parent.scene_geometry.zones,
+    )
+    assert allowed, log
+
 
 def test_broken_lantern_items_live_in_their_physical_subplaces():
     base = "places/driftmoor/broken_lantern"

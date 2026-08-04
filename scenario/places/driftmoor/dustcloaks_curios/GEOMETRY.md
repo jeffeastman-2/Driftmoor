@@ -22,12 +22,20 @@ organized chaos outside.
 |-----------------|------|------|
 | front_gate      | 13  | 0  |
 | shopfront_ctr   | 13  | 6.5  |
-| curiosity_shelf | 4.5  | 8  |
-| curtain_door    | 13  | 11  |
-| backroom_desk   | 13  | 17.5 |
-| loft_staircase  | 22.5 | 17.5 |
-| obelisk_cache   | 6.5  | 19.5 |
+| curiosity_shelf | 3  | 7  |
+| east_curiosity_shelf | 23 | 7 |
+| shop_counter    | 13  | 6.378 |
+| display_table_w | 6.615   | 2.527 |
+| display_table_e | 19.209  | 2.597 |
+| curtain_door    | 13  | 12  |
+| backroom_desk   | 12.929  | 17.712 |
+| loft_staircase  | 22.5 | 18 |
+| obelisk_cache   | 3.812  | 18.651 |
+| appraisal_bench | 12.095 | 23.476 |
+| locked_box      | 17.368 | 24.259 |
 | yard_junk       | 13  | -3 |
+| yard_wheels     | 7   | -3.5 |
+| yard_furniture  | 18.5 | -3.5 |
 
 ---
 
@@ -46,7 +54,8 @@ organized chaos outside.
 
 | description      | vertices                        |
 |------------------|---------------------------------|
-| Dividing wall    | (0,11) (26,11) (26,13) (0,13)       |
+| Dividing wall west | (0,11) (10.5,11) (10.5,13) (0,13) |
+| Dividing wall east | (19.5,11) (26,11) (26,13) (19.5,13) |
 | Back wall        | (0,24) (26,24) (26,26) (0,26)   |
 
 ---
@@ -67,4 +76,5 @@ organized chaos outside.
 - **type:** conditional
 - **blocks:** all
 - **effect:** curtained doorway; Kelem's private workspace with obelisk fragments; requires trust or deception to access
+- **render:** hidden
 - **vertices:** (0,11) (26,11) (26,26) (0,26)

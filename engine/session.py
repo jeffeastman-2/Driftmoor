@@ -1812,6 +1812,37 @@ def _transition_target_place_path(
     return candidates[0].place_path if len(candidates) == 1 else ""
 
 
+def _resolve_debug_travel_place(intent_text: str) -> str:
+    """Resolve an explicit ``/goto PLACE`` developer travel command.
+
+    The leading slash keeps this outside LATN and the in-world Teleport spell.
+    Only authored Driftmoor places resolve, and ambiguous aliases fail closed.
+    """
+    match = re.match(r"^\s*/goto\s+(.+?)\s*$", intent_text or "", re.IGNORECASE)
+    if match is None:
+        return ""
+    wanted = re.sub(r"[^a-z0-9]+", " ", match.group(1).lower()).strip()
+    if not wanted:
+        return ""
+
+    matches: list[str] = []
+    for node in _driftmoor_place_registry():
+        path_tail = node.place_path.removeprefix("places/driftmoor/")
+        labels = {
+            node.scene_name.replace("_", " "),
+            path_tail.replace("/", " ").replace("_", " "),
+            *(alias.replace("_", " ") for alias in node.aliases),
+        }
+        normalized = {
+            re.sub(r"[^a-z0-9]+", " ", label.lower()).strip()
+            for label in labels if label
+        }
+        if wanted in normalized:
+            matches.append(node.place_path)
+    unique = list(dict.fromkeys(matches))
+    return unique[0] if len(unique) == 1 else ""
+
+
 def _entry_point_from_target_geometry(
     target_place_path: str,
     source_place_path: str,
@@ -5606,6 +5637,32 @@ async def _player_roles_via_transport(
             # Telegram's poll_once long-polls (~30s) then returns empty; web's
             # receive blocks until input. Either way, loop for the next line.
             continue
+        if re.match(r"^\s*/goto\b", inbound, re.IGNORECASE):
+            debug_target = _resolve_debug_travel_place(inbound)
+            if not debug_target:
+                await _send(
+                    "Debug travel destination is unknown or ambiguous. Use a "
+                    "unique authored place name, such as /goto graveyard, "
+                    "/goto living loft, or /goto storage room."
+                )
+                continue
+            intent = _intent_from_transport_text(
+                character_id=context.character_id,
+                turn=context.turn,
+                text=inbound,
+            )
+            output = CharacterOutput(
+                character_id=context.character_id,
+                turn=context.turn,
+                spoken="",
+                action=(
+                    "Uses the developer travel back door to jump to "
+                    f"{Path(debug_target).name.replace('_', ' ')}."
+                ),
+            )
+            if transport == "web":
+                web_transport.set_awaiting(context.character_id, False)
+            return intent, output
         spell_help = _spell_help(inbound, cs)
         if spell_help is not None:
             await _send(spell_help)
@@ -7701,10 +7758,9 @@ async def iter_session(
                 _cur_place = getattr(scene_geometry, "place_path", "") if scene_geometry else ""
                 _cur_zone = current_positions.get(character_id, (0.0, 0.0, ""))[2]
                 _source_scene = Path(_cur_place).name if _cur_place else ""
-                _target_scene = _infer_driftmoor_venue_transition(
-                    intent.intent or "",
-                    _cur_place,
-                    _cur_zone,
+                _debug_target = _resolve_debug_travel_place(intent.intent or "")
+                _target_scene = _debug_target or _infer_driftmoor_venue_transition(
+                    intent.intent or "", _cur_place, _cur_zone,
                 )
                 # Entering a child venue is doorway-gated: cross in only once
                 # this turn's clamped move has brought the actor to the venue's
@@ -7713,6 +7769,7 @@ async def iter_session(
                 # an authored doorway (_enter_info is None) transition as before.
                 if (
                     _target_scene is not None
+                    and not _debug_target
                     and _enter_info is not None
                     and _enter_info[0] == _target_scene
                 ):
@@ -7959,12 +8016,18 @@ async def iter_session(
 
                 # Place-driven transition loading: scene transitions derive from
                 # authored place paths (scenario/places/...), not scenes/*.md.
-                target_place_path = _transition_target_place_path(
-                    target_scene_name,
-                    source_place_path,
+                target_place_path = (
+                    target_scene_name
+                    if target_scene_name.startswith("places/")
+                    else _transition_target_place_path(
+                        target_scene_name, source_place_path,
+                    )
                 )
 
                 if target_place_path:
+                    # Debug travel carries a full authored place path; use the
+                    # ordinary scene slug for callbacks and narration below.
+                    target_scene_name = Path(target_place_path).name
                     cfg = configure_from_place_path(
                         target_place_path,
                         game_time=game_time,

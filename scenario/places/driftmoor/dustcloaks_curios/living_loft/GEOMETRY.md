@@ -22,6 +22,7 @@ the southeast corner.
 | reinforced_cabinets | 5    | 9   | 4 |
 | locked_chest        | 10   | 9   | 4 |
 | narrow_bed          | 3    | 3   | 4 |
+| wardrobe            | 8    | 3   | 4 |
 
 ---
 

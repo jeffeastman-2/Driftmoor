@@ -77,6 +77,13 @@ You control one character; the DM and other characters run on their LLMs. Type
 intent in plain English; ask questions (`what can I buy?`, `where is the
 forge?`); watch the map update as everyone moves.
 
+For local world debugging, `/goto <place>` performs a cost-free scene jump
+through the normal transition loader. For example: `/goto graveyard`,
+`/goto living loft`, or `/goto storage room`. It consumes a turn so the scene
+can rebuild safely, but ignores doors, range, combat, and spell slots. The
+leading slash distinguishes this developer back door from the in-world
+Teleport spell.
+
 ### v0.1 deployment boundary
 
 Driftmoor v0.1 supports one human player per game-server process.

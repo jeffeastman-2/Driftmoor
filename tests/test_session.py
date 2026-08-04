@@ -28,6 +28,7 @@ from engine.session import (
     _consume_vicious_mockery_disadvantage,
     _resolve_teleport_destination,
     _teleport_venue_arrival_fact,
+    _resolve_debug_travel_place,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -2984,6 +2985,25 @@ class TestResolveTeleportDestination:
         assert "did not enter" in fact.lower()
 
 
+class TestDebugTravel:
+    def test_explicit_goto_resolves_authored_places_and_subplaces(self):
+        assert _resolve_debug_travel_place("/goto graveyard") == (
+            "places/driftmoor/graveyard"
+        )
+        assert _resolve_debug_travel_place("/goto living loft") == (
+            "places/driftmoor/dustcloaks_curios/living_loft"
+        )
+        assert _resolve_debug_travel_place("/goto storage room") == (
+            "places/driftmoor/broken_lantern/storage_room"
+        )
+
+    def test_goto_is_explicit_and_fails_closed(self):
+        assert _resolve_debug_travel_place("go to graveyard") == ""
+        assert _resolve_debug_travel_place("/goto nowhere authored") == ""
+        # Several buildings have an upstairs; debug travel must not guess.
+        assert _resolve_debug_travel_place("/goto upstairs") == ""
+
+
 
 
 class TestWhereQuestion:
@@ -3235,6 +3255,33 @@ class TestSelfQuestion:
         assert ans is not None
         assert "nearby places and landmarks" in ans
         assert "purse" not in ans.lower()
+
+    def test_modal_seeing_question_is_answered_from_external_perception(self):
+        from engine.session import _answer_basic_state_question, _answer_perception_question
+        cfg, cs = self._player()
+        position = (406.0, 341.0, "TOWN_COMMON")
+        assert _answer_basic_state_question(
+            "what can I see?", cs=cs, actor_zone="TOWN_COMMON",
+            scene_geometry=cfg.scene_geometry, game_time=cfg.game_time,
+            characters=cfg.characters, character_id=cs.character.id,
+            current_positions={cs.character.id: position},
+            active_characters={cs.character.id},
+        ) is None
+        context = _build_context(
+            cs, turn=1, scene_history="", scene_geometry=cfg.scene_geometry,
+            current_positions={cs.character.id: position},
+            active_characters={cs.character.id}, characters=cfg.characters,
+            visited_zones={cs.character.id: {"TOWN_COMMON"}}, items=cfg.items,
+        )
+        ans = _answer_perception_question(
+            "what can I see?", context=context, characters=cfg.characters,
+            actor_zone="TOWN_COMMON", scene_geometry=cfg.scene_geometry,
+            items=cfg.items, player_xy=position[:2],
+            visited_zones={"TOWN_COMMON"},
+        )
+        assert ans is not None
+        assert "nearby places and landmarks" in ans
+        assert "is a person" not in ans.lower()
 
     def test_can_i_see_named_place_answers_from_visible_pois(self):
         from engine.session import _answer_perception_question
