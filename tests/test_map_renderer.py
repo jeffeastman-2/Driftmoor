@@ -438,7 +438,7 @@ def test_elyssa_forge_and_stables_have_editable_interior_art(tmp_path):
     from engine.map_renderer import render_turn_slider_html
 
     expected = {
-        Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"): (4, 12),
+        Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"): (4, 17),
         Path("scenario/places/driftmoor/forge/GEOMETRY.md"): (1, 8),
         Path("scenario/places/driftmoor/stables/GEOMETRY.md"): (1, 8),
     }
@@ -454,6 +454,15 @@ def test_elyssa_forge_and_stables_have_editable_interior_art(tmp_path):
     cottage = rendered[Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md")]
     assert "data-target='obelisk_shard_contained_specimen'" in cottage
     assert "Laboratory — Restricted Research</title>" not in cottage
+    # Doors are positionable fixtures like any other, at the landmarks the
+    # movement/geometry code actually treats as the passable gap — not
+    # hand-drawn marks baked into the room art that can drift out of sync
+    # with them (see study/laboratory/bedroom .svg, which no longer draw
+    # their own doorway indicators).
+    assert "data-target='lab_door'" in cottage
+    assert "data-target='bedroom_door'" in cottage
+    assert "data-target='front_path'" in cottage
+    assert "data-target='garden_door'" in cottage
 
     forge = rendered[Path("scenario/places/driftmoor/forge/GEOMETRY.md")]
     for target in ("forge_hearth", "anvil", "bellows", "quench_trough"):

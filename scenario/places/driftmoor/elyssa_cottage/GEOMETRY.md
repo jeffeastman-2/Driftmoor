@@ -20,19 +20,20 @@ Herb garden on the west side. Ivy on walls.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_path      | 9.5  | 0  |
+| front_path      | 8.684  | -0.117  |
 | study_desk      | 12.257  | 10.743  |
-| bookshelves     | 2.284  | 9.122  |
-| fireplace       | 1.783  | 1.946  |
-| lab_door        | 16 | 9.5  |
-| lab_table       | 22.595 | 7.432  |
-| obelisk_notes   | 20.513 | 7.324  |
+| bookshelves     | 26.649  | 9.413  |
+| fireplace       | 13.266  | 2.645  |
+| lab_door        | 15.942 | 6.785  |
+| lab_table       | 22.942 | 2.196  |
+| obelisk_notes   | 21.035 | 2.263  |
 | bedroom_door    | 8  | 14.5  |
+| garden_door     | 0  | 11  |
 | herb_garden     | -3 | 11  |
 | narrow_bed      | 4 | 19 |
 | wardrobe        | 14.041 | 19.284 |
 | bedside_table   | 7.243 | 20.649 |
-| containment_dome | 25.19 | 9.202 |
+| containment_dome | 19.944 | 11.141 |
 | map_table       | 8.149 | 6.365 |
 
 ---
@@ -41,7 +42,7 @@ Herb garden on the west side. Ivy on walls.
 
 | name       | render_z | vertices                        |
 |------------|----------|---------------------------------|
-| LABORATORY | 6.5        | (16,4.5) (29,4.5) (29,16) (16,16)    |
+| LABORATORY | 6.5        | (16,0) (29,0) (29,14) (16,14)    |
 | BEDROOM    | 6.5        | (0,14.5) (16,14.5) (16,22.5) (0,22.5)      |
 | STUDY      | 3.25        | (0,0) (16,0) (16,14.5) (0,14.5)        |
 | HERB_GARDEN| 3.25        | (-6.5,6.5) (0,6.5) (0,16) (-6.5,16)      |
@@ -53,8 +54,8 @@ Herb garden on the west side. Ivy on walls.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Lab wall south | (16,4.5) (17,4.5) (17,8.5) (16,8.5)    |
-| Lab wall north | (16,10.5) (17,10.5) (17,16) (16,16)    |
+| Lab wall south | (16,0) (17,0) (17,8) (16,8)    |
+| Lab wall north | (16,10) (17,10) (17,14) (16,14)    |
 | Bedroom wall west | (0,14.5) (7,14.5) (7,15.5) (0,15.5) |
 | Bedroom wall east | (9,14.5) (16,14.5) (16,15.5) (9,15.5) |
 
@@ -64,7 +65,7 @@ Herb garden on the west side. Ivy on walls.
 
 | name       | x   | y   | destination      |
 |------------|-----|-----|------------------|
-| front_path | 9.5 | 0 | places/driftmoor |
+| front_path | 8.684 | 0.3 | places/driftmoor |
 
 ---
 
@@ -76,7 +77,7 @@ Herb garden on the west side. Ivy on walls.
 - **blocks:** all
 - **render:** hidden
 - **effect:** Elyssa's private obelisk research; door usually locked; contains sensitive materials
-- **vertices:** (16,4.5) (29,4.5) (29,16) (16,16)
+- **vertices:** (16,0) (29,0) (29,14) (16,14)
 
 ---
 
@@ -84,4 +85,4 @@ Herb garden on the west side. Ivy on walls.
 
 | id | x | y | label |
 |---|---|---|---|
-| obelisk_shard_contained_specimen | 25.189 | 8.824 | Obelisk Shard (Contained Specimen) |
+| obelisk_shard_contained_specimen | 19.943 | 10.819 | Obelisk Shard (Contained Specimen) |
