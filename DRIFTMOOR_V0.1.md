@@ -213,15 +213,15 @@ Remaining place work:
 
 ### 5. Content and Playability Review
 
-- [ ] Perform a building-by-building browser walkthrough.
-- [ ] Speak with every resident NPC at least once.
-- [ ] Ask every merchant what they sell.
-- [ ] Exercise the missing-horse hook without requiring unfinished Old Mill
+- [x] Perform a building-by-building browser walkthrough.
+- [x] Speak with every resident NPC at least once.
+- [x] Ask every merchant what they sell.
+- [?] Exercise the missing-horse hook without requiring unfinished Old Mill
       content.
-- [ ] Exercise the forge-symbol hook without requiring an experimental region.
-- [ ] Confirm empty places, including the corral, are intentionally empty.
-- [ ] Confirm every visible map landmark has an accurate label and tooltip.
-- [ ] Record known narrative or grounding limitations discovered during the
+- [?] Exercise the forge-symbol hook without requiring an experimental region.
+- [x] Confirm empty places, including the corral, are intentionally empty.
+- [x] Confirm every visible map landmark has an accurate label and tooltip.
+- [x] Record known narrative or grounding limitations discovered during the
       walkthrough.
 
 ### 6. Automated Quality Gate
