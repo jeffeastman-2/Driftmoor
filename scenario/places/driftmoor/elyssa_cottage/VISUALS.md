@@ -15,7 +15,7 @@
 | wardrobe_visual | floor/assets/wardrobe.svg | wardrobe | 14.041 | 19.284 | 3 | 5 | 0 | fixture |
 | bedside_table_visual | floor/assets/bedside_table.svg | bedside_table | 7.243 | 20.649 | 2.4 | 2.4 | 0 | fixture |
 | herb_garden_visual | floor/assets/herb_garden.svg | herb_garden | -3 | 11 | 5.5 | 8 | 0 | exterior |
-| lab_door_visual | floor/assets/door.svg | lab_door | 15.942 | 6.785 | 2 | 1 | 90 | fixture |
+| lab_door_visual | floor/assets/door.svg | lab_door | 16 | 6.785 | 2 | 1 | 90 | fixture |
 | bedroom_door_visual | floor/assets/door.svg | bedroom_door | 8 | 14.5 | 2 | 1 | 0 | fixture |
 | front_door_visual | floor/assets/door.svg | front_path | 8.684 | -0.117 | 2 | 1 | 0 | fixture |
 | garden_door_visual | floor/assets/door.svg | garden_door | 0 | 11 | 2 | 1 | 90 | fixture |

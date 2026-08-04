@@ -24,7 +24,7 @@ Herb garden on the west side. Ivy on walls.
 | study_desk      | 12.257  | 10.743  |
 | bookshelves     | 26.649  | 9.413  |
 | fireplace       | 13.266  | 2.645  |
-| lab_door        | 15.942 | 6.785  |
+| lab_door        | 16 | 6.785  |
 | lab_table       | 22.942 | 2.196  |
 | obelisk_notes   | 21.035 | 2.263  |
 | bedroom_door    | 8  | 14.5  |
@@ -54,8 +54,8 @@ Herb garden on the west side. Ivy on walls.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Lab wall south | (16,0) (17,0) (17,8) (16,8)    |
-| Lab wall north | (16,10) (17,10) (17,14) (16,14)    |
+| Lab wall south | (16,0) (17,0) (17,5.785) (16,5.785)    |
+| Lab wall north | (16,7.785) (17,7.785) (17,14) (16,14)    |
 | Bedroom wall west | (0,14.5) (7,14.5) (7,15.5) (0,15.5) |
 | Bedroom wall east | (9,14.5) (16,14.5) (16,15.5) (9,15.5) |
 

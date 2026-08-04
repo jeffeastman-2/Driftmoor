@@ -1641,15 +1641,13 @@ class TestNextZoneToward:
 class TestDirectPathClear:
     """Regression: cross-zone routing must not discard an already-good target.
 
-    Elyssa's cottage has a narrow doorway (a gap in the Impassable walls)
-    around the authored ``lab_door`` landmark, between STUDY and LABORATORY.
-    A target landmark already resolved through that doorway (e.g. "move to
-    the lab_door", which _infer_movement_destination backfills to the
-    landmark's own position) must survive the cross-zone routing check, not
-    get replaced by _waypoint_for_zone's generic "nearest boundary point
-    toward the centroid" guess — which, for this geometry, lands inside a
-    wall segment the real door doesn't share and leaves the mover stuck
-    against it turn after turn.
+    A target landmark already resolved through a doorway (e.g. "move to the
+    lab_door", which _infer_movement_destination backfills to the landmark's
+    own position) must survive the cross-zone routing check, not get
+    replaced by _waypoint_for_zone's generic "nearest boundary point toward
+    the centroid" guess — which only knows the destination zone's polygon,
+    not where its actual door sits, and can land inside a wall the real door
+    doesn't share, leaving the mover stuck against it turn after turn.
     """
 
     @pytest.fixture(scope="class")
@@ -1666,10 +1664,40 @@ class TestDirectPathClear:
             "elyssa", (8.0, 6.0, "STUDY"), (lab_door.x, lab_door.y), geo,
         ) is True
 
-    def test_waypoint_for_zones_generic_guess_is_blocked(self, geo):
+    @pytest.fixture
+    def door_offset_from_wall_geo(self):
+        """A minimal synthetic scene shaped like the original bug report:
+        a doorway well off-center in the shared wall, so the naive "nearest
+        boundary point toward the centroid" guess a real door position
+        wouldn't make lands inside the wall segment instead of the gap.
+
+        Deliberately not the live elyssa_cottage GEOMETRY.md — that file is
+        actively hand-edited (doors get dragged around in the map editor),
+        so pinning this regression to it would make the test's pass/fail
+        depend on unrelated content edits.
+        """
+        from models.space_time import Polygon, Position, SceneGeometry
+        return SceneGeometry(
+            name="Door Offset Test", place_path="places/test/door_offset",
+            z_level=0.0, width=29.0, height=16.0, origin=Position(0, 0),
+            zones={
+                "STUDY": Polygon([(0, 0), (16, 0), (16, 14.5), (0, 14.5)]),
+                "LABORATORY": Polygon([(16, 4.5), (29, 4.5), (29, 16), (16, 16)]),
+            },
+            impassable=[
+                Polygon([(16, 4.5), (17, 4.5), (17, 8.5), (16, 8.5)]),
+                Polygon([(16, 10.5), (17, 10.5), (17, 16), (16, 16)]),
+            ],
+            landmarks={"lab_door": Position(16, 9.5)},
+        )
+
+    def test_waypoint_for_zones_generic_guess_is_blocked(
+        self, door_offset_from_wall_geo,
+    ):
         """The bug in one line: the fallback _waypoint_for_zone would use
         instead of the real door lands inside a wall for this geometry."""
         from engine.session import _direct_path_clear, _waypoint_for_zone
+        geo = door_offset_from_wall_geo
         origin = (8.0, 6.0, "STUDY")
         naive = _waypoint_for_zone(
             character_id="elyssa",
@@ -1679,6 +1707,12 @@ class TestDirectPathClear:
         )
         assert naive is not None
         assert _direct_path_clear("elyssa", origin, naive, geo) is False
+        # The real door, meanwhile, is reachable in a straight line — that's
+        # the target the router must not discard in favor of the guess above.
+        lab_door = geo.landmarks["lab_door"]
+        assert _direct_path_clear(
+            "elyssa", origin, (lab_door.x, lab_door.y), geo,
+        ) is True
 
 
 # ---------------------------------------------------------------------------
