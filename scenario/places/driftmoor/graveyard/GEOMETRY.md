@@ -17,13 +17,13 @@
 |-------------------|----|----|
 | iron_gate         | 25.5 | 0  |
 | central_path      | 25.5 | 14.5 |
-| old_gravestones   | 12.5 | 17.5 |
-| newer_graves      | 38.5 | 17.5 |
+| old_gravestones   | 10.364 | 15.67 |
+| newer_graves      | 42.873 | 18.314 |
 | old_gravestones_n | 17.5 | 23 |
-| newer_graves_s    | 34.5 | 10 |
+| newer_graves_s    | 43.856 | 10 |
 | old_gravestones_s | 10 | 8 |
-| newer_graves_n    | 42 | 23 |
-| offering_shelf    | 44 | 6 |
+| newer_graves_n    | 33.051 | 23.508 |
+| offering_shelf    | 30.068 | 4.17 |
 | church_wall_path  | 51 | 14.5 |
 
 ---

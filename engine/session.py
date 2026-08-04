@@ -1406,6 +1406,34 @@ def _zones_for_point(
     return out
 
 
+def _town_visible_zone_names(
+    scene_geometry: Optional[SceneGeometry],
+    observer: Position,
+    current_zone: str = "",
+) -> set[str]:
+    """Town zones whose nearest exterior edge is in line of sight now.
+
+    Visited zones are memory; they must not gate present perception.  Using a
+    zone's nearest point lets an opaque building expose its visible facade
+    without pretending the observer can see landmarks through its walls.
+    """
+    if (
+        scene_geometry is None
+        or (getattr(scene_geometry, "place_path", "") or "").strip("/").lower()
+        != "places/driftmoor"
+    ):
+        return set()
+    visible: set[str] = set()
+    for name, polygon in scene_geometry.zones.items():
+        upper = str(name).upper()
+        if upper == "EXTERIOR":
+            continue
+        target = observer if upper == current_zone else polygon.nearest_point(observer)
+        if scene_geometry.can_see(observer, target):
+            visible.add(upper)
+    return visible
+
+
 def _build_points_of_interest(
     scene_geometry: Optional[SceneGeometry],
     my_pos: Optional[tuple[float, float, str]],
@@ -1437,6 +1465,9 @@ def _build_points_of_interest(
         == "places/driftmoor"
     )
     _observer = Position(float(px), float(py))
+    visible_zones.update(
+        _town_visible_zone_names(scene_geometry, _observer, current_zone)
+    )
 
     def _town_point_visible(pos: Position) -> bool:
         if not _town_los:
@@ -1468,10 +1499,13 @@ def _build_points_of_interest(
             abs(pos.x - conn.x) < 0.5 and abs(pos.y - conn.y) < 0.5
             for conn in (getattr(scene_geometry, "connections", {}) or {}).values()
         )
-        new_zones = (lm_zones - visible_zones) if is_connection else set()
-        if is_connection and new_zones:
+        onward_zones = {
+            zone for zone in lm_zones
+            if zone not in {current_zone, "EXTERIOR"}
+        } if is_connection else set()
+        if is_connection and onward_zones:
             onward = " — leads onward to " + ", ".join(
-                z.title() for z in sorted(new_zones)
+                z.title() for z in sorted(onward_zones)
             )
         lines.append(
             f"- {name}: x={pos.x:.0f}, y={pos.y:.0f} (~{dist:.0f} ft away){onward}"
@@ -1497,8 +1531,11 @@ def _build_points_of_interest(
         label = re.sub(r"^to[ _]+", "", _conn).replace("_", " ").strip() or _child
         dist = ((dx - px) ** 2 + (dy - py) ** 2) ** 0.5
         onward = ""
-        new_zones = door_zones - visible_zones
-        if new_zones:
+        destination_zones = {
+            zone for zone in door_zones
+            if zone not in {current_zone, "EXTERIOR"}
+        }
+        if destination_zones:
             onward = " — enter to go inside"
         lines.append(
             f"- {label}: x={dx:.0f}, y={dy:.0f} (~{dist:.0f} ft away){onward}"
@@ -2693,6 +2730,10 @@ def _visible_query_points(
         (getattr(scene_geometry, "place_path", "") or "").strip("/").lower()
         == "places/driftmoor"
     )
+    if town_los:
+        visible_zones.update(
+            _town_visible_zone_names(scene_geometry, observer, current_zone)
+        )
 
     def visible(point: Position) -> bool:
         target = point
@@ -6231,6 +6272,12 @@ async def iter_session(
                 current_positions=current_positions,
                 answer_query=_answer_query,
             )
+            # Developer commands are claimed before LATN diagnostics.  Their
+            # slash-prefixed command word is intentionally not game lexicon;
+            # only the authored destination is resolved by the debug grounder.
+            _debug_travel_target = _resolve_debug_travel_place(
+                intent.intent or ""
+            )
             output.spoken = _clean_spoken_output(output.spoken)
             _social_target = None
             if (
@@ -6264,7 +6311,12 @@ async def iter_session(
             # Quoted human input is free-form character speech, not an engine
             # command. NPC/DM dialogue owns its interpretation, so the action
             # lexicon must never demand that spoken prose be rephrased.
-            if _asker is not None and intent.intent and not output.spoken:
+            if (
+                _asker is not None
+                and intent.intent
+                and not output.spoken
+                and not _debug_travel_target
+            ):
                 try:
                     from engine.latn_integration import build_context as _dm_build_ctx
                     from engine.latn import use_lexicon as _dm_use_lex
@@ -7758,7 +7810,7 @@ async def iter_session(
                 _cur_place = getattr(scene_geometry, "place_path", "") if scene_geometry else ""
                 _cur_zone = current_positions.get(character_id, (0.0, 0.0, ""))[2]
                 _source_scene = Path(_cur_place).name if _cur_place else ""
-                _debug_target = _resolve_debug_travel_place(intent.intent or "")
+                _debug_target = _debug_travel_target
                 _target_scene = _debug_target or _infer_driftmoor_venue_transition(
                     intent.intent or "", _cur_place, _cur_zone,
                 )

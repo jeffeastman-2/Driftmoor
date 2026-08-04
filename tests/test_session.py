@@ -2990,6 +2990,15 @@ class TestDebugTravel:
         assert _resolve_debug_travel_place("/goto graveyard") == (
             "places/driftmoor/graveyard"
         )
+        assert _resolve_debug_travel_place("/goto cemetary") == (
+            "places/driftmoor/graveyard"
+        )
+        assert _resolve_debug_travel_place("/goto tower") == (
+            "places/driftmoor/watchtower"
+        )
+        assert _resolve_debug_travel_place("/goto duskcloaks") == (
+            "places/driftmoor/dustcloaks_curios"
+        )
         assert _resolve_debug_travel_place("/goto living loft") == (
             "places/driftmoor/dustcloaks_curios/living_loft"
         )
@@ -3018,6 +3027,23 @@ class TestWhereQuestion:
         assert _compass_label(-1, 0) == "west"
         assert _compass_label(1, 1) == "northeast"
         assert _compass_label(-1, -1) == "southwest"
+
+    def test_town_perception_uses_current_los_not_only_visited_zones(self):
+        from engine.session import _visible_query_points
+        from models.geometry_loader import load_geometry
+
+        town = load_geometry(
+            Path(__file__).parent.parent
+            / "scenario/places/driftmoor/GEOMETRY.md"
+        )
+        records = _visible_query_points(
+            town,
+            (430.5, 674.0),
+            "GRAVEYARD",
+            {"GRAVEYARD"},
+        )
+        visible_keys = {key for keys, _label, _distance in records for key in keys}
+        assert "venue:dustcloaks_curios" in visible_keys
 
     def test_where_is_venue_reports_bearing_and_distance(self):
         from engine.session import (

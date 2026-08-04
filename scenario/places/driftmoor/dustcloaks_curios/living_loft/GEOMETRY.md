@@ -18,11 +18,11 @@ the southeast corner.
 
 | name                | x    | y   | z |
 |---------------------|------|-----|---|
-| backroom_stair      | 16   | 4.5 | 0 |
-| reinforced_cabinets | 5    | 9   | 4 |
-| locked_chest        | 10   | 9   | 4 |
-| narrow_bed          | 3    | 3   | 4 |
-| wardrobe            | 8    | 3   | 4 |
+| backroom_stair      | 17.21   | 4.455 | 0 |
+| reinforced_cabinets | 6.3    | 11.554   | 4 |
+| locked_chest        | 8.61   | 5.504   | 4 |
+| narrow_bed          | 3.942    | 5.779   | 4 |
+| wardrobe            | 11.674    | 10.483   | 4 |
 
 ---
 

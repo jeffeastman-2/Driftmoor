@@ -2,7 +2,7 @@
 
 ## Place Identity
 - **type:** graveyard
-- **aliases:** graveyard, cemetery, burial ground, churchyard, Driftmoor Graveyard
+- **aliases:** graveyard, cemetery, cemetary, burial ground, churchyard, Driftmoor Graveyard
 
 ## Description and Atmosphere
 An old walled burial ground on the rise west of the Beacon. Salt-stunted grass

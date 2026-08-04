@@ -28,14 +28,14 @@ organized chaos outside.
 | display_table_w | 6.615   | 2.527 |
 | display_table_e | 19.209  | 2.597 |
 | curtain_door    | 13  | 12  |
-| backroom_desk   | 12.929  | 17.712 |
+| backroom_desk   | 8.499  | 22.609 |
 | loft_staircase  | 22.5 | 18 |
-| obelisk_cache   | 3.812  | 18.651 |
-| appraisal_bench | 12.095 | 23.476 |
-| locked_box      | 17.368 | 24.259 |
-| yard_junk       | 13  | -3 |
-| yard_wheels     | 7   | -3.5 |
-| yard_furniture  | 18.5 | -3.5 |
+| obelisk_cache   | 3.035  | 15.696 |
+| appraisal_bench | 8.752 | 15.703 |
+| locked_box      | 13.481 | 24.104 |
+| yard_junk       | 9.424  | -4.632 |
+| yard_wheels     | 6.223   | -4.511 |
+| yard_furniture  | 19.666 | -4.355 |
 
 ---
 

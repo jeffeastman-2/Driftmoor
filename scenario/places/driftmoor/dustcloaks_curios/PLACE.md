@@ -2,7 +2,7 @@
 
 ## Place Identity
 - **type:** curios
-- **aliases:** curios, antique shop, oddities shop, Dustcloak's Curios, Duskcloak's Curios
+- **aliases:** curios, antique shop, oddities shop, duskcloaks, Dustcloak's Curios, Duskcloak's Curios
 
 ## Description and Atmosphere
 A squat, crooked structure of mismatched wood and stone on the outskirts of Driftmoor, near the Mistwood Hills edge. Leans slightly to one side. The yard is organized chaos — rusty tools, wagon wheels, broken furniture, a rickety wooden fence with a gate that creaks ominously. The sign reads: "Dustcloak's Curios: Oddities & Antiquities" with an etched question mark.

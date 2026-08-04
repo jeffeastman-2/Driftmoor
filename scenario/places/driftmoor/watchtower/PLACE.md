@@ -2,7 +2,7 @@
 
 ## Place Identity
 - **type:** watchtower
-- **aliases:** watchtower, watch tower, town watch, lookout, The Watchtower
+- **aliases:** watchtower, watch tower, tower, town watch, lookout, The Watchtower
 
 ## Description and Atmosphere
 A squat stone tower in the center of town. Simple wooden door, a ladder ascending inside to the lookout platform. Darwin is almost always at the top, whatever the weather. From the platform: a clear view of the harbor, the road north toward the Obelisk Reach, the fields and river. He has been watching this view for years and knows it exactly.
