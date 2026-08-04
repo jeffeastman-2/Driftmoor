@@ -406,6 +406,64 @@ def resolve_venue_action(intent_text: str, *, lexicon, adapter):
     return None
 
 
+def resolve_venue_plan(intent_text: str, *, lexicon, adapter):
+    """Return ordered threshold-crossing clauses from one LATN sentence.
+
+    Unlike :func:`resolve_venue_action`, this preserves a VP conjunction.  The
+    host executes each tuple in order and validates the grounded destination
+    against the world produced by the preceding tuple.  Thus grounding may be
+    broad enough to preserve a later clause without granting permission to
+    enter that place from the original scene.
+    """
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+
+    def ordered_crossings(vp):
+        """Expand a composite VP vector in its Layer-1 semantic order."""
+        verb_text = getattr(vp, "verb", "") or ""
+        atomic = executor.execute_layer1(verb_text)
+        tokens = list(atomic.hypotheses[0].tokens) if atomic.hypotheses else []
+        order = []
+        for token in tokens:
+            if _isa(token, "leave"):
+                order.append("leave")
+            if _isa(token, "enter"):
+                order.append("enter")
+        if order:
+            return order
+        vec = getattr(vp, "vector", None)
+        return (["leave"] if vec is not None and vec.isa("leave") else []) + (
+            ["enter"] if vec is not None and vec.isa("enter") else []
+        )
+
+    plans = []
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        plan = []
+        for vp in _predicate_vps(sp):
+            vec = getattr(vp, "vector", None)
+            if vec is None:
+                continue
+            for crossing in ordered_crossings(vp):
+                if crossing == "leave":
+                    plan.append(("leave", None))
+                else:
+                    np = _destination_np(vp)
+                    venues = (
+                        _entities_of_kind(adapter.resolve_noun_phrase(np), "venue")
+                        if np is not None else []
+                    )
+                    plan.append(("enter", _unique_winner(venues)))
+        if plan:
+            plans.append(plan)
+    return max(plans, key=len, default=[])
+
+
 def resolve_commerce_action(intent_text: str, *, lexicon, adapter):
     """Detect a buy/sell intent and ground its object.
 

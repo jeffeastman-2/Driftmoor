@@ -225,6 +225,20 @@ def resolve_venue_transition(intent_text, characters, actor_zone, venues,
     return ("enter", getattr(ent, "scene_name", None))
 
 
+def resolve_venue_plan(intent_text, characters, actor_zone, venues,
+                       scene_geometry=None):
+    """Ordered LATN venue clauses, retaining their grounded scene names."""
+    from engine import latn_resolver
+    lexicon, adapter = build_context(
+        {}, characters or {}, actor_zone or "", scene_geometry, venues=venues)
+    plan = latn_resolver.resolve_venue_plan(
+        intent_text or "", lexicon=lexicon, adapter=adapter)
+    return [
+        (kind, getattr(entity, "scene_name", None))
+        for kind, entity in plan
+    ]
+
+
 def resolve_item_interaction(
     *,
     intent_text: str,

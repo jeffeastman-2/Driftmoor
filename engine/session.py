@@ -2233,32 +2233,6 @@ def _infer_driftmoor_venue_transition(
 
     from engine import latn_integration
 
-    # A coordinated "exit X and enter Y" names a sibling venue reached through
-    # the shared parent. Resolve the entry clause against the parent's authored
-    # doorways instead of returning immediately on the first leave VP.
-    if current.parent_place_path:
-        sibling_clauses = re.split(
-            r"\b(?:and\s+(?=(?:i\s+)?(?:enter|go\s+inside|step\s+inside|"
-            r"walk\s+inside)\b)|then\s+(?=(?:i\s+)?(?:enter|go\s+inside|"
-            r"step\s+inside|walk\s+inside)\b))",
-            text,
-        )
-        if len(sibling_clauses) > 1:
-            parent_children = _driftmoor_child_venues(
-                current.parent_place_path
-            )
-            parent_child_names = {sn for sn, _aliases in parent_children}
-            for clause in sibling_clauses[1:]:
-                sibling_res = latn_integration.resolve_venue_transition(
-                    clause, {}, actor_zone or "", parent_children
-                )
-                if (
-                    sibling_res is not None
-                    and sibling_res[0] == "enter"
-                    and sibling_res[1] in parent_child_names
-                ):
-                    return sibling_res[1]
-
     # Candidates = the enterable children, plus the CURRENT place itself so that
     # "leave the rooming house" (naming the place you're in) grounds its object
     # and the leave VP survives policy. A self-referential "enter" is guarded
@@ -2266,6 +2240,39 @@ def _infer_driftmoor_venue_transition(
     children = _driftmoor_child_venues(place)
     child_names = {sn for sn, _ in children}
     candidates = children + ((current.scene_name, _clean_venue_aliases(current.aliases)),)
+
+    # Parse the complete conjunction once. Candidate grounding includes the
+    # current place's siblings so a later clause is not discarded merely
+    # because it becomes reachable only after an earlier `leave`. Each clause
+    # is then authorized against the simulated hierarchy state in sequence.
+    grounding_candidates = list(candidates)
+    if current.parent_place_path:
+        known = {scene_name for scene_name, _aliases in grounding_candidates}
+        grounding_candidates.extend(
+            candidate
+            for candidate in _driftmoor_child_venues(current.parent_place_path)
+            if candidate[0] not in known
+        )
+    plan = latn_integration.resolve_venue_plan(
+        text, {}, actor_zone or "", grounding_candidates
+    )
+    simulated = current
+    planned_target = None
+    for kind, target in plan:
+        if kind == "leave":
+            parent = by_place.get(simulated.parent_place_path) if simulated.parent_place_path else None
+            if parent is not None:
+                simulated = parent
+                planned_target = parent.scene_name
+            continue
+        enterable = {sn for sn, _aliases in _driftmoor_child_venues(simulated.place_path)}
+        if kind == "enter" and target in enterable:
+            next_place = next((node for node in by_place.values() if node.scene_name == target), None)
+            if next_place is not None:
+                simulated = next_place
+                planned_target = target
+    if len(plan) > 1:
+        return planned_target
 
     res = latn_integration.resolve_venue_transition(text, {}, actor_zone or "", candidates)
     if res == ("enter", None):
@@ -6323,8 +6330,27 @@ async def iter_session(
                     from latn.lexer.diagnostics import diagnose as _dm_diagnose
                     _dm_zone = (current_positions.get(character_id, (0.0, 0.0, ""))[2] or "")
                     _dm_venues = (
-                        _driftmoor_child_venues(getattr(scene_geometry, "place_path", "") or "")
-                        if scene_geometry is not None else ())
+                        list(_driftmoor_child_venues(
+                            getattr(scene_geometry, "place_path", "") or ""))
+                        if scene_geometry is not None else [])
+                    # Preserve nouns in later clauses of a venue plan. A
+                    # sibling is not enterable yet, but can become so after an
+                    # earlier `leave`; lexical recognition must not discard the
+                    # sentence before sequential execution gets that chance.
+                    _dm_place = next((
+                        node for node in _driftmoor_place_registry()
+                        if node.place_path == (
+                            getattr(scene_geometry, "place_path", "") or ""
+                        )
+                    ), None) if scene_geometry is not None else None
+                    if _dm_place is not None and _dm_place.parent_place_path:
+                        _dm_seen = {name for name, _aliases in _dm_venues}
+                        _dm_venues.extend(
+                            candidate
+                            for candidate in _driftmoor_child_venues(
+                                _dm_place.parent_place_path)
+                            if candidate[0] not in _dm_seen
+                        )
                     _dm_cat = _driftmoor_shop_catalog()
                     _dm_keeper = _current_shopkeeper(characters, active_characters, _dm_cat)
                     _dm_entries = _dm_cat.entries_for(_dm_keeper) if _dm_keeper else []

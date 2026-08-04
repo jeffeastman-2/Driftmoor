@@ -1049,6 +1049,15 @@ class TestInferDriftmoorVenueTransition:
             "FORGE",
         ) == "stables"
 
+    def test_exit_rooming_house_and_enter_tavern_resolves_second_clause(self):
+        from engine.session import _infer_driftmoor_venue_transition
+
+        assert _infer_driftmoor_venue_transition(
+            "exit and enter tavern",
+            "places/driftmoor/weary_traveler",
+            "COMMON_ROOM",
+        ) == "broken_lantern"
+
     def test_exit_and_enter_venue_with_and_in_name(self):
         from engine.session import _infer_driftmoor_venue_transition
 
