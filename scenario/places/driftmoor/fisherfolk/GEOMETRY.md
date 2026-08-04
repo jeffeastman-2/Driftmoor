@@ -19,8 +19,15 @@ represents the accessible common space rather than every private room.
 | lane_gate | 15 | 0 |
 | net_mending_yard | 15 | 10 |
 | cottage_row | 15.101 | 20.92 |
-| gear_racks | 5 | 10 |
-| pot_stack | 25 | 10 |
+| communal_net_racks | 5 | 10 |
+| stacked_lobster_pots | 26.911 | 10.402 |
+
+## Items
+
+| id | x | y | label |
+|---|---:|---:|---|
+| communal_net_racks | 5 | 10 | Communal net racks |
+| stacked_lobster_pots | 26.911 | 10.402 | Stacked lobster pots |
 
 ## Zones
 
