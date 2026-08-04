@@ -21,7 +21,7 @@
 | forge_wall_marks | 16 | 25.7 |
 | stable_door      | 22 | 0 |
 | workbench        | 22.643 | 13.395 |
-| tool_tray        | 22.286 | 19.809 |
+| tool_tray        | 22.5 | 17.88 |
 | scrap_barrels    | 3.035 | 21.086 |
 | bellows          | 13 | 15.443 |
 | quench_trough    | 7.79 | 7.878 |

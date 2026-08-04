@@ -24,6 +24,7 @@ The horses near the Mistwood road stall have been spooked for weeks.
 - **identity_file:** scenario/creatures/horse/IDENTITY.md
 - **scene_handle:** the bay mare Bramble
 - **faction:** neutral
+- **movement_radius:** 3
 
 ### thistle
 - **type:** creature
@@ -33,14 +34,15 @@ The horses near the Mistwood road stall have been spooked for weeks.
 - **identity_file:** scenario/creatures/horse/IDENTITY.md
 - **scene_handle:** the dapple-gray mare Thistle
 - **faction:** neutral
+- **movement_radius:** 3
 
 ## Initial Positions
 
 | character | x | y |
 |---|---:|---:|
 | kara | 23 | 27.5 |
-| bramble | 15 | 27.5 |
-| thistle | 33 | 27.5 |
+| bramble | 9.01 | 38.251 |
+| thistle | 35.918 | 29.189 |
 
 ## Who Is Normally Here
 - **Kara Stonebrook**

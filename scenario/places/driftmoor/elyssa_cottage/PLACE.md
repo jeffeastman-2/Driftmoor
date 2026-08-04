@@ -28,7 +28,7 @@ Small, sparsely furnished. Narrow bed, wardrobe, table with single candle. Elyss
 
 | character | x | y |
 |---|---:|---:|
-| elyssa | 8 | 8 |
+| elyssa | 8 | 9.23 |
 
 ## Who Is Normally Here
 - **Elyssa Moonglow** — almost always, usually at her desk

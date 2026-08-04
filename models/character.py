@@ -26,6 +26,10 @@ class Character:
     # exploration focus. Resident NPCs must never trail a visitor around merely
     # because their faction is friendly.
     follows_party: bool = False
+    # Optional authored leash around the scene's initial position. Residents
+    # such as stalled horses can move naturally without wandering through the
+    # whole scene. None means unrestricted movement.
+    movement_radius: float | None = None
     # Item ids currently carried by this character. Kept in sync with each
     # held ``Item.holder`` (see engine.session transfer helpers).
     inventory: list[str] = field(default_factory=list)

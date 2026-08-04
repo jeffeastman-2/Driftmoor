@@ -18,7 +18,7 @@ A squat stone tower in the center of town. Simple wooden door, a ladder ascendin
 
 | character | x | y |
 |---|---:|---:|
-| darwin | 8 | 8 |
+| darwin | 5.295 | 10.705 |
 
 ## Scene Introductions
 

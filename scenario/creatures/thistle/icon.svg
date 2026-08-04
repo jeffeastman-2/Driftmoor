@@ -1,0 +1,32 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Thistle, dapple-gray mare token">
+<style>
+.ring{fill:#d5d1c8;stroke:#292724;stroke-width:3}.rim{fill:none;stroke:#798692;stroke-width:1.5;opacity:.8}
+.coat{fill:#aaa9a4;stroke:#34312e;stroke-width:1.4;stroke-linejoin:round}.mane{fill:#4b4a49;stroke:#292725;stroke-width:1.1}
+.muzzle{fill:#696764;stroke:#34312e;stroke-width:1}.eye{fill:#171513;stroke:#d2b36f;stroke-width:.65}.line{fill:none;stroke:#393532;stroke-width:1.2;stroke-linecap:round}.dapple{fill:#d7d5cf;opacity:.8}
+</style>
+<circle class="ring" cx="50" cy="50" r="46.5"/>
+<clipPath id="thistle-token"><circle cx="50" cy="50" r="45"/></clipPath>
+<g clip-path="url(#thistle-token)">
+  <path class="mane" d="M29 20L17 3l3 30zm42 0L83 3l-3 30z"/>
+  <path class="coat" d="M31 24q19-15 38 0l7 25q4 23-5 38H29q-9-15-5-38z"/>
+  <path class="mane" d="M31 25q19-15 38 0l-4 7q-15-8-30 0z"/>
+  <g class="dapple">
+    <circle cx="34" cy="34" r="3.1"/><circle cx="66" cy="34" r="2.6"/>
+    <circle cx="28" cy="51" r="2.7"/><circle cx="72" cy="53" r="3.2"/>
+    <circle cx="38" cy="58" r="2.1"/><circle cx="62" cy="58" r="2.5"/>
+    <circle cx="45" cy="29" r="1.7"/><circle cx="57" cy="31" r="1.9"/>
+  </g>
+  <path d="M49 23l5 7-3 10 4 9-6 8-4-8 4-9-3-10z" fill="#e5e2da"/>
+  <ellipse class="eye" cx="37" cy="44" rx="3.2" ry="2.6"/>
+  <ellipse class="eye" cx="63" cy="44" rx="3.2" ry="2.6"/>
+  <path class="line" d="M30 39q7-5 13-1m14 0q6-4 13 1"/>
+  <path class="muzzle" d="M34 65q16-8 32 0l4 19H30z"/>
+  <ellipse cx="42" cy="72" rx="2.3" ry="1.5" fill="#211f1d"/>
+  <ellipse cx="58" cy="72" rx="2.3" ry="1.5" fill="#211f1d"/>
+  <path class="line" d="M42 80q8 3 16 0" stroke="#aaa7a1"/>
+</g>
+<circle class="rim" cx="50" cy="50" r="42"/>
+<circle cx="50" cy="50" r="45" fill="none" stroke="#f0eee8" stroke-opacity=".32" stroke-width="1.1"/>
+<rect x="13" y="84" width="74" height="11" rx="5.5" fill="#05070b" fill-opacity=".84"/>
+<text x="50" y="91.3" text-anchor="middle" font-family="Verdana, sans-serif" font-size="6.5" font-weight="700" fill="#fff">Thistle</text>
+</svg>

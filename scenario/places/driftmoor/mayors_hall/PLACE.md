@@ -39,8 +39,8 @@ The heart of the building. Rows of simple wooden benches face a raised dais with
 
 | character | x | y |
 |---|---:|---:|
-| aldren | 29 | 14.5 |
-| elise | 8 | 22.5 |
+| aldren | 29 | 13.346 |
+| elise | 7.743 | 26.348 |
 
 ## Scene Introductions
 

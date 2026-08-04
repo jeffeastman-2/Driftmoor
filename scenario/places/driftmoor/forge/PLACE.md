@@ -20,7 +20,7 @@ Darrin works here in near-silence, communicating through the rhythm of his hamme
 
 | character | x | y |
 |---|---:|---:|
-| darrin | 13 | 6.5 |
+| darrin | 14.5 | 10.787 |
 
 ## Who Is Normally Here
 - **Darrin Stonebrook**

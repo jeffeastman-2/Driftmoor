@@ -18,7 +18,7 @@ A tidy building with a painted sign showing a needle and thread. Bolts of fabric
 
 | character | x | y |
 |---|---:|---:|
-| vindra | 9.5 | 11 |
+| vindra | 9.922 | 12.327 |
 
 ## Scene Introductions
 

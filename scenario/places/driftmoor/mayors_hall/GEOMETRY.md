@@ -21,14 +21,14 @@ Stone construction, iron-banded door.
 | name            | x    | y    |
 |-----------------|------|------|
 | main_entrance   | 17.5 | 0  |
-| great_table     | 17.5 | 8  |
-| hearth          | 3  | 8  |
-| notice_board    | 4.5  | 1.5  |
+| great_table     | 16.987 | 6.332  |
+| hearth          | 2.487  | 12.618  |
+| notice_board    | 1.935  | 3.168  |
 | office_door     | 26 | 11  |
 | mayor_desk      | 29 | 16 |
 | records_door    | 13  | 16 |
-| filing_shelves  | 8  | 22.5 |
-| staircase       | 32.5 | 22.5 |
+| filing_shelves  | 7.615  | 30.068 |
+| staircase       | 19.159 | 20.409 |
 
 ---
 

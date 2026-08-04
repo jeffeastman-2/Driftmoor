@@ -20,13 +20,13 @@ Striped pole outside the door.
 | name            | x   | y   |
 |-----------------|-----|-----|
 | front_door      | 6.5 | 0 |
-| central_rug | 6.5 | 6.5 |
-| barber_chair_3.25 | 4.5 | 6.441 |
-| barber_chair_6.5 | 8.482 | 6.428 |
+| central_rug | 6.536 | 5.611 |
+| barber_chair_3.25 | 4.82 | 5.588 |
+| barber_chair_6.5 | 8.34 | 5.574 |
 | mirror | 6.5 | 11 |
-| tonic_shelf | 1.5 | 9.5 |
+| tonic_shelf | 1.678 | 9.962 |
 | potbelly_stove | 10.826 | 10.293 |
-| washstand | 6.615 | 9.466 |
+| washstand | 6.615 | 9.75 |
 | striped_pole | 8 | -1.5 |
 ---
 

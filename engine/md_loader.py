@@ -910,6 +910,9 @@ def _build_player_or_npc(
             purse_cp=purse_cp,
         )
 
+    if cfg.get("movement_radius"):
+        character.movement_radius = float(cfg["movement_radius"])
+
     # Scene loading builds its own Character objects rather than going through
     # models.character_loader. Attach the same structured spellcasting profile
     # here so authored spells (including high-level utility spells such as
@@ -1040,6 +1043,8 @@ def _build_creature(
         actions=s["actions"],
         tactics=s["tactics"],
     )
+    if cfg.get("movement_radius"):
+        character.movement_radius = float(cfg["movement_radius"])
 
     # Soul: soul_file > inline soul > creature_text
     soul = ""

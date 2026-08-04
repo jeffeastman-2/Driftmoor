@@ -18,7 +18,7 @@ represents the accessible common space rather than every private room.
 |------|---|---|
 | lane_gate | 15 | 0 |
 | net_mending_yard | 15 | 10 |
-| cottage_row | 15 | 17.5 |
+| cottage_row | 15.101 | 20.92 |
 | gear_racks | 5 | 10 |
 | pot_stack | 25 | 10 |
 

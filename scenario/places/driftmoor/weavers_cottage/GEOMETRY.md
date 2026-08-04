@@ -21,10 +21,10 @@ yarn and dyed thread. Small living area in the back.
 |-----------------|------|------|
 | front_door      | 9.5  | 0  |
 | main_loom       | 9.5  | 6.5  |
-| yarn_baskets    | 3  | 4.5  |
-| dye_pots        | 16 | 4.5  |
+| yarn_baskets    | 3.121  | 13.671  |
+| dye_pots        | 16.664 | 2.569  |
 | living_nook     | 9.5  | 13  |
-| finished_cloth  | 16 | 11  |
+| finished_cloth  | 15.819 | 12.81  |
 
 ---
 

@@ -18,7 +18,7 @@ Timber-framed with an open front. The smell of freshly cut wood and sawdust. Pil
 
 | character | x | y |
 |---|---:|---:|
-| hilda | 13 | 9.5 |
+| hilda | 5.976 | 12.435 |
 
 ## Scene Introductions
 

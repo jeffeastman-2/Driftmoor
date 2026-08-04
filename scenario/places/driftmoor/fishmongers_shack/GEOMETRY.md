@@ -20,10 +20,10 @@ Slanted roof. Fish-shaped sign outside.
 | name            | x   | y   |
 |-----------------|-----|-----|
 | front_door      | 8 | 0 |
-| fish_crates     | 4.5 | 8 |
-| salt_barrels    | 13 | 9.5 |
-| hanging_nets    | 8 | 11 |
-| counter         | 8 | 4.5 |
+| fish_crates     | 1.767 | 7.59 |
+| salt_barrels    | 14.185 | 2.804 |
+| hanging_nets    | 7.681 | 11.501 |
+| counter         | 8.091 | 6.505 |
 | fish_sign       | 8 | -1.5|
 
 ---

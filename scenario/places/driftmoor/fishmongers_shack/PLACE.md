@@ -18,7 +18,7 @@ A small weathered shack near the harbor with a slanted roof and a sign shaped li
 
 | character | x | y |
 |---|---:|---:|
-| kessla | 8 | 4.5 |
+| kessla | 7.863 | 8.281 |
 
 ## Scene Introductions
 

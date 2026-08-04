@@ -21,10 +21,10 @@ staves and iron hoops. Small toys near entrance.
 |-----------------|------|------|
 | front_door      | 11  | 0  |
 | main_workspace  | 11  | 8  |
-| stave_pile      | 19.5 | 11  |
-| hoop_rack       | 3  | 11  |
-| toy_shelf       | 4.5  | 1.5  |
-| yard_area       | 11  | -3 |
+| stave_pile      | 19.676 | 11.527  |
+| hoop_rack       | 2.824  | 11  |
+| toy_shelf       | 3.798  | 2.29  |
+| yard_area       | 18.636  | 2.617 |
 
 ---
 

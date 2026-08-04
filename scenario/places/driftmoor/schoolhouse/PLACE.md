@@ -18,7 +18,7 @@ A one-room building with a bell on the roof. Chalkboard, rows of wooden desks. C
 
 | character | x | y |
 |---|---:|---:|
-| alina | 11 | 13 |
+| alina | 15.23 | 12.052 |
 
 ## Scene Introductions
 

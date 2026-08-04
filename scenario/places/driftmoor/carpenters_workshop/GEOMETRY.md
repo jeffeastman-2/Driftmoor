@@ -21,11 +21,11 @@ near the entrance.
 | name            | x    | y    |
 |-----------------|------|------|
 | open_front      | 13  | 0  |
-| main_workbench  | 13  | 9.5  |
-| lumber_pile     | 22.5 | 14.5  |
-| tool_wall       | 0  | 9.5  |
-| display_area    | 6.5  | 3  |
-| sawdust_pile    | 19.5 | 6.5  |
+| main_workbench  | 10.903  | 10.443  |
+| lumber_pile     | 20.927 | 14.5  |
+| tool_wall       | 1.919  | 14.217  |
+| display_area    | 2.83  | 4.467  |
+| sawdust_pile    | 10.904 | 17.821  |
 
 ---
 

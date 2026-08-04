@@ -5,6 +5,7 @@ import json
 import random
 from dataclasses import asdict
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -29,6 +30,7 @@ from engine.session import (
     _resolve_teleport_destination,
     _teleport_venue_arrival_fact,
     _resolve_debug_travel_place,
+    _clamp_to_authored_home,
     COMBAT_EVENT,
     EXIT_EVENT,
     MELEE_DURATION,
@@ -46,13 +48,27 @@ from models.condition import (
     DimensionProfile,
     render_condition,
 )
-from models.space_time import GameTime
+from models.space_time import GameTime, Position
 from models.spellcasting import Spell, SpellcastingProfile
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+
+def test_authored_movement_radius_keeps_resident_near_start():
+    character = SimpleNamespace(movement_radius=3.0)
+    geometry = SimpleNamespace(
+        starting_positions={"bramble": Position(10.0, 20.0)}
+    )
+
+    assert _clamp_to_authored_home(
+        "bramble", (20.0, 20.0, "STABLES"), character, geometry
+    ) == (13.0, 20.0, "STABLES")
+    assert _clamp_to_authored_home(
+        "bramble", (11.0, 21.0, "STABLES"), character, geometry
+    ) == (11.0, 21.0, "STABLES")
 
 @pytest.fixture
 def aeliana_char():

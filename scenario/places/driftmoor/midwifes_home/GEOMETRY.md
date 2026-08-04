@@ -20,12 +20,12 @@ side. Smells of herbs and dried flowers.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_door      | 9.5  | 0  |
-| hearth          | 3  | 4.5  |
-| rocking_chair   | 6.5  | 4.5  |
-| remedy_shelf    | 16 | 4.5  |
+| hearth          | 2.402  | 4.4  |
+| rocking_chair   | 10.486  | 7.988  |
+| remedy_shelf    | 17.694 | 5.397  |
 | treatment_door  | 9.5  | 9.5  |
-| treatment_cot   | 9.5  | 14.5  |
-| herb_garden     | 22.5 | 11  |
+| treatment_cot   | 4.816  | 15.895  |
+| herb_garden     | 24 | 11  |
 
 ---
 

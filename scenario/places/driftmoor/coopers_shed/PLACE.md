@@ -18,7 +18,7 @@ A utilitarian structure near the harbor. The yard is littered with wooden staves
 
 | character | x | y |
 |---|---:|---:|
-| tomas | 11 | 8 |
+| tomas | 11.176 | 12.388 |
 
 ## Scene Introductions
 

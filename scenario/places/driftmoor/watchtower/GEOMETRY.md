@@ -20,10 +20,10 @@ platform with views over the town and harbor. Oil lamps at top.
 | name            | x   | y   |
 |-----------------|-----|-----|
 | front_door      | 8 | 0 |
-| weapon_rack     | 3 | 11 |
-| cot             | 13 | 11 |
-| ladder          | 8 | 14.5 |
-| center          | 8 | 8 |
+| weapon_rack     | 1.944 | 9.218 |
+| cot             | 13.264 | 12.386 |
+| ladder          | 7.868 | 13.792 |
+| center          | 8.198 | 6.68 |
 
 ---
 

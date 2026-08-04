@@ -18,7 +18,7 @@ A quaint stone-and-thatch cottage surrounded by colorful cloth drying on lines. 
 
 | character | x | y |
 |---|---:|---:|
-| eadric | 9.5 | 6.5 |
+| eadric | 9.44 | 11.387 |
 
 ## Scene Introductions
 

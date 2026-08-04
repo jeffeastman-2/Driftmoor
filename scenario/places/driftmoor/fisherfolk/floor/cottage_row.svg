@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 3" role="img" aria-label="Row of three weathered fisherfolk cottages">
+  <rect x=".08" y=".08" width="11.84" height="2.84" rx=".08" fill="#87745e" stroke="#2d241c" stroke-width=".12"/>
+  <path d="M.15.48h11.7" stroke="#44372a" stroke-width=".28"/>
+  <path d="M.15.33h11.7" stroke="#b7a284" stroke-width=".08" opacity=".7"/>
+  <path d="M4 .12v2.76M8 .12v2.76" stroke="#34281f" stroke-width=".13"/>
+
+  <!-- faded cottage fronts -->
+  <rect x=".2" y=".58" width="3.72" height="2.22" fill="#71858a" opacity=".82"/>
+  <rect x="4.08" y=".58" width="3.84" height="2.22" fill="#6f8068" opacity=".82"/>
+  <rect x="8.08" y=".58" width="3.72" height="2.22" fill="#8b7766" opacity=".86"/>
+  <g stroke="#493d31" stroke-width=".055" opacity=".75">
+    <path d="M.25 1h3.62M.25 1.42h3.62M.25 1.84h3.62M.25 2.26h3.62"/>
+    <path d="M4.13 1h3.74M4.13 1.42h3.74M4.13 1.84h3.74M4.13 2.26h3.74"/>
+    <path d="M8.13 1h3.62M8.13 1.42h3.62M8.13 1.84h3.62M8.13 2.26h3.62"/>
+  </g>
+
+  <!-- doors -->
+  <g stroke="#281f18" stroke-width=".09">
+    <rect x="1.58" y="1.15" width=".78" height="1.64" rx=".04" fill="#426b7a"/>
+    <rect x="5.58" y="1.15" width=".78" height="1.64" rx=".04" fill="#557650"/>
+    <rect x="9.58" y="1.15" width=".78" height="1.64" rx=".04" fill="#75614f"/>
+  </g>
+  <g fill="#c8a24b" stroke="#4b3715" stroke-width=".025">
+    <circle cx="2.17" cy="1.97" r=".07"/><circle cx="6.17" cy="1.97" r=".07"/><circle cx="10.17" cy="1.97" r=".07"/>
+  </g>
+
+  <!-- windows -->
+  <g fill="#9fc0c2" stroke="#2b2924" stroke-width=".075">
+    <rect x=".48" y="1.25" width=".82" height=".72"/><rect x="2.66" y="1.25" width=".82" height=".72"/>
+    <rect x="4.46" y="1.25" width=".82" height=".72"/><rect x="6.67" y="1.25" width=".82" height=".72"/>
+    <rect x="8.46" y="1.25" width=".82" height=".72"/><rect x="10.66" y="1.25" width=".82" height=".72"/>
+  </g>
+  <g stroke="#4c5f5f" stroke-width=".035">
+    <path d="M.89 1.25v.72M.48 1.61h.82M3.07 1.25v.72M2.66 1.61h.82M4.87 1.25v.72M4.46 1.61h.82M7.08 1.25v.72M6.67 1.61h.82M8.87 1.25v.72M8.46 1.61h.82M11.07 1.25v.72M10.66 1.61h.82"/>
+  </g>
+
+  <!-- nets, pegs, and dripping oilskins -->
+  <g fill="none" stroke="#c2ad7d" stroke-width=".045" opacity=".9">
+    <path d="M.32 2.14q.5.45 1.02 0v.58H.32zm.17.14v.44m.2-.51v.51m.2-.47v.47m.2-.53v.53M.35 2.38h.96M.34 2.57h.98"/>
+    <path d="M10.63 2.14q.5.45 1.02 0v.58h-1.02zm.17.14v.44m.2-.51v.51m.2-.47v.47m.2-.53v.53m-.74-.34h.96m-.97.19h.98"/>
+  </g>
+  <g fill="#b59a42" stroke="#4c4120" stroke-width=".04">
+    <path d="M7.55 2.05l.25.18-.08.59h-.45l-.07-.59.23-.18z"/>
+    <path d="M3.55 2.05l.25.18-.08.59h-.45l-.07-.59.23-.18z"/>
+  </g>
+</svg>

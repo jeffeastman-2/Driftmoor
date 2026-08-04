@@ -43,10 +43,10 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 
 | character | x | y |
 |---|---:|---:|
-| tess | 31 | 9 |
-| wilfred | 19 | 8 |
-| bran | 13 | 13 |
-| marda | 16 | 13 |
+| tess | 35.581 | 9.47 |
+| wilfred | 31.215 | 3.889 |
+| bran | 9.711 | 11.943 |
+| marda | 15.06 | 11.943 |
 
 ## Who Is Normally Here
 - **Tess Malwin** — owner, behind the bar or moving through the room

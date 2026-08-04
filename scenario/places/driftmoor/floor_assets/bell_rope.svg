@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 5">
+  <title>Wall-mounted school bell and pull rope</title>
+  <path d="M.22 .16h1.56v.34H.22z" fill="#513824" stroke="#25180e" stroke-width=".08"/>
+  <path d="M.42 .48h1.16l-.12.25H.54z" fill="#76522d" stroke="#2b1b0d" stroke-width=".07"/>
+  <path d="M1 .66c-.43 0-.7.33-.72.88l-.12.33h1.68l-.12-.33C1.7.99 1.43.66 1 .66z" fill="#c8942f" stroke="#4a3010" stroke-width=".09"/>
+  <path d="M.12 1.86h1.76" stroke="#f2c75c" stroke-width=".16" stroke-linecap="round"/>
+  <circle cx="1" cy="2.08" r=".16" fill="#a66d20" stroke="#42270d" stroke-width=".07"/>
+  <path d="M1 2.23v2.12" fill="none" stroke="#d8c39a" stroke-width=".11"/>
+  <path d="M1 2.23c-.2.44.2.72 0 1.16s.2.72 0 1.16" fill="none" stroke="#7c6745" stroke-width=".06"/>
+  <path d="M.82 4.34c0 .27.08.46.18.46s.18-.19.18-.46" fill="none" stroke="#d8c39a" stroke-width=".12" stroke-linecap="round"/>
+</svg>

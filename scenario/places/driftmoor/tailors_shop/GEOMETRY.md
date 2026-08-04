@@ -22,9 +22,9 @@ in the back with bolts of cloth and a cutting table.
 | front_door      | 9.5  | 0  |
 | mannequin_3.25     | 4.5  | 3  |
 | mannequin_6.5     | 14.5  | 3  |
-| cutting_table   | 9.5  | 11  |
-| fabric_bolts    | 17.5 | 13  |
-| sewing_station  | 3  | 11  |
+| cutting_table   | 10.043  | 8.707  |
+| fabric_bolts    | 17.302 | 13.241  |
+| sewing_station  | 1.854  | 11.965  |
 
 ---
 

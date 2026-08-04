@@ -20,11 +20,11 @@ Teacher's desk at front. Door faces south. Yard behind for recess.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_door      | 11  | 0  |
-| teacher_desk    | 11  | 13  |
+| teacher_desk    | 11.073  | 9.719  |
 | chalkboard      | 11  | 14.5  |
-| student_desks   | 11  | 6.5  |
-| bell_rope       | 19.5 | 13  |
-| bookshelf       | 1.5  | 13  |
+| student_desks   | 11.073  | 4.677  |
+| bell_rope       | 21.396 | 13.219  |
+| bookshelf       | 1.646  | 12.198  |
 
 ---
 

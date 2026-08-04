@@ -20,11 +20,11 @@ hide racks and tools. Strong smell keeps visitors away.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_entrance  | 13  | 0  |
-| hide_racks      | 6.5  | 9.5  |
-| tool_bench      | 19.5 | 9.5  |
-| drying_line     | 13  | 16 |
-| tanning_vat_3.25   | 6.5  | -3 |
-| tanning_vat_6.5   | 19.5 | -3 |
+| hide_racks      | 3.118  | 9.602  |
+| tool_bench      | 11.917 | 9.91  |
+| drying_line     | 13.102  | 17.23 |
+| tanning_vat_3.25   | 6.09  | -3.512 |
+| tanning_vat_6.5   | 20.32 | -3.717 |
 
 ---
 

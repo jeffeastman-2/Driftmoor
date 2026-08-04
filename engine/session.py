@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import math
 import platform
 import re
 import random
@@ -197,6 +198,34 @@ def _movement_budget_feet(speed_str: str, *, in_combat: bool) -> float:
     if in_combat:
         return per_round
     return per_round * EXPLORATION_ROUNDS_PER_TURN
+
+
+def _clamp_to_authored_home(
+    character_id: str,
+    candidate: tuple[float, float, str],
+    character,
+    scene_geometry,
+) -> tuple[float, float, str]:
+    """Keep an authored resident within its radius of its turn-0 position."""
+    radius = getattr(character, "movement_radius", None)
+    starts = getattr(scene_geometry, "starting_positions", None)
+    if radius is None or not starts:
+        return candidate
+    home = starts.get(character_id)
+    if home is None:
+        return candidate
+    radius = max(0.0, float(radius))
+    dx = float(candidate[0]) - float(home.x)
+    dy = float(candidate[1]) - float(home.y)
+    distance = math.hypot(dx, dy)
+    if distance <= radius or distance == 0:
+        return candidate
+    scale = radius / distance
+    return (
+        float(home.x) + dx * scale,
+        float(home.y) + dy * scale,
+        candidate[2],
+    )
 
 
 _NUMBER_WORDS: dict[str, int] = {
@@ -6830,7 +6859,13 @@ async def iter_session(
                     # Apply movement from resolver — enforce boundary crossing
                     if adjudication.new_position:
                         resolver_origin = current_positions.get(character_id)
-                        resolver_new = adjudication.new_position
+                        resolver_new = _clamp_to_authored_home(
+                            character_id,
+                            adjudication.new_position,
+                            characters[character_id].character,
+                            scene_geometry,
+                        )
+                        adjudication.new_position = resolver_new
                         boundary_ok = True
                         if (
                             scene_geometry is not None
@@ -7222,6 +7257,13 @@ async def iter_session(
                 if origin is not None:
                     raw_pos = _clamp_position(raw_pos, origin, speed_ft)
                 tx, ty = raw_pos[0], raw_pos[1]
+                confined = _clamp_to_authored_home(
+                    character_id,
+                    (tx, ty, raw_pos[2]),
+                    char,
+                    scene_geometry,
+                )
+                tx, ty = confined[0], confined[1]
                 if scene_geometry is not None:
                     zone = scene_geometry.zone_at(Position(tx, ty)) or ""
                 else:

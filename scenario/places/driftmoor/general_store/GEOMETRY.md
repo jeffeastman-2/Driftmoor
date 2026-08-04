@@ -20,10 +20,10 @@ at the back of the shop area.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_door      | 11  | 0  |
-| counter         | 11  | 11  |
-| tool_shelves    | 3  | 6.5  |
-| rope_rack       | 19.5 | 6.5  |
-| candle_shelf    | 3  | 9.5  |
+| counter         | 11.267  | 7.529  |
+| tool_shelves    | 1.799  | 4.231  |
+| rope_rack       | 20.834 | 11.038  |
+| candle_shelf    | 1.932  | 11.335  |
 | back_door       | 11  | 14.5  |
 | garden_center   | 11  | 22.5 |
 | garden_gate     | 11  | 14.5  |
