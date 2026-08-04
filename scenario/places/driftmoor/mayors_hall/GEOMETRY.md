@@ -48,7 +48,9 @@ Stone construction, iron-banded door.
 
 | description        | vertices                        |
 |--------------------|---------------------------------|
-| Hall back wall     | (0,16) (35.5,16) (35.5,17.5) (0,17.5)    |
+| Hall back wall west | (0,16) (11.5,16) (11.5,17.5) (0,17.5) |
+| Hall back wall center | (14.5,16) (30.5,16) (30.5,17.5) (14.5,17.5) |
+| Hall back wall east | (34.5,16) (35.5,16) (35.5,17.5) (34.5,17.5) |
 | Office divider     | (22.5,11) (22.5,19.5) (24,19.5) (24,11)    |
 
 ---
@@ -67,5 +69,6 @@ Stone construction, iron-banded door.
 
 - **type:** conditional
 - **blocks:** all
+- **render:** hidden
 - **effect:** locked door; town records and correspondence; requires mayor's permission
 - **vertices:** (0,16) (16,16) (16,32.5) (0,32.5)

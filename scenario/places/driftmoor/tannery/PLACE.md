@@ -13,7 +13,12 @@ A low stone building near the riverbank. The smell of leather and curing hides i
 - **type:** npc
 - **soul_file:** scenario/people/npcs/boren/SOUL.md
 - **identity_file:** scenario/people/npcs/boren/IDENTITY.md
-- **position:** 19.5, 9.5
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| boren | 19.5 | 9.5 |
 
 ## Scene Introductions
 

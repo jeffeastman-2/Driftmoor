@@ -247,7 +247,7 @@ def test_zone_floor_art_is_embedded_clipped_and_keeps_semantic_hits(tmp_path):
     assert "class='landmark-hit'" in rendered
     assert "shadow-burned wall marks" in rendered.lower()
     assert "id='editArt'" in rendered
-    assert "Save visuals" in rendered
+    assert "Save layout" in rendered
     assert "fetch('/map-visuals'" in rendered
     assert "!window.__mapArtEditing" in rendered
     assert "window.__mapArtEditing=editing" in rendered
@@ -264,6 +264,26 @@ def test_zone_floor_art_is_embedded_clipped_and_keeps_semantic_hits(tmp_path):
     # The marks are painted into the floor art, so their semantic Item remains
     # hoverable without a duplicate text label on top.
     assert ">Shadow-burned wall marks</text>" not in rendered
+
+
+def test_initial_npc_positions_are_editable_but_other_characters_are_not(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "npc-layout.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/broken_lantern/GEOMETRY.md"), out,
+        snapshot_dir=tmp_path,
+        start_characters=["tess", "gilthaness"],
+        start_positions={"tess": (31, 9), "gilthaness": (20, 2)},
+        editable_start_characters={"tess"},
+    )
+    rendered = out.read_text(encoding="utf-8")
+    tess = rendered[rendered.index("data-char='tess'"):]
+    gil = rendered[rendered.index("data-char='gilthaness'"):]
+    assert "data-editable-start='1'" in tess[:300]
+    assert "class='npc-selection'" in tess[:500]
+    assert "data-editable-start='1'" not in gil[:300]
+    assert "npc_positions:npcRecords()" in rendered
 
 
 def test_barbershop_floor_and_fixtures_are_independently_editable(tmp_path):
@@ -683,3 +703,26 @@ def test_north_bank_places_have_authored_editable_art(tmp_path):
         assert f"data-target='{target}'" in church
     assert "Pelor's Sanctified Ground</title>" not in church
     assert "The Beacon Lantern Aura</title>" not in church
+
+
+def test_remaining_driftmoor_places_have_authored_editable_art(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    expected = {
+        "carpenters_workshop": (2, 5), "coopers_shed": (2, 5),
+        "fisherfolk": (2, 4), "fishmongers_shack": (1, 5),
+        "general_store": (2, 5), "mayors_hall": (4, 6),
+        "midwifes_home": (3, 5), "schoolhouse": (1, 5),
+        "tailors_shop": (2, 5), "tannery": (2, 5),
+        "watchtower": (2, 4), "weavers_cottage": (2, 5),
+    }
+    root = Path("scenario/places/driftmoor")
+    for index, (place, counts) in enumerate(expected.items()):
+        out = tmp_path / f"remaining-{index}.html"
+        render_turn_slider_html(root / place / "GEOMETRY.md", out, snapshot_dir=tmp_path)
+        html = out.read_text(encoding="utf-8")
+        assert html.count("class='zone-floor-art'") == counts[0], place
+        assert html.count("class='visual-overlay'") == counts[1], place
+
+    mayor = (tmp_path / "remaining-5.html").read_text(encoding="utf-8")
+    assert "Records Room — Restricted</title>" not in mayor

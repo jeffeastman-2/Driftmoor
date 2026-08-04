@@ -15,7 +15,12 @@ Darrin works here in near-silence, communicating through the rhythm of his hamme
 - **type:** npc
 - **soul_file:** scenario/people/npcs/darrin/SOUL.md
 - **identity_file:** scenario/people/npcs/darrin/IDENTITY.md
-- **position:** 13, 6.5
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| darrin | 13 | 6.5 |
 
 ## Who Is Normally Here
 - **Darrin Stonebrook**

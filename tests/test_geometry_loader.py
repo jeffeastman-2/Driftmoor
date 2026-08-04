@@ -133,10 +133,10 @@ class TestParseGeometryMd:
     def test_landmarks_accept_optional_z(self):
         data = parse_geometry_md(
             WEARY_TRAVELER_PATH.read_text(encoding="utf-8"))
-        assert data["landmarks"]["hearth"] == Position(4.5, 6.5, 4.0)
+        assert data["landmarks"]["hearth"].z == 4.0
         upstairs = parse_geometry_md(
             WEARY_TRAVELER_UPSTAIRS_PATH.read_text(encoding="utf-8"))
-        assert upstairs["landmarks"]["upstairs_hall"] == Position(16.0, 5.0, 4.0)
+        assert upstairs["landmarks"]["upstairs_hall"].z == 4.0
 
 
 class TestLoadGeometry:

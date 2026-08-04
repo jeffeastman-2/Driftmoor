@@ -13,7 +13,12 @@ A cozy cottage with a small herb garden and a cheery painted door. Inside: shelv
 - **type:** npc
 - **soul_file:** scenario/people/npcs/gran_lorie/SOUL.md
 - **identity_file:** scenario/people/npcs/gran_lorie/IDENTITY.md
-- **position:** 9.5, 14.5
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| gran_lorie | 9.5 | 14.5 |
 
 ## Scene Introductions
 

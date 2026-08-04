@@ -15,13 +15,18 @@ The garden behind the church grows medicinal herbs and flowers. Elden tends it h
 - **type:** npc
 - **soul_file:** scenario/people/npcs/elden/SOUL.md
 - **identity_file:** scenario/people/npcs/elden/IDENTITY.md
-- **position:** 24, 27
 
 ### mira
 - **type:** npc
 - **soul_file:** scenario/people/npcs/mira/SOUL.md
 - **identity_file:** scenario/people/npcs/mira/IDENTITY.md
-- **position:** 13, 16
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| elden | 24 | 27 |
+| mira | 13 | 16 |
 
 ## Who Is Normally Here
 - **Father Elden Greybeard** — most hours, moving slowly

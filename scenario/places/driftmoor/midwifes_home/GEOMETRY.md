@@ -44,7 +44,8 @@ side. Smells of herbs and dried flowers.
 
 | description    | vertices                        |
 |----------------|---------------------------------|
-| Dividing wall  | (0,9.5) (19.5,9.5) (19.5,11) (0,11)        |
+| Dividing wall west | (0,9.5) (8,9.5) (8,11) (0,11)          |
+| Dividing wall east | (11,9.5) (19.5,9.5) (19.5,11) (11,11) |
 | Back wall      | (0,17.5) (19.5,17.5) (19.5,19.5) (0,19.5)    |
 
 ---

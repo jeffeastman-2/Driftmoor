@@ -114,6 +114,31 @@ def _parse_all_char_sections(text: str) -> dict[str, dict[str, str]]:
     return result
 
 
+def _parse_initial_positions(text: str) -> dict[str, str]:
+    """Parse the scene-owned ``## Initial Positions`` character table."""
+    block = _extract_section(text, "Initial Positions")
+    result: dict[str, str] = {}
+    for raw in block.splitlines():
+        if not raw.strip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in raw.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        char_id, x, y = cells[:3]
+        if char_id.lower() == "character" or set(char_id) <= {"-", ":"}:
+            continue
+        try:
+            float(x)
+            float(y)
+            z = cells[3] if len(cells) >= 4 and cells[3] else ""
+            if z:
+                float(z)
+        except ValueError:
+            continue
+        result[char_id] = f"{x}, {y}" + (f", {z}" if z else "")
+    return result
+
+
 def _resolve_start_position(
     char_id: str,
     pos_str: str,
@@ -121,9 +146,9 @@ def _resolve_start_position(
 ) -> tuple[Position, str] | None:
     """Resolve a character's starting (Position, zone).
 
-    Placement lives on the scene: a ``- **position:** x, y[, z]`` bullet in the
-    character's ``### <char_id>`` block (GEOMETRY is a pure stage and no longer
-    carries placement). The **zone is always derived** from the coordinate via
+    Placement lives in the scene's centralized ``## Initial Positions`` table.
+    Legacy ``- **position:** x, y[, z]`` character bullets remain readable.
+    GEOMETRY is a pure stage. The **zone is always derived** via
     ``zone_at`` — never authored — so it stays correct as ``zone_at`` becomes
     volume-aware; the full ``(x, y, z)`` is passed. Returns ``(Position, ZONE)``,
     or ``None`` when the character has no ``position``.
@@ -1205,15 +1230,23 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     char_cfgs = _parse_all_char_sections(text)
     if place_text:
         place_char_cfgs = _parse_all_char_sections(place_text)
+        for char_id, position in _parse_initial_positions(place_text).items():
+            if char_id in place_char_cfgs:
+                place_char_cfgs[char_id]["position"] = position
         # Merge: place NPCs first, then overlay scene config (scene takes precedence)
         merged = {**place_char_cfgs, **char_cfgs}
         char_cfgs = merged
+    # Scene-file placement can override PLACE placement for legacy scenarios.
+    for char_id, position in _parse_initial_positions(text).items():
+        if char_id in char_cfgs:
+            char_cfgs[char_id]["position"] = position
     
     characters: dict[str, CharacterSession] = {}
     roles: dict = {}
     character_pronouns: dict[str, str] = {}
-    # Placement resolved from the scene (authored `position` bullet), zone
-    # derived from the coordinate. Overrides the geometry-seeded dict below so
+    # Placement resolved from the scene's Initial Positions table, with legacy
+    # character bullets supported; zone derived from the coordinate. This
+    # overrides the geometry-seeded dict below so
     # every downstream consumer reads scene-authored placement.
     scene_starting_positions: dict[str, Position] = {}
 
@@ -1279,9 +1312,9 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
         else:
             session.character.natural_ac = authored_ac
 
-        # Resolve the starting position from the scene (authored `position`
-        # bullet), deriving the zone from the coordinate; fall back to the
-        # GEOMETRY table while scenes are being migrated. Record it so the turn-0
+        # Resolve the starting position from the scene's centralized Initial
+        # Positions table (legacy per-character bullets remain readable),
+        # deriving the zone from the coordinate. Record it so the turn-0
         # seeding reads scene-authored placement, and tell the LLM where it opens.
         resolved = _resolve_start_position(
             char_id, cfg.get("position", ""), scene_geometry)

@@ -15,7 +15,12 @@ Smells of iron, grain, and rope. The smell of a working town.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/jorgen/SOUL.md
 - **identity_file:** scenario/people/npcs/jorgen/IDENTITY.md
-- **position:** 18, 20
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| jorgen | 18 | 20 |
 
 ## Who Is Normally Here
 - **Jorgen Hallowtide** — behind the counter

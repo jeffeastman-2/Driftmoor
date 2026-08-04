@@ -1,9 +1,8 @@
 """Character placement lives on the scene, not GEOMETRY.
 
-Placement is authored as a raw ``- **position:** x, y[, z]`` bullet on each
-``### <char_id>`` block in ``scenes/<scene>.md``; the zone is always *derived*
-from the coordinate via ``zone_at`` (never authored). GEOMETRY.md is a pure
-stage and carries no positions.
+Placement is authored in a centralized ``## Initial Positions`` table. Legacy
+per-character position bullets remain readable. The zone is always *derived*
+from the coordinate via ``zone_at``; GEOMETRY.md is a pure stage.
 """
 from pathlib import Path
 
@@ -58,15 +57,26 @@ def test_malformed_position_returns_none():
     assert _resolve_start_position("hero", "5", _geo()) is None   # needs x and y
 
 
+def test_initial_positions_table_parser():
+    from engine.md_loader import _parse_initial_positions
+    text = (
+        "## Initial Positions\n\n| character | x | y |\n|---|---:|---:|\n"
+        "| tess | 31 | 9 |\n| bran | 13.5 | 12 |\n"
+    )
+    assert _parse_initial_positions(text) == {
+        "tess": "31, 9", "bran": "13.5, 12"
+    }
+
+
 def test_echoing_caverns_seeds_from_scene():
     """End-to-end: the migrated scene places exactly its authored cast, from the
-    scene's own ``position`` bullets (no hardcoded coords — they're read from the
-    file so re-authoring placement doesn't break this) and with no stray keys."""
-    from engine.md_loader import _load, _parse_all_char_sections
+    scene's own placement data (no hardcoded coords) and with no stray keys."""
+    from engine.md_loader import _load, _parse_all_char_sections, _parse_initial_positions
     path = Path("scenes/echoing_caverns.md")
     authored = {cid: m["position"]
                 for cid, m in _parse_all_char_sections(_load(path)).items()
                 if m.get("position")}
+    authored.update(_parse_initial_positions(_load(path)))
     assert authored, "scene should author placement bullets"
 
     # Also collect positions from the linked place file (for creatures loaded there)
@@ -80,6 +90,7 @@ def test_echoing_caverns_seeds_from_scene():
         place_authored = {cid: m["position"]
                          for cid, m in _parse_all_char_sections(place_text).items()
                          if m.get("position")}
+        place_authored.update(_parse_initial_positions(place_text))
         authored.update(place_authored)
 
     cfg = configure_from_md(path)

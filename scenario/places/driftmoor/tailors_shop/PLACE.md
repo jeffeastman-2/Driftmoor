@@ -13,7 +13,12 @@ A tidy building with a painted sign showing a needle and thread. Bolts of fabric
 - **type:** npc
 - **soul_file:** scenario/people/npcs/vindra/SOUL.md
 - **identity_file:** scenario/people/npcs/vindra/IDENTITY.md
-- **position:** 9.5, 11
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| vindra | 9.5 | 11 |
 
 ## Scene Introductions
 

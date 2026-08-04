@@ -83,6 +83,38 @@ def test_map_visual_save_can_update_an_authored_item(tmp_path, monkeypatch):
     assert thing.position == Position(4.5, 6.25)
 
 
+def test_map_layout_save_updates_place_initial_npc_position(tmp_path, monkeypatch):
+    from models.space_time import Position
+
+    geometry = tmp_path / "GEOMETRY.md"
+    geometry.write_text("## Zones\n", encoding="utf-8")
+    place = tmp_path / "PLACE.md"
+    place.write_text(
+        "## Initial Positions\n\n"
+        "| character | x | y |\n|---|---:|---:|\n| tess | 1 | 2 |\n",
+        encoding="utf-8",
+    )
+    npc = NS(character=NS(character_type="npc"))
+    scene_geometry = NS(landmarks={}, starting_positions={"tess": Position(1, 2)})
+    cfg = NS(
+        geometry_path=geometry, scene_geometry=scene_geometry,
+        items={}, characters={"tess": npc},
+    )
+
+    async def request_json():
+        return {"visuals": [], "npc_positions": [{"id": "tess", "x": 7.5, "y": 8.25}]}
+
+    monkeypatch.setattr(web_play, "_render_map", lambda _app: None)
+    response = asyncio.run(web_play.handle_map_visuals(NS(
+        json=request_json, app={"runtime": {"config": cfg}}
+    )))
+
+    assert json.loads(response.body)["npcs_saved"] == 1
+    assert "| tess | 7.5 | 8.25 |" in place.read_text(encoding="utf-8")
+    assert scene_geometry.starting_positions["tess"] == Position(7.5, 8.25)
+    assert not (tmp_path / "VISUALS.md").exists()
+
+
 def test_web_server_defaults_to_localhost():
     args = web_play._build_arg_parser().parse_args([])
     assert args.host == "127.0.0.1"

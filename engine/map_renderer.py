@@ -1167,6 +1167,7 @@ def render_turn_slider_html(
     live_positions: dict | None = None,
     start_positions: dict | None = None,
     scene_geometry: "SceneGeometry | None" = None,
+    editable_start_characters: "Iterable[str] | None" = None,
 ) -> None:
     """Interactive turn-slider map with fog of war.
 
@@ -1186,6 +1187,7 @@ def render_turn_slider_html(
     seeded (so a scene-placed dormant entry never leaks by default).
     """
     g = parse_geometry(geometry_path.read_text(encoding="utf-8"))
+    editable_start_ids = set(editable_start_characters or ())
     # Runtime-created loose items (purchases subsequently dropped, disarmed
     # weapons, etc.) have no authored GEOMETRY row. Add them to this render from
     # their live Thing position; authored ids retain their authored marker.
@@ -1447,10 +1449,10 @@ def render_turn_slider_html(
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              "<button id='fit' title='Reset map view (key: F)'>Fit</button>"
-             "<button id='editArt' title='Move, rotate, and scale authored visual overlays'>Edit art</button>"
+             "<button id='editArt' title='Move authored fixtures and initial NPC positions'>Edit layout</button>"
              "<span id='artctl' class='artctl'><button id='rotL'>↶</button>"
              "<button id='rotR'>↷</button><button id='smaller'>−</button>"
-             "<button id='larger'>+</button><button id='copyVisuals'>Save visuals</button>"
+             "<button id='larger'>+</button><button id='copyVisuals'>Save layout</button>"
              "<button id='copyGeometry'>Copy coordinates</button></span>"
              "<span class='zctl'><span class='hint'>Zoom</span>"
              "<input id='zoomSpeed' type='range' min='5' max='40' value='15' step='1'>"
@@ -1636,8 +1638,19 @@ def render_turn_slider_html(
                       f"data-base-sw='{sw_base:.2f}' r='{r_base:.2f}' fill='{cc[cid]}' "
                       f"stroke='#000' stroke-width='{sw_base:.2f}'/>")
         name = html.escape(cid.replace("_", " ").title())
-        p.append(f"<g class='char' data-char='{html.escape(cid)}' style='display:none'>"
-                 f"<g class='char-marker'>{marker}</g>"
+        editable = cid in editable_start_ids and cid in start_pos
+        sx, sy = start_pos.get(cid, (0.0, 0.0))
+        edit_attrs = (
+            f" data-editable-start='1' data-start-x='{sx:.3f}' data-start-y='{sy:.3f}'"
+            if editable else ""
+        )
+        selection = (
+            f"<circle class='npc-selection' r='{4.2*sc:.2f}' fill='none' "
+            f"stroke='#55ffff' stroke-width='.22' stroke-dasharray='.5,.35' "
+            f"style='display:none'/>" if editable else ""
+        )
+        p.append(f"<g class='char' data-char='{html.escape(cid)}'{edit_attrs} style='display:none'>"
+                 f"<g class='char-marker'>{selection}{marker}</g>"
                  f"<title>{name}</title></g>")
     p.append("</svg>")
 
@@ -1680,9 +1693,9 @@ def render_turn_slider_html(
             f"(Date.now()-(window.__mapLastInteract||0))>2500)"
             f"{{location.reload();}}}},{int(live_refresh_secs) * 1000});")
     p.append(
-        "(function(){const s=document.getElementById('map'),objs=[...document.querySelectorAll('.visual-overlay')],"
+        "(function(){const s=document.getElementById('map'),objs=[...document.querySelectorAll('.visual-overlay')],npcs=[...document.querySelectorAll('[data-editable-start]')],"
         "eb=document.getElementById('editArt'),ctl=document.getElementById('artctl'),saveBtn=document.getElementById('copyVisuals');"
-        "if(!objs.length){eb.style.display='none';return;}let editing=false,sel=null,drag=null,dirty=false;"
+        "if(!objs.length&&!npcs.length){eb.style.display='none';return;}let editing=false,sel=null,npcSel=null,drag=null,dirty=false;"
         "function syncTarget(o){let t=o.dataset.target;if(!t)return;let x=+o.dataset.x,y=+o.dataset.y;"
         "let matches=[...document.querySelectorAll('[data-landmark]')].filter(n=>n.dataset.landmark===t);"
         "if(!matches.length)matches=[...document.querySelectorAll('[data-item]')].filter(n=>n.dataset.item===t);"
@@ -1693,23 +1706,27 @@ def render_turn_slider_html(
         "let im=o.querySelector('image'),w=+o.dataset.width,h=+o.dataset.height;"
         "im.setAttribute('x',-w/2);im.setAttribute('y',-h/2);im.setAttribute('width',w);im.setAttribute('height',h);"
         "let box=o.querySelector('.visual-selection');box.setAttribute('x',-w/2);box.setAttribute('y',-h/2);box.setAttribute('width',w);box.setAttribute('height',h);syncTarget(o);}"
-        "function pick(o){if(sel)sel.querySelector('.visual-selection').style.display='none';sel=o;"
-        "if(sel)sel.querySelector('.visual-selection').style.display='';}"
+        "function clearPick(){if(sel)sel.querySelector('.visual-selection').style.display='none';if(npcSel)npcSel.querySelector('.npc-selection').style.display='none';sel=null;npcSel=null;}"
+        "function pick(o){clearPick();sel=o;if(sel)sel.querySelector('.visual-selection').style.display='';}"
+        "function pickNpc(o){clearPick();npcSel=o;if(npcSel)npcSel.querySelector('.npc-selection').style.display='';}"
         "function pt(e){let p=s.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(s.getScreenCTM().inverse());}"
         "function records(){return objs.map(o=>({id:o.dataset.visual,asset:o.dataset.asset,target:o.dataset.target,x:+o.dataset.x,y:+o.dataset.y,width:+o.dataset.width,height:+o.dataset.height,rotation:+o.dataset.rotation,layer:o.dataset.layer}));}"
-        "async function save(){saveBtn.textContent='Saving…';try{let r=await fetch('/map-visuals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visuals:records()})});"
-        "if(!r.ok)throw new Error(await r.text());dirty=false;saveBtn.textContent='Saved';setTimeout(()=>saveBtn.textContent='Save visuals',1200);return true;}"
+        "function npcRecords(){return npcs.map(o=>({id:o.dataset.char,x:+o.dataset.startX,y:+o.dataset.startY}));}"
+        "async function save(){saveBtn.textContent='Saving…';try{let r=await fetch('/map-visuals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visuals:records(),npc_positions:npcRecords()})});"
+        "if(!r.ok)throw new Error(await r.text());dirty=false;saveBtn.textContent='Saved';setTimeout(()=>saveBtn.textContent='Save layout',1200);return true;}"
         "catch(e){saveBtn.textContent='Save failed';console.error(e);return false;}}"
         "eb.onclick=async function(){if(editing&&dirty&&!(await save()))return;editing=!editing;window.__mapArtEditing=editing;"
-        "eb.textContent=editing?'Done editing':'Edit art';"
+        "eb.textContent=editing?'Done editing':'Edit layout';"
         "ctl.classList.toggle('on',editing);s.style.cursor=editing?'default':'grab';"
-        "if(editing)objs.forEach(o=>s.appendChild(o));"
-        "else if(sel){sel.querySelector('.visual-selection').style.display='none';sel=null;}"
-        "objs.forEach(o=>o.style.cursor=editing?'move':'');};"
+        "if(editing){sl.value=0;show(0);sl.disabled=true;objs.forEach(o=>s.appendChild(o));npcs.forEach(o=>s.appendChild(o));}"
+        "else{sl.disabled=false;clearPick();}"
+        "objs.forEach(o=>o.style.cursor=editing?'move':'');npcs.forEach(o=>o.style.cursor=editing?'move':'');};"
         "objs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pick(o);"
-        "let p=pt(e);drag={o:o,px:p.x,py:p.y,x:+o.dataset.x,y:+o.dataset.y};e.preventDefault();});});"
-        "window.addEventListener('mousemove',e=>{if(!drag)return;let p=pt(e);drag.o.dataset.x=(drag.x+p.x-drag.px).toFixed(3);"
-        "drag.o.dataset.y=(drag.y-(p.y-drag.py)).toFixed(3);dirty=true;apply(drag.o);});"
+        "let p=pt(e);drag={kind:'visual',o:o,px:p.x,py:p.y,x:+o.dataset.x,y:+o.dataset.y};e.preventDefault();});});"
+        "npcs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pickNpc(o);let p=pt(e);drag={kind:'npc',o:o,px:p.x,py:p.y,x:+o.dataset.startX,y:+o.dataset.startY};e.preventDefault();});});"
+        "window.addEventListener('mousemove',e=>{if(!drag)return;let p=pt(e),x=drag.x+p.x-drag.px,y=drag.y-(p.y-drag.py);"
+        "if(drag.kind==='npc'){drag.o.dataset.startX=x.toFixed(3);drag.o.dataset.startY=y.toFixed(3);drag.o.setAttribute('transform','translate('+x+','+(-y)+')');}"
+        "else{drag.o.dataset.x=x.toFixed(3);drag.o.dataset.y=y.toFixed(3);apply(drag.o);}dirty=true;});"
         "window.addEventListener('mouseup',()=>drag=null);"
         "function change(kind,n){if(!sel)return;if(kind==='r')sel.dataset.rotation=(+sel.dataset.rotation+n).toFixed(3);"
         "else{sel.dataset.width=(+sel.dataset.width*n).toFixed(3);sel.dataset.height=(+sel.dataset.height*n).toFixed(3);}dirty=true;apply(sel);}"

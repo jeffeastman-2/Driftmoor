@@ -15,7 +15,12 @@ Smells of lamb stew, almost always. Martha Greaves is almost always cooking.
 - **type:** npc
 - **soul_file:** scenario/people/npcs/martha/SOUL.md
 - **identity_file:** scenario/people/npcs/martha/IDENTITY.md
-- **position:** 22.5, 6.5
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| martha | 29.589 | 6.62 |
 
 ## Who Is Normally Here
 - **Martha Greaves** — managing everything

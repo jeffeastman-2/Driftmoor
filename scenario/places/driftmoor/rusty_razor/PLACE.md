@@ -15,7 +15,12 @@ The social hub for male townsfolk and the best source of current gossip in Drift
 - **type:** npc
 - **soul_file:** scenario/people/npcs/arlan/SOUL.md
 - **identity_file:** scenario/people/npcs/arlan/IDENTITY.md
-- **position:** 4.5, 9.5
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| arlan | 4.5 | 9.5 |
 
 ## Scene Introductions
 

@@ -15,7 +15,12 @@ A small back room holds personal experiments and more volatile ingredients. Its 
 - **type:** npc
 - **soul_file:** scenario/people/npcs/lytha/SOUL.md
 - **identity_file:** scenario/people/npcs/lytha/IDENTITY.md
-- **position:** 11.5, 9.5
+
+## Initial Positions
+
+| character | x | y |
+|---|---:|---:|
+| lytha | 11.5 | 9.5 |
 
 ## Who Is Normally Here
 - **Lytha Varrow** — almost always present

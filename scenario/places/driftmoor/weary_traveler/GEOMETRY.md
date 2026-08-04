@@ -22,10 +22,10 @@ Greaves runs the house from behind the counter.
 | name            | x    | y    | z    |
 |-----------------|------|------|------|
 | front_door      | 16 | 0  | 4 |
-| common_room_rug | 13 | 13 | 0 |
-| hearth          | 4.5  | 6.5  | 4 |
-| dining_table    | 13  | 13  | 4 |
-| bar_counter     | 22.5 | 8  | 4 |
+| common_room_rug | 13.12 | 11.678 | 0 |
+| hearth          | 12.55  | 22.12  | 4 |
+| dining_table    | 13  | 11.798  | 4 |
+| bar_counter     | 25.864 | 5.356  | 4 |
 | stair_foot      | 27.5 | 18  | 0 |
 | storage_shed    | 36.5 | 13 | 4 |
 

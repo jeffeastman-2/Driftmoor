@@ -288,16 +288,48 @@ def _rewrite_landmark_coordinates(text: str, coordinates: dict[str, tuple[float,
     return _rewrite_geometry_coordinates(text, coordinates)
 
 
+def _rewrite_initial_positions(
+    text: str, coordinates: dict[str, tuple[float, float]]
+) -> str:
+    """Rewrite matching rows in PLACE.md's Initial Positions table."""
+    match = re.search(
+        r"(##\s+Initial Positions\b.*?)(?=\n##\s+|\Z)", text, re.DOTALL
+    )
+    if not match:
+        return text
+    section = match.group(1)
+
+    def replace_row(row: re.Match) -> str:
+        char_id = row.group(2).strip()
+        if char_id not in coordinates:
+            return row.group(0)
+        x, y = coordinates[char_id]
+        return f"{row.group(1)}{x:g}{row.group(3)}{y:g}{row.group(4)}"
+
+    updated = re.sub(
+        r"^(\|\s*([^|]+?)\s*\|\s*)[-+0-9.]+(\s*\|\s*)"
+        r"[-+0-9.]+(\s*\|.*)$",
+        replace_row, section, flags=re.MULTILINE,
+    )
+    return text[:match.start(1)] + updated + text[match.end(1):]
+
+
 async def handle_map_visuals(request: web.Request) -> web.Response:
     """Persist validated overlay edits for only the currently loaded place."""
     data = await request.json()
     raw_records = data.get("visuals")
-    if not isinstance(raw_records, list) or not 1 <= len(raw_records) <= 200:
-        raise web.HTTPBadRequest(text="visuals must be a non-empty list")
+    raw_npcs = data.get("npc_positions", [])
+    if not isinstance(raw_records, list) or len(raw_records) > 200:
+        raise web.HTTPBadRequest(text="visuals must be a list")
+    if not isinstance(raw_npcs, list) or len(raw_npcs) > 200:
+        raise web.HTTPBadRequest(text="npc_positions must be a list")
+    if not raw_records and not raw_npcs:
+        raise web.HTTPBadRequest(text="nothing to save")
 
     cfg = _rt(request.app)["config"]
     geometry_path = Path(cfg.geometry_path).resolve()
     place_dir = geometry_path.parent
+    place_path = place_dir / "PLACE.md"
     geometry_text = geometry_path.read_text(encoding="utf-8")
     landmark_names = set(getattr(cfg.scene_geometry, "landmarks", {}) or {})
     item_names: set[str] = set()
@@ -323,8 +355,13 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
         if not re.fullmatch(r"[a-zA-Z0-9_./-]+\.(?:svg|png|webp)", rec["asset"]):
             raise web.HTTPBadRequest(text="invalid visual asset")
         asset_path = (place_dir / rec["asset"]).resolve()
-        if not asset_path.is_relative_to(place_dir) or not asset_path.is_file():
-            raise web.HTTPBadRequest(text="visual asset is outside this place or missing")
+        driftmoor_root = next(
+            (parent for parent in (place_dir, *place_dir.parents)
+             if parent.name == "driftmoor"),
+            place_dir,
+        )
+        if not asset_path.is_relative_to(driftmoor_root) or not asset_path.is_file():
+            raise web.HTTPBadRequest(text="visual asset is outside Driftmoor or missing")
         if rec["target"] not in visual_targets:
             raise web.HTTPBadRequest(text=f"unknown visual target: {rec['target']}")
         if not re.fullmatch(r"[a-z0-9_.-]+", rec["layer"]):
@@ -341,6 +378,34 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
         coordinates[rec["target"]] = (rec["x"], rec["y"])
         records.append(rec)
 
+    authored_positions = set()
+    place_text = place_path.read_text(encoding="utf-8") if place_path.is_file() else ""
+    initial_section = re.search(
+        r"##\s+Initial Positions\b(.*?)(?=\n##\s+|\Z)", place_text, re.DOTALL
+    )
+    if initial_section:
+        authored_positions = {
+            m.group(1).strip()
+            for m in re.finditer(r"^\|\s*([^|]+?)\s*\|", initial_section.group(1), re.MULTILINE)
+            if m.group(1).strip().lower() not in {"character", "---"}
+        }
+    npc_coordinates: dict[str, tuple[float, float]] = {}
+    for raw in raw_npcs:
+        if not isinstance(raw, dict):
+            raise web.HTTPBadRequest(text="invalid NPC position")
+        char_id = str(raw.get("id", "")).strip()
+        cs = (getattr(cfg, "characters", None) or {}).get(char_id)
+        char_type = getattr(getattr(cs, "character", None), "character_type", "")
+        if char_id not in authored_positions or char_type == "player":
+            raise web.HTTPBadRequest(text=f"unknown editable NPC: {char_id}")
+        try:
+            x, y = float(raw["x"]), float(raw["y"])
+        except (KeyError, TypeError, ValueError):
+            raise web.HTTPBadRequest(text="invalid NPC coordinates") from None
+        if not math.isfinite(x) or not math.isfinite(y):
+            raise web.HTTPBadRequest(text="non-finite NPC coordinates")
+        npc_coordinates[char_id] = (x, y)
+
     lines = [
         f"# VISUALS.md — {place_dir.name.replace('_', ' ').title()} Map Overlays", "",
         "| id | asset | target | x | y | width | height | rotation | layer |",
@@ -353,8 +418,13 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
             f"{rec['height']:g} | {rec['rotation']:g} | {rec['layer']} |")
 
     updated_geometry = _rewrite_geometry_coordinates(geometry_text, coordinates)
-    (place_dir / "VISUALS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    geometry_path.write_text(updated_geometry, encoding="utf-8")
+    if records:
+        (place_dir / "VISUALS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        geometry_path.write_text(updated_geometry, encoding="utf-8")
+    if npc_coordinates:
+        place_path.write_text(
+            _rewrite_initial_positions(place_text, npc_coordinates), encoding="utf-8"
+        )
 
     # Keep the live in-memory geometry consistent immediately; a full place
     # reload is not required for subsequent map regeneration in this session.
@@ -366,8 +436,13 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
         thing = (getattr(cfg, "items", None) or {}).get(name)
         if thing is not None and getattr(thing, "position", None) is not None:
             thing.position = type(thing.position)(x, y)
+    for char_id, (x, y) in npc_coordinates.items():
+        current = cfg.scene_geometry.starting_positions[char_id]
+        cfg.scene_geometry.starting_positions[char_id] = type(current)(x, y, current.z)
     _render_map(request.app)
-    return web.json_response({"ok": True, "saved": len(records)})
+    return web.json_response({
+        "ok": True, "saved": len(records), "npcs_saved": len(npc_coordinates)
+    })
 
 
 async def handle_events(request: web.Request) -> web.StreamResponse:
@@ -448,6 +523,11 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
         {cid: (p.x, p.y) for cid, p in sg.starting_positions.items()}
         if sg is not None else None
     )
+    editable_npcs = {
+        cid for cid, cs in cfg.characters.items()
+        if getattr(getattr(cs, "character", None), "character_type", "") != "player"
+        and sg is not None and cid in sg.starting_positions
+    }
     try:
         render_turn_slider_html(
             cfg.geometry_path, cd / f"{scene}_map.html",
@@ -456,7 +536,8 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
             # moves are visible while watching live play.
             live_refresh_secs=4, start_characters=rt["start_characters"],
             item_details=cfg.items or None, live_positions=live_positions,
-            start_positions=start_positions, scene_geometry=sg)
+            start_positions=start_positions, scene_geometry=sg,
+            editable_start_characters=editable_npcs)
     except Exception:  # noqa: BLE001 — map is best-effort
         pass
 
