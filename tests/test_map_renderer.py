@@ -554,6 +554,30 @@ def test_layout_editor_shows_live_coordinates_while_dragging(tmp_path):
     assert "coordReadout.style.display='none';" in rendered
 
 
+def test_layout_editor_snaps_doors_to_the_nearest_zone_edge(tmp_path):
+    """A freehand-dropped door essentially never lands on the exact zone
+    boundary it needs to (see test_session.py::TestDirectPathClear) — any
+    offset, however small, resolves fully to one side or the other. Magnetic
+    snap-to-zone-edge fixes this at the source instead of relying on manual
+    coordinate entry."""
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "door-snap.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"),
+        out,
+        snapshot_dir=tmp_path,
+    )
+    rendered = out.read_text(encoding="utf-8")
+
+    # STUDY and LABORATORY meet at x=16 — that edge must be in the data the
+    # snap function searches, not just the far outer walls of the building.
+    assert "[16.0, 14.0, 16.0, 0.0]" in rendered
+    assert "function snapDoor(asset,x,y)" in rendered
+    assert "asset.indexOf('door.svg')<0" in rendered
+    assert "let snapped=snapDoor(drag.o.dataset.asset,x,y);" in rendered
+
+
 def test_character_map_icon_omits_embedded_name_banner_but_keeps_tooltip(tmp_path):
     import base64
     import re

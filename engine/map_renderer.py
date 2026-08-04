@@ -1662,8 +1662,17 @@ def render_turn_slider_html(
     frames_js = json.dumps({
         t: {c: [round(x, 2), round(y, 2)] for c, (x, y) in frames[t].items()}
         for t in turn_list})
+    # Zone-boundary edges, for snapping a dragged door onto the wall it
+    # actually sits in — the layout editor's only source of truth for
+    # "where do zones meet," independent of the (possibly stale) Impassable
+    # gap a door's y/x doesn't automatically keep in sync with.
+    zone_edges_js = json.dumps([
+        [verts[i][0], verts[i][1], verts[(i + 1) % len(verts)][0], verts[(i + 1) % len(verts)][1]]
+        for verts in g["zones"].values() for i in range(len(verts))
+    ])
     p.append("<script>")
-    p.append(f"const FRAMES={frames_js};const TURNS={json.dumps(turn_list)};")
+    p.append(f"const FRAMES={frames_js};const TURNS={json.dumps(turn_list)};"
+             f"const ZONE_EDGES={zone_edges_js};")
     p.append(
         "const sl=document.getElementById('sl'),rd=document.getElementById('rd');"
         "function show(i){const t=TURNS[i];"
@@ -1730,9 +1739,25 @@ def render_turn_slider_html(
         "objs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pick(o);"
         "let p=pt(e);drag={kind:'visual',o:o,px:p.x,py:p.y,x:+o.dataset.x,y:+o.dataset.y};e.preventDefault();});});"
         "npcs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pickNpc(o);let p=pt(e);drag={kind:'npc',o:o,px:p.x,py:p.y,x:+o.dataset.startX,y:+o.dataset.startY};e.preventDefault();});});"
+        # A door dropped freehand essentially never lands on the exact zone
+        # boundary it needs to (any offset, however small, puts it fully on
+        # one side or the other — see _entry_point_inside_zone/zone_at,
+        # which have no tolerance for "meant to be on the line"). Magnetic
+        # snapping to the nearest zone edge removes the guesswork instead of
+        # relying on eyeballing the coordinate readout down to the wall.
+        "const DOOR_SNAP_FT=1.5;"
+        "function snapDoor(asset,x,y){if(!asset||asset.indexOf('door.svg')<0)return null;let best=null;"
+        "for(const[x1,y1,x2,y2]of ZONE_EDGES){let ex=x2-x1,ey=y2-y1,len2=ex*ex+ey*ey;"
+        "let t=len2>1e-9?((x-x1)*ex+(y-y1)*ey)/len2:0;t=Math.max(0,Math.min(1,t));"
+        "let qx=x1+t*ex,qy=y1+t*ey,d=Math.hypot(x-qx,y-qy);"
+        "if(!best||d<best.d)best={d:d,x:qx,y:qy,ex:ex,ey:ey};}"
+        "if(!best||best.d>DOOR_SNAP_FT)return null;"
+        "return{x:best.x,y:best.y,rotation:Math.abs(best.ex)>=Math.abs(best.ey)?0:90};}"
         "window.addEventListener('mousemove',e=>{if(!drag)return;let p=pt(e),x=drag.x+p.x-drag.px,y=drag.y-(p.y-drag.py);"
         "if(drag.kind==='npc'){drag.o.dataset.startX=x.toFixed(3);drag.o.dataset.startY=y.toFixed(3);drag.o.setAttribute('transform','translate('+x+','+(-y)+')');}"
-        "else{drag.o.dataset.x=x.toFixed(3);drag.o.dataset.y=y.toFixed(3);apply(drag.o);}dirty=true;"
+        "else{let snapped=snapDoor(drag.o.dataset.asset,x,y);"
+        "if(snapped){x=snapped.x;y=snapped.y;drag.o.dataset.rotation=snapped.rotation.toFixed(3);}"
+        "drag.o.dataset.x=x.toFixed(3);drag.o.dataset.y=y.toFixed(3);apply(drag.o);}dirty=true;"
         "coordReadout.textContent='x: '+x.toFixed(2)+', y: '+y.toFixed(2);"
         "coordReadout.style.left=(e.clientX+14)+'px';coordReadout.style.top=(e.clientY+18)+'px';"
         "coordReadout.style.display='block';});"
