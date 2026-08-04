@@ -521,6 +521,33 @@ def _choose_exploration_waypoint(
     return zone, x, y
 
 
+def _direct_path_clear(
+    character_id: str,
+    origin: Optional[tuple[float, float, str]],
+    target_xy: tuple[float, float],
+    scene_geometry: Optional[SceneGeometry],
+) -> bool:
+    """Is the straight line from ``origin`` to ``target_xy`` unobstructed?
+
+    Used to decide whether a cross-zone ``player_target`` needs
+    ``_waypoint_for_zone``'s re-route at all. That fallback only knows the
+    destination zone's polygon, not where its actual door sits, so its
+    "nearest boundary point toward the centroid" guess can land inside a
+    wall the real door doesn't share — worse than a target already
+    validated (e.g. backfilled from a named doorway landmark and nudged
+    past the threshold). Zone-outside checks are irrelevant here (crossing
+    zones is the whole point), so only impassable polygons are checked.
+    """
+    if origin is None or scene_geometry is None or not scene_geometry.impassable:
+        return True
+    clear, _, _ = _check_impassable(
+        character_id, origin,
+        (float(target_xy[0]), float(target_xy[1]), ""),
+        scene_geometry.impassable, None,
+    )
+    return clear
+
+
 def _waypoint_for_zone(
     *,
     character_id: str,
@@ -7277,7 +7304,15 @@ async def iter_session(
                             float(player_target[0]), float(player_target[1])))
                         _dz = (_zp or "").upper()
                     if _az and _dz and _az != _dz:
-                        _nz = _next_zone_toward(scene_geometry, _az, _dz)
+                        _direct_clear = _direct_path_clear(
+                            character_id,
+                            current_positions.get(character_id),
+                            (float(player_target[0]), float(player_target[1])),
+                            scene_geometry,
+                        )
+                        _nz = None if _direct_clear else _next_zone_toward(
+                            scene_geometry, _az, _dz
+                        )
                         if _nz:
                             _wp = _waypoint_for_zone(
                                 character_id=character_id,

@@ -1638,6 +1638,49 @@ class TestNextZoneToward:
         assert _next_zone_toward(geo, "SECRET CHAMBER", "NOWHERE") is None
 
 
+class TestDirectPathClear:
+    """Regression: cross-zone routing must not discard an already-good target.
+
+    Elyssa's cottage has a narrow doorway (a gap in the Impassable walls)
+    around the authored ``lab_door`` landmark, between STUDY and LABORATORY.
+    A target landmark already resolved through that doorway (e.g. "move to
+    the lab_door", which _infer_movement_destination backfills to the
+    landmark's own position) must survive the cross-zone routing check, not
+    get replaced by _waypoint_for_zone's generic "nearest boundary point
+    toward the centroid" guess — which, for this geometry, lands inside a
+    wall segment the real door doesn't share and leaves the mover stuck
+    against it turn after turn.
+    """
+
+    @pytest.fixture(scope="class")
+    def geo(self):
+        from pathlib import Path
+        from models.geometry_loader import load_geometry
+        return load_geometry(Path(
+            "scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"))
+
+    def test_the_actual_door_is_clear(self, geo):
+        from engine.session import _direct_path_clear
+        lab_door = geo.landmarks["lab_door"]
+        assert _direct_path_clear(
+            "elyssa", (8.0, 6.0, "STUDY"), (lab_door.x, lab_door.y), geo,
+        ) is True
+
+    def test_waypoint_for_zones_generic_guess_is_blocked(self, geo):
+        """The bug in one line: the fallback _waypoint_for_zone would use
+        instead of the real door lands inside a wall for this geometry."""
+        from engine.session import _direct_path_clear, _waypoint_for_zone
+        origin = (8.0, 6.0, "STUDY")
+        naive = _waypoint_for_zone(
+            character_id="elyssa",
+            current_positions={"elyssa": origin},
+            scene_geometry=geo,
+            target_zone="LABORATORY",
+        )
+        assert naive is not None
+        assert _direct_path_clear("elyssa", origin, naive, geo) is False
+
+
 # ---------------------------------------------------------------------------
 # run_session — stub mode (no LLMs)
 # ---------------------------------------------------------------------------
