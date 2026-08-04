@@ -534,6 +534,26 @@ def test_layout_rotation_buttons_match_their_visible_direction(tmp_path):
     assert "title='Rotate clockwise'" in rendered
 
 
+def test_layout_editor_shows_live_coordinates_while_dragging(tmp_path):
+    """Fine-positioning a fixture needs a live x/y readout, not just eyeballing
+    against the grid — the drag handler must update it on every mousemove and
+    hide it again once the drag ends, not leave a stale value on screen."""
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "coord-readout.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"),
+        out,
+        snapshot_dir=tmp_path,
+    )
+    rendered = out.read_text(encoding="utf-8")
+
+    assert "id='coordReadout'" in rendered
+    assert "coordReadout.textContent='x: '+x.toFixed(2)+', y: '+y.toFixed(2);" in rendered
+    assert "coordReadout.style.display='block';" in rendered
+    assert "coordReadout.style.display='none';" in rendered
+
+
 def test_character_map_icon_omits_embedded_name_banner_but_keeps_tooltip(tmp_path):
     import base64
     import re

@@ -1438,6 +1438,10 @@ def render_turn_slider_html(
              ".artctl{display:none;gap:4px}.artctl.on{display:inline-flex;}"
              "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;"
              "background:#0e0e12;}button{font:inherit;padding:3px 10px;cursor:pointer;}")
+    p.append(
+        ".coord-readout{display:none;position:fixed;pointer-events:none;"
+        "background:#111;color:#eee;font:12px/1.4 ui-monospace,monospace;"
+        "padding:2px 6px;border-radius:4px;border:1px solid #555;z-index:9;}")
     # font-size is a JS-controlled var (constant on-screen size across zoom); the
     # fallback keeps a sane value before the pan/zoom script runs.
     p.append(".zlabel{font-size:var(--zfs,2.1px);font-weight:700;fill:#eee;opacity:.85;}")
@@ -1462,6 +1466,7 @@ def render_turn_slider_html(
              "<span id='rd' style='min-width:70px;'></span>"
              "<span class='hint'>wheel=zoom, drag=pan, F=fit</span>"
              "</div>")
+    p.append("<div id='coordReadout' class='coord-readout'></div>")
     p.append(f"<svg id='map' viewBox='{view_x:.2f} {view_top:.2f} {view_w:.2f} {view_h:.2f}' "
              "preserveAspectRatio='xMidYMid meet'>")
 
@@ -1694,7 +1699,8 @@ def render_turn_slider_html(
             f"{{location.reload();}}}},{int(live_refresh_secs) * 1000});")
     p.append(
         "(function(){const s=document.getElementById('map'),objs=[...document.querySelectorAll('.visual-overlay')],npcs=[...document.querySelectorAll('[data-editable-start]')],"
-        "eb=document.getElementById('editArt'),ctl=document.getElementById('artctl'),saveBtn=document.getElementById('copyVisuals');"
+        "eb=document.getElementById('editArt'),ctl=document.getElementById('artctl'),saveBtn=document.getElementById('copyVisuals'),"
+        "coordReadout=document.getElementById('coordReadout');"
         "if(!objs.length&&!npcs.length){eb.style.display='none';return;}let editing=false,sel=null,npcSel=null,drag=null,dirty=false;"
         "function syncTarget(o){let t=o.dataset.target;if(!t)return;let x=+o.dataset.x,y=+o.dataset.y;"
         "let matches=[...document.querySelectorAll('[data-landmark]')].filter(n=>n.dataset.landmark===t);"
@@ -1726,8 +1732,11 @@ def render_turn_slider_html(
         "npcs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pickNpc(o);let p=pt(e);drag={kind:'npc',o:o,px:p.x,py:p.y,x:+o.dataset.startX,y:+o.dataset.startY};e.preventDefault();});});"
         "window.addEventListener('mousemove',e=>{if(!drag)return;let p=pt(e),x=drag.x+p.x-drag.px,y=drag.y-(p.y-drag.py);"
         "if(drag.kind==='npc'){drag.o.dataset.startX=x.toFixed(3);drag.o.dataset.startY=y.toFixed(3);drag.o.setAttribute('transform','translate('+x+','+(-y)+')');}"
-        "else{drag.o.dataset.x=x.toFixed(3);drag.o.dataset.y=y.toFixed(3);apply(drag.o);}dirty=true;});"
-        "window.addEventListener('mouseup',()=>drag=null);"
+        "else{drag.o.dataset.x=x.toFixed(3);drag.o.dataset.y=y.toFixed(3);apply(drag.o);}dirty=true;"
+        "coordReadout.textContent='x: '+x.toFixed(2)+', y: '+y.toFixed(2);"
+        "coordReadout.style.left=(e.clientX+14)+'px';coordReadout.style.top=(e.clientY+18)+'px';"
+        "coordReadout.style.display='block';});"
+        "window.addEventListener('mouseup',()=>{drag=null;coordReadout.style.display='none';});"
         "function change(kind,n){if(!sel)return;if(kind==='r')sel.dataset.rotation=(+sel.dataset.rotation+n).toFixed(3);"
         "else{sel.dataset.width=(+sel.dataset.width*n).toFixed(3);sel.dataset.height=(+sel.dataset.height*n).toFixed(3);}dirty=true;apply(sel);}"
         # Visual transforms negate authored rotation because map Y is inverted:
