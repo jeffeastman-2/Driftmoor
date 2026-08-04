@@ -506,6 +506,25 @@ def test_shift_scroll_scales_item_icons_with_character_icons():
     assert "bf*iconScale" in _PANZOOM_JS
 
 
+def test_layout_rotation_buttons_match_their_visible_direction(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "rotation-controls.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/fisherfolk/GEOMETRY.md"),
+        out,
+        snapshot_dir=tmp_path,
+    )
+    rendered = out.read_text(encoding="utf-8")
+
+    # Map rendering negates authored rotation to account for its inverted Y
+    # axis, so screen-left is a positive stored delta and screen-right negative.
+    assert "rotL').onclick=()=>change('r',15)" in rendered
+    assert "rotR').onclick=()=>change('r',-15)" in rendered
+    assert "title='Rotate counterclockwise'" in rendered
+    assert "title='Rotate clockwise'" in rendered
+
+
 def test_character_map_icon_omits_embedded_name_banner_but_keeps_tooltip(tmp_path):
     import base64
     import re

@@ -1450,8 +1450,8 @@ def render_turn_slider_html(
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              "<button id='fit' title='Reset map view (key: F)'>Fit</button>"
              "<button id='editArt' title='Move authored fixtures and initial NPC positions'>Edit layout</button>"
-             "<span id='artctl' class='artctl'><button id='rotL'>↶</button>"
-             "<button id='rotR'>↷</button><button id='smaller'>−</button>"
+             "<span id='artctl' class='artctl'><button id='rotL' title='Rotate counterclockwise'>↶</button>"
+             "<button id='rotR' title='Rotate clockwise'>↷</button><button id='smaller'>−</button>"
              "<button id='larger'>+</button><button id='copyVisuals'>Save layout</button>"
              "<button id='copyGeometry'>Copy coordinates</button></span>"
              "<span class='zctl'><span class='hint'>Zoom</span>"
@@ -1730,7 +1730,9 @@ def render_turn_slider_html(
         "window.addEventListener('mouseup',()=>drag=null);"
         "function change(kind,n){if(!sel)return;if(kind==='r')sel.dataset.rotation=(+sel.dataset.rotation+n).toFixed(3);"
         "else{sel.dataset.width=(+sel.dataset.width*n).toFixed(3);sel.dataset.height=(+sel.dataset.height*n).toFixed(3);}dirty=true;apply(sel);}"
-        "document.getElementById('rotL').onclick=()=>change('r',-15);document.getElementById('rotR').onclick=()=>change('r',15);"
+        # Visual transforms negate authored rotation because map Y is inverted:
+        # increasing the stored angle therefore turns counterclockwise on screen.
+        "document.getElementById('rotL').onclick=()=>change('r',15);document.getElementById('rotR').onclick=()=>change('r',-15);"
         "document.getElementById('smaller').onclick=()=>change('s',.9);document.getElementById('larger').onclick=()=>change('s',1.1);"
         "saveBtn.onclick=save;"
         "document.getElementById('copyGeometry').onclick=async function(){let rows=['## Landmark coordinate updates','','| name | x | y |','|---|---:|---:|'];"
