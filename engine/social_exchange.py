@@ -33,12 +33,15 @@ def directed_social_target(
     visible_ids: set[str],
     characters: dict,
 ) -> Optional[str]:
-    """Resolve an addressed NPC, inferring the sole visible NPC when safe."""
+    """Resolve an addressed NPC, inferring the sole visible NPC when safe.
+
+    ``utterance`` is already structured quoted speech from the transport, so a
+    declarative introduction or answer is just as conversational as a question.
+    With several visible NPCs we still require an explicit name and refuse to
+    invent an addressee.
+    """
     text = (utterance or "").strip()
-    if not text or not (text.endswith("?") or re.match(
-        r"^(?:what|where|who|why|when|which|how|do|does|did|can|could|would|will|are|is|have|may)\b",
-        text, re.IGNORECASE,
-    )):
+    if not text:
         return None
     candidates = []
     normalized = re.sub(r"[^a-z0-9]+", " ", text.lower())

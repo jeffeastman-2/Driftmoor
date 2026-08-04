@@ -26,8 +26,11 @@ from env_boot import load_project_dotenv
 
 load_project_dotenv()  # provider keys / env, same as run_scene
 
-from engine.md_loader import configure_from_md          # noqa: E402
-from engine.session import run_session, _clean_spoken_output  # noqa: E402
+from engine.md_loader import configure_from_md, configure_from_place_path  # noqa: E402
+from engine.session import (  # noqa: E402
+    run_session, _clean_spoken_output, load_resume_state,
+    restore_item_ownership,
+)
 from engine.map_renderer import render_turn_slider_html  # noqa: E402
 from engine import web_transport                         # noqa: E402
 
@@ -54,6 +57,52 @@ def _turn_entries(checkpoint_dir: Path) -> list[dict]:
             out.append({"turn": int(data.get("turn", 0)), "lines": lines})
     out.sort(key=lambda e: e["turn"])
     return out
+
+
+def _latest_web_checkpoint_dir(scene: str, root: Path = Path("runtime/state")) -> Path | None:
+    """Newest timestamped web run for ``scene`` that contains checkpoints."""
+    candidates = [
+        path for path in root.glob(f"*__web__/{scene}")
+        if path.is_dir() and any(path.glob("*.json"))
+    ]
+    return max(candidates, key=lambda path: path.parent.name, default=None)
+
+
+def _latest_checkpoint_data(checkpoint_dir: Path) -> dict:
+    """Checkpoint with the greatest engine turn number."""
+    records = []
+    for path in checkpoint_dir.glob("*.json"):
+        if path.stem.endswith("transcript"):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            records.append((int(data.get("turn", 0)), path.name, data))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+    return max(records, key=lambda record: (record[0], record[1]))[2] if records else {}
+
+
+def _resume_place_path(scene: str, checkpoint: dict) -> str:
+    """Current authored place, including inference for pre-metadata saves."""
+    authored = str(checkpoint.get("scene_place_path") or "").strip().strip("/")
+    if authored:
+        return authored
+    if scene != "driftmoor":
+        return ""
+    active = set(checkpoint.get("active_characters") or [])
+    nonplayers = active - {"gilthaness"}
+    if not nonplayers:
+        return "places/driftmoor"
+    matches = []
+    root = Path("scenario/places/driftmoor")
+    for place_file in root.rglob("PLACE.md"):
+        text = place_file.read_text(encoding="utf-8")
+        residents = set(re.findall(r"^###\s+([a-z0-9_]+)\s*$", text, re.MULTILINE))
+        score = len(nonplayers & residents)
+        if score and nonplayers <= residents:
+            rel = place_file.parent.relative_to(Path("scenario")).as_posix()
+            matches.append((score, len(place_file.parts), rel))
+    return max(matches, default=(0, 0, "places/driftmoor"))[2]
 
 
 def _item_icon(label: str, authored: str = "") -> str:
@@ -569,6 +618,7 @@ async def _session_task(app: web.Application) -> None:
         ]
         _render_map(app)
 
+    resume = app.get("resume_state") or {}
     await run_session(
         cfg.characters, cfg.roles, num_turns=app["turns"],
         game_state_summary=cfg.game_state_summary,
@@ -580,13 +630,19 @@ async def _session_task(app: web.Application) -> None:
         on_turn=lambda _tr: _render_map(app),
         on_character_acted=_on_character_acted,
         on_scene_transition=_on_scene_transition,
+        start_turn=int(resume.get("start_turn", 1)),
+        initial_history=resume.get("history", ""),
+        initial_active_characters=resume.get("active_characters"),
+        initial_positions=resume.get("positions"),
+        initial_party_examination_state=resume.get("party_examination_state"),
+        initial_spell_runtime=resume.get("spell_runtime"),
     )
 
 
 async def _on_startup(app: web.Application) -> None:
     # Render an initial (turn 0) map from the GEOMETRY starting positions so the
     # browser shows the party's starting layout before the first turn lands.
-    _render_map(app)
+    _render_map(app, live_positions=(app.get("resume_state") or {}).get("positions"))
     app["session_task"] = asyncio.create_task(_session_task(app))
 
 
@@ -808,6 +864,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("scene", nargs="?", default="echoing_caverns")
     ap.add_argument("--player", default="gilthaness")
     ap.add_argument("--turns", type=int, default=None)
+    ap.add_argument(
+        "--resume", action="store_true",
+        help="Continue the newest checkpointed web run for this scene.",
+    )
     ap.add_argument("--port", type=int, default=8080)
     ap.add_argument(
         "--host",
@@ -823,7 +883,24 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 def main():
     args = _build_arg_parser().parse_args()
 
-    cfg = configure_from_md(Path("scenes") / f"{args.scene}.md")
+    base_cfg = configure_from_md(Path("scenes") / f"{args.scene}.md")
+    cfg = base_cfg
+    checkpoint_dir = None
+    checkpoint_data: dict = {}
+    if args.resume:
+        checkpoint_dir = _latest_web_checkpoint_dir(args.scene)
+        if checkpoint_dir is not None:
+            checkpoint_data = _latest_checkpoint_data(checkpoint_dir)
+            place_path = _resume_place_path(args.scene, checkpoint_data)
+            if place_path and place_path != f"places/{args.scene}":
+                cfg = configure_from_place_path(
+                    place_path, game_time=base_cfg.game_time)
+                # Place-local configs contain residents, while the original
+                # scene config owns the transport-backed player.
+                if args.player in base_cfg.characters:
+                    cfg.characters[args.player] = base_cfg.characters[args.player]
+                    if args.player in base_cfg.roles:
+                        cfg.roles[args.player] = base_cfg.roles[args.player]
     if args.player not in cfg.characters:
         raise SystemExit(
             f"No character '{args.player}' in {args.scene}. "
@@ -831,9 +908,31 @@ def main():
     cfg.characters[args.player].player_transport = "web"
     web_transport.reset(args.player)
 
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%S")
-    checkpoint_dir = Path("runtime/state") / f"{stamp}__web__" / args.scene
+    if checkpoint_dir is None:
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%S")
+        checkpoint_dir = Path("runtime/state") / f"{stamp}__web__" / args.scene
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    resume_state = {}
+    if args.resume and checkpoint_data:
+        (
+            last_turn, last_minutes, history, active, positions,
+            examination_state, spell_runtime,
+        ) = load_resume_state(checkpoint_dir, cfg.characters)
+        restore_item_ownership(checkpoint_dir, cfg.items, cfg.characters)
+        if cfg.game_time is not None and last_minutes is not None:
+            cfg.game_time.day = last_minutes // (24 * 60)
+            remainder = last_minutes % (24 * 60)
+            cfg.game_time.hour = remainder // 60
+            cfg.game_time.minute = remainder % 60
+        resume_state = {
+            "start_turn": last_turn + 1,
+            "history": history,
+            "active_characters": active,
+            "positions": positions or None,
+            "party_examination_state": examination_state or None,
+            "spell_runtime": spell_runtime,
+        }
 
     app = web.Application()
     app["runtime"] = {
@@ -843,6 +942,7 @@ def main():
     app["player"] = args.player
     app["checkpoint_dir"] = checkpoint_dir
     app["turns"] = args.turns or cfg.default_turns or 40
+    app["resume_state"] = resume_state
     # Party = characters active from turn 1; only these seed the turn-0 map, so
     # dormant creatures (e.g. a lurking spider) stay fogged until discovered.
     app["runtime"]["start_characters"] = [
@@ -858,7 +958,8 @@ def main():
     ])
     app.on_startup.append(_on_startup)
     app.on_cleanup.append(_on_cleanup)
-    print(f"Playing {args.scene} as {args.player} -> {checkpoint_dir}")
+    verb = "Resuming" if resume_state else "Playing"
+    print(f"{verb} {args.scene} as {args.player} -> {checkpoint_dir}")
     display_host = "localhost" if args.host in {"127.0.0.1", "::1"} else args.host
     print(f"Open http://{display_host}:{args.port}/")
     if args.host not in {"127.0.0.1", "::1", "localhost"}:

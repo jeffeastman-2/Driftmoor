@@ -1,5 +1,15 @@
 # CONTENTS.md — Elyssa's Cottage (General)
 
+## Items
+
+### obelisk_shard_contained_specimen
+A fist-sized shard of unfamiliar dark stone rests beneath a reinforced glass
+dome inside a ring of carefully renewed chalk glyphs. Veins of dim light pulse
+through it at irregular intervals, but the containment suppresses its hum and
+other passive effects.
+
+*(Not pickup-able while contained; flavor.)*
+
 ## Items Present (Herb Garden)
 - Lavender, rosemary (overgrown)
 - Medicinal herbs (functional but less organized than church garden)

@@ -640,6 +640,19 @@ class TestGroundTruthParsing:
         assert result.spoken == ""
         assert result.action == "Strike."
 
+    def test_spoken_section_strips_models_own_quote_marks(self, parser, ctx):
+        """A model routinely wraps SPOKEN in its own quotes even though the
+        field is dialogue-only by convention. Left in place, the web log's
+        display quoting doubles up around them (e.g. ""like this""), which is
+        exactly what showed up live for Elyssa's own (non-reply) turns."""
+        raw = (
+            "**INTERNAL**\nCurious.\n\n"
+            '**SPOKEN**\n"Observe the intersection point here."\n\n'
+            "**ACTION**\nPoints at the map."
+        )
+        result = parser.parse_response(raw, ctx)
+        assert result.spoken == "Observe the intersection point here."
+
 
 # ---- Per-character provider routing ----
 

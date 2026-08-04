@@ -260,6 +260,30 @@ class TestTransportUtteranceSplit:
         assert spoken == "Are these recent charts?"
         assert action == "move to the table and look at the charts"
 
+    def test_unterminated_straight_quote_treats_remainder_as_speech(self):
+        spoken, action = _split_transport_utterance(
+            '"You are most insightful. I seek your knowledge'
+        )
+
+        assert spoken == "You are most insightful. I seek your knowledge"
+        assert action == ""
+
+    def test_unterminated_curly_quote_preserves_preceding_action(self):
+        spoken, action = _split_transport_utterance(
+            'I approach Elyssa. “My name is Gilthaness'
+        )
+
+        assert spoken == "My name is Gilthaness"
+        assert action == "I approach Elyssa."
+
+    def test_mixed_straight_and_curly_quote_pair_is_spoken(self):
+        spoken, action = _split_transport_utterance(
+            '"Can you help me?”'
+        )
+
+        assert spoken == "Can you help me?"
+        assert action == ""
+
     def test_unquoted_text_defaults_to_action(self):
         text = "Are these recent charts? When was this information recorded?"
         spoken, action = _split_transport_utterance(text)
@@ -406,6 +430,36 @@ class TestTransportPromptAndPacketFormatting:
         assert "CURRENT POSITION" not in packet
         assert "PERCEPTION" not in packet
         assert "RECENT CONTEXT" not in packet
+
+    def test_transport_prompt_is_compact_during_one_to_one_dialogue(self):
+        cs = self._make_transport_session("gilthaness")
+        ctx = RoleContext(
+            character_id="gilthaness",
+            turn=9,
+            condition_text="steady",
+            scene_context="You stand in Elyssa's cottage.",
+            soul="",
+            identity="",
+            perception="Elyssa is beside the map table.",
+        )
+
+        packet = _render_transport_prompt(
+            context=ctx,
+            cs=cs,
+            raw_history='Elyssa: "The marks describe a conduit."',
+            actor_pos=(12.0, 10.0, "STUDY"),
+            dialogue_partner="Elyssa",
+        )
+
+        assert packet == (
+            "Reply to Elyssa in quotes, or enter an unquoted action to leave "
+            "the conversation.\n"
+        )
+        assert "PACKET: TURN PROMPT" not in packet
+        assert "SCENE" not in packet
+        assert "CURRENT POSITION" not in packet
+        assert "CARRYING" not in packet
+        assert "PERCEPTION" not in packet
 
     def test_transport_prompt_shows_current_hp_on_position_line(self):
         cs = self._make_transport_session("gilthaness")

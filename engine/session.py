@@ -4438,6 +4438,7 @@ def _save_turn(
     party_examination_state: Optional[dict[tuple[str, str], dict]] = None,
     spell_runtime: Optional[SpellRuntimeState] = None,
     items: Optional[dict] = None,
+    scene_place_path: str = "",
 ) -> Path:
     """Save a turn checkpoint as JSON."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -4447,6 +4448,7 @@ def _save_turn(
 
     data = {
         "turn": turn,
+        "scene_place_path": scene_place_path or "",
         "in_combat": in_combat,
         "active_characters": sorted(active),
         "game_time": {
@@ -5077,6 +5079,7 @@ def _render_transport_prompt(
     actor_pos: Optional[tuple] = None,
     actor_z: float = 0.0,
     items: Optional[dict] = None,
+    dialogue_partner: str = "",
 ) -> str:
     """Format the DM situation packet sent to human transport channels.
 
@@ -5116,6 +5119,15 @@ def _render_transport_prompt(
         # no packet/turn header, no labels — just the DM's prompt, so it reads
         # like a back-and-forth rather than a turn packet.
         return mechanism_section + "\n"
+
+    if dialogue_partner:
+        # The NPC's immediate reply was just delivered as the preceding live
+        # message. Do not bury it beneath a repeated turn packet while this is
+        # still a private adjacency-pair conversation.
+        return (
+            f"Reply to {dialogue_partner} in quotes, or enter an unquoted "
+            "action to leave the conversation.\n"
+        )
 
     perception = context.perception.strip() if context.perception else "No other creatures are visible."
     delta = _render_transport_scene_delta(
@@ -5477,12 +5489,24 @@ def _split_transport_utterance(text: str) -> tuple[str, str]:
     action_parts = [m.group(1).strip() for m in re.finditer(r"\*([^*]+)\*", raw) if m.group(1).strip()]
     without_star = re.sub(r"\*[^*]+\*", " ", raw)
 
+    # Accept straight/curly quote pairs interchangeably. Human chat input often
+    # autocorrects only one side of a pair.
     quoted_parts: list[str] = []
-    for m in re.finditer(r'"([^"]+)"|“([^”]+)”', without_star):
-        q = (m.group(1) or m.group(2) or "").strip()
+    for m in re.finditer(r'["“]([^"”]+)["”]', without_star):
+        q = (m.group(1) or "").strip()
         if q:
             quoted_parts.append(q)
-    without_quotes = re.sub(r'"[^"]+"|“[^”]+”', " ", without_star)
+    without_quotes = re.sub(r'["“][^"”]+["”]', " ", without_star)
+
+    # An unmatched opening quote still expresses a clear mode switch: the rest
+    # of the submitted line is dialogue. Treating it as an action is both less
+    # useful and contrary to what the opening delimiter tells us.
+    unmatched_open = re.search(r'["“]', without_quotes)
+    if unmatched_open is not None:
+        q = without_quotes[unmatched_open.end():].strip()
+        if q:
+            quoted_parts.append(q)
+        without_quotes = without_quotes[:unmatched_open.start()]
 
     remainder = " ".join(without_quotes.split()).strip()
     action = " ".join(action_parts).strip()
@@ -5648,6 +5672,7 @@ async def _player_roles_via_transport(
     items: Optional[dict] = None,
     current_positions: Optional[dict] = None,
     answer_query=None,
+    dialogue_partner: str = "",
 ) -> tuple[ActionIntent, CharacterOutput]:
     """Run player roles using transport-backed human input when configured.
 
@@ -5703,7 +5728,8 @@ async def _player_roles_via_transport(
 
     prompt_text = _render_transport_prompt(
         context=context, cs=cs, raw_history=raw_history,
-        actor_pos=actor_pos, actor_z=actor_z, items=items)
+        actor_pos=actor_pos, actor_z=actor_z, items=items,
+        dialogue_partner=dialogue_partner)
     await _send(prompt_text)
     _dbg(f"[TRANSPORT] sent turn {context.turn} prompt to "
          f"{context.character_id} via {transport}")
@@ -5774,8 +5800,10 @@ async def _player_roles_via_transport(
         # The human player's words are authoritative: only speak what they
         # actually quoted. Never let the model invent dialogue for a human.
         output.spoken = spoken_text or ""
-        if action_text:
-            output.action = action_text
+        # The transport parser, not Player-Right, owns a human's action text.
+        # In particular, speech-only input must clear any action the model
+        # inferred from the same words.
+        output.action = action_text or ""
         if transport == "web":
             # Turn consumed — the browser will disable its input until the next
             # prompt (and this clears the reload-safe flag on the server too).
@@ -6135,10 +6163,10 @@ async def iter_session(
     party_focus_zone: Optional[str] = None
     party_focus_until_turn: int = 0
     pending_scene_transition: tuple[str, str, tuple[float, float, str], str, str] | None = None
-    # NPCs who already supplied an immediate dialogue-only response. Their next
-    # ordinary exploration slot is consumed so they do not answer twice.
     from engine.social_exchange import SocialExchangeSchedule
-    social_schedule = SocialExchangeSchedule()
+    # Human speaker -> sole NPC partner for a compact follow-up prompt. This is
+    # runtime conversation focus, not persistent world state.
+    active_dialogues: dict[str, str] = {}
 
     while True:
         combat_at_start = in_combat
@@ -6169,12 +6197,17 @@ async def iter_session(
         turn_result = TurnResult(turn=turn_num, initiative_order=order)
         within_turn_history = ""
         pending_scene_transition = None
+        # Immediate dialogue consumes only a still-pending initiative slot in
+        # this exploration turn. Never carry suppression into the next turn.
+        social_schedule = SocialExchangeSchedule()
+        acted_this_turn: set[str] = set()
 
         for character_id in order:
             if character_id not in active_characters:
                 continue
             if social_schedule.suppress_slot(character_id, in_combat=in_combat):
                 continue
+            acted_this_turn.add(character_id)
 
             # Expire stale focus at character step granularity.
             if party_focus_zone and turn_num > party_focus_until_turn:
@@ -6297,6 +6330,26 @@ async def iter_session(
                     _dbg(f"[QUERY] resolve_query failed for {_char_id}: {e}")
                     return None
 
+            _dialogue_partner_id = active_dialogues.get(character_id)
+            _dialogue_partner_label = ""
+            if _dialogue_partner_id:
+                _dialogue_visible = _visible_social_ids(
+                    character_id,
+                    scene_geometry=scene_geometry,
+                    current_positions=current_positions,
+                    active_characters=active_characters,
+                )
+                if _dialogue_visible == {_dialogue_partner_id}:
+                    _partner_cs = characters.get(_dialogue_partner_id)
+                    if _partner_cs is not None:
+                        _dialogue_partner_label = (
+                            _partner_cs.scene_handle
+                            or _partner_cs.character.name
+                            or _dialogue_partner_id
+                        )
+                else:
+                    active_dialogues.pop(character_id, None)
+
             intent, output = await _player_roles_via_transport(
                 turn_cycle=turn_cycle,
                 context=context,
@@ -6307,6 +6360,7 @@ async def iter_session(
                 items=items,
                 current_positions=current_positions,
                 answer_query=_answer_query,
+                dialogue_partner=_dialogue_partner_label,
             )
             # Developer commands are claimed before LATN diagnostics.  Their
             # slash-prefixed command word is intentionally not game lexicon;
@@ -6315,7 +6369,10 @@ async def iter_session(
                 intent.intent or ""
             )
             output.spoken = _clean_spoken_output(output.spoken)
+            if not output.spoken or output.action:
+                active_dialogues.pop(character_id, None)
             _social_target = None
+            _social_visible_ids: set[str] = set()
             if (
                 not in_combat
                 and output.spoken
@@ -6323,15 +6380,16 @@ async def iter_session(
                 in {"web", "telegram"}
             ):
                 from engine.social_exchange import directed_social_target
+                _social_visible_ids = _visible_social_ids(
+                    character_id,
+                    scene_geometry=scene_geometry,
+                    current_positions=current_positions,
+                    active_characters=active_characters,
+                )
                 _social_target = directed_social_target(
                     output.spoken,
                     speaker_id=character_id,
-                    visible_ids=_visible_social_ids(
-                        character_id,
-                        scene_geometry=scene_geometry,
-                        current_positions=current_positions,
-                        active_characters=active_characters,
-                    ),
+                    visible_ids=_social_visible_ids,
                     characters=characters,
                 )
 
@@ -8062,7 +8120,10 @@ async def iter_session(
                         ),
                     )
                     turn_result.character_results.append(social_cr)
-                    social_schedule.mark_response(_social_target)
+                    if _social_target not in acted_this_turn:
+                        social_schedule.mark_response(_social_target)
+                    if not output.action and _social_visible_ids == {_social_target}:
+                        active_dialogues[character_id] = _social_target
                     target_handle = target_cs.scene_handle or _social_target
                     within_turn_history += _history_entry(
                         target_handle, reply, "", ""
@@ -8301,6 +8362,10 @@ async def iter_session(
                 party_examination_state=party_examination_state,
                 spell_runtime=spell_runtime,
                 items=items,
+                scene_place_path=(
+                    getattr(scene_geometry, "place_path", "")
+                    if scene_geometry is not None else ""
+                ),
             )
         # Advance game clock
         if game_time:

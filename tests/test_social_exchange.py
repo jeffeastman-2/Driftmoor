@@ -28,6 +28,14 @@ def test_sole_visible_npc_is_inferred_for_question():
     ) == "kelem"
 
 
+def test_sole_visible_npc_is_inferred_for_declarative_reply():
+    chars = {"gil": _cs("gil", transport="web"), "elyssa": _cs("elyssa")}
+    assert directed_social_target(
+        "You're most insightful. My name is Gilthaness, and I seek your knowledge.",
+        speaker_id="gil", visible_ids={"elyssa"}, characters=chars,
+    ) == "elyssa"
+
+
 def test_named_npc_wins_when_several_are_visible():
     chars = {
         "gil": _cs("gil", transport="web"),
@@ -45,6 +53,14 @@ def test_ambiguous_question_does_not_choose_arbitrary_npc():
     assert directed_social_target(
         "What do you know?", speaker_id="gil",
         visible_ids={"kelem", "tav"}, characters=chars,
+    ) is None
+
+
+def test_declarative_reply_with_several_npcs_requires_named_addressee():
+    chars = {"elyssa": _cs("elyssa"), "arlan": _cs("arlan")}
+    assert directed_social_target(
+        "My name is Gilthaness.", speaker_id="gil",
+        visible_ids={"elyssa", "arlan"}, characters=chars,
     ) is None
 
 
@@ -83,4 +99,3 @@ def test_generated_reply_is_dialogue_only_and_uses_target_persona():
     assert reply == "Bundles, mystery bags, and favorable terms for shards."
     assert "Soul of kelem" in calls[0][0]
     assert "no narration" in calls[0][0].lower()
-

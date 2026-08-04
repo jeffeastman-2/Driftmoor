@@ -129,6 +129,47 @@ def test_web_server_allows_explicit_private_network_bind():
     assert args.port == 8090
 
 
+def test_web_server_accepts_resume_flag():
+    args = web_play._build_arg_parser().parse_args(
+        ["driftmoor", "--turns", "200", "--resume"]
+    )
+    assert args.resume
+    assert args.turns == 200
+
+
+def test_latest_web_checkpoint_dir_selects_newest_checkpointed_run(tmp_path):
+    old = tmp_path / "2026-08-03T120000__web__" / "driftmoor"
+    new = tmp_path / "2026-08-04T120000__web__" / "driftmoor"
+    empty = tmp_path / "2026-08-05T120000__web__" / "driftmoor"
+    for path in (old, new, empty):
+        path.mkdir(parents=True)
+    (old / "day1_19h00m.json").write_text('{"turn": 1}', encoding="utf-8")
+    (new / "day1_19h10m.json").write_text('{"turn": 2}', encoding="utf-8")
+
+    assert web_play._latest_web_checkpoint_dir("driftmoor", tmp_path) == new
+
+
+def test_resume_place_infers_elyssa_cottage_for_legacy_checkpoint():
+    checkpoint = {
+        "active_characters": ["gilthaness", "elyssa"],
+        "current_positions": {
+            "gilthaness": {"x": 9.5, "y": 0, "zone": "STUDY"},
+            "elyssa": {"x": 8, "y": 9.23, "zone": "STUDY"},
+        },
+    }
+
+    assert web_play._resume_place_path("driftmoor", checkpoint) == (
+        "places/driftmoor/elyssa_cottage"
+    )
+
+
+def test_resume_place_prefers_new_checkpoint_metadata():
+    assert web_play._resume_place_path("driftmoor", {
+        "scene_place_path": "places/driftmoor/stables",
+        "active_characters": ["gilthaness", "elyssa"],
+    }) == "places/driftmoor/stables"
+
+
 def test_map_double_click_command_uses_integer_coordinates():
     assert "x.toFixed(0)" in web_play._PAGE
     assert "y.toFixed(0)" in web_play._PAGE

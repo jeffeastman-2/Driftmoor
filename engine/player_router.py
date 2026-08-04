@@ -550,12 +550,17 @@ class PlayerRight:
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
+        # Models routinely wrap SPOKEN in its own quote marks even though the
+        # field is dialogue-only by convention; left in place it doubles up
+        # with the quotes the transport/web log add when displaying a line.
+        spoken = _extract(raw, "SPOKEN").strip().strip('"“”').strip("'")
+
         return CharacterOutput(
             character_id=context.character_id,
             turn=context.turn,
             internal=_extract(raw, "INTERNAL"),
             body_language=_extract(raw, "BODY LANGUAGE"),
-            spoken=_extract(raw, "SPOKEN"),
+            spoken=spoken,
             action=_extract(raw, "ACTION"),
         )
 
