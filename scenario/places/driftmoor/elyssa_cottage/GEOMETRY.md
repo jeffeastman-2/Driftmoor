@@ -57,12 +57,10 @@ Herb garden on the west side. Ivy on walls.
 
 ## Impassable
 
-| description    | vertices                        |
-|----------------|---------------------------------|
-| Lab wall south | (16,0) (17,0) (17,5.785) (16,5.785)    |
-| Lab wall north | (16,7.785) (17,7.785) (17,14) (16,14)    |
-| Bedroom wall west | (0,14.5) (7,14.5) (7,15.5) (0,15.5) |
-| Bedroom wall east | (9,14.5) (16,14.5) (16,15.5) (9,15.5) |
+Empty: STUDY/LABORATORY and STUDY/BEDROOM walls are generated
+automatically now (lab_door and bedroom_door landmarks carve their gaps —
+see compute_auto_walls / "## Walls" in the tavern's GEOMETRY.md for the
+opt-out story). STUDY/HERB_GARDEN stays open via garden_door.
 
 ---
 

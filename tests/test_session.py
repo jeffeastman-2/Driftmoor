@@ -1727,21 +1727,22 @@ class TestDirectPathClear:
             landmarks={"lab_door": Position(16, 9.5)},
         )
 
-    def test_waypoint_for_zones_generic_guess_is_blocked(
+    def test_naive_entry_point_alone_would_be_blocked(
         self, door_offset_from_wall_geo,
     ):
-        """The bug in one line: the fallback _waypoint_for_zone would use
-        instead of the real door lands inside a wall for this geometry."""
-        from engine.session import _direct_path_clear, _waypoint_for_zone
+        """The bug in one line: _entry_point_inside_zone's generic "nearest
+        boundary point toward the centroid" guess, on its own, lands inside
+        a wall for this geometry — which is exactly why _waypoint_for_zone
+        must not use it when an authored door already tells us where the
+        real gap is (see the next test)."""
+        from engine.geometry import _entry_point_inside_zone
+        from engine.session import _direct_path_clear
         geo = door_offset_from_wall_geo
         origin = (8.0, 6.0, "STUDY")
-        naive = _waypoint_for_zone(
-            character_id="elyssa",
-            current_positions={"elyssa": origin},
-            scene_geometry=geo,
-            target_zone="LABORATORY",
+        naive = _entry_point_inside_zone(
+            actor_x=origin[0], actor_y=origin[1],
+            target_poly=geo.zones["LABORATORY"], inset=3.0,
         )
-        assert naive is not None
         assert _direct_path_clear("elyssa", origin, naive, geo) is False
         # The real door, meanwhile, is reachable in a straight line — that's
         # the target the router must not discard in favor of the guess above.
@@ -1749,6 +1750,25 @@ class TestDirectPathClear:
         assert _direct_path_clear(
             "elyssa", origin, (lab_door.x, lab_door.y), geo,
         ) is True
+
+    def test_waypoint_for_zone_finds_the_real_door_instead(
+        self, door_offset_from_wall_geo,
+    ):
+        """_waypoint_for_zone itself must be door-aware: given the same
+        geometry as above, it should route through the authored lab_door
+        landmark rather than reproducing the naive guess's wall-clipping
+        mistake."""
+        from engine.session import _direct_path_clear, _waypoint_for_zone
+        geo = door_offset_from_wall_geo
+        origin = (8.0, 6.0, "STUDY")
+        waypoint = _waypoint_for_zone(
+            character_id="elyssa",
+            current_positions={"elyssa": origin},
+            scene_geometry=geo,
+            target_zone="LABORATORY",
+        )
+        assert waypoint is not None
+        assert _direct_path_clear("elyssa", origin, waypoint, geo) is True
 
 
 # ---------------------------------------------------------------------------

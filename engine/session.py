@@ -561,7 +561,7 @@ def _waypoint_for_zone(
     actor_pos = current_positions.get(character_id)
     if actor_pos is None:
         return None
-    ax, ay, _ = actor_pos
+    ax, ay, actor_zone = actor_pos
 
     zone_upper = target_zone.upper()
     target_poly = None
@@ -572,6 +572,42 @@ def _waypoint_for_zone(
     if target_poly is None:
         return None
 
+    # Prefer the actual authored doorway between the actor's current zone
+    # and the target over the generic nearest-boundary-point guess below.
+    # That guess has no idea where walls are, and zone boundaries are
+    # impassable by default now (compute_auto_walls), so it routinely aims
+    # straight into one instead of the door a few feet away.
+    if actor_zone:
+        from models.geometry_loader import door_landmarks_between
+        doors = door_landmarks_between(
+            scene_geometry.zones, scene_geometry.landmarks, actor_zone, target_zone,
+        )
+        if doors:
+            _, dx, dy, orient = min(
+                doors, key=lambda d: (d[1] - ax) ** 2 + (d[2] - ay) ** 2
+            )
+            nudged = _point_inside_zone_near_gateway(
+                scene_geometry, gateway=(dx, dy), approach_from=(ax, ay),
+                dest_zone=zone_upper,
+                center_of=lambda z: (target_poly.centroid().x, target_poly.centroid().y),
+            )
+            candidate = nudged if nudged is not None else (dx, dy)
+            if _direct_path_clear(character_id, actor_pos, candidate, scene_geometry):
+                return candidate
+            # A door on the far side of a large room can be a long enough
+            # diagonal that the straight line clips the very wall the door
+            # is set into, before reaching the gap. Match the door's
+            # position on the boundary's own axis first, holding the
+            # actor's current coordinate on the other axis — that leg never
+            # crosses the wall's axis at all, so it can't clip it, and it
+            # lines up a clean, short crossing for next turn. Deliberately
+            # NOT labeled as target_zone by the caller: it's still
+            # geometrically in the actor's current zone.
+            aligned = (dx, ay) if orient == "h" else (ax, dy)
+            if _direct_path_clear(character_id, actor_pos, aligned, scene_geometry):
+                return aligned
+            return candidate
+
     tx, ty = _entry_point_inside_zone(
         actor_x=ax,
         actor_y=ay,
@@ -581,13 +617,42 @@ def _waypoint_for_zone(
     return tx, ty
 
 
+def _zones_walkably_adjacent(
+    scene_geometry: "SceneGeometry", zone_a: str, poly_a, zone_b: str, poly_b,
+) -> bool:
+    """Do two touching zones actually have a walkable path between them?
+
+    Geometric adjacency alone isn't enough once zone boundaries are
+    impassable by default (compute_auto_walls): two zones can share an
+    edge with zero door/archway landmarks on it, in which case the whole
+    boundary is sealed — the tavern's STAIRWAY and MEETING_ROOM touch at a
+    shared edge, but the only way between them is via MAIN_ROOM. A door
+    (or archway) between them settles it immediately; otherwise fall back
+    to checking their centroids see each other in a straight line, which
+    covers scenes without auto_wall (or with only partial hand-authored
+    walls) exactly as before.
+    """
+    from models.geometry_loader import door_landmarks_between
+    if door_landmarks_between(
+        scene_geometry.zones, scene_geometry.landmarks, zone_a, zone_b,
+    ):
+        return True
+    ca, cb = poly_a.centroid(), poly_b.centroid()
+    clear, _, _ = _check_impassable(
+        "adjacency-check", (ca.x, ca.y, ""), (cb.x, cb.y, ""),
+        scene_geometry.impassable, None,
+    )
+    return clear
+
+
 def _next_zone_toward(
     scene_geometry: Optional[SceneGeometry],
     from_zone: str,
     to_zone: str,
 ) -> Optional[str]:
     """First zone to step into from ``from_zone`` on a shortest path to
-    ``to_zone``, via the zone-adjacency graph (``_polygons_are_adjacent``).
+    ``to_zone``, via the zone-adjacency graph (``_polygons_are_adjacent``
+    plus ``_zones_walkably_adjacent``).
 
     Lets a cross-zone move advance one hop per turn through the connecting
     passages instead of drawing a straight line that runs into walls. Returns
@@ -610,6 +675,7 @@ def _next_zone_toward(
             name.upper()
             for name, p in zones.items()
             if name.upper() != zu and _polygons_are_adjacent(poly, p)
+            and _zones_walkably_adjacent(scene_geometry, by_upper[zu], poly, name, p)
         ]
 
     from collections import deque
@@ -2085,11 +2151,87 @@ def _driftmoor_enter_doorway(
     if not is_child:
         return None
     for child, _conn, x, y in _driftmoor_source_doorways(place):
-        if child == target_scene:
-            zone = ""
-            if scene_geometry is not None:
-                zone = (scene_geometry.zone_at(Position(x, y, 0.0)) or "").upper()
-            return (target_scene, (x, y, zone))
+        if child != target_scene:
+            continue
+        zone = ""
+        if scene_geometry is not None:
+            zone = (scene_geometry.zone_at(Position(x, y, 0.0)) or "").upper()
+        # A sealed venue's Connections point is an interior marker (its
+        # zone's centroid, historically) rather than a real doorway on
+        # the wall — compute_venue_walls seals the whole perimeter
+        # around it with no gap, since crossing in is this LATN action,
+        # not geometry. Walking straight at that interior point now runs
+        # into the venue's own wall and clamps there — short of the
+        # arrival gate below, forever. An authored door/archway landmark
+        # sitting exactly on the connection point marks a real, walkable
+        # doorway instead (the tavern's own meeting_room/storage_room
+        # doors); only a sealed venue needs the substitution, aimed at
+        # the nearest point on its wall from the actor's own approach
+        # side.
+        has_door_landmark = scene_geometry is not None and any(
+            ("door" in lname.lower() or "archway" in lname.lower())
+            and abs(pos.x - x) < 0.1 and abs(pos.y - y) < 0.1
+            for lname, pos in scene_geometry.landmarks.items()
+        )
+        if (
+            not has_door_landmark
+            and scene_geometry is not None
+            and zone
+            and actor_position is not None
+        ):
+            poly = next(
+                (p for name, p in scene_geometry.zones.items()
+                 if name.upper() == zone),
+                None,
+            )
+            if poly is not None:
+                near = poly.nearest_point(
+                    Position(float(actor_position[0]), float(actor_position[1]))
+                )
+                x, y = near.x, near.y
+        return (target_scene, (x, y, zone))
+    return None
+
+
+def _driftmoor_walkthrough_gateway(
+    current_place_path: str,
+    actor_zone: str,
+    scene_geometry: "SceneGeometry | None",
+) -> Optional[str]:
+    """Child scene name if the actor's current zone is a walkthrough
+    gateway into it, or None.
+
+    Some child places are reached by an authored *interior* door on an
+    ordinary, walkable zone boundary — not a sealed town-square venue
+    whose whole building perimeter blocks coordinate movement (see
+    compute_venue_walls). The tavern's meeting room and storage room are
+    the current examples: each is a real sub-scene with its own NPCs and
+    content, but its zone in the parent scene (MEETING_ROOM,
+    STORAGE_ROOM) is an ordinary room, crossed via a real door/archway
+    landmark the auto-wall system already carved a gap for. Physically
+    being in that zone at all proves the actor just walked through that
+    door — auto-wall leaves no other way in — so this is itself "enter
+    <child>", the same as if they had typed it. A zone is recognized as
+    a gateway only when its name matches the child's directory name
+    (the codebase's consistent convention) *and* a door/archway landmark
+    sits exactly on the authored connection point, so a non-physical
+    teleport connection (the stairway's ``to_upstairs``, whose point
+    doesn't coincide with any door landmark) never matches.
+    """
+    zone = (actor_zone or "").strip().upper()
+    place = (current_place_path or "").strip().lower().strip("/")
+    if not zone or not place or scene_geometry is None:
+        return None
+    for child, _conn, x, y in _driftmoor_source_doorways(place):
+        if child.upper() != zone:
+            continue
+        is_doorway = any(
+            ("door" in lname.lower() or "archway" in lname.lower())
+            and abs(pos.x - x) < 0.1 and abs(pos.y - y) < 0.1
+            for lname, pos in scene_geometry.landmarks.items()
+        )
+        if is_doorway:
+            return child
     return None
 
 
@@ -7349,7 +7491,21 @@ async def iter_session(
                                 target_zone=_nz,
                             )
                             if _wp is not None:
-                                player_target = (_wp[0], _wp[1], _nz)
+                                # Don't trust _nz blindly as the waypoint's
+                                # zone: when the door is a long diagonal
+                                # away, _waypoint_for_zone can return a
+                                # closer, verified-reachable point that's
+                                # still in the actor's current zone (lining
+                                # up for a clean crossing next turn) rather
+                                # than a same-turn point in _nz that would
+                                # clip the wall the door sits in. Re-derive
+                                # the real zone so that case is never
+                                # mislabeled as having already arrived.
+                                _wp_zone = (
+                                    scene_geometry.zone_at(Position(_wp[0], _wp[1]))
+                                    or _nz
+                                ) if scene_geometry is not None else _nz
+                                player_target = (_wp[0], _wp[1], _wp_zone)
                                 attack_log.append(
                                     f"[ROUTE] {character_id}: {_az} → {_dz} via "
                                     f"{_nz.upper()} — heading to its entry at "
@@ -7979,6 +8135,15 @@ async def iter_session(
                     if scene_geometry else "",
                     current_positions.get(character_id, (0.0, 0.0, ""))[2],
                 )
+                if _immediate_venue is None and scene_geometry is not None:
+                    # A plain move that walked the actor through an ordinary
+                    # interior door (meeting room, storage room) is entry too,
+                    # even though nothing in the intent text said "enter".
+                    _immediate_venue = _driftmoor_walkthrough_gateway(
+                        getattr(scene_geometry, "place_path", "") or "",
+                        current_positions.get(character_id, (0.0, 0.0, ""))[2],
+                        scene_geometry,
+                    )
                 if _immediate_venue is not None:
                     attack_log.append(
                         f"[VENUE] {character_id}: completed the transition to "
@@ -8003,6 +8168,16 @@ async def iter_session(
                 _target_scene = _debug_target or _infer_driftmoor_venue_transition(
                     intent.intent or "", _cur_place, _cur_zone,
                 )
+                # A plain move (no "enter" phrase at all) that lands the actor
+                # in an ordinary-room gateway zone — the tavern's meeting room
+                # or storage room, walked into through a real interior door —
+                # is itself entry into that child scene. No distance gate
+                # needed below: auto-wall leaves no way to be standing in that
+                # zone without having just crossed its door.
+                if _target_scene is None and not _debug_target and scene_geometry is not None:
+                    _target_scene = _driftmoor_walkthrough_gateway(
+                        _cur_place, _cur_zone, scene_geometry,
+                    )
                 # Entering a child venue is doorway-gated: cross in only once
                 # this turn's clamped move has brought the actor to the venue's
                 # front door. Farther off, the move just closed the distance and

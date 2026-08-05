@@ -37,6 +37,16 @@ chambers decades ago.
 
 ---
 
+## Walls
+
+- **auto_wall:** false
+
+Natural cave passages (rocky_passage_squeeze, secret_chamber_threshold,
+deep_passage_descent, etc.), not architected rooms with doors — none of
+the passage landmarks follow the *_door/*_archway naming convention (the
+closest, echo_chamber_arch, doesn't even match on the literal word), so
+turning this on would seal every chamber shut with no route between them.
+
 ## Zones
 
 | name             | vertices                                                                                          |

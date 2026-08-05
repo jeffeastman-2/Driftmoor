@@ -43,6 +43,8 @@ south entrance.
 | stair_foot         | 23.399 | 28.291 | 0 |
 | kitchen_back_door  | 45 | 21.172   | 4 |
 | bar_kitchen_door   | 39.399 | 18  | 4 |
+| bar_archway        | 35 | 16.5   | 4 |
+| stairway_archway   | 23.5 | 25  | 4 |
 
 ---
 
@@ -80,7 +82,7 @@ south entrance.
 | front_door          | 20   | 0    | places/driftmoor                                 |
 | to_meeting_room     | 8    | 25   | places/driftmoor/broken_lantern/meeting_room    |
 | to_storage_room     | 35   | 30   | places/driftmoor/broken_lantern/storage_room   |
-| to_upstairs         | 18.75 | 27.5 | places/driftmoor/broken_lantern/upstairs       |
+| to_upstairs         | 23.399 | 28.291 | places/driftmoor/broken_lantern/upstairs       |
 | kitchen_back_door   | 42.5 | 32   | places/driftmoor                                 |
 
 ---

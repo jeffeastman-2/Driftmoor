@@ -50,6 +50,18 @@ organized chaos outside.
 
 ---
 
+## Walls
+
+- **auto_wall:** false
+
+Hand-authored: the SHOPFRONT/BACKROOM boundary already has a working 9 ft
+curtained archway (curtain_door) flanked by real wall — wider than the
+default door-gap convention gives, and there's no "wide door" option yet.
+Not broken, just doesn't fit the simple convention; opt out rather than
+force a mismatch.
+
+---
+
 ## Impassable
 
 | description      | vertices                        |

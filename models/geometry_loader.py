@@ -12,6 +12,279 @@ from models.space_time import (
 
 
 # ---------------------------------------------------------------------------
+# Auto-walls: zone boundaries are impassable by default
+# ---------------------------------------------------------------------------
+
+# EXTERIOR is excluded from auto-walling: it's a huge background zone whose
+# polygon commonly extends far past a building's real footprint (so a scene
+# can place a character "just outside the door"), which means it rarely
+# shares a *true* wall edge with an interior zone the way two interior zones
+# do. The tavern's own back wall sits inset a couple of feet from KITCHEN's
+# nominal zone edge for exactly this reason. Exterior-facing walls stay a
+# manual ## Impassable concern, same as they always were.
+_AUTO_WALL_EXCLUDED_ZONES = frozenset({"EXTERIOR"})
+
+
+def _axis_aligned_overlap(
+    a1: tuple[float, float], a2: tuple[float, float],
+    b1: tuple[float, float], b2: tuple[float, float],
+) -> Optional[tuple[str, float, float, float]]:
+    """Overlapping run of two collinear axis-aligned segments, or None.
+
+    Returns (orientation, coord, lo, hi): orientation is 'h' (shared y) or
+    'v' (shared x); coord is that shared line; lo/hi is the overlap range
+    along the other axis. Segments that aren't both horizontal, both
+    vertical, or on the same line, or that don't actually overlap, return
+    None. Diagonal edges are never produced by this game's rectangular
+    zones, so they're simply not matched rather than guessed at.
+    """
+    ax1, ay1 = a1
+    ax2, ay2 = a2
+    bx1, by1 = b1
+    bx2, by2 = b2
+    if ay1 == ay2 and by1 == by2 and ay1 == by1:
+        a_lo, a_hi = sorted((ax1, ax2))
+        b_lo, b_hi = sorted((bx1, bx2))
+        lo, hi = max(a_lo, b_lo), min(a_hi, b_hi)
+        if hi - lo > 1e-6:
+            return ("h", ay1, lo, hi)
+        return None
+    if ax1 == ax2 and bx1 == bx2 and ax1 == bx1:
+        a_lo, a_hi = sorted((ay1, ay2))
+        b_lo, b_hi = sorted((by1, by2))
+        lo, hi = max(a_lo, b_lo), min(a_hi, b_hi)
+        if hi - lo > 1e-6:
+            return ("v", ax1, lo, hi)
+        return None
+    return None
+
+
+def compute_auto_walls(
+    zones: dict[str, list[tuple[float, float]]],
+    landmarks: dict[str, tuple[float, float]],
+    *,
+    door_gap_ft: float = 3.0,
+    wall_thickness_ft: float = 1.0,
+) -> list[list[tuple[float, float]]]:
+    """Wall every zone-boundary segment solid, except where a door or
+    archway landmark opens it.
+
+    Every shared edge between two (non-EXTERIOR) zones is impassable by
+    default. A landmark whose name contains "door" (case-insensitive) sits
+    on that edge and carves a ``door_gap_ft``-wide gap centered on itself —
+    multiple doors on the same long wall each get their own gap. A landmark
+    whose name contains "archway" instead leaves that entire shared edge
+    open with no wall at all, for boundaries that were never meant to have
+    a real door (a stairway landing, walking up to a bar counter).
+
+    Only axis-aligned shared edges are considered, matching every zone
+    authored in this game so far. Returns raw rectangle vertex lists —
+    callers wrap them as Polygon (the engine) or (description, verts)
+    tuples (the map renderer) to match their own Impassable representation.
+    """
+    names = [n for n in zones if n.upper() not in _AUTO_WALL_EXCLUDED_ZONES]
+    half_thickness = wall_thickness_ft / 2.0
+    half_gap = door_gap_ft / 2.0
+    walls: list[list[tuple[float, float]]] = []
+
+    for i in range(len(names)):
+        verts_a = zones[names[i]]
+        edges_a = list(zip(verts_a, verts_a[1:] + verts_a[:1]))
+        for j in range(i + 1, len(names)):
+            verts_b = zones[names[j]]
+            edges_b = list(zip(verts_b, verts_b[1:] + verts_b[:1]))
+            for a1, a2 in edges_a:
+                for b1, b2 in edges_b:
+                    seg = _axis_aligned_overlap(a1, a2, b1, b2)
+                    if seg is None:
+                        continue
+                    orient, coord, lo, hi = seg
+
+                    door_positions: list[float] = []
+                    archway_found = False
+                    for lname, (lx, ly) in landmarks.items():
+                        lname_low = lname.lower()
+                        is_door = "door" in lname_low
+                        is_archway = "archway" in lname_low
+                        if not is_door and not is_archway:
+                            continue
+                        along, perp = (lx, ly) if orient == "h" else (ly, lx)
+                        if abs(perp - coord) > 0.05 or not (lo - 0.01 <= along <= hi + 0.01):
+                            continue
+                        if is_archway:
+                            archway_found = True
+                        else:
+                            door_positions.append(along)
+                    if archway_found:
+                        continue  # intentionally open — no wall on this edge at all
+
+                    cursor = lo
+                    spans: list[tuple[float, float]] = []
+                    for d in sorted(door_positions):
+                        gap_lo, gap_hi = d - half_gap, d + half_gap
+                        if gap_lo > cursor:
+                            spans.append((cursor, gap_lo))
+                        cursor = max(cursor, gap_hi)
+                    if cursor < hi:
+                        spans.append((cursor, hi))
+
+                    for s0, s1 in spans:
+                        if s1 - s0 <= 1e-6:
+                            continue
+                        if orient == "h":
+                            walls.append([
+                                (s0, coord - half_thickness),
+                                (s1, coord - half_thickness),
+                                (s1, coord + half_thickness),
+                                (s0, coord + half_thickness),
+                            ])
+                        else:
+                            walls.append([
+                                (coord - half_thickness, s0),
+                                (coord + half_thickness, s0),
+                                (coord + half_thickness, s1),
+                                (coord - half_thickness, s1),
+                            ])
+    return walls
+
+
+def _shares_an_edge(
+    verts_a: list[tuple[float, float]], verts_b: list[tuple[float, float]],
+) -> bool:
+    edges_a = list(zip(verts_a, verts_a[1:] + verts_a[:1]))
+    edges_b = list(zip(verts_b, verts_b[1:] + verts_b[:1]))
+    return any(
+        _axis_aligned_overlap(a1, a2, b1, b2) is not None
+        for a1, a2 in edges_a for b1, b2 in edges_b
+    )
+
+
+def _point_in_polygon(x: float, y: float, verts: list[tuple[float, float]]) -> bool:
+    inside = False
+    n = len(verts)
+    j = n - 1
+    for i in range(n):
+        xi, yi = verts[i]
+        xj, yj = verts[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+
+def compute_venue_walls(
+    zones: dict[str, list[tuple[float, float]]],
+    connections: dict[str, tuple[float, float]],
+    *,
+    wall_thickness_ft: float = 1.0,
+) -> list[list[tuple[float, float]]]:
+    """Fully wall the perimeter of every zone that's a sealed "venue" — an
+    isolated building or structure with its own place, identified by a
+    Connections entry whose point lands inside it.
+
+    A town-square building (TAVERN, ELYSSA_COTTAGE, ...) is a small zone
+    nested entirely inside a much bigger one (TOWN_COMMON): it shares no
+    boundary *edge* with anything, so ``compute_auto_walls`` (which only
+    walls shared edges) never touches it, and a character could walk
+    straight through its footprint. Venue entry crosses scenes via the
+    "enter <place>" action (see the venue-entry-via-LATN design), not by
+    walking through geometry, so unlike a room-to-room doorway a venue
+    zone gets no door/archway carve-out — the wall is solid all the way
+    around.
+
+    Open terrain that merely nests on the map (a garden, a bridge, a well,
+    the docks) has no Connections point inside it and is left untouched. A
+    zone that shares a real boundary edge with any other zone is never
+    treated as a venue even if a connection point happens to fall inside
+    it — that's an ordinary room (a building's own STUDY or MAIN_ROOM,
+    whose front-door connection back out to its parent place naturally
+    sits inside it) or a background region (TOWN_COMMON, NORTH_BANK,
+    AZURE_SEA border each other along real coastline/riverbank edges);
+    either way ``compute_auto_walls``'s door-gap mechanism is what
+    applies to it, not a full seal.
+    """
+    names = [n for n in zones if n.upper() not in _AUTO_WALL_EXCLUDED_ZONES]
+    conn_points = list(connections.values())
+    half = wall_thickness_ft / 2.0
+    walls: list[list[tuple[float, float]]] = []
+
+    for name in names:
+        verts = zones[name]
+        if any(
+            other != name and _shares_an_edge(verts, zones[other])
+            for other in names
+        ):
+            continue  # edge-adjacent to something — an ordinary room/region
+        if not any(_point_in_polygon(cx, cy, verts) for cx, cy in conn_points):
+            continue  # open terrain, no place of its own
+        edges = list(zip(verts, verts[1:] + verts[:1]))
+        for (x1, y1), (x2, y2) in edges:
+            if y1 == y2:
+                lo, hi = sorted((x1, x2))
+                walls.append([
+                    (lo, y1 - half), (hi, y1 - half),
+                    (hi, y1 + half), (lo, y1 + half),
+                ])
+            elif x1 == x2:
+                lo, hi = sorted((y1, y2))
+                walls.append([
+                    (x1 - half, lo), (x1 + half, lo),
+                    (x1 + half, hi), (x1 - half, hi),
+                ])
+    return walls
+
+
+def door_landmarks_between(
+    zones: dict[str, "Polygon"],
+    landmarks: dict[str, "Position"],
+    zone_a: str,
+    zone_b: str,
+) -> list[tuple[str, float, float, str]]:
+    """Door/archway landmarks sitting on the shared boundary of two zones.
+
+    Returns (name, x, y, orientation) — orientation is 'h' for a landmark
+    on a horizontal (shared-y) boundary, 'v' for vertical (shared-x), so a
+    caller building a safe approach route knows which axis is "along the
+    wall" versus "through it".
+
+    Movement routing (``_waypoint_for_zone`` in engine/session.py) uses this
+    to aim at the actual authored doorway between two zones instead of a
+    generic "nearest boundary point toward the centroid" guess — the latter
+    has no idea where walls are and, now that zone boundaries are
+    impassable by default (see ``compute_auto_walls``), routinely aims
+    straight into one. Same edge-matching and name convention as
+    ``compute_auto_walls``; kept as a separate query since callers want the
+    landmark position itself, not a generated wall.
+    """
+    za, zb = zone_a.upper(), zone_b.upper()
+    poly_a = next((p for n, p in zones.items() if n.upper() == za), None)
+    poly_b = next((p for n, p in zones.items() if n.upper() == zb), None)
+    if poly_a is None or poly_b is None:
+        return []
+    verts_a = [(v[0], v[1]) for v in poly_a.vertices]
+    verts_b = [(v[0], v[1]) for v in poly_b.vertices]
+    edges_a = list(zip(verts_a, verts_a[1:] + verts_a[:1]))
+    edges_b = list(zip(verts_b, verts_b[1:] + verts_b[:1]))
+
+    found: list[tuple[str, float, float, str]] = []
+    for a1, a2 in edges_a:
+        for b1, b2 in edges_b:
+            seg = _axis_aligned_overlap(a1, a2, b1, b2)
+            if seg is None:
+                continue
+            orient, coord, lo, hi = seg
+            for lname, pos in landmarks.items():
+                lname_low = lname.lower()
+                if "door" not in lname_low and "archway" not in lname_low:
+                    continue
+                lx, ly = pos.x, pos.y
+                along, perp = (lx, ly) if orient == "h" else (ly, lx)
+                if abs(perp - coord) <= 0.05 and lo - 0.01 <= along <= hi + 0.01:
+                    found.append((lname, lx, ly, orient))
+    return found
+
+
+# ---------------------------------------------------------------------------
 # Low-level parsing helpers
 # ---------------------------------------------------------------------------
 
@@ -156,6 +429,19 @@ def parse_geometry_md(text: str) -> dict:
     result["zone_ceiling_z"] = zone_ceiling_z
     result["zone_z_explicit"] = zone_z_explicit
 
+    # --- Connections --- (parsed ahead of Impassable: compute_venue_walls
+    # needs connection points to identify sealed-venue zones)
+    connections_section = _extract_section(text, "Connections")
+    conn_rows = _parse_table_rows(connections_section)
+    connections: dict[str, Position] = {}
+    for row in conn_rows:
+        if len(row) >= 3:
+            name = row[0].strip()
+            if name == "name":
+                continue
+            connections[name] = Position(float(row[1]), float(row[2]))
+    result["connections"] = connections
+
     # --- Impassable ---
     impassable_section = _extract_section(text, "Impassable")
     impassable_rows = _parse_table_rows(impassable_section)
@@ -168,19 +454,30 @@ def parse_geometry_md(text: str) -> dict:
             verts = _parse_vertices(row[1])
             if verts:
                 impassable.append(Polygon(verts))
+    # Zone boundaries are impassable by default; door/archway landmarks
+    # open them (see compute_auto_walls). On by default for every scene;
+    # opt out with "## Walls\n- **auto_wall:** false" for the rare scene
+    # whose zones don't map cleanly onto this convention (e.g. fey_glade's
+    # diagonal TRAIL zone and non-"*_door"/"*_archway" landmark names).
+    walls_meta = _parse_metadata(_extract_section(text, "Walls"))
+    if walls_meta.get("auto_wall", "true").strip().lower() not in {
+        "false", "no", "0",
+    }:
+        _zone_verts = {
+            name: [(v[0], v[1]) for v in poly.vertices]
+            for name, poly in zones.items()
+        }
+        _landmark_xy = {name: (pos.x, pos.y) for name, pos in landmarks.items()}
+        _connection_xy = {name: (pos.x, pos.y) for name, pos in connections.items()}
+        impassable.extend(
+            Polygon(verts)
+            for verts in compute_auto_walls(_zone_verts, _landmark_xy)
+        )
+        impassable.extend(
+            Polygon(verts)
+            for verts in compute_venue_walls(_zone_verts, _connection_xy)
+        )
     result["impassable"] = impassable
-
-    # --- Connections ---
-    connections_section = _extract_section(text, "Connections")
-    conn_rows = _parse_table_rows(connections_section)
-    connections: dict[str, Position] = {}
-    for row in conn_rows:
-        if len(row) >= 3:
-            name = row[0].strip()
-            if name == "name":
-                continue
-            connections[name] = Position(float(row[1]), float(row[2]))
-    result["connections"] = connections
 
     # --- Boundaries ---
     boundaries_section = _extract_section(text, "Boundaries")

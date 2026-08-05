@@ -19,9 +19,9 @@ east door opens directly into the kitchen.
 | name              | x | y   | z |
 |-------------------|---|-----|---|
 | kitchen_door      | 11 | 4.75 | 4 |
-| ale_barrels       | 2   | 7 | 4 |
+| ale_barrels       | 2.558   | 7.343 | 4 |
 | dry_goods         | 7   | 7 | 4 |
-| hidden_floorboard | 6.5 | 3 | 0 |
+| hidden_floorboard | 2.894 | 1.712 | 0 |
 
 ---
 
@@ -54,6 +54,6 @@ east door opens directly into the kitchen.
 
 | id                 | x | y | label                  |
 |--------------------|---|---|------------------------|
-| spare_blanket      | 4.5 | 8 | Spare blanket          |
-| crate_saltfish     | 7   | 7 | Crate of saltfish      |
-| candle_stub_bundle | 7.5 | 4 | Bundle of candle stubs |
+| spare_blanket      | 5.53 | 2.248 | Spare blanket          |
+| crate_saltfish     | 2.792   | 4.038 | Crate of saltfish      |
+| candle_stub_bundle | 8.101 | 1.982 | Bundle of candle stubs |

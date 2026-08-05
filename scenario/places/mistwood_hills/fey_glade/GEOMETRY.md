@@ -31,6 +31,16 @@ Zone order matters — first match wins in zone_at(). FOREST must be last.
 | TRAIL    | (191,146,0.33) (195,146,0.33) (325,13,0.0) (321,9,0.0)           |
 | FOREST   | (0,0,0.0) (325,0,0.0) (325,325,0.0) (0,325,0.0)          |
 
+## Walls
+
+- **auto_wall:** false
+
+Outdoor glade, not a building: POOL nests entirely inside GLADE (no shared
+edge to wall), TRAIL has diagonal edges the convention doesn't model, and
+landmark names (trail_entrance, glade_center) don't follow the
+*_door/*_archway convention. Zones here are visibility/lighting regions,
+not walled rooms.
+
 ## Impassable
 
 | description  | vertices                         |

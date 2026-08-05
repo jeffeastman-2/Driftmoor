@@ -454,6 +454,44 @@ def parse_geometry(text: str) -> dict:
             if v:
                 g["impassable"].append((cells[0], v))
 
+    # Connections: `name | x | y | destination`. Parsed ahead of the
+    # auto-wall block below (compute_venue_walls needs connection points
+    # to identify sealed-venue zones) as well as used to resolve a
+    # building zone's art directory (the place a connection leads to).
+    for cells in _table("Connections"):
+        if cells[0].lower() == "name":
+            continue
+        if len(cells) >= 4:
+            try:
+                g["connections"].append(
+                    (cells[0], float(cells[1]), float(cells[2]), cells[3]))
+            except ValueError:
+                continue
+
+    # Zone boundaries are impassable by default; door/archway landmarks open
+    # them (see models.geometry_loader.compute_auto_walls, the single
+    # shared implementation so the rendered map and actual gameplay always
+    # agree on where the walls are). On by default; opt out per-scene with
+    # "## Walls\n- **auto_wall:** false" (see the loader for why).
+    walls_section = re.search(r"##\s+Walls\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
+    auto_wall_on = True
+    if walls_section:
+        flag = re.search(
+            r"\*\*auto_wall:\*\*\s*([^\n]+)", walls_section.group(1), re.IGNORECASE)
+        if flag and flag.group(1).strip().lower() in {"false", "no", "0"}:
+            auto_wall_on = False
+    if auto_wall_on:
+        from models.geometry_loader import compute_auto_walls, compute_venue_walls
+        g["impassable"].extend(
+            ("Auto wall", verts)
+            for verts in compute_auto_walls(g["zones"], g["landmarks"])
+        )
+        _connection_xy = {name: (x, y) for name, x, y, _dest in g["connections"]}
+        g["impassable"].extend(
+            ("Venue wall", verts)
+            for verts in compute_venue_walls(g["zones"], _connection_xy)
+        )
+
     for cells in _table("Items"):
         if cells[0].lower() == "id":
             continue
@@ -474,18 +512,6 @@ def parse_geometry(text: str) -> dict:
                 except ValueError:
                     label = last
             g["items"][cells[0]] = (x, y, label)
-
-    # Connections: `name | x | y | destination`. Used to resolve a building
-    # zone's art directory (the place a connection inside the zone leads to).
-    for cells in _table("Connections"):
-        if cells[0].lower() == "name":
-            continue
-        if len(cells) >= 4:
-            try:
-                g["connections"].append(
-                    (cells[0], float(cells[1]), float(cells[2]), cells[3]))
-            except ValueError:
-                continue
 
     # Character placement is a scene concern: callers pass scene-resolved
     # ``start_positions`` into the renderers (which override ``starting_positions``
@@ -1124,6 +1150,22 @@ def _point_in_or_near_poly(
     """Containment with the same practical edge tolerance used by movement."""
     if _point_in_poly(x, y, verts):
         return True
+    return _point_near_poly_edge(x, y, verts, tolerance)
+
+
+def _point_near_poly_edge(
+    x: float, y: float, verts: list[tuple[float, float]], tolerance: float = 0.75,
+) -> bool:
+    """Whether the point sits within tolerance of the polygon's *boundary*
+    line specifically — unlike ``_point_in_or_near_poly``, this has no
+    interior short-circuit, so it does not fire for a point buried deep
+    inside a large containing zone (EXTERIOR spans the whole map, nested
+    "inside" every other zone by construction — see the "zone order
+    matters, first match wins" convention). Used to detect a landmark
+    sitting exactly on a *shared* boundary between two real zones (a
+    door) without also matching every zone whose fill happens to
+    geometrically cover that point.
+    """
     if len(verts) < 2:
         return False
     for i, (ax, ay) in enumerate(verts):
@@ -1373,10 +1415,30 @@ def render_turn_slider_html(
                 _reveal_seen_from(x, y, zstr, lt)
 
     def _elem_reveal(x: float, y: float) -> int:
+        # A landmark sitting exactly on a shared zone boundary (a door,
+        # an archway) is "on" both adjacent zones' edges at once as far
+        # as ray casting is concerned — which one _containing_zone
+        # happens to pick is arbitrary table-order noise. Reveal it as
+        # soon as *either* side has been explored (a doorway is visible
+        # from the room you're standing in, even if what's beyond it is
+        # still fogged) rather than gating it on one arbitrarily-chosen
+        # side. This must check proximity to each zone's *boundary
+        # line*, not fill: EXTERIOR (and any zone) can geometrically
+        # contain another zone's whole interior by construction (see the
+        # "zone order matters, first match wins" convention), and a
+        # naive "inside or near" containment test would match it for
+        # every point on the map, leaking fog-of-war-hidden contents via
+        # whichever huge background zone happens to already be revealed.
+        touching = [
+            zname for zname, verts in g["zones"].items()
+            if _point_near_poly_edge(x, y, verts, tolerance=0.1)
+        ]
+        if touching:
+            return min(reveal_zone.get(z, never) for z in touching)
         z = _containing_zone(x, y, g["zones"])
         if z is None:
             return turn_list[0]               # not in any zone -> ungated
-        return reveal_zone.get(z, never)      # zone never explored -> hidden
+        return reveal_zone.get(z, never)
 
     # viewBox extents (same as the path map).
     all_pts: list[tuple[float, float]] = []
