@@ -341,7 +341,7 @@ def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
 
     root = Path("scenario/places/driftmoor/broken_lantern")
     expected = {
-        root / "GEOMETRY.md": (6, 27),
+        root / "GEOMETRY.md": (6, 32),
         root / "meeting_room/GEOMETRY.md": (1, 4),
         root / "storage_room/GEOMETRY.md": (1, 6),
         root / "upstairs/GEOMETRY.md": (5, 10),
@@ -369,6 +369,8 @@ def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
         "table_1", "table_2", "table_3",
         "bar_counter", "bar_cabinet", "kitchen_center", "stair_foot",
         "broken_lantern_sign",
+        "front_door", "meeting_room_door", "storage_room_door",
+        "kitchen_back_door", "bar_kitchen_door",
     ):
         assert f"data-target='{target}'" in main
 

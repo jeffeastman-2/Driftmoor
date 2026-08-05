@@ -43,8 +43,8 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 
 | character | x | y |
 |---|---:|---:|
-| tess | 35.581 | 9.47 |
-| wilfred | 31.215 | 3.889 |
+| tess | 39.597 | 11.448 |
+| wilfred | 32.414 | 3.649 |
 | bran | 9.711 | 11.943 |
 | marda | 15.06 | 11.943 |
 
@@ -58,16 +58,16 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 ## Scene Introductions
 
 ### tess
-Evening crowd. The usual faces. Wilfred is three ales deep and talking about shadow giants again. Then the door opens and a halfling walks in — wild hair, patched clothes, lute across their back, and the particular confidence of someone who has talked their way into a meal before. They have already found the stool by the fire. No coin visible. You have seen this act. The question is whether this one is worth feeding.
+Evening crowd. The usual faces. Wilfred is three ales deep and talking about shadow giants again. Bran and Marda are seated at a table and are arguing about something. You go about your business, cleaning the bar area and greeting any newcomers.
 
 ### wilfred
-You are already halfway through a story no one asked for and one-third through another ale someone else paid for. You keep saying the same thing: you saw shapes near the obelisk cliffs that were too tall and too wrong to be men. Most people in the room roll their eyes when you start, but Tess listens just enough to make you think you are not entirely mad.
+You are already halfway through a story no one asked for and one-third through another ale someone else paid for. You keep saying the same thing: you saw shapes near the obelisk cliffs that were too tall and too wrong to be men. Most people in the room roll their eyes when you start, but Tess listens just enough to make you think you are not entirely mad. Do not move from your barstool unless there is a disturbance.
 
 ### bran
-You are at a side table with Marda, arguing about a fishing payout that came up short after gear repairs. You think someone in town is skimming. Marda thinks you are counting wrong and picking fights because you hate being embarrassed in public. The ale has not improved either of your tempers.
+You are at a side table with Marda, arguing about a fishing payout that came up short after gear repairs. You think someone in town is skimming. Marda thinks you are counting wrong and picking fights because you hate being embarrassed in public. The ale has not improved either of your tempers. Do not move while you are arguing with Marda unless there is a disturbance.
 
 ### marda
-You are at a side table with Bran, trying to keep a straightforward accounting argument from becoming a tavern scene. Bran is loud and stubborn. You are tired, annoyed, and very aware that everyone can hear at least half of this. You do not mind an audience if it helps settle the point.
+You are at a side table with Bran, trying to keep a straightforward accounting argument from becoming a tavern scene. Bran is loud and stubborn. You are tired, annoyed, and very aware that everyone can hear at least half of this. You do not mind an audience if it helps settle the point. Do not move while you are discussing with Bran unless there is a disturbance.
 
 ## Connections
 - Village center (outside)

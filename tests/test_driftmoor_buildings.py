@@ -225,8 +225,8 @@ def test_broken_lantern_subplaces_have_geometry_and_reciprocal_entries():
     } <= set(parent.scene_geometry.zones)
 
     expected = {
-        "meeting_room": ("I enter the meeting room", (8.0, 23.0), (0, 23, 0)),
-        "storage_room": ("I enter the storage room", (32.5, 27.75), (21.5, 23, 0)),
+        "meeting_room": ("I enter the meeting room", (8.0, 25.0), (0, 23, 0)),
+        "storage_room": ("I enter the storage room", (35.0, 30.0), (21.5, 23, 0)),
         "upstairs": ("I go upstairs", (18.75, 27.5), (0, 0, 9)),
     }
     for child_id, (phrase, doorway_xy, expected_origin) in expected.items():
