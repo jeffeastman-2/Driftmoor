@@ -50,6 +50,11 @@ Herb garden on the west side. Ivy on walls.
 
 ---
 
+## Fog of War
+
+- **reveal_on_entry:** BEDROOM, LABORATORY
+- **reveal_layout:** BEDROOM, LABORATORY
+
 ## Impassable
 
 | description    | vertices                        |

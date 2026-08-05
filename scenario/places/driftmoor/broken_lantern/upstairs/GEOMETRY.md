@@ -5,8 +5,8 @@
 - **name:** The Broken Lantern Upstairs
 - **place_path:** places/driftmoor/broken_lantern/upstairs
 - **z_level:** 25.25
-- **width:** 40.5
-- **height:** 32.5
+- **width:** 45
+- **height:** 35
 - **origin:** 0, 0, 9
 
 Notes: The upper floor shares the tavern's horizontal footprint. Three

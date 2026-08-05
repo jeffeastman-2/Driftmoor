@@ -28,11 +28,11 @@ south entrance.
 | table_3            | 12.473   | 11.872   | 4 |
 | table_4            | 23.579   | 11.803   | 4 |
 | hearth             | 31.54    | 21.431   | 4 |
-| stage              | 15.699    | 19.968   | 4 |
+| stage              | 15.814    | 20.429   | 4 |
 | booth_1            | 2.304 | 3.708   | 4 |
 | booth_2            | 2.304 | 9.07   | 4 |
 | booth_3            | 2.304 | 14.432  | 4 |
-| bar_counter        | 34.993   | 7.085    | 4 |
+| bar_counter        | 35.223   | 7.546    | 4 |
 | bar_cabinet        | 42.401   | 8.912   | 4 |
 | bar_stool_2        | 32.017   | 7.163   | 4 |
 | bar_stool_3        | 32.316   | 3.42  | 4 |
@@ -41,8 +41,8 @@ south entrance.
 | meeting_room_door  | 8    | 25   | 4 |
 | storage_room_door  | 35 | 30 | 4 |
 | stair_foot         | 23.399 | 28.291 | 0 |
-| kitchen_back_door  | 42.5 | 32   | 4 |
-| bar_kitchen_door   | 36.75 | 18  | 4 |
+| kitchen_back_door  | 45 | 21.172   | 4 |
+| bar_kitchen_door   | 39.399 | 18  | 4 |
 
 ---
 
@@ -61,15 +61,17 @@ south entrance.
 ---
 
 ## Impassable
-
 | description             | vertices                                  |
 |-------------------------|-------------------------------------------|
-| Bar counter             | (32,2) (34,2) (34,15) (32,15)            |
-| Kitchen partition west  | (33,17.5) (35.5,17.5) (35.5,18.5) (33,18.5) |
-| Kitchen partition east  | (38,17.5) (40.5,17.5) (40.5,18.5) (38,18.5) |
-| Back wall               | (0,31.5) (40.5,31.5) (40.5,32.5) (0,32.5) |
+| Bar counter             | (34,2) (37,2) (37,15) (34,15)            |
 
 ---
+
+## Fog of War
+
+- **reveal_on_entry:** KITCHEN
+- **reveal_layout:** KITCHEN
+
 
 ## Connections
 
@@ -92,8 +94,8 @@ south entrance.
 | service_bell        | 34.526   | 8.17    | Service bell           |
 | room_key_ring       | 42.037   | 10.103    | Room key ring          |
 | ale_tankards        | 35.451   | 2.64    | Ale tankards           |
-| tip_bowl            | 11.28    | 17.335   | Tip bowl               |
-| lute_case           | 17.144    | 20.63   | Lute case              |
+| tip_bowl            | 11.28    | 18.141   | Tip bowl               |
+| lute_case           | 18.987    | 21.782   | Lute case              |
 | dice_cup            | 12.996   | 5.682    | Dice cup               |
 | kitchen_knife       | 39.737   | 26.349   | Kitchen knife          |
 | stew_pot            | 41.181   | 32.716   | Stew pot               |
