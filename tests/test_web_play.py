@@ -212,7 +212,18 @@ def test_item_icon_keyword_and_fallback():
 
 def test_inventory_none_character_is_empty():
     assert web_play._player_inventory(None, {}) == {
-        "hand": [], "worn": [], "carried": [], "purse": ""}
+        "hand": [], "worn": [], "carried": [], "purse": "",
+        "hp": "", "ac": None}
+
+
+def test_inventory_reports_hp_and_ac():
+    cs = _cs()
+    cs.character.hp = 17
+    cs.character.current_hp = 12
+    cs.character.ac = 15
+    inv = web_play._player_inventory(cs, {})
+    assert inv["hp"] == "12/17"
+    assert inv["ac"] == 15
 
 
 def test_inventory_ui_keeps_in_hand_group_when_empty():
@@ -222,6 +233,53 @@ def test_inventory_ui_keeps_in_hand_group_when_empty():
 def test_inventory_default_markup_shows_empty_in_hand_group():
     assert "<span class='lbl'>In hand</span>" in web_play._PAGE
     assert "chip hand empty" in web_play._PAGE
+
+
+def test_inventory_markup_renders_hp_and_ac_groups():
+    assert "grp('HP',(m.hp?[{icon:'❤️',label:m.hp}]:[]),'hp')" in web_play._PAGE
+    assert "grp('AC',(m.ac!=null?" in web_play._PAGE
+
+
+def test_events_handler_delivers_primary_prompt_by_diffing_durable_state():
+    """The primary per-turn prompt must be delivered by comparing
+    latest_prompt/is_awaiting against what this connection already showed
+    (last_prompt_shown), evaluated on every poll inside the loop — not by
+    draining a one-shot queue, and not by a special one-time check before
+    the loop. A queue-based (or connect-time-only) delivery races the
+    session task's own queue push of the same content: whichever fires
+    first either duplicates it or, if a reconnect lands between the two,
+    loses it silently (see test_events_handler_never_discards_pending_
+    outbound_on_connect for the discard variant of this same bug)."""
+    import inspect
+    src = inspect.getsource(web_play.handle_events)
+    loop_idx = src.index("while True:")
+    body = src[loop_idx:]
+    assert "last_prompt_shown" in src
+    assert "last_prompt_shown = None" in src  # reset when not the player's turn
+    assert "web_transport.is_awaiting(player)" in body
+    assert "web_transport.latest_prompt(player)" in body
+    assert "current_prompt != last_prompt_shown" in body
+
+
+def test_events_handler_never_discards_pending_outbound_on_connect():
+    """Regression: an earlier version drained the outbound queue at
+    connection start to avoid re-showing stale content. It wasn't always
+    stale — a question answer or DM sub-dialog reply genuinely pending for
+    this same connection's own upcoming poll got silently discarded
+    whenever a reconnect landed between the player asking and the queue
+    being drained, leaving the player looking at a hang with no answer and
+    no way to get one. There must be no queue drain before the loop at all."""
+    import inspect
+    src = inspect.getsource(web_play.handle_events)
+    assert "drain_outbound(player)" not in src.split("while True:")[0]
+
+
+def test_dm_event_skips_empty_div_but_still_activates_turn():
+    """The web turn prompt is now often intentionally empty (position/
+    perception/carrying already live elsewhere) — an empty 'dm' message must
+    still flip the input active, just without adding a blank line to the log."""
+    assert "if(m.text){const d=document.createElement('div');" in web_play._PAGE
+    assert "setTurn(true);" in web_play._PAGE
 
 
 def test_page_deduplicates_spoken_words_and_highlights_prose_dialogue():

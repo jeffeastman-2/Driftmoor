@@ -5156,6 +5156,22 @@ def _render_transport_prompt(
             "action to leave the conversation.\n"
         )
 
+    if (cs.player_transport or "").strip().lower() == "web":
+        # Telegram has no other UI, so the full packet below is that
+        # player's only view of position/perception/carrying. The web
+        # client already shows all of it live — the map for position and
+        # who's visible, the sidebar for carried gear and HP/AC, the
+        # scrolling log for every character's narration as it happens
+        # (including earlier-initiative actors this same turn). Repeating
+        # it all in the prompt on every turn is pure noise; only the
+        # opening scene narration has nowhere else to appear, since nothing
+        # has been shown yet when turn 1 starts.
+        if context.turn <= 1:
+            scene_intro = _scene_intro_for_transport(context.scene_context, raw_history)
+            if scene_intro:
+                return scene_intro + "\n"
+        return ""
+
     perception = context.perception.strip() if context.perception else "No other creatures are visible."
     delta = _render_transport_scene_delta(
         scene_context=context.scene_context,
@@ -5757,7 +5773,19 @@ async def _player_roles_via_transport(
         context=context, cs=cs, raw_history=raw_history,
         actor_pos=actor_pos, actor_z=actor_z, items=items,
         dialogue_partner=dialogue_partner)
-    await _send(prompt_text)
+    if transport == "web":
+        # The primary per-turn prompt is delivered by state, not by a
+        # one-shot queue push: the web SSE loop polls latest_prompt/
+        # is_awaiting and diffs against what it last showed (see
+        # handle_events in web_play.py). A queue push here would race that
+        # polling — whichever fires first "wins" and the other either
+        # duplicates it or, if an intervening reconnect drops the queued
+        # copy, loses it silently. Sub-dialog asides (spell help, a DM
+        # answer to a question) still go through _send/the queue below,
+        # unaffected — those aren't "the current state," just a message.
+        web_transport.publish_prompt(context.character_id, prompt_text)
+    else:
+        await _send(prompt_text)
     _dbg(f"[TRANSPORT] sent turn {context.turn} prompt to "
          f"{context.character_id} via {transport}")
 

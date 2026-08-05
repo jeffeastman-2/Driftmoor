@@ -91,6 +91,26 @@ def is_awaiting(character_id: str) -> bool:
     return _AWAITING.get(character_id, False)
 
 
+# The current outstanding turn prompt, published alongside the one-shot
+# outbound queue push. A 'dm' message delivered through drain_outbound is
+# gone once written to a response stream — if that stream's SSE connection
+# dies before the browser renders it (a reconnect racing the initial
+# handshake, a page reload), the text is lost with no fallback, since the
+# turn it belongs to hasn't been checkpointed yet. A late/reconnecting
+# client can always ask "what's the current prompt?" here instead.
+_LAST_PROMPT: dict[str, str] = {}
+
+
+def publish_prompt(character_id: str, text: str) -> None:
+    """Store the most recently sent turn prompt for this player."""
+    _LAST_PROMPT[character_id] = text or ""
+
+
+def latest_prompt(character_id: str) -> str:
+    """The current outstanding turn prompt, or "" if none/already answered."""
+    return _LAST_PROMPT.get(character_id, "")
+
+
 # Latest live (possibly mid-turn) character positions, published by the turn loop
 # when it prompts a web player. Lets the web app show where everyone is *now* —
 # including NPCs who already acted this turn — instead of lagging a turn behind
@@ -138,7 +158,9 @@ def reset(character_id: str | None = None) -> None:
         _POS.clear()
         _ACTIONS.clear()
         _AWAITING.clear()
+        _LAST_PROMPT.clear()
     else:
         _OUT.pop(character_id, None)
         _IN.pop(character_id, None)
         _AWAITING.pop(character_id, None)
+        _LAST_PROMPT.pop(character_id, None)

@@ -311,7 +311,9 @@ class TestTransportUtteranceSplit:
 
 
 class TestTransportPromptAndPacketFormatting:
-    def _make_transport_session(self, cid: str = "gilthaness") -> CharacterSession:
+    def _make_transport_session(
+        self, cid: str = "gilthaness", transport: str = "telegram",
+    ) -> CharacterSession:
         pc = PlayerCharacter(
             id=cid,
             name="Gilthaness",
@@ -333,7 +335,7 @@ class TestTransportPromptAndPacketFormatting:
             identity="",
             initial_scene="You stand in Elyssa's cottage.",
             scene_handle="Gil",
-            player_transport="telegram",
+            player_transport=transport,
         )
 
     def test_turn_result_packet_omits_self_intent(self):
@@ -459,6 +461,40 @@ class TestTransportPromptAndPacketFormatting:
         assert "SCENE" not in packet
         assert "CURRENT POSITION" not in packet
         assert "CARRYING" not in packet
+        assert "PERCEPTION" not in packet
+
+    def test_web_transport_prompt_is_empty_past_turn_one(self):
+        """The web client already shows position/perception/carrying live
+        (map + sidebar) and every character's narration streams into the
+        visible log as it happens, so the packet would be pure noise past
+        the opening turn."""
+        cs = self._make_transport_session("gilthaness", transport="web")
+        ctx = RoleContext(
+            character_id="gilthaness", turn=2, condition_text="steady",
+            scene_context="You stand in the Study.", soul="",
+            identity="", perception="Elyssa is beside the map table.",
+        )
+        packet = _render_transport_prompt(
+            context=ctx, cs=cs, raw_history='Gilthaness: "Hello."',
+            actor_pos=(8.0, 6.0, "STUDY"),
+        )
+        assert packet == ""
+
+    def test_web_transport_prompt_keeps_scene_intro_on_turn_one(self):
+        """Turn 1 is the one case nothing else has shown the scene's opening
+        narration yet, so it still needs to appear somewhere."""
+        cs = self._make_transport_session("gilthaness", transport="web")
+        ctx = RoleContext(
+            character_id="gilthaness", turn=1, condition_text="steady",
+            scene_context="You arrive at the cottage, coat damp with mist.",
+            soul="", identity="", perception="",
+        )
+        packet = _render_transport_prompt(
+            context=ctx, cs=cs, raw_history="", actor_pos=(9.5, 0.0, "STUDY"),
+        )
+        assert "You arrive at the cottage, coat damp with mist." in packet
+        assert "PACKET: TURN PROMPT" not in packet
+        assert "CURRENT POSITION" not in packet
         assert "PERCEPTION" not in packet
 
     def test_transport_prompt_shows_current_hp_on_position_line(self):

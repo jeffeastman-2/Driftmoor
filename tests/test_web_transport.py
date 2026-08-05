@@ -118,6 +118,31 @@ def test_awaiting_defaults_false_then_toggles():
     assert wt.is_awaiting("p") is False
 
 
+def test_latest_prompt_defaults_empty_then_stores():
+    # A reconnecting client needs a durable copy of the current outstanding
+    # prompt — the outbound queue is one-shot and gone once drained into a
+    # response stream, even one nobody ended up reading.
+    assert wt.latest_prompt("p") == ""
+    wt.publish_prompt("p", "You are at the door.")
+    assert wt.latest_prompt("p") == "You are at the door."
+    wt.publish_prompt("p", "")  # e.g. a suppressed web packet -- stored as-is
+    assert wt.latest_prompt("p") == ""
+
+
+def test_reset_clears_latest_prompt():
+    wt.publish_prompt("p", "You are at the door.")
+    wt.reset()
+    assert wt.latest_prompt("p") == ""
+
+
+def test_reset_single_character_clears_only_that_prompt():
+    wt.publish_prompt("a", "prompt for a")
+    wt.publish_prompt("b", "prompt for b")
+    wt.reset("a")
+    assert wt.latest_prompt("a") == ""
+    assert wt.latest_prompt("b") == "prompt for b"
+
+
 def test_awaiting_is_per_character():
     wt.set_awaiting("a", True)
     assert wt.is_awaiting("a") is True

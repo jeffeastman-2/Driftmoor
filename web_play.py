@@ -125,13 +125,17 @@ def _is_worn(text: str) -> bool:
 
 
 def _player_inventory(cs, items: dict | None) -> dict:
-    """The player's current possessions from the live character, bucketed as
-    ``{"hand": [...], "worn": [...], "carried": [...]}`` (each entry {icon,
-    label}). Read live so it's current even at turn 0. Wielded weapons + held
-    items are in hand; armor and worn gear (by keyword) are worn; everything
-    else carried — non-wielded weapons, tools, kits, picked-up scene items."""
+    """The player's current possessions and vitals from the live character:
+    ``{"hand": [...], "worn": [...], "carried": [...], "purse": str,
+    "hp": "current/max", "ac": int|None}`` (each gear entry {icon, label}).
+    Read live so it's current even at turn 0. Wielded weapons + held items
+    are in hand; armor and worn gear (by keyword) are worn; everything else
+    carried — non-wielded weapons, tools, kits, picked-up scene items. HP/AC
+    live in the persistent sidebar instead of the turn prompt, since the
+    latter is otherwise omitted for the web transport."""
     if cs is None:
-        return {"hand": [], "worn": [], "carried": [], "purse": ""}
+        return {"hand": [], "worn": [], "carried": [], "purse": "",
+                "hp": "", "ac": None}
     char = getattr(cs, "character", None)
     weapons = list(getattr(cs, "weapons", None) or [])
     weapon_ids = {w.id for w in weapons}
@@ -233,8 +237,15 @@ def _player_inventory(cs, items: dict | None) -> dict:
             carried.append(content_chip(content_id, int(qty or 1)))
     from models.currency import format_coins
     purse_cp = getattr(char, "purse_cp", 0) or 0
+    max_hp = getattr(char, "hp", None)
+    hp_text = ""
+    if max_hp is not None:
+        current_hp = getattr(char, "current_hp", max_hp)
+        hp_text = f"{current_hp}/{max_hp}"
+    ac = getattr(char, "ac", None)
     return {"hand": hand, "worn": worn, "carried": carried,
-            "purse": format_coins(purse_cp) if purse_cp else ""}
+            "purse": format_coins(purse_cp) if purse_cp else "",
+            "hp": hp_text, "ac": ac}
 
 
 _NAME_TITLES = {"sister", "brother", "father", "mother", "lord", "lady",
@@ -507,12 +518,25 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     sent: set[int] = set()
     last_inv: dict | None = None
     last_turn_active: bool | None = None
+    # What this connection has already shown for the primary per-turn
+    # prompt. Delivering it by diffing against durable state (rather than
+    # draining it, once, from the one-shot outbound queue below) means a
+    # reconnect — or the initial handshake racing the session task's first
+    # prompt — can never duplicate it (each poll only sends on a real
+    # change) or silently lose it (there is no "already consumed" state to
+    # race). Reset to None whenever it isn't the player's turn, so the next
+    # turn's prompt is always treated as new even if textually identical.
+    last_prompt_shown: str | None = None
     error_reported = False
     try:
         while True:
             cfg = _rt(request.app)["config"]
             items = cfg.items
             player_cs = cfg.characters.get(player)
+            # Sub-dialog asides (spell help, a DM answer to a question) —
+            # anything that isn't the primary prompt, which is handled
+            # separately below since it needs replay-safe delivery this
+            # one-shot queue can't provide.
             for msg in web_transport.drain_outbound(player):
                 await resp.write(
                     f"data: {json.dumps({'type': 'dm', 'text': msg})}\n\n".encode())
@@ -525,6 +549,15 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
                 await resp.write(
                     f"data: {json.dumps({'type': 'turnstate', 'active': active})}\n\n"
                     .encode())
+            current_prompt = web_transport.latest_prompt(player) if active else None
+            if active and current_prompt != last_prompt_shown:
+                if current_prompt:
+                    await resp.write(
+                        f"data: {json.dumps({'type': 'dm', 'text': current_prompt})}\n\n"
+                        .encode())
+                last_prompt_shown = current_prompt
+            elif not active:
+                last_prompt_shown = None
             # Live per-character narration as the turn unfolds (progress before
             # the turn's authoritative checkpoint lands below).
             for act in web_transport.drain_actions():
@@ -689,6 +722,8 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 .chip.hand{border-color:#4a90d9;background:#15212e;}
 .chip.worn{border-color:#7a6a3a;background:#1e1a10;}
 .chip.coin{border-color:#c9a227;background:#211d0f;color:#f0d477;font-weight:600;}
+.chip.hp{border-color:#c94a4a;background:#2a1414;color:#f0a0a0;font-weight:600;}
+.chip.ac{border-color:#6a8fae;background:#131c22;}
 .chip.empty{opacity:.8;font-style:italic;}
 .chip .ic{font-size:15px;line-height:1;}
 </style></head><body>
@@ -747,8 +782,10 @@ function turnBlock(t){
 es.onmessage=e=>{
   const m=JSON.parse(e.data);
   if(m.type==='dm'){
-    const d=document.createElement('div');d.className='dm';d.textContent=m.text;add(d);
-    // A DM message (turn prompt or an answer to a question) means it's our move.
+    // The web prompt is often intentionally empty now (position/perception/
+    // carrying already live in the map and sidebar) — an empty text still
+    // means it's our move, it just has nothing new to say.
+    if(m.text){const d=document.createElement('div');d.className='dm';d.textContent=m.text;add(d);}
     setTurn(true);
   }else if(m.type==='action'){
     // Live per-character narration: append to its turn block as it happens.
@@ -779,8 +816,10 @@ function renderInv(m){
         if(!items && !empty && !opts.always)return '';
         return '<span class="grp"><span class="lbl">'+label+'</span>'+(items||empty)+'</span>';
     };
+    const hp=grp('HP',(m.hp?[{icon:'❤️',label:m.hp}]:[]),'hp');
+    const ac=grp('AC',(m.ac!=null?[{icon:'🛡️',label:String(m.ac)}]:[]),'ac');
     const coin=grp('Coin',(m.purse?[{icon:'🪙',label:m.purse}]:[]),'coin');
-    const h=coin
+    const h=hp+ac+coin
         +grp('In hand',m.hand,'hand',{always:true,emptyText:'Nothing in hand'})
         +grp('Worn',m.worn,'worn')
     +grp('Carried',m.carried,'carried');  // (+ grp('Ingested',m.ingested,...) someday)
