@@ -17,6 +17,7 @@ import asyncio
 import json
 import math
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -517,17 +518,31 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
     cd, player = request.app["checkpoint_dir"], request.app["player"]
     sent: set[int] = set()
     last_inv: dict | None = None
-    last_turn_active: bool | None = None
     # What this connection has already shown for the primary per-turn
-    # prompt. Delivering it by diffing against durable state (rather than
-    # draining it, once, from the one-shot outbound queue below) means a
-    # reconnect — or the initial handshake racing the session task's first
-    # prompt — can never duplicate it (each poll only sends on a real
-    # change) or silently lose it (there is no "already consumed" state to
-    # race). Reset to None whenever it isn't the player's turn, so the next
-    # turn's prompt is always treated as new even if textually identical.
-    last_prompt_shown: str | None = None
+    # prompt, tracked by web_transport's awaiting generation counter rather
+    # than the awaiting boolean or the prompt text. The boolean can flip
+    # True -> False -> True between two polls when a turn resolves faster
+    # than the ~0.8s poll interval (a fast-pathed move with no LLM
+    # narration), which would make the whole cycle invisible to a "did the
+    # boolean change" check — the poller would never re-arm, and the player
+    # would be stuck until a reload re-derives state from scratch. Comparing
+    # prompt text has its own gap (the prompt is often intentionally empty,
+    # so two different turns can look identical). The generation counter
+    # bumps on every set_awaiting() call in either direction, so it always
+    # differs across even a same-poll-window cycle, and reconnect/replay
+    # still works the same way (a fresh connection starts at None, so it
+    # always treats the current state as new).
+    last_generation_shown: int | None = None
     error_reported = False
+    # A bare SSE comment (": keep-alive") is invisible to the browser's
+    # EventSource API — onmessage only fires for "data:" lines — so a
+    # connection that's gone quietly dead (a laptop sleep/wake cycle, a
+    # network change, a long-lived tab's connection silently dropped by an
+    # intermediary) can leave the client's readyState reporting OPEN
+    # forever with no error and no reconnect, waiting on a stream that
+    # will never write to it again. A periodic real "data:" heartbeat the
+    # client *can* see lets it detect that and force a reconnect itself.
+    last_heartbeat = time.monotonic()
     try:
         while True:
             cfg = _rt(request.app)["config"]
@@ -540,24 +555,22 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
             for msg in web_transport.drain_outbound(player):
                 await resp.write(
                     f"data: {json.dumps({'type': 'dm', 'text': msg})}\n\n".encode())
-            # Whether it's the player's turn — reported on change so the browser
-            # can enable/disable its input. A fresh connection starts at None, so
-            # a page reload mid-turn always re-receives the current state.
-            active = web_transport.is_awaiting(player)
-            if active != last_turn_active:
-                last_turn_active = active
+            # Whether it's the player's turn — reported on generation change (see
+            # last_generation_shown above) so the browser can enable/disable its
+            # input even when a turn started and finished between two polls.
+            generation = web_transport.awaiting_generation(player)
+            if generation != last_generation_shown:
+                last_generation_shown = generation
+                active = web_transport.is_awaiting(player)
                 await resp.write(
                     f"data: {json.dumps({'type': 'turnstate', 'active': active})}\n\n"
                     .encode())
-            current_prompt = web_transport.latest_prompt(player) if active else None
-            if active and current_prompt != last_prompt_shown:
-                if current_prompt:
-                    await resp.write(
-                        f"data: {json.dumps({'type': 'dm', 'text': current_prompt})}\n\n"
-                        .encode())
-                last_prompt_shown = current_prompt
-            elif not active:
-                last_prompt_shown = None
+                if active:
+                    current_prompt = web_transport.latest_prompt(player)
+                    if current_prompt:
+                        await resp.write(
+                            f"data: {json.dumps({'type': 'dm', 'text': current_prompt})}\n\n"
+                            .encode())
             # Live per-character narration as the turn unfolds (progress before
             # the turn's authoritative checkpoint lands below).
             for act in web_transport.drain_actions():
@@ -586,6 +599,11 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
                         f"data: {json.dumps({'type': 'dm', 'text': f'[web_play error] {err}'})}\n\n".encode())
                     await resp.write(
                         f"data: {json.dumps({'type': 'turnstate', 'active': False})}\n\n".encode())
+            now = time.monotonic()
+            if now - last_heartbeat >= 10.0:
+                last_heartbeat = now
+                await resp.write(
+                    f"data: {json.dumps({'type': 'heartbeat', 't': now})}\n\n".encode())
             await resp.write(b": keep-alive\n\n")
             await asyncio.sleep(0.8)
     except (ConnectionResetError, asyncio.CancelledError):
@@ -746,7 +764,8 @@ const log=document.getElementById('log');
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function atBottom(){return log.scrollHeight-log.scrollTop-log.clientHeight<140;}
 function add(node){const b=atBottom();log.appendChild(node);if(b)log.scrollTop=log.scrollHeight;}
-const es=new EventSource('/events');
+let es=new EventSource('/events');
+let lastMsgTime=Date.now();
 const turnBlocks={};
 const NAME_PATTERN=__NAME_PATTERN__;
 const NAME_RE=NAME_PATTERN?new RegExp(NAME_PATTERN,'gi'):null;
@@ -779,8 +798,10 @@ function turnBlock(t){
     b.innerHTML='<h3>Turn '+t+'</h3>';add(b);turnBlocks[t]=b;}
   return b;
 }
-es.onmessage=e=>{
+function handleMessage(e){
+  lastMsgTime=Date.now();
   const m=JSON.parse(e.data);
+  if(m.type==='heartbeat')return;
   if(m.type==='dm'){
     // The web prompt is often intentionally empty now (position/perception/
     // carrying already live in the map and sidebar) — an empty text still
@@ -804,7 +825,24 @@ es.onmessage=e=>{
     // the input line settles correctly even if a one-shot 'dm' event was missed.
     setTurn(m.active);
   }
-};
+}
+es.onmessage=handleMessage;
+// EventSource's readyState can report OPEN forever on a connection an
+// intermediary silently killed (laptop sleep/wake, a network change, a
+// long-lived tab) — no error ever fires, so there's nothing to react to.
+// Bare SSE comment keep-alives are invisible to onmessage, so the server
+// also sends a real "data:" heartbeat (see handle_events) that this can
+// actually see. If too long passes with no message of any kind, force a
+// fresh connection rather than waiting on one that may never write again.
+function reconnectES(){
+  try{es.close();}catch(_){}
+  es=new EventSource('/events');
+  es.onmessage=handleMessage;
+  lastMsgTime=Date.now();
+}
+setInterval(()=>{
+  if(Date.now()-lastMsgTime>25000)reconnectES();
+},5000);
 function renderInv(m){
   const inv=document.getElementById('inv');
   const chips=(arr,cls)=>arr.map(x=>'<span class="chip '+cls+'"><span class="ic">'

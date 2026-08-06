@@ -28,6 +28,7 @@ Greaves runs the house from behind the counter.
 | bar_counter     | 25.864 | 5.356  | 4 |
 | stair_foot      | 27.5 | 18  | 0 |
 | storage_shed    | 36.5 | 13 | 4 |
+| storage_shed_door | 32.5 | 16 | 4 |
 
 ---
 
@@ -44,10 +45,14 @@ Greaves runs the house from behind the counter.
 
 ## Impassable
 
-| description    | vertices                        |
-|----------------|---------------------------------|
-| Back wall       | (0,24) (26,24) (26,26) (0,26) |
-| Hearth masonry  | (2,16) (5,16) (5,22) (2,22)   |
+Every zone boundary here — including against EXTERIOR — is generated
+automatically now (front_door and storage_shed_door carve their gaps;
+see compute_auto_walls). Only interior furniture that isn't a zone
+boundary stays hand-authored.
+
+| description       | vertices                          |
+|--------------------|-----------------------------------|
+| Hearth masonry     | (2,16) (5,16) (5,22) (2,22)       |
 
 ---
 

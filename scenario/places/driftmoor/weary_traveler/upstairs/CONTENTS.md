@@ -10,7 +10,7 @@
 
 ### Hall
 - Linen cupboard with sheets, towels, and spare blankets
-- Three numbered room keys kept downstairs when not issued
+- Six numbered room keys kept downstairs when not issued
 
 ### Notable
 - Missing guest's belongings in one room: a journal with cryptic entries about shadowy figures near Obelisk Reach

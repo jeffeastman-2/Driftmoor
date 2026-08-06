@@ -324,13 +324,16 @@ def test_weary_traveler_uses_separate_zone_art_downstairs_and_upstairs(tmp_path)
 
     assert down.count("class='zone-floor-art'") == 3
     assert down.count("class='visual-overlay'") == 4
-    assert up.count("class='zone-floor-art'") == 5
-    assert up.count("class='visual-overlay'") == 10
+    assert up.count("class='zone-floor-art'") == 8
+    assert up.count("class='visual-overlay'") == 25
     # Private-room access remains mechanical but is not painted as a magical
     # gold boundary on an ordinary guesthouse floor.
     assert "Guest Rooms — Rented Access</title>" not in up
     assert re.search(r"<g data-reveal='0'><polygon[^>]*><title>Upstairs Hall", up)
-    for room in ("Guest Room 1", "Guest Room 2", "Guest Room 3"):
+    for room in (
+        "Guest Room 1", "Guest Room 2", "Guest Room 3",
+        "Guest Room 4", "Guest Room 5", "Guest Room 6",
+    ):
         assert re.search(
             rf"<g data-reveal='1'><polygon[^>]*><title>{room}", up)
 

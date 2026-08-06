@@ -59,38 +59,151 @@ def _axis_aligned_overlap(
     return None
 
 
+def _bbox(verts: list[tuple[float, float]]) -> tuple[float, float, float, float]:
+    xs = [v[0] for v in verts]
+    ys = [v[1] for v in verts]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _bbox_contains(
+    outer: tuple[float, float, float, float],
+    inner: tuple[float, float, float, float],
+) -> bool:
+    ox0, oy0, ox1, oy1 = outer
+    ix0, iy0, ix1, iy1 = inner
+    return ox0 <= ix0 and oy0 <= iy0 and ox1 >= ix1 and oy1 >= iy1
+
+
 def compute_auto_walls(
     zones: dict[str, list[tuple[float, float]]],
     landmarks: dict[str, tuple[float, float]],
     *,
     door_gap_ft: float = 3.0,
     wall_thickness_ft: float = 1.0,
+    excluded_zones: frozenset[str] = frozenset(),
 ) -> list[list[tuple[float, float]]]:
     """Wall every zone-boundary segment solid, except where a door or
-    archway landmark opens it.
+    archway landmark opens it — including the boundary against EXTERIOR
+    (or against nothing at all), not just shared edges between two named
+    interior zones.
 
-    Every shared edge between two (non-EXTERIOR) zones is impassable by
-    default. A landmark whose name contains "door" (case-insensitive) sits
-    on that edge and carves a ``door_gap_ft``-wide gap centered on itself —
-    multiple doors on the same long wall each get their own gap. A landmark
-    whose name contains "archway" instead leaves that entire shared edge
-    open with no wall at all, for boundaries that were never meant to have
-    a real door (a stairway landing, walking up to a bar counter).
+    A landmark whose name contains "door" (case-insensitive) sits on the
+    edge and carves a ``door_gap_ft``-wide gap centered on itself —
+    multiple doors on the same long wall each get their own gap. A
+    landmark whose name contains "archway" instead leaves that entire
+    edge open with no wall at all, for boundaries that were never meant
+    to have a real door (a stairway landing, walking up to a bar
+    counter). A whole scene opts out with "## Walls\n- **auto_wall:**
+    false"; a single zone within an otherwise auto-walled scene opts out
+    via its own Zones-table "auto_wall" column (e.g. TOWN_COMMON's soft
+    "beyond this line is wilderness" edge, which a hard wall would
+    contradict) — ``excluded_zones`` carries that per-zone set in from
+    the caller.
 
-    Only axis-aligned shared edges are considered, matching every zone
-    authored in this game so far. Returns raw rectangle vertex lists —
-    callers wrap them as Polygon (the engine) or (description, verts)
-    tuples (the map renderer) to match their own Impassable representation.
+    A walled zone enforces its whole perimeter regardless of what's on
+    the other side of any given edge, so a zone named in
+    ``excluded_zones`` only waives its *own* boundary — a neighbor that
+    isn't excluded still walls its side of a shared edge (needing a
+    door/archway to cross, same as any other wall). An edge is left
+    fully open only when *both* zones sharing it are excluded. Driftmoor
+    town is the motivating case: TOWN_COMMON opts out for its open
+    "beyond this line is wilderness" edge, but GREYWATER_RIVER doesn't —
+    so the river still can't be walked into directly, only crossed where
+    the model already treats it as a non-boundary (BRIDGE nested over
+    it, the same exemption a stairway landing gets from its hall).
+
+    EXTERIOR itself is excluded from the zone list: its polygon commonly
+    extends past a building's real footprint (so a scene can place a
+    character "just outside the door"), so its own edges essentially
+    never land exactly on an interior zone's edge the way two interior
+    zones' edges do. Rather than require that alignment, every edge of
+    every remaining zone is walled by default; an edge actually shared
+    with a neighboring zone (found by the usual exact-coincidence
+    matching) is walled once as that shared segment, and whatever's left
+    over — the part of the zone's perimeter no neighbor claimed — is
+    walled too, standing in for the boundary against EXTERIOR or open
+    space that was never given its own aligned zone.
+
+    A zone whose bounding box is fully contained within another's is
+    exempted from this leftover pass entirely: it isn't a real room with
+    its own exterior-facing walls, just a named sub-region carved out of
+    the larger zone by table order (a stairway landing labeled out of
+    its hall, matching the "zone order matters, first match wins"
+    convention used for zone_at()) — trying to wall its "leftover"
+    perimeter would seal it off from the very zone it's part of.
+
+    Only axis-aligned edges are considered, matching every zone authored
+    in this game so far. Returns raw rectangle vertex lists — callers
+    wrap them as Polygon (the engine) or (description, verts) tuples
+    (the map renderer) to match their own Impassable representation.
     """
+    excluded_upper = {n.upper() for n in excluded_zones}
     names = [n for n in zones if n.upper() not in _AUTO_WALL_EXCLUDED_ZONES]
+    boxes = {n: _bbox(zones[n]) for n in names}
     half_thickness = wall_thickness_ft / 2.0
     half_gap = door_gap_ft / 2.0
     walls: list[list[tuple[float, float]]] = []
 
+    def wall_segment(orient: str, coord: float, lo: float, hi: float) -> None:
+        door_positions: list[float] = []
+        archway_found = False
+        for lname, (lx, ly) in landmarks.items():
+            lname_low = lname.lower()
+            is_door = "door" in lname_low
+            is_archway = "archway" in lname_low
+            if not is_door and not is_archway:
+                continue
+            along, perp = (lx, ly) if orient == "h" else (ly, lx)
+            if abs(perp - coord) > 0.05 or not (lo - 0.01 <= along <= hi + 0.01):
+                continue
+            if is_archway:
+                archway_found = True
+            else:
+                door_positions.append(along)
+        if archway_found:
+            return  # intentionally open — no wall on this segment at all
+
+        cursor = lo
+        spans: list[tuple[float, float]] = []
+        for d in sorted(door_positions):
+            gap_lo, gap_hi = d - half_gap, d + half_gap
+            if gap_lo > cursor:
+                spans.append((cursor, gap_lo))
+            cursor = max(cursor, gap_hi)
+        if cursor < hi:
+            spans.append((cursor, hi))
+
+        for s0, s1 in spans:
+            if s1 - s0 <= 1e-6:
+                continue
+            if orient == "h":
+                walls.append([
+                    (s0, coord - half_thickness),
+                    (s1, coord - half_thickness),
+                    (s1, coord + half_thickness),
+                    (s0, coord + half_thickness),
+                ])
+            else:
+                walls.append([
+                    (coord - half_thickness, s0),
+                    (coord + half_thickness, s0),
+                    (coord + half_thickness, s1),
+                    (coord - half_thickness, s1),
+                ])
+
+    # Pass 1: shared edges between two real (non-nested) zones. Also
+    # records, per zone, which sub-ranges of its own edges got claimed by
+    # a neighbor, so pass 2 knows what's left over.
+    claimed: dict[str, list[tuple[str, float, float, float]]] = {n: [] for n in names}
     for i in range(len(names)):
         verts_a = zones[names[i]]
         edges_a = list(zip(verts_a, verts_a[1:] + verts_a[:1]))
         for j in range(i + 1, len(names)):
+            if (
+                _bbox_contains(boxes[names[i]], boxes[names[j]])
+                or _bbox_contains(boxes[names[j]], boxes[names[i]])
+            ):
+                continue
             verts_b = zones[names[j]]
             edges_b = list(zip(verts_b, verts_b[1:] + verts_b[:1]))
             for a1, a2 in edges_a:
@@ -99,52 +212,53 @@ def compute_auto_walls(
                     if seg is None:
                         continue
                     orient, coord, lo, hi = seg
+                    # A walled zone enforces its whole perimeter — doors
+                    # and archways aside — regardless of whether the
+                    # zone on the other side of a given edge opted out.
+                    # auto_wall:false only exempts a zone from enforcing
+                    # its *own* boundary; it can't waive a neighbor's.
+                    # This edge is open only if both sides opted out.
+                    if (
+                        names[i].upper() not in excluded_upper
+                        or names[j].upper() not in excluded_upper
+                    ):
+                        wall_segment(orient, coord, lo, hi)
+                    claimed[names[i]].append((orient, coord, lo, hi))
+                    claimed[names[j]].append((orient, coord, lo, hi))
 
-                    door_positions: list[float] = []
-                    archway_found = False
-                    for lname, (lx, ly) in landmarks.items():
-                        lname_low = lname.lower()
-                        is_door = "door" in lname_low
-                        is_archway = "archway" in lname_low
-                        if not is_door and not is_archway:
-                            continue
-                        along, perp = (lx, ly) if orient == "h" else (ly, lx)
-                        if abs(perp - coord) > 0.05 or not (lo - 0.01 <= along <= hi + 0.01):
-                            continue
-                        if is_archway:
-                            archway_found = True
-                        else:
-                            door_positions.append(along)
-                    if archway_found:
-                        continue  # intentionally open — no wall on this edge at all
-
-                    cursor = lo
-                    spans: list[tuple[float, float]] = []
-                    for d in sorted(door_positions):
-                        gap_lo, gap_hi = d - half_gap, d + half_gap
-                        if gap_lo > cursor:
-                            spans.append((cursor, gap_lo))
-                        cursor = max(cursor, gap_hi)
-                    if cursor < hi:
-                        spans.append((cursor, hi))
-
-                    for s0, s1 in spans:
-                        if s1 - s0 <= 1e-6:
-                            continue
-                        if orient == "h":
-                            walls.append([
-                                (s0, coord - half_thickness),
-                                (s1, coord - half_thickness),
-                                (s1, coord + half_thickness),
-                                (s0, coord + half_thickness),
-                            ])
-                        else:
-                            walls.append([
-                                (coord - half_thickness, s0),
-                                (coord + half_thickness, s0),
-                                (coord + half_thickness, s1),
-                                (coord - half_thickness, s1),
-                            ])
+    # Pass 2: each zone's own perimeter, minus whatever pass 1 already
+    # claimed — the leftover stands in for the boundary against EXTERIOR
+    # (or against nothing at all). A zone with auto_wall:false is skipped
+    # entirely here too, so its true unclaimed perimeter stays open.
+    for name in names:
+        if name.upper() in excluded_upper:
+            continue
+        if any(
+            other != name and _bbox_contains(boxes[other], boxes[name])
+            for other in names
+        ):
+            continue  # nested sub-region — not exposed to the outside
+        verts = zones[name]
+        edges = list(zip(verts, verts[1:] + verts[:1]))
+        for (ax1, ay1), (ax2, ay2) in edges:
+            if ay1 == ay2:
+                orient, coord = "h", ay1
+            elif ax1 == ax2:
+                orient, coord = "v", ax1
+            else:
+                continue  # diagonal, not produced by this game's zones
+            lo, hi = sorted((ax1, ax2) if orient == "h" else (ay1, ay2))
+            overlaps = sorted(
+                (clo, chi) for (co, cc, clo, chi) in claimed[name]
+                if co == orient and abs(cc - coord) < 1e-6
+            )
+            cursor = lo
+            for clo, chi in overlaps:
+                if clo > cursor:
+                    wall_segment(orient, coord, cursor, clo)
+                cursor = max(cursor, chi)
+            if cursor < hi:
+                wall_segment(orient, coord, cursor, hi)
     return walls
 
 
@@ -393,6 +507,7 @@ def parse_geometry_md(text: str) -> dict:
     zone_floor_z: dict[str, float] = {}
     zone_ceiling_z: dict[str, float] = {}
     zone_z_explicit: set[str] = set()
+    zone_auto_wall_off: set[str] = set()
     zone_headers = {
         cell.strip().lower(): i
         for i, cell in enumerate(zone_rows[0])
@@ -403,6 +518,10 @@ def parse_geometry_md(text: str) -> dict:
             # Vertices are in the last column (supports 2-col or 3-col tables)
             verts = _parse_vertices(row[-1])
             zones[name] = Polygon(verts)
+            auto_wall_idx = zone_headers.get("auto_wall")
+            if auto_wall_idx is not None and auto_wall_idx < len(row):
+                if row[auto_wall_idx].strip().lower() in {"false", "no", "0"}:
+                    zone_auto_wall_off.add(name)
             floor_idx = zone_headers.get("floor_z")
             ceiling_idx = zone_headers.get("ceiling_z")
             if floor_idx is not None or ceiling_idx is not None:
@@ -459,6 +578,8 @@ def parse_geometry_md(text: str) -> dict:
     # opt out with "## Walls\n- **auto_wall:** false" for the rare scene
     # whose zones don't map cleanly onto this convention (e.g. fey_glade's
     # diagonal TRAIL zone and non-"*_door"/"*_archway" landmark names).
+    # A single zone within an otherwise auto-walled scene can opt out via
+    # its own Zones-table "auto_wall" column instead (zone_auto_wall_off).
     walls_meta = _parse_metadata(_extract_section(text, "Walls"))
     if walls_meta.get("auto_wall", "true").strip().lower() not in {
         "false", "no", "0",
@@ -471,7 +592,10 @@ def parse_geometry_md(text: str) -> dict:
         _connection_xy = {name: (pos.x, pos.y) for name, pos in connections.items()}
         impassable.extend(
             Polygon(verts)
-            for verts in compute_auto_walls(_zone_verts, _landmark_xy)
+            for verts in compute_auto_walls(
+                _zone_verts, _landmark_xy,
+                excluded_zones=frozenset(zone_auto_wall_off),
+            )
         )
         impassable.extend(
             Polygon(verts)

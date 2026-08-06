@@ -242,23 +242,33 @@ def test_inventory_markup_renders_hp_and_ac_groups():
 
 def test_events_handler_delivers_primary_prompt_by_diffing_durable_state():
     """The primary per-turn prompt must be delivered by comparing
-    latest_prompt/is_awaiting against what this connection already showed
-    (last_prompt_shown), evaluated on every poll inside the loop — not by
-    draining a one-shot queue, and not by a special one-time check before
-    the loop. A queue-based (or connect-time-only) delivery races the
-    session task's own queue push of the same content: whichever fires
-    first either duplicates it or, if a reconnect lands between the two,
-    loses it silently (see test_events_handler_never_discards_pending_
-    outbound_on_connect for the discard variant of this same bug)."""
+    web_transport's awaiting generation counter against what this connection
+    already showed (last_generation_shown), evaluated on every poll inside
+    the loop — not by draining a one-shot queue, and not by a special
+    one-time check before the loop. A queue-based (or connect-time-only)
+    delivery races the session task's own queue push of the same content:
+    whichever fires first either duplicates it or, if a reconnect lands
+    between the two, loses it silently (see
+    test_events_handler_never_discards_pending_outbound_on_connect for the
+    discard variant of this same bug).
+
+    The generation counter — not the awaiting boolean or the prompt text —
+    is what must be compared: a turn that resolves faster than one poll
+    interval (a fast-pathed move with no LLM narration) can flip the
+    boolean True -> False -> True between two polls, which a boolean-only
+    diff would never observe, leaving the player stuck until a reload
+    re-derives state from scratch. Comparing prompt text has its own gap
+    (the web prompt is often intentionally empty, so two different turns
+    can look identical)."""
     import inspect
     src = inspect.getsource(web_play.handle_events)
     loop_idx = src.index("while True:")
     body = src[loop_idx:]
-    assert "last_prompt_shown" in src
-    assert "last_prompt_shown = None" in src  # reset when not the player's turn
+    assert "last_generation_shown" in src
+    assert "web_transport.awaiting_generation(player)" in body
     assert "web_transport.is_awaiting(player)" in body
     assert "web_transport.latest_prompt(player)" in body
-    assert "current_prompt != last_prompt_shown" in body
+    assert "generation != last_generation_shown" in body
 
 
 def test_events_handler_never_discards_pending_outbound_on_connect():

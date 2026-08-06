@@ -80,15 +80,37 @@ def flush_inbound(character_id: str) -> None:
 # the input disabled.
 _AWAITING: dict[str, bool] = {}
 
+# Bumped on every set_awaiting() call, either direction. The SSE loop polls
+# roughly every 0.8s and only acts when it sees something *different* from
+# its last poll — but some turns (a fast-pathed movement/transition with no
+# LLM narration) resolve in well under that, so the awaiting flag can flip
+# True -> False -> True again between two consecutive polls. Comparing the
+# boolean alone makes that whole cycle invisible: the poller never sees the
+# False, so it never re-arms, and the player is stuck looking at a page that
+# never learns it's their turn again until they reload and re-derive state
+# from scratch. A monotonically increasing generation changes on every flip
+# regardless of direction, so the poller can detect "something happened
+# since I last looked" even when the boolean it lands on reads the same as
+# before.
+_GENERATION: dict[str, int] = {}
+
 
 def set_awaiting(character_id: str, flag: bool) -> None:
     """Mark whether the loop is waiting on this player's input (their turn)."""
     _AWAITING[character_id] = flag
+    _GENERATION[character_id] = _GENERATION.get(character_id, 0) + 1
 
 
 def is_awaiting(character_id: str) -> bool:
     """Is it this player's turn (the loop is blocked on their input)?"""
     return _AWAITING.get(character_id, False)
+
+
+def awaiting_generation(character_id: str) -> int:
+    """Monotonic counter bumped every time set_awaiting() is called for this
+    character, in either direction. Poll this instead of/alongside
+    is_awaiting() to detect a turn that started and ended between two polls."""
+    return _GENERATION.get(character_id, 0)
 
 
 # The current outstanding turn prompt, published alongside the one-shot
@@ -158,9 +180,11 @@ def reset(character_id: str | None = None) -> None:
         _POS.clear()
         _ACTIONS.clear()
         _AWAITING.clear()
+        _GENERATION.clear()
         _LAST_PROMPT.clear()
     else:
         _OUT.pop(character_id, None)
         _IN.pop(character_id, None)
         _AWAITING.pop(character_id, None)
+        _GENERATION.pop(character_id, None)
         _LAST_PROMPT.pop(character_id, None)

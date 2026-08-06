@@ -413,7 +413,13 @@ def parse_geometry(text: str) -> dict:
                 break
         return rows
 
-    for cells in _table("Zones"):
+    _zone_rows = _table("Zones")
+    _zone_header_idx = {
+        h.strip().lower(): i for i, h in enumerate(_zone_rows[0])
+    } if _zone_rows and _zone_rows[0][0] == "name" else {}
+    _auto_wall_col = _zone_header_idx.get("auto_wall")
+    zone_auto_wall_off: set[str] = set()
+    for cells in _zone_rows:
         if cells[0] == "name":
             continue
         # Vertices are always in the last column. Per-vertex z (in
@@ -436,6 +442,12 @@ def parse_geometry(text: str) -> dict:
                 g["zone_z"][name] = 0.0
         else:
             g["zone_z"][name] = 0.0
+        if (
+            _auto_wall_col is not None
+            and _auto_wall_col < len(cells)
+            and cells[_auto_wall_col].strip().lower() in {"false", "no", "0"}
+        ):
+            zone_auto_wall_off.add(name)
 
     for cells in _table("Landmarks"):
         if cells[0] == "name":
@@ -484,7 +496,10 @@ def parse_geometry(text: str) -> dict:
         from models.geometry_loader import compute_auto_walls, compute_venue_walls
         g["impassable"].extend(
             ("Auto wall", verts)
-            for verts in compute_auto_walls(g["zones"], g["landmarks"])
+            for verts in compute_auto_walls(
+                g["zones"], g["landmarks"],
+                excluded_zones=frozenset(zone_auto_wall_off),
+            )
         )
         _connection_xy = {name: (x, y) for name, x, y, _dest in g["connections"]}
         g["impassable"].extend(
