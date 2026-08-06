@@ -34,15 +34,24 @@ Hunters and loggers only venture near the edges.
 
 ## Zones
 
-| name              | render_z | vertices                                              |
-|-------------------|----------|-------------------------------------------------------|
-| FEY_GLADE         | 9.75        | (9659,14163) (9984,14163) (9984,14488) (9659,14488)        |
-| WATCHTOWER_HILL   | 6.5        | (5525,7800) (6825,7800) (6825,9100) (5525,9100)        |
-| DEEP_INTERIOR     | 3.25        | (4225,4875) (17225,4875) (17225,19500) (4225,19500)        |
-| FOREST_EDGE       | 3.25        | (0,0) (22100,0) (22100,24375) (0,24375)                    |
-| EXTERIOR          | 0.0        | (0,0) (22100,0) (22100,24375) (0,24375)                    |
-
+| name | render_z | auto_wall | vertices |
+|-------------------|----------|---------|-------------------------------------------------------|
+| FEY_GLADE | 9.75 |  | (9659,14163) (9984,14163) (9984,14488) (9659,14488) |
+| WATCHTOWER_HILL | 6.5 |  | (5525,7800) (6825,7800) (6825,9100) (5525,9100) |
+| DEEP_INTERIOR | 3.25 |  | (4225,4875) (17225,4875) (17225,19500) (4225,19500) |
+| FOREST_EDGE | 3.25 |  | (0,0) (22100,0) (22100,24375) (0,24375) |
+| EXTERIOR | 0.0 |  | (0,0) (22100,0) (22100,24375) (0,24375) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a forested-hills region map — an exploration area, not rooms
+with doors. FOREST_EDGE and EXTERIOR share the exact same footprint;
+none of these zones share a coincident edge with any other, so the
+per-zone perimeter pass would seal every one into an isolated box with
+no door to open it.
 
 ## Impassable
 

@@ -34,16 +34,25 @@ Animals avoid this area. The terrain is treacherous with narrow paths.
 
 ## Zones
 
-| name               | render_z | vertices                                              |
-|--------------------|----------|-------------------------------------------------------|
-| SHATTERED_OBELISK  | 9.75        | (2275,6500) (4225,6500) (4225,8775) (2275,8775)          |
-| ECHOING_CAVERNS    | 9.75        | (3575,5525) (5200,5525) (5200,7475) (3575,7475)        |
-| CLIFF_PLATEAU      | 6.5        | (650,3250) (7150,3250) (7800,10400) (0,10400)            |
-| APPROACH_PATH      | 3.25        | (1300,650) (4550,650) (4550,3250) (1300,3250)            |
-| CLIFFS             | 3.25        | (0,0) (9100,0) (9100,11375) (0,11375)                    |
-| EXTERIOR           | 0.0        | (0,0) (9100,0) (9100,11375) (0,11375)                    |
-
+| name | render_z | auto_wall | vertices |
+|--------------------|----------|---------|-------------------------------------------------------|
+| SHATTERED_OBELISK | 9.75 |  | (2275,6500) (4225,6500) (4225,8775) (2275,8775) |
+| ECHOING_CAVERNS | 9.75 |  | (3575,5525) (5200,5525) (5200,7475) (3575,7475) |
+| CLIFF_PLATEAU | 6.5 |  | (650,3250) (7150,3250) (7800,10400) (0,10400) |
+| APPROACH_PATH | 3.25 |  | (1300,650) (4550,650) (4550,3250) (1300,3250) |
+| CLIFFS | 3.25 |  | (0,0) (9100,0) (9100,11375) (0,11375) |
+| EXTERIOR | 0.0 |  | (0,0) (9100,0) (9100,11375) (0,11375) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a cliffs-and-plateaus region map — an exploration area, not
+rooms with doors. CLIFFS and EXTERIOR share the exact same footprint;
+none of these zones share a coincident edge with any other, so the
+per-zone perimeter pass would seal every one into an isolated box with
+no door to open it.
 
 ## Impassable
 

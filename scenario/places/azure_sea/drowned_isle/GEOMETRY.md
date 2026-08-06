@@ -35,15 +35,20 @@ Two hours of access at low tide before water returns.
 
 ## Zones
 
-| name            | render_z | vertices                                    |
-|-----------------|----------|---------------------------------------------|
-| EASTERN_RUINS   | 6.5        | (162,81) (227,81) (227,146) (162,146)              |
-| WESTERN_RUINS   | 6.5        | (32,97) (97,97) (97,178) (32,178)              |
-| TIDAL_POOL      | 6.5        | (97,130) (130,130) (130,162) (97,162)              |
-| EXPOSED_ROCK    | 3.25        | (16,16) (243,16) (243,243) (16,243)                  |
-| SUBMERGED       | 0.0        | (0,0) (260,0) (260,260) (0,260)                  |
-
+| name | render_z | auto_wall | vertices |
+|-----------------|----------|---------|---------------------------------------------|
+| EASTERN_RUINS | 6.5 |  | (162,81) (227,81) (227,146) (162,146) |
+| WESTERN_RUINS | 6.5 |  | (32,97) (97,97) (97,178) (32,178) |
+| TIDAL_POOL | 6.5 |  | (97,130) (130,130) (130,162) (97,162) |
+| EXPOSED_ROCK | 3.25 |  | (16,16) (243,16) (243,243) (16,243) |
+| SUBMERGED | 0.0 |  | (0,0) (260,0) (260,260) (0,260) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a small-island exploration site — ruins, tide pools, a chamber to find, not rooms with doors. None of these zones share a coincident edge with any other, so the per-zone perimeter pass would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

@@ -35,15 +35,23 @@ have been preying on livestock, especially at night.
 
 ## Zones
 
-| name              | render_z | vertices                                                    |
-|-------------------|----------|-------------------------------------------------------------|
-| ROCKY_OUTCROP_W   | 6.5        | (8125,8125) (11375,8125) (11375,11375) (8125,11375)              |
-| ROCKY_OUTCROP_E   | 6.5        | (27625,6500) (30875,6500) (30875,9750) (27625,9750)              |
-| FARMLANDS         | 3.25        | (4875,14625) (16250,14625) (16250,21125) (4875,21125)              |
-| PASTURES          | 3.25        | (9750,9750) (19500,9750) (19500,16250) (9750,16250)              |
-| OPEN_GRASSLAND    | 0.0        | (0,0) (54600,0) (54600,22750) (0,22750)                        |
-
+| name | render_z | auto_wall | vertices |
+|-------------------|----------|---------|-------------------------------------------------------------|
+| ROCKY_OUTCROP_W | 6.5 |  | (8125,8125) (11375,8125) (11375,11375) (8125,11375) |
+| ROCKY_OUTCROP_E | 6.5 |  | (27625,6500) (30875,6500) (30875,9750) (27625,9750) |
+| FARMLANDS | 3.25 |  | (4875,14625) (16250,14625) (16250,21125) (4875,21125) |
+| PASTURES | 3.25 |  | (9750,9750) (19500,9750) (19500,16250) (9750,16250) |
+| OPEN_GRASSLAND | 0.0 |  | (0,0) (54600,0) (54600,22750) (0,22750) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a grasslands region map — an exploration area, not rooms with
+doors. None of these zones share a coincident edge with any other, so
+the per-zone perimeter pass would seal every one into an isolated box
+with no door to open it.
 
 ## Impassable
 

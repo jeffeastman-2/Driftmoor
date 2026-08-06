@@ -36,15 +36,20 @@ Willows line the riverbank. Fields stretch in every direction.
 
 ## Zones
 
-| name           | render_z | vertices                              |
-|----------------|----------|---------------------------------------|
-| UPPER_FLOOR    | 9.75        | (97,71) (178,71) (178,136) (97,136)       |
-| MILL_INTERIOR  | 6.5        | (97,71) (178,71) (178,136) (97,136)       |
-| MILL_YARD      | 3.25        | (16,16) (178,16) (178,71) (16,71)           |
-| RIVERBANK      | 3.25        | (16,136) (178,136) (178,162) (16,162)         |
-| FIELDS         | 0.0        | (0,0) (195,0) (195,162) (0,162)           |
-
+| name | render_z | auto_wall | vertices |
+|----------------|----------|---------|---------------------------------------|
+| UPPER_FLOOR | 9.75 |  | (97,71) (178,71) (178,136) (97,136) |
+| MILL_INTERIOR | 6.5 |  | (97,71) (178,71) (178,136) (97,136) |
+| MILL_YARD | 3.25 |  | (16,16) (178,16) (178,71) (16,71) |
+| RIVERBANK | 3.25 |  | (16,136) (178,136) (178,162) (16,162) |
+| FIELDS | 0.0 |  | (0,0) (195,0) (195,162) (0,162) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a mill-grounds exploration site. MILL_INTERIOR and UPPER_FLOOR share the same footprint (different floor levels), which the auto-wall model isn't built for. None of these zones share a coincident edge with any other, so the per-zone perimeter pass would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

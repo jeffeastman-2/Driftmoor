@@ -33,14 +33,19 @@ and occasionally flickers with dark veins of light.
 
 ## Zones
 
-| name            | render_z | vertices                              |
-|-----------------|----------|---------------------------------------|
-| OBELISK_BASE    | 9.75        | (107,123) (152,123) (152,169) (107,169)        |
-| SCORCH_ZONE     | 6.5        | (65,65) (195,65) (195,195) (65,195)        |
-| DEBRIS_FIELD    | 3.25        | (16,16) (243,16) (243,243) (16,243)            |
-| EXTERIOR        | 0.0        | (0,0) (260,0) (260,260) (0,260)            |
-
+| name | render_z | auto_wall | vertices |
+|-----------------|----------|---------|---------------------------------------|
+| OBELISK_BASE | 9.75 |  | (107,123) (152,123) (152,169) (107,169) |
+| SCORCH_ZONE | 6.5 |  | (65,65) (195,65) (195,195) (65,195) |
+| DEBRIS_FIELD | 3.25 |  | (16,16) (243,16) (243,243) (16,243) |
+| EXTERIOR | 0.0 |  | (0,0) (260,0) (260,260) (0,260) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a debris-field exploration site around the obelisk, not rooms with doors. None of these zones share a coincident edge with any other, so the per-zone perimeter pass would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

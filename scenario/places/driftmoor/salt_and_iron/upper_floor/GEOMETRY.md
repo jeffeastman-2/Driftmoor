@@ -29,11 +29,10 @@ near the northeast corner.
 
 ## Zones
 
-| name | floor_z | ceiling_z | render_z | vertices |
-|---|---|---|---|---|
-| LIVING_QUARTERS | 0 | 8 | 3.25 | (0,0) (35.5,0) (35.5,32.5) (0,32.5) |
-| STAIR_LANDING | 0 | 8 | 7.0 | (26,22) (32,22) (32,32.5) (26,32.5) |
-
+| name | floor_z | ceiling_z | render_z | auto_wall | vertices |
+|---|---|---|---|---------|---|
+| LIVING_QUARTERS | 0 | 8 | 3.25 |  | (0,0) (35.5,0) (35.5,32.5) (0,32.5) |
+| STAIR_LANDING | 0 | 8 | 7.0 |  | (26,22) (32,22) (32,32.5) (26,32.5) |
 ---
 
 ## Connections

@@ -34,16 +34,26 @@ fields upstream. Willowford Bridge crosses midway.
 
 ## Zones
 
-| name              | render_z | vertices                                              |
-|-------------------|----------|-------------------------------------------------------|
-| OLD_MILL_AREA     | 6.5        | (7475,3900) (8775,3900) (8775,5200) (7475,5200)        |
-| WILLOWFORD        | 6.5        | (5200,2275) (6825,2275) (6825,3575) (5200,3575)          |
-| RIVER_CHANNEL     | 3.25        | (325,162) (8775,4387) (8775,4875) (325,650)             |
-| NORTH_BANK        | 3.25        | (325,650) (8775,4875) (8775,6500) (325,6500)           |
-| SOUTH_BANK        | 3.25        | (325,0) (8775,0) (8775,4387) (325,162)                  |
-| EXTERIOR          | 0.0        | (0,0) (9750,0) (9750,6500) (0,6500)                    |
-
+| name | render_z | auto_wall | vertices |
+|-------------------|----------|---------|-------------------------------------------------------|
+| OLD_MILL_AREA | 6.5 |  | (7475,3900) (8775,3900) (8775,5200) (7475,5200) |
+| WILLOWFORD | 6.5 |  | (5200,2275) (6825,2275) (6825,3575) (5200,3575) |
+| RIVER_CHANNEL | 3.25 |  | (325,162) (8775,4387) (8775,4875) (325,650) |
+| NORTH_BANK | 3.25 |  | (325,650) (8775,4875) (8775,6500) (325,6500) |
+| SOUTH_BANK | 3.25 |  | (325,0) (8775,0) (8775,4387) (325,162) |
+| EXTERIOR | 0.0 |  | (0,0) (9750,0) (9750,6500) (0,6500) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a river-corridor region map — an exploration area, not rooms
+with doors. Its banks are diagonal (not axis-aligned, so compute_auto_walls
+can't wall them anyway) and none of its zones share a coincident
+axis-aligned edge with any other, so the per-zone perimeter pass would
+seal what it can reach (the outer EXTERIOR-facing edges) with no door
+to open it.
 
 ## Impassable
 

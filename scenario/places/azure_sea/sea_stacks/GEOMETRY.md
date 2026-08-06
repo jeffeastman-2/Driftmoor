@@ -34,16 +34,21 @@ navigable by small boat.
 
 ## Zones
 
-| name           | render_z | vertices                                    |
-|----------------|----------|---------------------------------------------|
-| STACK_NORTH    | 9.75        | (130,227) (195,227) (195,292) (130,292)              |
-| STACK_CENTRAL  | 9.75        | (162,130) (227,130) (227,195) (162,195)              |
-| STACK_SOUTH    | 9.75        | (97,32) (162,32) (162,97) (97,97)              |
-| STACK_EAST     | 9.75        | (260,146) (325,146) (325,211) (260,211)            |
-| SHALLOWS       | 3.25        | (32,16) (357,16) (357,308) (32,308)              |
-| EXTERIOR       | 0.0        | (0,0) (390,0) (390,325) (0,325)              |
-
+| name | render_z | auto_wall | vertices |
+|----------------|----------|---------|---------------------------------------------|
+| STACK_NORTH | 9.75 |  | (130,227) (195,227) (195,292) (130,292) |
+| STACK_CENTRAL | 9.75 |  | (162,130) (227,130) (227,195) (162,195) |
+| STACK_SOUTH | 9.75 |  | (97,32) (162,32) (162,97) (97,97) |
+| STACK_EAST | 9.75 |  | (260,146) (325,146) (325,211) (260,211) |
+| SHALLOWS | 3.25 |  | (32,16) (357,16) (357,308) (32,308) |
+| EXTERIOR | 0.0 |  | (0,0) (390,0) (390,325) (0,325) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a sea-stacks exploration site — rock formations to climb between, not rooms with doors. None of these zones share a coincident edge with any other, so the per-zone perimeter pass would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

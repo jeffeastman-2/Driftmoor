@@ -32,16 +32,21 @@ north-south across the river. A small toll booth sits on the south
 
 ## Zones
 
-| name          | render_z | vertices                              |
-|---------------|----------|---------------------------------------|
-| BRIDGE        | 6.5        | (65,32) (97,32) (97,97) (65,97)        |
-| TOLL_BOOTH    | 6.5        | (45,26) (71,26) (71,42) (45,42)          |
-| RIVER         | 3.25        | (0,45) (162,45) (162,84) (0,84)          |
-| SOUTH_BANK    | 3.25        | (0,0) (162,0) (162,45) (0,45)            |
-| NORTH_BANK    | 3.25        | (0,84) (162,84) (162,130) (0,130)          |
-| EXTERIOR      | 0.0        | (0,0) (162,0) (162,130) (0,130)            |
-
+| name | render_z | auto_wall | vertices |
+|---------------|----------|---------|---------------------------------------|
+| BRIDGE | 6.5 |  | (65,32) (97,32) (97,97) (65,97) |
+| TOLL_BOOTH | 6.5 |  | (45,26) (71,26) (71,42) (45,42) |
+| RIVER | 3.25 |  | (0,45) (162,45) (162,84) (0,84) |
+| SOUTH_BANK | 3.25 |  | (0,0) (162,0) (162,45) (0,45) |
+| NORTH_BANK | 3.25 |  | (0,84) (162,84) (162,130) (0,130) |
+| EXTERIOR | 0.0 |  | (0,0) (162,0) (162,130) (0,130) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a bridge-crossing exploration site, not rooms with doors. None of these zones share a coincident edge with any other, so the per-zone perimeter pass would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

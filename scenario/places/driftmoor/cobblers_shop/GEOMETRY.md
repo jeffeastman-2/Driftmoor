@@ -32,11 +32,10 @@ corner. Front window displays shoes. Workbench and tools in the back.
 
 ## Zones
 
-| name       | render_z | vertices                    |
-|------------|----------|-----------------------------|
-| SHOP       | 3.25        | (0,0) (16,0) (16,13) (0,13)   |
-| EXTERIOR   | 0.0        | (-4.5,-4.5) (21,-4.5) (21,17.5) (-4.5,17.5) |
-
+| name | render_z | auto_wall | vertices |
+|------------|----------|---------|-----------------------------|
+| SHOP | 3.25 |  | (0,0) (16,0) (16,13) (0,13) |
+| EXTERIOR | 0.0 |  | (-4.5,-4.5) (21,-4.5) (21,17.5) (-4.5,17.5) |
 ---
 
 ## Impassable

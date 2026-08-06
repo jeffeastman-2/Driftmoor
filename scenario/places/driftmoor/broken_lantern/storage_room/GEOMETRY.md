@@ -27,10 +27,9 @@ east door opens directly into the kitchen.
 
 ## Zones
 
-| name        | floor_z | ceiling_z | render_z | vertices                    |
-|-------------|---------|-----------|----------|-----------------------------|
-| STORAGE_ROOM | 0      | 8         | 3.25     | (0,0) (11,0) (11,9.5) (0,9.5) |
-
+| name | floor_z | ceiling_z | render_z | auto_wall | vertices |
+|-------------|---------|-----------|----------|---------|-----------------------------|
+| STORAGE_ROOM | 0 | 8 | 3.25 |  | (0,0) (11,0) (11,9.5) (0,9.5) |
 ---
 
 ## Impassable

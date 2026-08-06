@@ -34,13 +34,18 @@ forest beyond.
 
 ## Zones
 
-| name            | render_z | vertices                              |
-|-----------------|----------|---------------------------------------|
-| TOWER_INTERIOR  | 6.5        | (35,35) (61,35) (61,61) (35,61)        |
-| CLEARING        | 3.25        | (9,9) (87,9) (87,87) (9,87)            |
-| FOREST          | 0.0        | (0,0) (97,0) (97,97) (0,97)            |
-
+| name | render_z | auto_wall | vertices |
+|-----------------|----------|---------|---------------------------------------|
+| TOWER_INTERIOR | 6.5 |  | (35,35) (61,35) (61,61) (35,61) |
+| CLEARING | 3.25 |  | (9,9) (87,9) (87,87) (9,87) |
+| FOREST | 0.0 |  | (0,0) (97,0) (97,97) (0,97) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a ruined-watchtower exploration site — a clearing and its interior, not rooms with doors. None of these zones share a coincident edge with any other, so the per-zone perimeter pass would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

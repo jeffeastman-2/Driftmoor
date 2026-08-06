@@ -2,6 +2,6 @@
   <defs><linearGradient id="w" x2="0" y2="1"><stop stop-color="#8b6848"/><stop offset="1" stop-color="#684b36"/></linearGradient></defs>
   <rect width="32.5" height="26" fill="#29231f"/><rect x=".7" y=".7" width="31.1" height="24.6" fill="url(#w)" stroke="#1e1815" stroke-width=".7"/>
   <g stroke="#493324" stroke-width=".13" opacity=".7"><path d="M.8 4H31.7M.8 8H31.7M.8 12H31.7M.8 16H31.7M.8 20H31.7"/><path d="M7 1V4M18 1V4M12 4V8M25 4V8M6 8V12M20 8V12M14 12V16M28 12V16M8 16V20M23 16V20M16 20V25"/></g>
-  <path d="M13.5 25.2H18.5V26H13.5Z" fill="#ba9366"/><rect x=".7" y=".7" width="31.1" height=".8" fill="#3b2d25"/>
+  <rect x=".7" y=".7" width="31.1" height=".8" fill="#3b2d25"/>
   <g fill="#2b211c" opacity=".5"><circle cx="8" cy="22" r=".12"/><circle cx="19" cy="5" r=".1"/><circle cx="28" cy="11" r=".11"/></g>
 </svg>

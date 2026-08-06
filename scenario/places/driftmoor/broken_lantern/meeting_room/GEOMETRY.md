@@ -27,10 +27,9 @@ ground floor. Its south door opens into the public room.
 
 ## Zones
 
-| name         | floor_z | ceiling_z | render_z | vertices                    |
-|--------------|---------|-----------|----------|-----------------------------|
-| MEETING_ROOM | 0       | 8         | 3.25     | (0,0) (16,0) (16,9.5) (0,9.5) |
-
+| name | floor_z | ceiling_z | render_z | auto_wall | vertices |
+|--------------|---------|-----------|----------|---------|-----------------------------|
+| MEETING_ROOM | 0 | 8 | 3.25 |  | (0,0) (16,0) (16,9.5) (0,9.5) |
 ---
 
 ## Impassable

@@ -32,16 +32,24 @@ Isle are the only navigable features beyond the harbor.
 
 ## Zones
 
-| name           | render_z | vertices                                                    |
-|----------------|----------|-------------------------------------------------------------|
-| DROWNED_ISLE   | 9.75        | (2275,13650) (3575,13650) (3575,14950) (2275,14950)               |
-| SEA_STACKS     | 9.75        | (3250,18200) (4550,18200) (4550,19500) (3250,19500)             |
-| HARBOR_APPROACH| 6.5        | (6500,7475) (8125,7475) (8125,9425) (6500,9425)              |
-| TIDAL_ZONE     | 6.5        | (3900,13000) (6500,13000) (6500,20150) (3900,20150)             |
-| OPEN_WATER     | 3.25        | (0,0) (7150,0) (7800,10400) (6500,27625) (0,27625)             |
-| EXTERIOR       | 0.0        | (0,0) (8125,0) (8125,27625) (0,27625)                         |
-
+| name | render_z | auto_wall | vertices |
+|----------------|----------|---------|-------------------------------------------------------------|
+| DROWNED_ISLE | 9.75 |  | (2275,13650) (3575,13650) (3575,14950) (2275,14950) |
+| SEA_STACKS | 9.75 |  | (3250,18200) (4550,18200) (4550,19500) (3250,19500) |
+| HARBOR_APPROACH | 6.5 |  | (6500,7475) (8125,7475) (8125,9425) (6500,9425) |
+| TIDAL_ZONE | 6.5 |  | (3900,13000) (6500,13000) (6500,20150) (3900,20150) |
+| OPEN_WATER | 3.25 |  | (0,0) (7150,0) (7800,10400) (6500,27625) (0,27625) |
+| EXTERIOR | 0.0 |  | (0,0) (8125,0) (8125,27625) (0,27625) |
 ---
+
+## Walls
+
+- **auto_wall:** false
+
+This is a coastal-waters region map (open water, islands, approach
+lanes) — an exploration area, not rooms with doors. None of its zones
+share a coincident edge with any other, so the per-zone perimeter pass
+would seal every one into an isolated box with no door to open it.
 
 ## Impassable
 

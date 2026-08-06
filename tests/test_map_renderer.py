@@ -323,7 +323,7 @@ def test_weary_traveler_uses_separate_zone_art_downstairs_and_upstairs(tmp_path)
     up = up_out.read_text(encoding="utf-8")
 
     assert down.count("class='zone-floor-art'") == 3
-    assert down.count("class='visual-overlay'") == 4
+    assert down.count("class='visual-overlay'") == 6
     assert up.count("class='zone-floor-art'") == 8
     assert up.count("class='visual-overlay'") == 25
     # Private-room access remains mechanical but is not painted as a magical
@@ -347,7 +347,7 @@ def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
         root / "GEOMETRY.md": (6, 32),
         root / "meeting_room/GEOMETRY.md": (1, 4),
         root / "storage_room/GEOMETRY.md": (1, 6),
-        root / "upstairs/GEOMETRY.md": (5, 10),
+        root / "upstairs/GEOMETRY.md": (5, 13),
     }
     rendered = {}
     for index, (geometry, counts) in enumerate(expected.items()):
@@ -381,7 +381,7 @@ def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
     assert re.search(r"<g data-reveal='0'><polygon[^>]*><title>Upstairs Hall", upstairs)
     for room in ("Guest Bedroom 1", "Guest Bedroom 2", "Guest Bedroom 3"):
         assert re.search(
-            rf"<g data-reveal='0'><polygon[^>]*><title>{room}", upstairs)
+            rf"<g data-reveal='1'><polygon[^>]*><title>{room}", upstairs)
 
 
 def test_apothecary_and_mercantile_have_editable_interior_art(tmp_path):

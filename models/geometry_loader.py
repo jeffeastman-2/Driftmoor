@@ -149,7 +149,7 @@ def compute_auto_walls(
         archway_found = False
         for lname, (lx, ly) in landmarks.items():
             lname_low = lname.lower()
-            is_door = "door" in lname_low
+            is_door = "door" in lname_low or "gate" in lname_low
             is_archway = "archway" in lname_low
             if not is_door and not is_archway:
                 continue
@@ -389,7 +389,11 @@ def door_landmarks_between(
             orient, coord, lo, hi = seg
             for lname, pos in landmarks.items():
                 lname_low = lname.lower()
-                if "door" not in lname_low and "archway" not in lname_low:
+                if (
+                    "door" not in lname_low
+                    and "gate" not in lname_low
+                    and "archway" not in lname_low
+                ):
                     continue
                 lx, ly = pos.x, pos.y
                 along, perp = (lx, ly) if orient == "h" else (ly, lx)

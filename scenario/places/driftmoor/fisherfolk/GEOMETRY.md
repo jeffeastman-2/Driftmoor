@@ -31,12 +31,11 @@ represents the accessible common space rather than every private room.
 
 ## Zones
 
-| name | render_z | vertices |
-|------|----------|----------|
-| SHARED_YARD | 3.25 | (0,0) (30,0) (30,16) (0,16) |
-| COTTAGE_PORCHES | 3.5 | (0,16) (30,16) (30,21) (0,21) |
-| EXTERIOR | 0.0 | (-4.5,-4.5) (34.5,-4.5) (34.5,25.5) (-4.5,25.5) |
-
+| name | render_z | auto_wall | vertices |
+|------|----------|---------|----------|
+| SHARED_YARD | 3.25 |  | (0,0) (30,0) (30,16) (0,16) |
+| COTTAGE_PORCHES | 3.5 |  | (0,16) (30,16) (30,21) (0,21) |
+| EXTERIOR | 0.0 |  | (-4.5,-4.5) (34.5,-4.5) (34.5,25.5) (-4.5,25.5) |
 ## Impassable
 
 | description | vertices |

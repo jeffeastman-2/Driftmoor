@@ -21,7 +21,9 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_doors     | 24 | 0  |
+| front_doors     | 24 | 3  |
+| garden_archway  | 24 | 35.5 |
+| garden_gate     | 24 | 61.5 |
 | altar           | 24.112 | 24.407 |
 | hearth          | 6.992  | 7.711 |
 | bench_left      | 31.147  | 14.992 |
@@ -42,14 +44,13 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 ## Zones
 
-| name      | render_z | vertices                              |
-|-----------|----------|---------------------------------------|
-| ALTAR     | 6.5        | (16,24) (32.5,24) (32.5,35.5) (16,35.5)       |
-| SACRISTY  | 6.5        | (35.5,22.5) (45.5,22.5) (45.5,35.5) (35.5,35.5)       |
-| CHAPEL    | 3.25        | (3,3) (45.5,3) (45.5,35.5) (3,35.5)           |
-| GARDEN    | 3.25        | (3,35.5) (45.5,35.5) (45.5,61.5) (3,61.5)         |
-| EXTERIOR  | 0.0        | (-8,-8) (56.5,-8) (56.5,69.5) (-8,69.5)       |
-
+| name | render_z | auto_wall | vertices |
+|-----------|----------|---------|---------------------------------------|
+| ALTAR | 6.5 |  | (16,24) (32.5,24) (32.5,35.5) (16,35.5) |
+| SACRISTY | 6.5 |  | (35.5,22.5) (45.5,22.5) (45.5,35.5) (35.5,35.5) |
+| CHAPEL | 3.25 |  | (3,3) (45.5,3) (45.5,35.5) (3,35.5) |
+| GARDEN | 3.25 |  | (3,35.5) (45.5,35.5) (45.5,61.5) (3,61.5) |
+| EXTERIOR | 0.0 |  | (-8,-8) (56.5,-8) (56.5,69.5) (-8,69.5) |
 ---
 
 ## Impassable
@@ -68,8 +69,8 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 
 | name            | x    | y    | destination              |
 |-----------------|------|------|--------------------------|
-| front_doors     | 24 | 0  | places/driftmoor         |
-| garden_gate     | 24 | 60 | places/driftmoor         |
+| front_doors     | 24 | 3  | places/driftmoor         |
+| garden_gate     | 24 | 61.5 | places/driftmoor         |
 | sacristy_door   | 45.5 | 29 | places/driftmoor         |
 | graveyard_path  | 3 | 48.5 | places/driftmoor/graveyard |
 

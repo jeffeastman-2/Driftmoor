@@ -31,29 +31,37 @@ into the hall. The stair arrives on the hall's north side.
 | room_1_basin      | 2.266    | 20.479 | 4 |
 | room_2_basin      | 16.133 | 20.356 | 4 |
 | room_3_basin      | 30.011 | 20.234 | 4 |
+| room_1_door       | 6.5    | 22.5 | 4 |
+| room_2_door       | 20.5   | 22.5 | 4 |
+| room_3_door       | 34     | 22.5 | 4 |
 
 ---
 
 ## Zones
 
-| name          | floor_z | ceiling_z | render_z | vertices                                  |
-|---------------|---------|-----------|----------|-------------------------------------------|
-| GUEST_BEDROOM_1 | 0     | 8         | 6.5      | (0,0) (13,0) (13,22.5) (0,22.5)       |
-| GUEST_BEDROOM_2 | 0     | 8         | 6.5      | (13.75,0) (27,0) (27,22.5) (13.75,22.5) |
-| GUEST_BEDROOM_3 | 0     | 8         | 6.5      | (27.75,0) (40.5,0) (40.5,22.5) (27.75,22.5) |
-| UPSTAIRS_HALL | 0       | 8         | 3.25     | (0,22.5) (40.5,22.5) (40.5,32.5) (0,32.5) |
-| STAIR_LANDING | 0       | 8         | 7.0      | (16.5,22.5) (21,22.5) (21,32.5) (16.5,32.5) |
-
+| name | floor_z | ceiling_z | render_z | auto_wall | vertices |
+|---------------|---------|-----------|----------|---------|-------------------------------------------|
+| GUEST_BEDROOM_1 | 0 | 8 | 6.5 |  | (0,0) (13,0) (13,22.5) (0,22.5) |
+| GUEST_BEDROOM_2 | 0 | 8 | 6.5 |  | (13.75,0) (27,0) (27,22.5) (13.75,22.5) |
+| GUEST_BEDROOM_3 | 0 | 8 | 6.5 |  | (27.75,0) (40.5,0) (40.5,22.5) (27.75,22.5) |
+| UPSTAIRS_HALL | 0 | 8 | 3.25 |  | (0,22.5) (40.5,22.5) (40.5,32.5) (0,32.5) |
+| STAIR_LANDING | 0 | 8 | 7.0 |  | (16.5,22.5) (21,22.5) (21,32.5) (16.5,32.5) |
 ---
 
 ## Fog of War
 
 - **reveal_on_entry:** GUEST_BEDROOM_1, GUEST_BEDROOM_2, GUEST_BEDROOM_3
-- **reveal_layout:** GUEST_BEDROOM_1, GUEST_BEDROOM_2, GUEST_BEDROOM_3
 
 ---
 
 ## Impassable
+
+Room/hall boundaries are generated automatically now (room_1_door /
+room_2_door / room_3_door carve their gaps; the outer walls have no
+zone on their other side, so auto-wall covers those too — see
+compute_auto_walls). Only the gaps between non-adjoining room zones
+need hand-authoring.
+
 | description          | vertices                              |
 |----------------------|---------------------------------------|
 

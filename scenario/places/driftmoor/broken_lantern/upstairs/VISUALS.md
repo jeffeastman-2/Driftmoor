@@ -12,3 +12,6 @@
 | room_2_basin_visual | floor/assets/washbasin.svg | room_2_basin | 16.133 | 20.356 | 2.4 | 2.4 | 0 | fixture |
 | room_3_basin_visual | floor/assets/washbasin.svg | room_3_basin | 30.011 | 20.234 | 2.4 | 2.4 | 0 | fixture |
 | linen_chest_visual | floor/assets/linen_chest.svg | linen_chest | 2.266 | 27.5 | 4 | 2.5 | -270 | fixture |
+| room_1_door_visual | ../../floor_assets/door.svg | room_1_door | 6.5 | 22.5 | 2 | 1 | 0 | fixture |
+| room_2_door_visual | ../../floor_assets/door.svg | room_2_door | 20.5 | 22.5 | 2 | 1 | 0 | fixture |
+| room_3_door_visual | ../../floor_assets/door.svg | room_3_door | 34 | 22.5 | 2 | 1 | 0 | fixture |
