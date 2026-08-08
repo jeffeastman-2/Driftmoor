@@ -50,6 +50,8 @@ Stone construction, iron-banded door.
 | EXTERIOR | 0.0 |  | (-4.5,-4.5) (40.5,-4.5) (40.5,37) (-4.5,37) |
 ---
 
+## Fog of War
+
 - **reveal_on_entry:** LIVING_QUARTERS
 
 ## Impassable

@@ -27,7 +27,7 @@ Inside smells of incense masking mildew. Every surface is covered with something
 
 | character | x | y |
 |---|---:|---:|
-| kelem | 13 | 6.5 |
+| kelem | 13.076 | 8.621 |
 
 ## Scene Introductions
 

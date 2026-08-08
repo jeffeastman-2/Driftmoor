@@ -788,7 +788,7 @@ def test_remaining_driftmoor_places_have_authored_editable_art(tmp_path):
     expected = {
         "carpenters_workshop": (2, 5), "coopers_shed": (2, 5),
         "fisherfolk": (2, 4), "fishmongers_shack": (1, 5),
-        "general_store": (2, 5), "mayors_hall": (4, 9),
+        "general_store": (2, 5), "mayors_hall": (4, 13),
         "midwifes_home": (3, 5), "schoolhouse": (1, 5),
         "tailors_shop": (2, 5), "tannery": (2, 5),
         "watchtower": (2, 4), "weavers_cottage": (2, 5),

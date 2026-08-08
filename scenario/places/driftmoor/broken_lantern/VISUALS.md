@@ -2,22 +2,22 @@
 
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
-| hearth_visual | floor/assets/hearth.svg | hearth | 31.54 | 21.431 | 4.5 | 5 | 0 | fixture |
+| hearth_visual | ../floor_assets/hearth.svg | hearth | 31.54 | 21.431 | 4.5 | 5 | 0 | fixture |
 | stage_visual | floor/assets/stage.svg | stage | 15.814 | 20.429 | 11.979 | 7.986 | 0 | fixture |
 | booth_1_visual | floor/assets/booth.svg | booth_1 | 2.304 | 3.708 | 6 | 3.2 | -90 | fixture |
 | booth_2_visual | floor/assets/booth.svg | booth_2 | 2.304 | 9.07 | 6 | 3.2 | -90 | fixture |
 | booth_3_visual | floor/assets/booth.svg | booth_3 | 2.304 | 14.432 | 6 | 3.2 | -90 | fixture |
-| table_1_visual | floor/assets/table.svg | table_1 | 12.446 | 5.455 | 5 | 5 | 0 | fixture |
-| table_2_visual | floor/assets/table.svg | table_2 | 23.571 | 5.544 | 5 | 5 | 0 | fixture |
-| table_3_visual | floor/assets/table.svg | table_3 | 12.473 | 11.872 | 5 | 5 | 0 | fixture |
-| table_4_visual | floor/assets/table.svg | table_4 | 23.579 | 11.803 | 5 | 5 | 0 | fixture |
+| table_1_visual | ../floor_assets/table.svg | table_1 | 12.446 | 5.455 | 5 | 5 | 0 | fixture |
+| table_2_visual | ../floor_assets/table.svg | table_2 | 23.571 | 5.544 | 5 | 5 | 0 | fixture |
+| table_3_visual | ../floor_assets/table.svg | table_3 | 12.473 | 11.872 | 5 | 5 | 0 | fixture |
+| table_4_visual | ../floor_assets/table.svg | table_4 | 23.579 | 11.803 | 5 | 5 | 0 | fixture |
 | bar_counter_visual | floor/assets/bar_counter.svg | bar_counter | 35.223 | 7.546 | 2.2 | 13 | 0 | fixture |
 | bar_cabinet_visual | floor/assets/cabinet.svg | bar_cabinet | 42.401 | 8.912 | 5.445 | 2.662 | 90 | fixture |
 | bar_stool_2_visual | floor/assets/stool.svg | bar_stool_2 | 32.017 | 7.163 | 2.2 | 2.2 | 0 | fixture |
 | bar_stool_3_visual | floor/assets/stool.svg | bar_stool_3 | 32.316 | 3.42 | 2.2 | 2.2 | 0 | fixture |
-| kitchen_worktable_visual | floor/assets/worktable.svg | kitchen_center | 39.891 | 26.508 | 4.852 | 3.529 | 180 | fixture |
-| kitchen_stove_visual | floor/assets/stove.svg | kitchen_stove | 40.539 | 32.414 | 3 | 3 | 0 | fixture |
-| stair_visual | floor/assets/stairs.svg | stair_foot | 23.399 | 28.291 | 3.24 | 6.48 | 0 | fixture |
+| kitchen_worktable_visual | ../floor_assets/worktable.svg | kitchen_center | 39.891 | 26.508 | 4.852 | 3.529 | 180 | fixture |
+| kitchen_stove_visual | ../floor_assets/stove.svg | kitchen_stove | 40.539 | 32.414 | 3 | 3 | 0 | fixture |
+| stair_visual | ../floor_assets/stairs.svg | stair_foot | 23.399 | 28.291 | 3.24 | 6.48 | 0 | fixture |
 | broken_lantern_visual | floor/assets/broken_lantern.svg | broken_lantern_sign | 20 | -1.5 | 2.5 | 2.5 | 0 | exterior |
 | bar_stool_visual | floor/assets/stool.svg | bar_stool | 32.087 | 10.724 | 2.2 | 2.2 | 0 | item |
 | service_bell_visual | floor/assets/bell.svg | service_bell | 34.526 | 8.17 | 1.2 | 1.2 | 0 | item |

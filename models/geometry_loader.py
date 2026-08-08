@@ -79,6 +79,7 @@ def compute_auto_walls(
     landmarks: dict[str, tuple[float, float]],
     *,
     door_gap_ft: float = 3.0,
+    curtain_gap_ft: float = 9.0,
     wall_thickness_ft: float = 1.0,
     excluded_zones: frozenset[str] = frozenset(),
 ) -> list[list[tuple[float, float]]]:
@@ -87,13 +88,16 @@ def compute_auto_walls(
     (or against nothing at all), not just shared edges between two named
     interior zones.
 
-    A landmark whose name contains "door" (case-insensitive) sits on the
-    edge and carves a ``door_gap_ft``-wide gap centered on itself —
-    multiple doors on the same long wall each get their own gap. A
-    landmark whose name contains "archway" instead leaves that entire
-    edge open with no wall at all, for boundaries that were never meant
-    to have a real door (a stairway landing, walking up to a bar
-    counter). A whole scene opts out with "## Walls\n- **auto_wall:**
+    A landmark whose name contains "door" or "gate" (case-insensitive)
+    sits on the edge and carves a ``door_gap_ft``-wide gap centered on
+    itself — multiple doors on the same long wall each get their own gap.
+    A landmark whose name contains "curtain" carves a wider
+    ``curtain_gap_ft``-wide gap instead, for a hung-fabric room divider
+    walked through at an angle rather than lined up with squarely
+    (Dustcloak's curio shop into its curtained-off backroom). A landmark
+    whose name contains "archway" instead leaves that entire edge open
+    with no wall at all, for boundaries that were never meant to have a
+    real door (a stairway landing, walking up to a bar counter). A whole scene opts out with "## Walls\n- **auto_wall:**
     false"; a single zone within an otherwise auto-walled scene opts out
     via its own Zones-table "auto_wall" column (e.g. TOWN_COMMON's soft
     "beyond this line is wilderness" edge, which a hard wall would
@@ -142,14 +146,16 @@ def compute_auto_walls(
     boxes = {n: _bbox(zones[n]) for n in names}
     half_thickness = wall_thickness_ft / 2.0
     half_gap = door_gap_ft / 2.0
+    half_curtain_gap = curtain_gap_ft / 2.0
     walls: list[list[tuple[float, float]]] = []
 
     def wall_segment(orient: str, coord: float, lo: float, hi: float) -> None:
-        door_positions: list[float] = []
+        door_positions: list[tuple[float, float]] = []  # (position, half_gap)
         archway_found = False
         for lname, (lx, ly) in landmarks.items():
             lname_low = lname.lower()
-            is_door = "door" in lname_low or "gate" in lname_low
+            is_curtain = "curtain" in lname_low
+            is_door = "door" in lname_low or "gate" in lname_low or is_curtain
             is_archway = "archway" in lname_low
             if not is_door and not is_archway:
                 continue
@@ -159,14 +165,14 @@ def compute_auto_walls(
             if is_archway:
                 archway_found = True
             else:
-                door_positions.append(along)
+                door_positions.append((along, half_curtain_gap if is_curtain else half_gap))
         if archway_found:
             return  # intentionally open — no wall on this segment at all
 
         cursor = lo
         spans: list[tuple[float, float]] = []
-        for d in sorted(door_positions):
-            gap_lo, gap_hi = d - half_gap, d + half_gap
+        for d, gap_half in sorted(door_positions):
+            gap_lo, gap_hi = d - gap_half, d + gap_half
             if gap_lo > cursor:
                 spans.append((cursor, gap_lo))
             cursor = max(cursor, gap_hi)
@@ -393,6 +399,7 @@ def door_landmarks_between(
                     "door" not in lname_low
                     and "gate" not in lname_low
                     and "archway" not in lname_low
+                    and "curtain" not in lname_low
                 ):
                     continue
                 lx, ly = pos.x, pos.y

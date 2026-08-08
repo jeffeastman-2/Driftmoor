@@ -2,7 +2,7 @@
 
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
-| counter_visual | floor/assets/counter.svg | counter | 11 | 7.25 | 13 | 1.5 | 0 | fixture |
+| counter_visual | ../floor_assets/counter.svg | counter | 11 | 7.25 | 13 | 1.5 | 0 | fixture |
 | west_shelves_visual | floor/assets/herb_shelves.svg | herb_shelves_w | 2 | 5 | 2.2 | 8 | 0 | fixture |
 | east_shelves_visual | floor/assets/herb_shelves.svg | herb_shelves_e | 20.5 | 5 | 2.2 | 8 | 0 | fixture |
 | mortar_visual | floor/assets/mortar.svg | mortar_pestle | 9.5 | 8 | 1.4 | 1.4 | 0 | fixture |

@@ -3,7 +3,7 @@
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
 | display_window_visual | floor/assets/window_display.svg | display_window | 12.521 | 1.42 | 5 | 1.2 | 0 | fixture |
-| workbench_visual | floor/assets/workbench.svg | workbench | 8.228 | 7.632 | 5.832 | 2.187 | 0 | fixture |
+| workbench_visual | ../floor_assets/workbench.svg | workbench | 8.228 | 7.632 | 5.832 | 2.187 | 0 | fixture |
 | shoe_racks_visual | floor/assets/shoe_racks.svg | shoe_racks | 14.454 | 5.999 | 2.5 | 8 | 0 | fixture |
 | stool_visual | floor/assets/stool.svg | stool | 2.495 | 10.825 | 2.2 | 2.2 | 0 | fixture |
 | fitting_chair_visual | floor/assets/fitting_chair.svg | fitting_chair | 8.007 | 3.999 | 3 | 3 | 90 | fixture |

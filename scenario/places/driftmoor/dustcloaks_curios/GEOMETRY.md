@@ -27,11 +27,11 @@ organized chaos outside.
 | shop_counter    | 13  | 6.378 |
 | display_table_w | 6.615   | 2.527 |
 | display_table_e | 19.209  | 2.597 |
-| curtain_door    | 13  | 12  |
+| curtain_door    | 12.773  | 11  |
 | backroom_desk   | 8.499  | 22.609 |
-| loft_staircase  | 22.5 | 18 |
-| obelisk_cache   | 3.035  | 15.696 |
-| appraisal_bench | 8.752 | 15.703 |
+| loft_staircase  | 23.106 | 20.802 |
+| obelisk_cache   | 3.338  | 13.803 |
+| appraisal_bench | 12.539 | 15.93 |
 | locked_box      | 13.481 | 24.104 |
 | yard_junk       | 9.424  | -4.632 |
 | yard_wheels     | 6.223   | -4.511 |
@@ -49,15 +49,9 @@ organized chaos outside.
 | EXTERIOR | 0.0 |  | (-4.5,-9.5) (30.5,-9.5) (30.5,30.5) (-4.5,30.5) |
 ---
 
-## Walls
+## Fog of War
 
-- **auto_wall:** false
-
-Hand-authored: the SHOPFRONT/BACKROOM boundary already has a working 9 ft
-curtained archway (curtain_door) flanked by real wall — wider than the
-default door-gap convention gives, and there's no "wide door" option yet.
-Not broken, just doesn't fit the simple convention; opt out rather than
-force a mismatch.
+- **reveal_on_entry:** BACKROOM
 
 ---
 
@@ -65,8 +59,6 @@ force a mismatch.
 
 | description      | vertices                        |
 |------------------|---------------------------------|
-| Dividing wall west | (0,11) (10.5,11) (10.5,13) (0,13) |
-| Dividing wall east | (19.5,11) (26,11) (26,13) (19.5,13) |
 | Back wall        | (0,24) (26,24) (26,26) (0,26)   |
 
 ---

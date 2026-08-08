@@ -2,7 +2,7 @@
 
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
-| ale_barrels_visual | floor/assets/barrels.svg | ale_barrels | 2.558 | 7.343 | 3.5 | 3 | 0 | fixture |
+| ale_barrels_visual | ../../floor_assets/barrels.svg | ale_barrels | 2.558 | 7.343 | 3.5 | 3 | 0 | fixture |
 | dry_goods_visual | floor/assets/crates.svg | dry_goods | 7 | 7 | 3.5 | 3 | 0 | fixture |
 | hidden_floorboard_visual | floor/assets/floorboard.svg | hidden_floorboard | 2.894 | 1.712 | 2.4 | 1.2 | 0 | floor_decor |
 | spare_blanket_visual | floor/assets/blanket.svg | spare_blanket | 5.53 | 2.248 | 2.5 | 1.7 | 90 | item |

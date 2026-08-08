@@ -3,7 +3,7 @@
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
 | altar_visual | floor/assets/altar.svg | altar | 24.112 | 24.407 | 7 | 3.5 | 0 | fixture |
-| hearth_visual | floor/assets/hearth.svg | hearth | 6.992 | 7.711 | 4 | 5 | 0 | fixture |
+| hearth_visual | ../floor_assets/hearth.svg | hearth | 6.992 | 7.711 | 4 | 5 | 0 | fixture |
 | pew_left_visual | floor/assets/pew.svg | bench_left | 31.147 | 14.992 | 12 | 2.5 | 0 | fixture |
 | pew_right_visual | floor/assets/pew.svg | bench_right | 31.131 | 18.577 | 12 | 2.5 | 360 | fixture |
 | pew_sw_visual | floor/assets/pew.svg | pew_sw | 18.15 | 11.15 | 10 | 2.5 | 0 | fixture |

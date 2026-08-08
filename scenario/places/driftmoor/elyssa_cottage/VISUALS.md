@@ -11,7 +11,7 @@
 | obelisk_notes_visual | floor/assets/notes.svg | obelisk_notes | 21.035 | 2.263 | 2.187 | 1.458 | -8 | item |
 | containment_dome_visual | floor/assets/dome.svg | containment_dome | 19.944 | 11.141 | 3 | 3 | 0 | fixture |
 | shard_visual | floor/assets/shard.svg | obelisk_shard_contained_specimen | 19.943 | 10.819 | 1.1 | 1.6 | 0 | item |
-| bed_visual | floor/assets/bed.svg | narrow_bed | 4 | 19 | 5 | 6.5 | 0 | fixture |
+| bed_visual | ../floor_assets/bed.svg | narrow_bed | 4 | 19 | 5 | 6.5 | 0 | fixture |
 | wardrobe_visual | floor/assets/wardrobe.svg | wardrobe | 14.041 | 19.284 | 3 | 5 | 0 | fixture |
 | bedside_table_visual | floor/assets/bedside_table.svg | bedside_table | 7.243 | 20.649 | 2.4 | 2.4 | 0 | fixture |
 | herb_garden_visual | floor/assets/herb_garden.svg | herb_garden | -3 | 11 | 5.5 | 8 | 0 | exterior |
