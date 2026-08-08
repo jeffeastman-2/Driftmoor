@@ -27,8 +27,12 @@ Greaves runs the house from behind the counter.
 | dining_table    | 13  | 11.798  | 4 |
 | bar_counter     | 25.864 | 5.356  | 4 |
 | stair_foot      | 27.5 | 18  | 0 |
-| storage_shed    | 36.5 | 13 | 4 |
-| storage_shed_door | 32.5 | 10.897 | 4 |
+| storage_shed    | 36.5 | 21 | 4 |
+| kitchen         | 36.5 | 7.542 | 4 |
+| kitchen_door    | 32.5 | 10.897 | 4 |
+| kitchen_stove   | 36.542   | 2.289 | 4 |
+| kitchen_sink    | 38.942   | 13.059 | 4 |
+| storage_shed_door | 34.583 | 18 | 4 |
 
 ---
 
@@ -43,16 +47,19 @@ Greaves runs the house from behind the counter.
 | EXTERIOR | 0 | 8 | 0.0 |  | (-4.5,-4.5) (45,-4.5) (45,30.5) (-4.5,30.5) |
 ---
 
+## Fog of War
+
+- **reveal_on_entry:** KITCHEN, STORAGE_SHED
+
 ## Impassable
 
 Every zone boundary here — including against EXTERIOR — is generated
-automatically now (front_door and storage_shed_door carve their gaps;
+automatically now (front_door, kitchen and storage_shed_door carve their gaps;
 see compute_auto_walls). Only interior furniture that isn't a zone
 boundary stays hand-authored.
 
 | description       | vertices                          |
 |--------------------|-----------------------------------|
-| Hearth masonry     | (2,16) (5,16) (5,22) (2,22)       |
 
 ---
 

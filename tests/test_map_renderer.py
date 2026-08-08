@@ -322,8 +322,8 @@ def test_weary_traveler_uses_separate_zone_art_downstairs_and_upstairs(tmp_path)
     down = down_out.read_text(encoding="utf-8")
     up = up_out.read_text(encoding="utf-8")
 
-    assert down.count("class='zone-floor-art'") == 3
-    assert down.count("class='visual-overlay'") == 6
+    assert down.count("class='zone-floor-art'") == 4
+    assert down.count("class='visual-overlay'") == 10
     assert up.count("class='zone-floor-art'") == 8
     assert up.count("class='visual-overlay'") == 25
     # Private-room access remains mechanical but is not painted as a magical
@@ -389,7 +389,7 @@ def test_apothecary_and_mercantile_have_editable_interior_art(tmp_path):
 
     expected = {
         Path("scenario/places/driftmoor/bitter_remedy/GEOMETRY.md"): (2, 8),
-        Path("scenario/places/driftmoor/salt_and_iron/GEOMETRY.md"): (2, 13),
+        Path("scenario/places/driftmoor/salt_and_iron/GEOMETRY.md"): (2, 16),
         Path("scenario/places/driftmoor/salt_and_iron/upper_floor/GEOMETRY.md"): (2, 6),
     }
     for index, (geometry, counts) in enumerate(expected.items()):
@@ -412,7 +412,7 @@ def test_pawnshop_bakery_and_cobbler_have_editable_interior_art(tmp_path):
     from engine.map_renderer import render_turn_slider_html
 
     expected = {
-        Path("scenario/places/driftmoor/gilded_trinket/GEOMETRY.md"): (2, 11),
+        Path("scenario/places/driftmoor/gilded_trinket/GEOMETRY.md"): (2, 14),
         Path("scenario/places/driftmoor/bakery/GEOMETRY.md"): (2, 7),
         Path("scenario/places/driftmoor/cobblers_shop/GEOMETRY.md"): (1, 8),
     }
@@ -788,7 +788,7 @@ def test_remaining_driftmoor_places_have_authored_editable_art(tmp_path):
     expected = {
         "carpenters_workshop": (2, 5), "coopers_shed": (2, 5),
         "fisherfolk": (2, 4), "fishmongers_shack": (1, 5),
-        "general_store": (2, 5), "mayors_hall": (4, 6),
+        "general_store": (2, 5), "mayors_hall": (4, 9),
         "midwifes_home": (3, 5), "schoolhouse": (1, 5),
         "tailors_shop": (2, 5), "tannery": (2, 5),
         "watchtower": (2, 4), "weavers_cottage": (2, 5),

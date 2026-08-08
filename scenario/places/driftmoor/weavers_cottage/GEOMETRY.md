@@ -25,6 +25,7 @@ yarn and dyed thread. Small living area in the back.
 | dye_pots        | 16.664 | 2.569  |
 | living_nook     | 9.5  | 13  |
 | finished_cloth  | 15.819 | 12.81  |
+| living_door     | 9.5  | 9.5  |
 
 ---
 

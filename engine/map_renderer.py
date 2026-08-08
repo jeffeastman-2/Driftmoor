@@ -1530,6 +1530,7 @@ def render_turn_slider_html(
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              "<button id='fit' title='Reset map view (key: F)'>Fit</button>"
+             "<button id='refreshGeo' title='Re-read GEOMETRY.md from disk — picks up manual edits without exiting the scene'>Refresh scene</button>"
              "<button id='editArt' title='Move authored fixtures and initial NPC positions'>Edit layout</button>"
              "<span id='artctl' class='artctl'><button id='rotL' title='Rotate counterclockwise'>↶</button>"
              "<button id='rotR' title='Rotate clockwise'>↷</button><button id='smaller'>−</button>"
@@ -1775,12 +1776,20 @@ def render_turn_slider_html(
     if live_refresh_secs:
         # Live-follow: while parked on the latest turn, reload to pick up new
         # turns; if the viewer has scrubbed back into history, leave them be.
-        # Skip the reload while the reader is actively panning/zooming (a recent
-        # interaction) so it doesn't yank the map out from under them; the saved
-        # viewBox is restored on the reloads that do fire.
+        # Skip the reload while the reader is actively panning/zooming/editing
+        # (a recent interaction) so it doesn't yank the map out from under
+        # them; the saved viewBox is restored on the reloads that do fire.
+        # Edit mode alone doesn't block forever, though: if the player leaves
+        # the "Edit layout" toggle on and just walks away (in-game, without
+        # clicking "Done editing"), __mapArtEditing would otherwise stay true
+        # for the rest of this iframe's life, permanently freezing the map
+        # and everything downstream of it (SSE-driven turn state, prompts)
+        # until a manual full-page refresh. Past EDIT_STALE_MS with no actual
+        # editing interaction, treat it as abandoned and resume reloading.
         p.append(
             f"setInterval(function(){{if(+sl.value>=TURNS.length-1&&"
-            f"!window.__mapArtEditing&&"
+            f"(!window.__mapArtEditing||"
+            f"(Date.now()-(window.__mapLastInteract||0))>60000)&&"
             f"(Date.now()-(window.__mapLastInteract||0))>2500)"
             f"{{location.reload();}}}},{int(live_refresh_secs) * 1000});")
     p.append(
@@ -1807,11 +1816,13 @@ def render_turn_slider_html(
         "async function save(){saveBtn.textContent='Saving…';try{let r=await fetch('/map-visuals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visuals:records(),npc_positions:npcRecords()})});"
         "if(!r.ok)throw new Error(await r.text());dirty=false;saveBtn.textContent='Saved';setTimeout(()=>saveBtn.textContent='Save layout',1200);return true;}"
         "catch(e){saveBtn.textContent='Save failed';console.error(e);return false;}}"
-        "eb.onclick=async function(){if(editing&&dirty&&!(await save()))return;editing=!editing;window.__mapArtEditing=editing;"
+        "eb.onclick=async function(){window.__mapLastInteract=Date.now();if(editing&&dirty&&!(await save()))return;editing=!editing;window.__mapArtEditing=editing;"
         "eb.textContent=editing?'Done editing':'Edit layout';"
         "ctl.classList.toggle('on',editing);s.style.cursor=editing?'default':'grab';"
-        "if(editing){sl.value=0;show(0);sl.disabled=true;objs.forEach(o=>s.appendChild(o));npcs.forEach(o=>s.appendChild(o));}"
-        "else{sl.disabled=false;clearPick();}"
+        "if(editing){sl.value=0;show(0);"
+        "document.querySelectorAll('[data-reveal]').forEach(e=>{e.style.display='';});"
+        "sl.disabled=true;objs.forEach(o=>s.appendChild(o));npcs.forEach(o=>s.appendChild(o));}"
+        "else{sl.disabled=false;clearPick();show(+sl.value);}"
         "objs.forEach(o=>o.style.cursor=editing?'move':'');npcs.forEach(o=>o.style.cursor=editing?'move':'');};"
         "objs.forEach(o=>{o.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();pick(o);"
         "let p=pt(e);drag={kind:'visual',o:o,px:p.x,py:p.y,x:+o.dataset.x,y:+o.dataset.y};e.preventDefault();});});"
@@ -1830,7 +1841,8 @@ def render_turn_slider_html(
         "if(!best||d<best.d)best={d:d,x:qx,y:qy,ex:ex,ey:ey};}"
         "if(!best||best.d>DOOR_SNAP_FT)return null;"
         "return{x:best.x,y:best.y,rotation:Math.abs(best.ex)>=Math.abs(best.ey)?0:90};}"
-        "window.addEventListener('mousemove',e=>{if(!drag)return;let p=pt(e),x=drag.x+p.x-drag.px,y=drag.y-(p.y-drag.py);"
+        "window.addEventListener('mousemove',e=>{if(!drag)return;window.__mapLastInteract=Date.now();"
+        "let p=pt(e),x=drag.x+p.x-drag.px,y=drag.y-(p.y-drag.py);"
         "if(drag.kind==='npc'){drag.o.dataset.startX=x.toFixed(3);drag.o.dataset.startY=y.toFixed(3);drag.o.setAttribute('transform','translate('+x+','+(-y)+')');}"
         "else{let snapped=snapDoor(drag.o.dataset.asset,x,y);"
         "if(snapped){x=snapped.x;y=snapped.y;drag.o.dataset.rotation=snapped.rotation.toFixed(3);}"
@@ -1849,6 +1861,17 @@ def render_turn_slider_html(
         "document.getElementById('copyGeometry').onclick=async function(){let rows=['## Landmark coordinate updates','','| name | x | y |','|---|---:|---:|'];"
         "let seen=new Set();objs.forEach(o=>{let t=o.dataset.target;if(!t||seen.has(t))return;seen.add(t);rows.push('| '+t+' | '+o.dataset.x+' | '+o.dataset.y+' |');});"
         "await navigator.clipboard.writeText(rows.join('\\n'));this.textContent='Copied';setTimeout(()=>this.textContent='Copy coordinates',1200);};})();")
+    p.append(
+        "(function(){const b=document.getElementById('refreshGeo');"
+        "b.onclick=async function(){b.textContent='Refreshing…';b.disabled=true;"
+        "try{let r=await fetch('/refresh-geometry',{method:'POST'});"
+        # The POST updates server-side scene_geometry and rewrites this same
+        # map HTML file, but this already-loaded page's DOM has no way to
+        # know that happened — without an explicit reload here, the button
+        # looks like it did nothing even though the edit landed.
+        "if(!r.ok)throw new Error(await r.text());location.reload();return;}"
+        "catch(e){b.textContent='Refresh failed';b.disabled=false;"
+        "setTimeout(()=>b.textContent='Refresh scene',1200);console.error(e);}};})();")
     p.append(_PANZOOM_JS)
     p.append("</script></body></html>")
     output_path.parent.mkdir(parents=True, exist_ok=True)

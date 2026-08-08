@@ -23,7 +23,9 @@ sits behind the counter near the back wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_door      | 11  | 0  |
+| front_door      | 10.992  | 0  |
+| back_area_arch  | 11.893  | 19.392 |
+| back_door      | 11.03  | 29 |
 | display_case    | 18.156 | 2.521 |
 | counter         | 11.895  | 13.067 |
 | obsidian_ring   | 12.059 | 25.492 |

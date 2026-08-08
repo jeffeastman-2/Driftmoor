@@ -375,6 +375,25 @@ def _rewrite_initial_positions(
     return text[:match.start(1)] + updated + text[match.end(1):]
 
 
+async def handle_refresh_geometry(request: web.Request) -> web.Response:
+    """Re-parse the current place's GEOMETRY.md and apply it to the live
+    scene_geometry in place, so manual file edits (or edits made outside the
+    layout editor's own save path) take effect without exiting and
+    re-entering the scene. Character positions, inventory, and fog-of-war
+    progress are untouched — only zones/walls/landmarks/connections reload."""
+    cfg = _rt(request.app)["config"]
+    sg = getattr(cfg, "scene_geometry", None)
+    if sg is None or not getattr(sg, "place_path", ""):
+        raise web.HTTPBadRequest(text="no active place to refresh")
+    try:
+        fresh_cfg = configure_from_place_path(sg.place_path, game_time=cfg.game_time)
+    except Exception as exc:  # noqa: BLE001 — surface the parse error to the editor
+        raise web.HTTPBadRequest(text=f"failed to reload geometry: {exc}") from None
+    sg.reload_from(fresh_cfg.scene_geometry)
+    _render_map(request.app)
+    return web.json_response({"ok": True})
+
+
 async def handle_map_visuals(request: web.Request) -> web.Response:
     """Persist validated overlay edits for only the currently loaded place."""
     data = await request.json()
@@ -1032,6 +1051,7 @@ def main():
         web.get("/events", handle_events),
         web.post("/input", handle_input),
         web.post("/map-visuals", handle_map_visuals),
+        web.post("/refresh-geometry", handle_refresh_geometry),
     ])
     app.on_startup.append(_on_startup)
     app.on_cleanup.append(_on_cleanup)

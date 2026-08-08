@@ -21,6 +21,7 @@ represents the accessible common space rather than every private room.
 | cottage_row | 15.101 | 20.92 |
 | communal_net_racks | 5 | 10 |
 | stacked_lobster_pots | 26.911 | 10.402 |
+| porch_archway | 15 | 16 |
 
 ## Items
 

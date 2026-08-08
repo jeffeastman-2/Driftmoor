@@ -25,6 +25,7 @@ in the back with bolts of cloth and a cutting table.
 | cutting_table   | 10.043  | 8.707  |
 | fabric_bolts    | 17.302 | 13.241  |
 | sewing_station  | 1.854  | 11.965  |
+| workspace_door  | 9.5  | 8  |
 
 ---
 

@@ -20,6 +20,7 @@ hide racks and tools. Strong smell keeps visitors away.
 | name            | x    | y    |
 |-----------------|------|------|
 | front_entrance  | 13  | 0  |
+| front_entrance_door | 13 | 0 |
 | hide_racks      | 3.118  | 9.602  |
 | tool_bench      | 11.917 | 9.91  |
 | drying_line     | 13.102  | 17.23 |

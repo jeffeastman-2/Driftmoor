@@ -20,7 +20,7 @@ Smells of dust and polish.
 
 | character | x | y |
 |---|---:|---:|
-| tavian | 13 | 13 |
+| tavian | 11.868 | 14.792 |
 
 ## Who Is Normally Here
 - **Tavian "Tav" Drakescale** — behind the counter

@@ -23,13 +23,14 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | name            | x    | y    |
 |-----------------|------|------|
-| front_doors     | 17.5 | 0  |
-| shelves_west    | 3  | 7.5 |
-| shelves_east    | 32.5 | 7.5 |
-| barrel_corner_w | 4.5  | 27.5 |
-| barrel_corner_e | 30.5 | 27.5 |
-| staircase       | 29 | 26 |
-| clock           | 17.5 | 30.5 |
+| front_door1     | 16.466 | 0  |
+| front_door2     | 18.505 | 0  |
+| shelves_west    | 2  | 8 |
+| shelves_east    | 33.5 | 8 |
+| barrel_corner_w | 4.285  | 28.788 |
+| barrel_corner_e | 10.001 | 25.676 |
+| staircase       | 32.435 | 28.898 |
+| clock           | 24.154 | 20.304 |
 | cudgel_under_counter | 21 | 16 |
 | ledger          | 16 | 16 |
 | counter_center  | 19.25 | 15 |
@@ -37,6 +38,7 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 | central_display_e | 25 | 8 |
 | rope_coils      | 6 | 19 |
 | salt_sacks      | 32 | 19 |
+| back_store_door | 27.628 | 22.5 |
 
 ---
 
@@ -61,7 +63,7 @@ The shop is well-lit during trading hours; a clock ticks on the wall.
 
 | name             | x    | y    | destination                          |
 |------------------|------|------|--------------------------------------|
-| front_doors      | 17.5 | 0  | places/driftmoor                     |
+| front_door      | 17.5 | 0  | places/driftmoor                     |
 | to_upper_floor   | 29 | 26 | places/driftmoor/salt_and_iron/upper_floor |
 
 ---

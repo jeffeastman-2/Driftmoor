@@ -219,6 +219,41 @@ class SceneGeometry:
     # magical and physical boundaries
     boundaries: list["MagicalBoundary"] = field(default_factory=list)
 
+    def reload_from(self, other: "SceneGeometry") -> None:
+        """Replace this geometry's contents with ``other``'s, in place.
+
+        Callers throughout a running session hold a reference to this exact
+        object (captured once at scene entry), so mutating the existing
+        containers rather than rebinding the attributes makes a freshly
+        re-parsed GEOMETRY.md take effect immediately for movement/zone
+        checks already in flight — no reassignment or restart required.
+        """
+        self.z_level = other.z_level
+        self.width = other.width
+        self.height = other.height
+        self.origin = other.origin
+        self.landmarks.clear()
+        self.landmarks.update(other.landmarks)
+        self.zones.clear()
+        self.zones.update(other.zones)
+        self.zone_floor_z.clear()
+        self.zone_floor_z.update(other.zone_floor_z)
+        self.zone_ceiling_z.clear()
+        self.zone_ceiling_z.update(other.zone_ceiling_z)
+        self.zone_z_explicit.clear()
+        self.zone_z_explicit.update(other.zone_z_explicit)
+        self.impassable[:] = other.impassable
+        self.connections.clear()
+        self.connections.update(other.connections)
+        self.visibility_rules.clear()
+        self.visibility_rules.update(other.visibility_rules)
+        self.ambient_visibility_ft = other.ambient_visibility_ft
+        self.zone_visibility_ft.clear()
+        self.zone_visibility_ft.update(other.zone_visibility_ft)
+        self.starting_positions.clear()
+        self.starting_positions.update(other.starting_positions)
+        self.boundaries[:] = other.boundaries
+
     def absolute_position(self, local: Position) -> Position:
         """Convert local scene coordinates to world coordinates."""
         return Position(

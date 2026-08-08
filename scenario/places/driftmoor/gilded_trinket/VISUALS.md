@@ -13,3 +13,6 @@
 | weapon_rack_visual | floor/assets/weapon_rack.svg | weapon_rack | 2.742 | 24.336 | 5 | 2.5 | 90 | fixture |
 | private_desk_visual | floor/assets/private_desk.svg | private_desk | 10.73 | 26.168 | 7 | 4 | 0 | fixture |
 | obsidian_ring_visual | floor/assets/ring.svg | obsidian_ring | 12.059 | 25.492 | 1.3 | 1.3 | 0 | item |
+| front_door_visual | ../floor_assets/door.svg | front_door | 10.992 | 0 | 2 | 1 | 0 | fixture |
+| back_door_visual | ../floor_assets/door.svg | back_door | 11.03 | 29 | 2 | 1 | 0 | fixture |
+| back_area_arch | ../floor_assets/archway.svg | back_area_arch | 11.893 | 19.392 | 2 | 1 | 0 | fixture |

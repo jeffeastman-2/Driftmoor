@@ -21,14 +21,21 @@ Stone construction, iron-banded door.
 | name            | x    | y    |
 |-----------------|------|------|
 | main_entrance   | 17.5 | 0  |
+| main_entrance_door | 16.466 | 0 |
 | great_table     | 16.987 | 6.332  |
 | hearth          | 2.487  | 12.618  |
 | notice_board    | 1.935  | 3.168  |
-| office_door     | 26 | 11  |
+| office_door     | 20.314 | 19.5  |
+| living_door     | 8.385 | 16  |
 | mayor_desk      | 29 | 16 |
-| records_door    | 13  | 16 |
+| records_door    | 8.385  | 16 |
 | filing_shelves  | 7.615  | 30.068 |
 | staircase       | 19.159 | 20.409 |
+| stairs_hall_door | 16 | 20.409 |
+| living_bed  | 31.302    | 27.186   | 4 |
+| living_chest | 33.452 | 21.972 | 4 |
+| living_basin | 17.462 | 30.669 | 4 |
+| living_rug | 23.339 | 26.647 | 4 |
 
 ---
 
@@ -38,10 +45,12 @@ Stone construction, iron-banded door.
 |-----------------|----------|---------|---------------------------------|
 | LIVING_QUARTERS | 9.75 |  | (16,19.5) (35.5,19.5) (35.5,32.5) (16,32.5) |
 | RECORDS_ROOM | 6.5 |  | (0,16) (16,16) (16,32.5) (0,32.5) |
-| OFFICE | 6.5 |  | (22.5,11) (35.5,11) (35.5,19.5) (22.5,19.5) |
+| OFFICE | 6.5 |  | (16,11) (35.5,11) (35.5,19.5) (16,19.5) |
 | MAIN_HALL | 3.25 |  | (0,0) (35.5,0) (35.5,16) (0,16) |
 | EXTERIOR | 0.0 |  | (-4.5,-4.5) (40.5,-4.5) (40.5,37) (-4.5,37) |
 ---
+
+- **reveal_on_entry:** LIVING_QUARTERS
 
 ## Impassable
 

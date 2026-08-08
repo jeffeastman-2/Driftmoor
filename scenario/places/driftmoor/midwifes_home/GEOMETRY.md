@@ -26,6 +26,7 @@ side. Smells of herbs and dried flowers.
 | treatment_door  | 9.5  | 9.5  |
 | treatment_cot   | 4.816  | 15.895  |
 | herb_garden     | 24 | 11  |
+| garden_archway  | 19.5 | 7 |
 
 ---
 
