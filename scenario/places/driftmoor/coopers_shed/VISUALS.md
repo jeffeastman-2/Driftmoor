@@ -7,3 +7,4 @@
 | hoop_visual | ../floor_assets/rack.svg | hoop_rack | 2.824 | 11 | 3 | 7 | 0 | fixture |
 | toy_visual | ../floor_assets/shelves.svg | toy_shelf | 3.798 | 2.29 | 3 | 5 | 90 | fixture |
 | yard_visual | ../floor_assets/barrels.svg | yard_area | 18.636 | 2.617 | 7.26 | 4.84 | 0 | exterior |
+| front_door_visual | ../floor_assets/door.svg | front_door | 11 | 0 | 2 | 1 | 0 | fixture |

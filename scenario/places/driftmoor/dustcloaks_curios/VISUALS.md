@@ -16,3 +16,4 @@
 | junk_visual | floor/assets/junk.svg | yard_junk | 9.424 | -4.632 | 4 | 3 | 12 | exterior |
 | wheels_visual | floor/assets/wheels.svg | yard_wheels | 6.223 | -4.511 | 4 | 3 | -12 | exterior |
 | furniture_visual | floor/assets/broken_furniture.svg | yard_furniture | 19.666 | -4.355 | 4 | 3.5 | 8 | exterior |
+| front_gate_visual | ../floor_assets/gate.svg | front_gate | 13 | 0 | 2 | 1 | 0 | fixture |

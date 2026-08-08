@@ -10,3 +10,4 @@
 | stove_visual | floor/assets/potbelly_stove.svg | potbelly_stove | 10.826 | 10.293 | 2.5 | 2.5 | 0 | fixture |
 | washstand_visual | floor/assets/washstand.svg | washstand | 6.615 | 9.75 | 2.268 | 1.782 | 0 | fixture |
 | striped_pole_visual | floor/assets/striped_pole.svg | striped_pole | 8 | -1.5 | 1.8 | 1.8 | 0 | exterior |
+| front_door_visual | ../floor_assets/door.svg | front_door | 6.5 | 0 | 2 | 1 | 0 | fixture |

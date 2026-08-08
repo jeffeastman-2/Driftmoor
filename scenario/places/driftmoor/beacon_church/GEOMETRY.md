@@ -33,10 +33,12 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 | pew_nw          | 18.153 | 14.839 |
 | pew_ne          | 18.137 | 18.536 |
 | candle_stand    | 17.664 | 25.7 |
-| sacristy_table  | 40.388 | 24.087 |
+| sacristy_door   | 45.5 | 29 |
+| graveyard_gate  | 3 | 48.5 |
+| sacristy_table  | 40.388 | 33.767 |
 | herb_bed_w      | 12 | 48 |
 | herb_bed_e      | 36 | 48 |
-| lantern_pole    | 24 | 39 |
+| lantern_pole    | 20.792 | 41.533 |
 | garden_center   | 24 | 52 |
 | steeple_base    | 21 | 32.5 |
 
@@ -72,7 +74,7 @@ Interior flows: entrance → main chapel → altar → sacristy (side door).
 | front_doors     | 24 | 3  | places/driftmoor         |
 | garden_gate     | 24 | 61.5 | places/driftmoor         |
 | sacristy_door   | 45.5 | 29 | places/driftmoor         |
-| graveyard_path  | 3 | 48.5 | places/driftmoor/graveyard |
+| graveyard_gate  | 3 | 48.5 | places/driftmoor/graveyard |
 
 ---
 

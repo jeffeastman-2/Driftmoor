@@ -10,3 +10,4 @@
 | scrap_barrels_visual | ../floor_assets/barrels.svg | scrap_barrels | 3.035 | 21.086 | 6 | 3 | -90 | fixture |
 | bellows_visual | floor/assets/bellows.svg | bellows | 13 | 15.443 | 6 | 3 | 180 | fixture |
 | quench_trough_visual | floor/assets/quench_trough.svg | quench_trough | 7.79 | 7.878 | 6.05 | 3.025 | 0 | fixture |
+| stable_door_visual | ../floor_assets/door.svg | stable_door | 22 | 0 | 2 | 1 | 0 | fixture |

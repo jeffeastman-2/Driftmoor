@@ -6,3 +6,5 @@
 | cottage_visual | floor/cottage_row.svg | cottage_row | 15.101 | 20.92 | 25.724 | 6.429 | 0 | fixture |
 | gear_visual | ../floor_assets/net_rack.svg | communal_net_racks | 5 | 10 | 7 | 4 | 90 | fixture |
 | pots_visual | ../floor_assets/barrels.svg | stacked_lobster_pots | 26.911 | 10.402 | 7.986 | 5.324 | 90 | fixture |
+| porch_archway_visual | ../floor_assets/archway.svg | porch_archway | 15 | 16 | 2 | 1 | 0 | fixture |
+| lane_gate_visual | ../floor_assets/gate.svg | lane_gate | 15 | 0 | 2 | 1 | 0 | fixture |

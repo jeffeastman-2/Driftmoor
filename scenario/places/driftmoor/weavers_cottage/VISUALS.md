@@ -7,3 +7,5 @@
 | dye_visual | ../floor_assets/vat.svg | dye_pots | 16.664 | 2.569 | 5 | 5 | 0 | fixture |
 | nook_visual | ../floor_assets/rocking_chair.svg | living_nook | 9.5 | 13 | 4 | 5 | 180 | fixture |
 | cloth_visual | ../floor_assets/fabric.svg | finished_cloth | 15.819 | 12.81 | 6 | 4 | 0 | fixture |
+| front_door_visual | ../floor_assets/door.svg | front_door | 9.5 | 0 | 2 | 1 | 0 | fixture |
+| living_door_visual | ../floor_assets/door.svg | living_door | 9.5 | 9.5 | 2 | 1 | 0 | fixture |

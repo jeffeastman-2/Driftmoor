@@ -15,3 +15,4 @@
 | living_bed_visual | ../floor_assets/bed.svg | living_bed | 31.302 | 27.186 | 5 | 8 | -90 | fixture |
 | living_chest_visual | ../floor_assets/chest.svg | living_chest | 33.452 | 21.972 | 3 | 2 | 90 | fixture |
 | living_basin_visual | ../floor_assets/washbasin.svg | living_basin | 17.462 | 30.669 | 2.4 | 2.4 | 0 | fixture |
+| stairs_hall_door_visual | ../floor_assets/door.svg | stairs_hall_door | 16 | 20.409 | 2 | 1 | 90 | fixture |

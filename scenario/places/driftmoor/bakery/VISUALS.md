@@ -9,3 +9,4 @@
 | bread_display_visual | floor/assets/bread_display.svg | bread_display | 16.189 | 2.389 | 5 | 3 | 0 | fixture |
 | flour_sacks_visual | floor/assets/flour_sacks.svg | flour_sacks | 16.638 | 13.543 | 3.5 | 3 | 0 | fixture |
 | cooling_rack_visual | floor/assets/cooling_rack.svg | cooling_rack | 10.543 | 13.594 | 2.7 | 4.5 | 90 | fixture |
+| front_door_visual | ../floor_assets/door.svg | front_door | 9.5 | 0 | 2 | 1 | 0 | fixture |

@@ -10,3 +10,4 @@
 | leather_rolls_visual | floor/assets/leather_rolls.svg | leather_rolls | 12.545 | 11.139 | 3.5 | 2.5 | 0 | fixture |
 | boot_forms_visual | floor/assets/boot_forms.svg | boot_forms | 10 | 7.723 | 1.823 | 1.312 | 0 | fixture |
 | polish_cabinet_visual | floor/assets/polish_cabinet.svg | polish_cabinet | 2.931 | 1.815 | 2.5 | 4 | 90 | fixture |
+| front_door_visual | ../floor_assets/door.svg | front_door | 8 | 0 | 2 | 1 | 0 | fixture |

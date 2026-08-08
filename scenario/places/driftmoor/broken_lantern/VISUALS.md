@@ -34,3 +34,5 @@
 | storage_room_door_visual | ../floor_assets/door.svg | storage_room_door | 35 | 30 | 2 | 1 | 90 | fixture |
 | kitchen_back_door_visual | ../floor_assets/door.svg | kitchen_back_door | 45 | 21.172 | 2 | 1 | 90 | fixture |
 | bar_kitchen_door_visual | ../floor_assets/door.svg | bar_kitchen_door | 39.399 | 18 | 2 | 1 | 0 | fixture |
+| bar_archway_visual | ../floor_assets/archway.svg | bar_archway | 35 | 16.5 | 2 | 1 | 90 | fixture |
+| stairway_archway_visual | ../floor_assets/archway.svg | stairway_archway | 23.5 | 25 | 2 | 1 | 0 | fixture |

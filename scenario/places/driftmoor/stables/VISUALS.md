@@ -10,3 +10,4 @@
 | tack_cabinet_visual | floor/assets/tack_cabinet.svg | tack_cabinet | 8.689 | 5.409 | 3 | 6 | 0 | fixture |
 | empty_stall_visual | floor/assets/empty_stall.svg | empty_stall | 36.386 | 47.529 | 7 | 8 | 0 | floor_decor |
 | clawed_tracks_visual | floor/assets/tracks.svg | clawed_tracks | 23.334 | 4.768 | 4 | 5 | 15 | floor_decor |
+| forge_door_visual | ../floor_assets/door.svg | forge_door | 22 | 56.5 | 2 | 1 | 0 | fixture |

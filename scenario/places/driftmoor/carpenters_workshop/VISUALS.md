@@ -7,3 +7,4 @@
 | tools_visual | ../floor_assets/tool_wall.svg | tool_wall | 1.919 | 14.217 | 3 | 8 | 0 | fixture |
 | display_visual | ../floor_assets/table.svg | display_area | 2.83 | 4.467 | 6.6 | 4.4 | 90 | fixture |
 | sawdust_visual | ../floor_assets/garden_bed.svg | sawdust_pile | 10.904 | 17.821 | 4.411 | 2.646 | 0 | fixture |
+| open_front_archway_visual | ../floor_assets/archway.svg | open_front_archway | 13 | 0 | 2 | 1 | 0 | fixture |

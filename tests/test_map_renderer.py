@@ -296,7 +296,7 @@ def test_barbershop_floor_and_fixtures_are_independently_editable(tmp_path):
     rendered = out.read_text(encoding="utf-8")
 
     assert "class='zone-floor-art'" in rendered
-    assert rendered.count("class='visual-overlay'") == 8
+    assert rendered.count("class='visual-overlay'") == 9
     for target in (
         "barber_chair_3.25", "barber_chair_6.5", "mirror", "tonic_shelf",
         "potbelly_stove", "washstand", "striped_pole", "central_rug",
@@ -344,9 +344,9 @@ def test_broken_lantern_has_editable_art_in_each_interior_scene(tmp_path):
 
     root = Path("scenario/places/driftmoor/broken_lantern")
     expected = {
-        root / "GEOMETRY.md": (6, 32),
-        root / "meeting_room/GEOMETRY.md": (1, 4),
-        root / "storage_room/GEOMETRY.md": (1, 6),
+        root / "GEOMETRY.md": (6, 34),
+        root / "meeting_room/GEOMETRY.md": (1, 5),
+        root / "storage_room/GEOMETRY.md": (1, 7),
         root / "upstairs/GEOMETRY.md": (5, 13),
     }
     rendered = {}
@@ -388,7 +388,7 @@ def test_apothecary_and_mercantile_have_editable_interior_art(tmp_path):
     from engine.map_renderer import render_turn_slider_html
 
     expected = {
-        Path("scenario/places/driftmoor/bitter_remedy/GEOMETRY.md"): (2, 8),
+        Path("scenario/places/driftmoor/bitter_remedy/GEOMETRY.md"): (2, 10),
         Path("scenario/places/driftmoor/salt_and_iron/GEOMETRY.md"): (2, 16),
         Path("scenario/places/driftmoor/salt_and_iron/upper_floor/GEOMETRY.md"): (2, 6),
     }
@@ -413,8 +413,8 @@ def test_pawnshop_bakery_and_cobbler_have_editable_interior_art(tmp_path):
 
     expected = {
         Path("scenario/places/driftmoor/gilded_trinket/GEOMETRY.md"): (2, 14),
-        Path("scenario/places/driftmoor/bakery/GEOMETRY.md"): (2, 7),
-        Path("scenario/places/driftmoor/cobblers_shop/GEOMETRY.md"): (1, 8),
+        Path("scenario/places/driftmoor/bakery/GEOMETRY.md"): (2, 8),
+        Path("scenario/places/driftmoor/cobblers_shop/GEOMETRY.md"): (1, 9),
     }
     rendered = {}
     for index, (geometry, counts) in enumerate(expected.items()):
@@ -444,8 +444,8 @@ def test_elyssa_forge_and_stables_have_editable_interior_art(tmp_path):
 
     expected = {
         Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"): (4, 17),
-        Path("scenario/places/driftmoor/forge/GEOMETRY.md"): (1, 8),
-        Path("scenario/places/driftmoor/stables/GEOMETRY.md"): (1, 8),
+        Path("scenario/places/driftmoor/forge/GEOMETRY.md"): (1, 9),
+        Path("scenario/places/driftmoor/stables/GEOMETRY.md"): (1, 9),
     }
     rendered = {}
     for index, (geometry, counts) in enumerate(expected.items()):
@@ -487,7 +487,7 @@ def test_corral_has_sparse_editable_fixture_art(tmp_path):
     rendered = out.read_text(encoding="utf-8")
 
     assert rendered.count("class='zone-floor-art'") == 1
-    assert rendered.count("class='visual-overlay'") == 2
+    assert rendered.count("class='visual-overlay'") == 4
     assert "data-target='water_trough'" in rendered
     assert "data-target='hay_bale'" in rendered
 
@@ -756,10 +756,10 @@ def test_north_bank_places_have_authored_editable_art(tmp_path):
     from engine.map_renderer import render_turn_slider_html
 
     expected = {
-        Path("scenario/places/driftmoor/dustcloaks_curios/GEOMETRY.md"): (3, 14),
+        Path("scenario/places/driftmoor/dustcloaks_curios/GEOMETRY.md"): (3, 15),
         Path("scenario/places/driftmoor/dustcloaks_curios/living_loft/GEOMETRY.md"): (1, 5),
-        Path("scenario/places/driftmoor/graveyard/GEOMETRY.md"): (1, 7),
-        Path("scenario/places/driftmoor/beacon_church/GEOMETRY.md"): (4, 13),
+        Path("scenario/places/driftmoor/graveyard/GEOMETRY.md"): (1, 8),
+        Path("scenario/places/driftmoor/beacon_church/GEOMETRY.md"): (4, 18),
     }
     rendered = {}
     for index, (geometry, counts) in enumerate(expected.items()):
@@ -786,12 +786,12 @@ def test_remaining_driftmoor_places_have_authored_editable_art(tmp_path):
     from engine.map_renderer import render_turn_slider_html
 
     expected = {
-        "carpenters_workshop": (2, 5), "coopers_shed": (2, 5),
-        "fisherfolk": (2, 4), "fishmongers_shack": (1, 5),
-        "general_store": (2, 5), "mayors_hall": (4, 13),
-        "midwifes_home": (3, 5), "schoolhouse": (1, 5),
-        "tailors_shop": (2, 5), "tannery": (2, 5),
-        "watchtower": (2, 4), "weavers_cottage": (2, 5),
+        "carpenters_workshop": (2, 6), "coopers_shed": (2, 6),
+        "fisherfolk": (2, 6), "fishmongers_shack": (1, 6),
+        "general_store": (2, 8), "mayors_hall": (4, 14),
+        "midwifes_home": (3, 8), "schoolhouse": (1, 6),
+        "tailors_shop": (2, 7), "tannery": (2, 6),
+        "watchtower": (2, 5), "weavers_cottage": (2, 7),
     }
     root = Path("scenario/places/driftmoor")
     for index, (place, counts) in enumerate(expected.items()):
