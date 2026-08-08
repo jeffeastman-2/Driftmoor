@@ -25,8 +25,8 @@ The garden behind the church grows medicinal herbs and flowers. Elden tends it h
 
 | character | x | y |
 |---|---:|---:|
-| elden | 24 | 27 |
-| mira | 13 | 16 |
+| elden | 24.21 | 23.644 |
+| mira | 9.644 | 20.615 |
 
 ## Who Is Normally Here
 - **Father Elden Greybeard** — most hours, moving slowly

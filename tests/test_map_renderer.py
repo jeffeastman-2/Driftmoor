@@ -759,7 +759,7 @@ def test_north_bank_places_have_authored_editable_art(tmp_path):
         Path("scenario/places/driftmoor/dustcloaks_curios/GEOMETRY.md"): (3, 15),
         Path("scenario/places/driftmoor/dustcloaks_curios/living_loft/GEOMETRY.md"): (1, 5),
         Path("scenario/places/driftmoor/graveyard/GEOMETRY.md"): (1, 8),
-        Path("scenario/places/driftmoor/beacon_church/GEOMETRY.md"): (4, 18),
+        Path("scenario/places/driftmoor/beacon_church/GEOMETRY.md"): (8, 29),
     }
     rendered = {}
     for index, (geometry, counts) in enumerate(expected.items()):
