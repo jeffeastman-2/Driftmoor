@@ -10,7 +10,7 @@
 - **Pronouns:** he/him
 
 ## Physical Description
-Gilthaness is lean, poised, and difficult to pin down at a glance unless she chooses otherwise. Silver threads run through dark hair worn in a long braid; her eyes are pale grey-green, settled and patient. She favors finely tailored travel clothes in muted greens and browns, with quiet jewelry worn like remembered promises.
+Gilthaness is lean, poised, and difficult to pin down at a glance unless he chooses otherwise. Silver threads run through dark hair worn in a long braid; his eyes are pale grey-green, settled and patient. He favors finely tailored travel clothes in muted greens and browns, with quiet jewelry worn like remembered promises.
 
 ## Combat Statistics
 - **HP:** 94
@@ -99,7 +99,7 @@ Gilthaness is lean, poised, and difficult to pin down at a glance unless she cho
 - **Open threads:** Quiet Hand unfinished business; Othrin Vesper's legacy; whether to mentor Cinnabar
 
 ## Current Situation
-Gilthaness has moved through Driftmoor for decades without becoming part of it, and now feels the shape of a decision she has postponed: remain selective and solitary, or spend her hard-won craft on people who may outlive her only in memory.
+Gilthaness has moved through Driftmoor for decades without becoming part of it, and now feels the shape of a decision he has postponed: remain selective and solitary, or spend his hard-won craft on people who may outlive him only in memory.
 
 ## Wealth
 - **Purse:** 5000 gp
