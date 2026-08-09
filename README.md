@@ -148,6 +148,24 @@ leaves the generating character; the DM alone holds the omniscient view and
 DM-only notes. Multiple scenes can run in parallel and merge or split as
 characters move between places.
 
+### Create a player in the browser
+
+The character creator turns a short, free-form interview into a complete player
+draft, exposes every generated field for revision, previews the canonical
+Markdown, and reloads the saved result through the production character loader:
+
+```bash
+python character_creator.py
+```
+
+Open `http://localhost:8081/`. With no model configured it produces a useful
+offline draft. To use an LLM, set `DRIFTMOOR_CREATOR_PROVIDER` and
+`DRIFTMOOR_CREATOR_MODEL` (or pass `--provider` and `--model`); for example,
+`ollama` and a locally installed model. After creation the interface gives the
+exact `web_play.py` command for entering Driftmoor as that character.
+The workshop can also download a filled, two-page tabletop character sheet for
+printing or sharing with the player.
+
 ---
 
 ## Core concepts
