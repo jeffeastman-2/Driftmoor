@@ -369,6 +369,64 @@ def infer_movement_target(
     return None
 
 
+def infer_movement_waypoints(
+    intent_text: str,
+    scene_geometry=None,
+) -> Optional[list[tuple[float, float, str]]]:
+    """Explicit literal-coordinate waypoints from a movement intent, as
+    ``(x, y, zone)`` tuples in the order written, or None.
+
+    Grounds via LATN's vector-NP/conjunction machinery (a bracket literal is
+    its own NP; a comma-joined run is a coordinated NP like any other), so a
+    single ``[x,y]`` and a multi-point ``[x1,y1], [x2,y2], [x3,y3]`` route
+    resolve through the same call — no separate multi-coordinate regex.
+    Zone is looked up per waypoint when geometry is available. Items/
+    characters aren't needed (a literal never grounds against the scene), so
+    this builds a minimal LATN context directly rather than going through
+    ``build_context``.
+    """
+    from engine import latn_resolver
+    lexicon, adapter = build_context({}, {}, "", scene_geometry)
+    waypoints = latn_resolver.resolve_movement_waypoints(
+        intent_text or "", lexicon=lexicon, adapter=adapter,
+    )
+    if not waypoints:
+        return None
+    out = []
+    for x, y, *_rest in waypoints:
+        zone = ""
+        if scene_geometry is not None:
+            from models.space_time import Position
+            zone = (scene_geometry.zone_at(Position(x, y)) or "").upper()
+        out.append((x, y, zone))
+    return out
+
+
+def infer_literal_destination(
+    intent_text: str,
+    scene_geometry=None,
+) -> Optional[tuple[float, float, str]]:
+    """The first literal coordinate named anywhere in the intent, as an
+    ``(x, y, zone)`` tuple, or None — for callers (teleport spell-targeting)
+    where the verb naming the destination isn't fixed the way "move"/"dash"
+    is for ordinary movement, so ``infer_movement_waypoints``'s verb gate
+    doesn't apply. Only ever a single point (a spell lands on one point).
+    """
+    from engine import latn_resolver
+    lexicon, adapter = build_context({}, {}, "", scene_geometry)
+    vector = latn_resolver.resolve_literal_destination(
+        intent_text or "", lexicon=lexicon, adapter=adapter,
+    )
+    if vector is None:
+        return None
+    x, y, *_rest = vector
+    zone = ""
+    if scene_geometry is not None:
+        from models.space_time import Position
+        zone = (scene_geometry.zone_at(Position(x, y)) or "").upper()
+    return (x, y, zone)
+
+
 def infer_movement_distance(
     intent_text: str,
     items: Optional[dict],

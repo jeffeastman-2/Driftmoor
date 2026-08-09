@@ -921,9 +921,9 @@ window.addEventListener('message',ev=>{
     const cmd='I move to '+pt;
     const prev=inp.value.trim();
     if(!prev)inp.value=cmd;
-    else if(m.shift)inp.value=prev+' -> '+pt;
-    else if(/I move to \\[[^\\]]+\\]/i.test(prev))
-        inp.value=prev.replace(/I move to \\[[^\\]]+\\]/i,cmd);
+    else if(m.shift)inp.value=prev+', '+pt;
+    else if(/I move to (?:\\[[^\\]]+\\](?:,\\s*)?)+/i.test(prev))
+        inp.value=prev.replace(/I move to (?:\\[[^\\]]+\\](?:,\\s*)?)+/i,cmd);
     else inp.value=prev+(/[.!?]\\s*$/.test(prev)?' ':'. ')+cmd;
     inp.focus();
     inp.setSelectionRange(inp.value.length,inp.value.length);

@@ -54,7 +54,8 @@ _EXTRA_VERB_SYNONYMS: list[tuple[str, list[str]]] = [
     # name in the spell resolver; this keeps the natural shorthand actionable.
     ("cast", ["cast", "invoke", "channel", "teleport"]),
     ("move", ["move", "go", "come", "walk", "approach", "advance", "step", "head",
-              "follow", "continue", "proceed", "return", "climb"]),
+              "follow", "continue", "proceed", "return", "climb", "travel",
+              "descend"]),
     ("dash", ["dash", "sprint", "rush", "run"]),
     ("disengage", ["disengage", "withdraw", "retreat", "fall back", "flee", "escape"]),
     ("dodge", ["dodge", "evade"]),

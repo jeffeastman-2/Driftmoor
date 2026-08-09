@@ -3031,35 +3031,32 @@ def _answer_perception_question(
     return "\n\n".join(parts) if parts else "You do not see anything distinct nearby."
 
 
-_COORD_DEST_RE = re.compile(
-    r"[\[(]\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*[\])]"
-)
+def _infer_coordinate_waypoints(
+    intent_text: str,
+    scene_geometry: Optional["SceneGeometry"],
+) -> Optional[list[tuple[float, float, str]]]:
+    """Explicit literal-coordinate waypoints named in movement intent text, in
+    the order written — LATN-grounded (a bracket literal is its own NP; a
+    comma-joined run, as the map's shift-double-click route macro writes, is
+    a coordinated NP like any other). ``move to [1267,292]`` grounds to one
+    waypoint; ``move to [635,617], [628,438], [417,431]`` grounds to a route.
+    None when the intent isn't a movement verb or names no literal
+    coordinate."""
+    if not intent_text:
+        return None
+    from engine.latn_integration import infer_movement_waypoints
+    return infer_movement_waypoints(intent_text, scene_geometry)
 
 
 def _infer_coordinate_destination(
     intent_text: str,
     scene_geometry: Optional["SceneGeometry"],
 ) -> Optional[tuple[float, float, str]]:
-    """Resolve explicit coordinate destinations in movement intent text.
-
-    Supports forms like ``move to [1267, 292]`` or ``move towards (1267,292)``.
-    Returns ``(x, y, zone)`` when found (zone from ``zone_at`` when geometry is
-    available), else ``None``.
-    """
-    if not intent_text:
-        return None
-    words = _dest_tokens(intent_text)
-    if not words or not (words & _MOVE_CUE_WORDS):
-        return None
-    m = _COORD_DEST_RE.search(intent_text)
-    if m is None:
-        return None
-    x = float(m.group(1))
-    y = float(m.group(2))
-    zone = ""
-    if scene_geometry is not None:
-        zone = (scene_geometry.zone_at(Position(x, y)) or "").upper()
-    return (x, y, zone)
+    """The first explicit coordinate destination named in movement intent
+    text, or None. See :func:`_infer_coordinate_waypoints` for the full route
+    when more than one is named."""
+    waypoints = _infer_coordinate_waypoints(intent_text, scene_geometry)
+    return waypoints[0] if waypoints else None
 
 
 def _coordinate_authoritative_target(
@@ -3665,13 +3662,10 @@ def _resolve_teleport_destination(
     # Map-assisted casting may name an exact coordinate. Teleport is itself the
     # relocation cue, so this path is not subject to ordinary movement cues or
     # speed clamping.
-    coordinate_match = _COORD_DEST_RE.search(intent_text or "")
-    if coordinate_match is not None:
-        cx = float(coordinate_match.group(1))
-        cy = float(coordinate_match.group(2))
-        zone = (scene_geometry.zone_at(Position(cx, cy)) or "").upper()
-        if zone:
-            return (cx, cy, zone)
+    from engine.latn_integration import infer_literal_destination
+    _literal_dest = infer_literal_destination(intent_text, scene_geometry)
+    if _literal_dest is not None and _literal_dest[2]:
+        return _literal_dest
 
     # Town venues are authored as child scenes whose doors live in the current
     # scene's Connections table. Resolve their aliases before generic zones so
@@ -7271,13 +7265,23 @@ async def iter_session(
             # model-generated MOVEMENT field. This is especially important for
             # map double-click commands: the language model may otherwise emit
             # a nearby or even opposite-direction coordinate despite repeating
-            # the requested destination in its prose.
-            _explicit_coordinate = _infer_coordinate_destination(
+            # the requested destination in its prose. A shift-double-click
+            # route ("[x1,y1], [x2,y2], [x3,y3]") grounds to every waypoint in
+            # order; player_target stays this turn's immediate leg (the first)
+            # so every other single-target check below is unaffected, and
+            # player_waypoints carries the rest for the per-leg walk below.
+            _explicit_waypoints = _infer_coordinate_waypoints(
                 intent.intent, scene_geometry
             )
+            _explicit_coordinate = (
+                _explicit_waypoints[0] if _explicit_waypoints else None
+            )
+            player_waypoints: Optional[list[tuple[float, float, str]]] = None
             if _explicit_coordinate is not None and adjudication.approved:
                 player_target = _explicit_coordinate
                 intent.movement_target = _explicit_coordinate
+                if len(_explicit_waypoints) > 1:
+                    player_waypoints = _explicit_waypoints
                 attack_log.append(
                     f"[COORDINATE] {character_id}: explicit intent coordinate "
                     f"({_explicit_coordinate[0]:.1f},"
@@ -7303,6 +7307,7 @@ async def iter_session(
                 _door = _enter_info[1]
                 player_target = (_door[0], _door[1], _door[2] or "")
                 intent.movement_target = player_target
+                player_waypoints = None  # a more specific target wins over any route
 
             # The model sometimes names its destination only in the free-text
             # INTENT ("Move to the first passage") and leaves MOVEMENT empty,
@@ -7511,8 +7516,6 @@ async def iter_session(
                                     f"{_nz.upper()} — heading to its entry at "
                                     f"({_wp[0]:.1f},{_wp[1]:.1f})"
                                 )
-                tx, ty = float(player_target[0]), float(player_target[1])
-                raw_pos: tuple[float, float, str] = (tx, ty, "")
                 char = characters[character_id].character
                 requested_dist = None
                 if intent.intent:
@@ -7530,104 +7533,151 @@ async def iter_session(
                     in_combat=in_combat,
                     requested_distance_ft=requested_dist,
                 )
-                origin = current_positions.get(character_id)
-                if origin is not None:
-                    raw_pos = _clamp_position(raw_pos, origin, speed_ft)
-                tx, ty = raw_pos[0], raw_pos[1]
-                confined = _clamp_to_authored_home(
-                    character_id,
-                    (tx, ty, raw_pos[2]),
-                    char,
-                    scene_geometry,
-                )
-                tx, ty = confined[0], confined[1]
-                if scene_geometry is not None:
-                    zone = scene_geometry.zone_at(Position(tx, ty)) or ""
-                else:
-                    zone = current_positions.get(character_id, ("", "", ""))[2]
 
-                # Boundary crossing check — Python owns enforcement; DM cannot override.
-                boundary_ok = True
-                stop_at: Optional[tuple[float, float]] = None
-                if scene_geometry is not None and scene_geometry.boundaries and origin is not None:
-                    boundary_ok, crossing_dmg, b_log, stop_at = _check_boundary_crossing(
+                def _execute_movement_leg(
+                    leg_origin: Optional[tuple[float, float, str]],
+                    leg_tx: float,
+                    leg_ty: float,
+                    leg_speed_ft: float,
+                ) -> tuple[float, float, bool]:
+                    """Clamp-to-speed, boundary-check, and impassable-check a
+                    single leg from ``leg_origin`` toward ``(leg_tx, leg_ty)``.
+                    Applies the result to current_positions/adjudication same
+                    as always. Returns (landed_x, landed_y, fully_reached) —
+                    fully_reached is False when speed-clamped, repelled, or
+                    blocked short of the intended point, so a multi-leg route
+                    knows to stop rather than skip ahead to the next waypoint.
+                    """
+                    raw_pos: tuple[float, float, str] = (leg_tx, leg_ty, "")
+                    if leg_origin is not None:
+                        raw_pos = _clamp_position(raw_pos, leg_origin, leg_speed_ft)
+                    tx, ty = raw_pos[0], raw_pos[1]
+                    confined = _clamp_to_authored_home(
                         character_id,
-                        origin,
-                        (tx, ty, ""),
-                        characters[character_id].character,
-                        scene_geometry.boundaries,
-                        game_time,
+                        (tx, ty, raw_pos[2]),
+                        char,
+                        scene_geometry,
                     )
-                    attack_log.extend(b_log)
-                    if crossing_dmg > 0:
-                        char_obj = characters[character_id].character
-                        current_hp = getattr(char_obj, "current_hp", getattr(char_obj, "hp", 0))
-                        char_obj.current_hp = max(0, current_hp - crossing_dmg)
-                        adjudication.hp_damage[character_id] = (
-                            adjudication.hp_damage.get(character_id, 0) + crossing_dmg
-                        )
-                    # Python owns boundary_crossed event — emit only when an
-                    # applicable boundary was actually traversed (b_log non-empty)
-                    # and crossing succeeded.
-                    if boundary_ok and b_log and "boundary_crossed" not in adjudication.spatial_events:
-                        adjudication.spatial_events.append("boundary_crossed")
+                    tx, ty = confined[0], confined[1]
+                    if scene_geometry is not None:
+                        zone = scene_geometry.zone_at(Position(tx, ty)) or ""
+                    else:
+                        zone = current_positions.get(character_id, ("", "", ""))[2]
 
-                if boundary_ok:
-                    new_pos = (tx, ty, zone.upper())
-                    # Impassable polygons + outside-zones blocking.
-                    impassable_ok = True
-                    imp_stop: Optional[tuple[float, float]] = None
-                    if scene_geometry is not None and origin is not None and (
-                        scene_geometry.impassable or scene_geometry.zones
-                    ):
-                        impassable_ok, i_log, imp_stop = _check_impassable(
-                            character_id, origin, new_pos,
-                            scene_geometry.impassable, scene_geometry.zones,
+                    # Boundary crossing check — Python owns enforcement; DM cannot override.
+                    boundary_ok = True
+                    stop_at: Optional[tuple[float, float]] = None
+                    if scene_geometry is not None and scene_geometry.boundaries and leg_origin is not None:
+                        boundary_ok, crossing_dmg, b_log, stop_at = _check_boundary_crossing(
+                            character_id,
+                            leg_origin,
+                            (tx, ty, ""),
+                            characters[character_id].character,
+                            scene_geometry.boundaries,
+                            game_time,
                         )
-                        attack_log.extend(i_log)
-                    if impassable_ok:
-                        adjudication.new_position = new_pos
-                        current_positions[character_id] = new_pos
-                        if origin is not None:
-                            ox, oy, oz = origin
-                            moved = (abs(ox - tx) > 0.5 or abs(oy - ty) > 0.5)
-                            if moved:
-                                attack_log.append(
-                                    f"[MOVEMENT] {character_id}: "
-                                    f"({ox:.1f},{oy:.1f},{oz}) → "
-                                    f"({tx:.1f},{ty:.1f},{new_pos[2]})"
-                                )
-                            else:
-                                attack_log.append(
-                                    f"[MOVEMENT] {character_id}: held position "
-                                    f"({ox:.1f},{oy:.1f},{oz})"
-                                )
-                    elif imp_stop is not None:
-                        sx, sy = imp_stop
+                        attack_log.extend(b_log)
+                        if crossing_dmg > 0:
+                            char_obj = characters[character_id].character
+                            current_hp = getattr(char_obj, "current_hp", getattr(char_obj, "hp", 0))
+                            char_obj.current_hp = max(0, current_hp - crossing_dmg)
+                            adjudication.hp_damage[character_id] = (
+                                adjudication.hp_damage.get(character_id, 0) + crossing_dmg
+                            )
+                        # Python owns boundary_crossed event — emit only when an
+                        # applicable boundary was actually traversed (b_log non-empty)
+                        # and crossing succeeded.
+                        if boundary_ok and b_log and "boundary_crossed" not in adjudication.spatial_events:
+                            adjudication.spatial_events.append("boundary_crossed")
+
+                    if boundary_ok:
+                        new_pos = (tx, ty, zone.upper())
+                        # Impassable polygons + outside-zones blocking.
+                        impassable_ok = True
+                        imp_stop: Optional[tuple[float, float]] = None
+                        if scene_geometry is not None and leg_origin is not None and (
+                            scene_geometry.impassable or scene_geometry.zones
+                        ):
+                            impassable_ok, i_log, imp_stop = _check_impassable(
+                                character_id, leg_origin, new_pos,
+                                scene_geometry.impassable, scene_geometry.zones,
+                            )
+                            attack_log.extend(i_log)
+                        if impassable_ok:
+                            adjudication.new_position = new_pos
+                            current_positions[character_id] = new_pos
+                            if leg_origin is not None:
+                                ox, oy, oz = leg_origin
+                                moved = (abs(ox - tx) > 0.5 or abs(oy - ty) > 0.5)
+                                if moved:
+                                    attack_log.append(
+                                        f"[MOVEMENT] {character_id}: "
+                                        f"({ox:.1f},{oy:.1f},{oz}) → "
+                                        f"({tx:.1f},{ty:.1f},{new_pos[2]})"
+                                    )
+                                else:
+                                    attack_log.append(
+                                        f"[MOVEMENT] {character_id}: held position "
+                                        f"({ox:.1f},{oy:.1f},{oz})"
+                                    )
+                            reached = abs(tx - leg_tx) <= 0.5 and abs(ty - leg_ty) <= 0.5
+                            return tx, ty, reached
+                        elif imp_stop is not None:
+                            sx, sy = imp_stop
+                            sz = (scene_geometry.zone_at(Position(sx, sy))
+                                  if scene_geometry else "") or ""
+                            stopped = (sx, sy, sz.upper())
+                            adjudication.new_position = stopped
+                            current_positions[character_id] = stopped
+                            return sx, sy, False
+                    elif stop_at is not None:
+                        # Repelled by barrier — slide to its outer edge so the
+                        # path visibly approaches the shimmer.
+                        sx, sy = stop_at
                         sz = (scene_geometry.zone_at(Position(sx, sy))
                               if scene_geometry else "") or ""
                         stopped = (sx, sy, sz.upper())
                         adjudication.new_position = stopped
                         current_positions[character_id] = stopped
-                elif stop_at is not None:
-                    # Repelled by barrier — slide to its outer edge so the
-                    # path visibly approaches the shimmer.
-                    sx, sy = stop_at
-                    sz = (scene_geometry.zone_at(Position(sx, sy))
-                          if scene_geometry else "") or ""
-                    stopped = (sx, sy, sz.upper())
-                    adjudication.new_position = stopped
-                    current_positions[character_id] = stopped
-                    attack_log.append(
-                        f"[MOVEMENT] {character_id}: repelled by barrier — "
-                        f"stopped at ({sx:.1f},{sy:.1f},{sz.upper()})"
-                    )
-                else:
+                        attack_log.append(
+                            f"[MOVEMENT] {character_id}: repelled by barrier — "
+                            f"stopped at ({sx:.1f},{sy:.1f},{sz.upper()})"
+                        )
+                        return sx, sy, False
                     # Movement denied — keep character at origin
                     adjudication.movement_target = None
                     attack_log.append(
                         f"[MOVEMENT] {character_id}: denied — held at origin"
                     )
+                    ox, oy = (leg_origin[0], leg_origin[1]) if leg_origin is not None else (leg_tx, leg_ty)
+                    return ox, oy, False
+
+                origin = current_positions.get(character_id)
+                if player_waypoints:
+                    # A shift-double-click route: walk each waypoint in order,
+                    # spending the turn's speed budget across every leg
+                    # combined (not per leg) — stop at the first leg that
+                    # doesn't fully land on its point (speed exhausted or
+                    # blocked), same as an ordinary single-target move stops
+                    # short of a wall instead of clipping through it.
+                    leg_origin = origin
+                    remaining = speed_ft
+                    for wp in player_waypoints:
+                        if leg_origin is None or remaining <= 0:
+                            break
+                        wtx, wty = float(wp[0]), float(wp[1])
+                        landed_x, landed_y, reached = _execute_movement_leg(
+                            leg_origin, wtx, wty, remaining
+                        )
+                        remaining -= math.hypot(
+                            landed_x - leg_origin[0], landed_y - leg_origin[1]
+                        )
+                        leg_origin = (landed_x, landed_y, current_positions[character_id][2])
+                        if not reached:
+                            break
+                else:
+                    tx, ty = float(player_target[0]), float(player_target[1])
+                    _execute_movement_leg(origin, tx, ty, speed_ft)
 
             if _posture_requested is not None and adjudication.approved:
                 from engine.posture import settle_posture

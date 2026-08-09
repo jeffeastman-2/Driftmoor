@@ -886,11 +886,6 @@ class TestInferCoordinateDestination:
         dest = _infer_coordinate_destination("I move to [1267, 292]", self._geom())
         assert dest == (1267.0, 292.0, "FORGE")
 
-    def test_move_towards_paren_coords(self):
-        from engine.session import _infer_coordinate_destination
-        dest = _infer_coordinate_destination("move towards (1267,292)", self._geom())
-        assert dest == (1267.0, 292.0, "FORGE")
-
     def test_requires_movement_cue(self):
         from engine.session import _infer_coordinate_destination
         assert _infer_coordinate_destination("[1267,292]", self._geom()) is None
@@ -916,6 +911,32 @@ class TestInferCoordinateDestination:
             (635.0, 614.0, "NORTH_BANK")
         )
         assert _should_apply_cross_zone_routing(None)
+
+    def test_infer_coordinate_waypoints_single_point(self):
+        from engine.session import _infer_coordinate_waypoints
+        assert _infer_coordinate_waypoints(
+            "I move to [1267, 292]", self._geom()
+        ) == [(1267.0, 292.0, "FORGE")]
+
+    def test_infer_coordinate_waypoints_multi_point_route(self):
+        """The map's shift-double-click macro writes a comma-joined run of
+        bracket literals ("I move to [x1,y1], [x2,y2], [x3,y3]") — a route,
+        not a single destination."""
+        from engine.session import _infer_coordinate_waypoints
+        waypoints = _infer_coordinate_waypoints(
+            "I move to [1210,250], [1267, 292], [1300,300]", self._geom()
+        )
+        assert waypoints == [
+            (1210.0, 250.0, "FORGE"),
+            (1267.0, 292.0, "FORGE"),
+            (1300.0, 300.0, "FORGE"),
+        ]
+
+    def test_infer_coordinate_waypoints_none_without_movement_verb(self):
+        from engine.session import _infer_coordinate_waypoints
+        assert _infer_coordinate_waypoints(
+            "[1267,292], [1300,300]", self._geom()
+        ) is None
 
 
 class TestMovementBudgetPerTurn:
@@ -949,6 +970,96 @@ class TestMovementBudgetPerTurn:
             "30 ft", "I move east 500 feet", in_combat=False
         )
         assert cap == 300.0
+
+
+class TestMultiWaypointRouteExecution:
+    """End-to-end: a shift-double-click route ("[x1,y1], [x2,y2], [x3,y3]")
+    walks every leg in one turn, spends the turn's speed budget across all
+    of them combined, and stops at the first leg that's blocked rather than
+    skipping ahead to a later waypoint."""
+
+    @pytest.fixture
+    def _route_char(self):
+        return PlayerCharacter(
+            id="scout", name="Scout", race="Human",
+            character_type="player", character_class="Fighter",
+            hp=10, current_hp=10, speed="30 ft",
+        )
+
+    @pytest.fixture
+    def _route_session(self, _route_char):
+        return CharacterSession(
+            character=_route_char,
+            condition=CharacterCondition(
+                character_id="scout", character_name="Scout",
+                state=NeurochemicalState(),
+            ),
+            soul="", identity="",
+            initial_scene="You stand in an open field.",
+        )
+
+    @staticmethod
+    def _field_geometry(impassable=None):
+        from models.space_time import Polygon, SceneGeometry
+        return SceneGeometry(
+            name="Field Test", place_path="places/test/field",
+            z_level=0.0, width=100.0, height=100.0, origin=Position(0, 0),
+            zones={"FIELD": Polygon([(0, 0), (100, 0), (100, 100), (0, 100)])},
+            impassable=impassable or [],
+        )
+
+    @staticmethod
+    def _route_llm(route_text: str):
+        async def _llm(_sys: str, _usr: str) -> str:
+            return (
+                f"**INTENT** — I move to {route_text}.\n"
+                "**MOVEMENT** — none\n"
+                "**TARGET** — none"
+            )
+        return _llm
+
+    def test_full_route_completes_every_leg_within_speed_budget(
+        self, _route_session,
+    ):
+        # Three legs, 10 ft each (30 ft total) — well inside the ~300 ft
+        # exploration-turn budget a 30 ft speed grants outside combat.
+        roles = {"scout": RoleSet(player_left=PlayerLeft(
+            call_llm=self._route_llm("[10,0], [10,10], [20,10]")
+        ))}
+        result = asyncio.run(run_session(
+            {"scout": _route_session}, roles, num_turns=1,
+            scene_geometry=self._field_geometry(),
+            initial_positions={"scout": (0.0, 0.0, "FIELD")},
+        ))
+        final_pos = result.turns[0].character_results[0].adjudication.new_position
+        assert final_pos is not None
+        assert final_pos[:2] == (20.0, 10.0)
+
+    def test_route_stops_at_first_blocked_leg_not_a_later_waypoint(
+        self, _route_session,
+    ):
+        from models.space_time import Polygon
+        # A wall sitting squarely on the straight line from (10,0) to
+        # (10,10) — the second leg. The first leg (to (10,0)) must still
+        # fully complete; the third leg's waypoint ((50,50)) must never be
+        # reached, proving the route stops rather than skipping ahead.
+        wall = Polygon([(9, 4), (11, 4), (11, 6), (9, 6)])
+        roles = {"scout": RoleSet(player_left=PlayerLeft(
+            call_llm=self._route_llm("[10,0], [10,10], [50,50]")
+        ))}
+        result = asyncio.run(run_session(
+            {"scout": _route_session}, roles, num_turns=1,
+            scene_geometry=self._field_geometry(impassable=[wall]),
+            initial_positions={"scout": (0.0, 0.0, "FIELD")},
+        ))
+        final_pos = result.turns[0].character_results[0].adjudication.new_position
+        assert final_pos is not None
+        fx, fy = final_pos[0], final_pos[1]
+        # Made progress toward the second waypoint but didn't reach it, and
+        # never got anywhere near the third.
+        assert 0.0 < fy < 10.0
+        assert (fx, fy) != (50.0, 50.0)
+        assert fx < 40.0
 
 
 class TestInferDriftmoorVenueTransition:

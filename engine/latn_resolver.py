@@ -372,6 +372,77 @@ def resolve_movement_target(intent_text: str, *, lexicon, adapter) -> Optional[I
     return None
 
 
+def _parse_literal_destination_vps(intent_text: str, *, lexicon, adapter):
+    """Every predicate VP of every parse of ``intent_text``, LATN-grounded."""
+    from engine.latn import (
+        LATNLayerExecutor, use_lexicon, use_vp_policy, PermissiveVPPolicy,
+        use_sp_policy, PermissiveSPPolicy,
+    )
+    executor = LATNLayerExecutor(adapter)
+    with use_lexicon(lexicon), use_vp_policy(PermissiveVPPolicy()), \
+            use_sp_policy(PermissiveSPPolicy()):
+        result = executor.execute_layer5(intent_text or "")
+    for sp in (getattr(result, "sentence_phrases", None) or []):
+        yield from _predicate_vps(sp)
+
+
+def _destination_vectors(vp) -> Optional[List[Tuple[float, float, float]]]:
+    """A VP's destination NP's literal coordinate(s), in order, or None.
+
+    A bracket literal is its own NP (apply_vector), and a comma-joined run of
+    them is a ConjunctionPhrase like any other coordinated NP, so this needs
+    no special-case unwrapping: .grounding already returns the ordered list
+    either way (a bare NP's 'vectors' has one entry; ConjunctionPhrase.
+    grounding concatenates its phrases' in order).
+    """
+    np = _destination_np(vp)
+    if np is None:
+        return None
+    grounding = getattr(np, "grounding", None)
+    vectors = grounding.get("vectors") if grounding else None
+    return list(vectors) if vectors else None
+
+
+def resolve_movement_waypoints(
+    intent_text: str, *, lexicon, adapter
+) -> Optional[List[Tuple[float, float, float]]]:
+    """Explicit literal-coordinate waypoints from a movement intent, in order.
+
+    "move to [15,50]" grounds to a single-element list; "move to [15,50],
+    [38,53]" (the map's shift-double-click route macro) grounds to both, in
+    the order written. Returns None when the intent isn't a movement verb or
+    names no literal coordinate — the caller falls back to zone/landmark/item
+    inference. Gated on ``_MOVEMENT_VERBS`` so a coordinate mentioned in an
+    unrelated sentence is never mistaken for a movement target; teleport
+    destinations (no fixed verb) use :func:`resolve_literal_destination`
+    instead.
+    """
+    for vp in _parse_literal_destination_vps(intent_text, lexicon=lexicon, adapter=adapter):
+        if not _vp_isa(vp, *_MOVEMENT_VERBS):
+            continue
+        vectors = _destination_vectors(vp)
+        if vectors:
+            return vectors
+    return None
+
+
+def resolve_literal_destination(
+    intent_text: str, *, lexicon, adapter
+) -> Optional[Tuple[float, float, float]]:
+    """The first literal coordinate named anywhere in the intent, regardless
+    of verb — for callers that already know *why* they're looking (teleport
+    spell-targeting), where the verb naming the destination varies ("cast
+    teleport to [x,y]", "teleport to [x,y]") rather than being fixed the way
+    ``_MOVEMENT_VERBS`` is for ordinary movement. Only the first point of a
+    comma-joined run is used — teleport lands on one point, not a route.
+    """
+    for vp in _parse_literal_destination_vps(intent_text, lexicon=lexicon, adapter=adapter):
+        vectors = _destination_vectors(vp)
+        if vectors:
+            return vectors[0]
+    return None
+
+
 def resolve_venue_action(intent_text: str, *, lexicon, adapter):
     """Detect a venue-crossing intent and ground its target.
 
