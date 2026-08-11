@@ -30,12 +30,20 @@ Humans play in the **browser** (a streaming narration log beside the live map,
 with a box to state intent or ask the DM questions). NPCs run on their own LLMs,
 local or cloud.
 
-## Status
+## Status and v0.1 scope
 
-A working, actively developed engine — not a finished product. You can play a
-scene end-to-end today (`web_play.py`), and the suite runs **~1,400 tests**.
-Subsystems are at different maturities; the [`specs/`](specs/) directory marks
-each file format and subsystem as *implemented*, *draft*, or *convention only*.
+Driftmoor v0.1 is a town-focused, playable vertical slice. Its supported scope
+is browser play for one human, either locally or over a trusted private network:
+explore Driftmoor, enter its 26 first-class destinations, meet resident NPCs,
+use shops and services, move through authored geometry, and save and resume.
+
+The **Fey Glade** and **Echoing Caverns** are experimental previews and are not
+part of the v0.1 completeness guarantee. The Old Mill, authenticated multiplayer,
+public-internet hosting, and broader regional progression are deferred. See the
+full [v0.1 release checklist](docs/DRIFTMOOR_V0.1.md) and
+[known limitations](docs/KNOWN_LIMITATIONS.md). Subsystems are at different
+maturities; [`specs/`](specs/) marks each file format and subsystem as
+*implemented*, *draft*, or *convention only*.
 
 ---
 
@@ -104,13 +112,14 @@ python web_play.py driftmoor --player gilthaness --host 0.0.0.0
 
 Open `http://<host-private-address>:8080/` from the trusted remote device. Keep
 the host firewall and private-network access controls restricted to intended
-devices.
+devices. You are responsible for securing any remotely reachable game server
+and model endpoint.
 
 `web_play.py` has no application-level authentication or independent player
 identity. Do **not** expose it directly to the public internet. A reverse proxy,
 port forward, or public tunnel does not add the missing authorization. Public
 hosting and authenticated multi-human sessions are deferred beyond v0.1; see
-[`DRIFTMOOR_V0.1.md`](DRIFTMOOR_V0.1.md).
+[`docs/DRIFTMOOR_V0.1.md`](docs/DRIFTMOOR_V0.1.md).
 
 **Run headless (all-LLM), or spectate**
 
@@ -314,6 +323,10 @@ more — each marked *implemented* / *draft* / *convention only*. Discipline: wh
 you change a file with an implemented spec, update the spec and its loader in the
 same commit; the parser is the ground truth.
 
+Contributor-facing architecture is summarized in [How a game runs](#how-a-game-runs),
+with detailed subsystem contracts in [`specs/`](specs/) and LATN integration
+notes in [`docs/latn-integration.md`](docs/latn-integration.md).
+
 ---
 
 ## LLM configuration
@@ -330,8 +343,8 @@ this lives in `.env` (not committed — see `.env.example`).
 ## Testing
 
 ```bash
-pytest -q                    # full suite (~1,400 tests)
-pytest tests/test_session.py # one module
+MPLCONFIGDIR=/tmp/driftmoor-mpl .venv/bin/pytest -q  # release gate
+.venv/bin/pytest tests/test_session.py                # one module
 ```
 
 The suite runs with `pytest-randomly`; combat is deterministic under a fixed seed

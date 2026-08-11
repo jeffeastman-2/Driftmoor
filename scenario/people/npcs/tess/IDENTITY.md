@@ -36,7 +36,7 @@ Sturdy build. Short-cropped black hair streaked with gray. Permanent smirk. Arms
 ## What She Knows
 - The meeting room has been used by nervous, secretive travelers recently
 - Wilfred's shadowbeast sightings near the obelisk cliffs — she has not dismissed these as entirely drunk rambling
-- Hidden compartment under storage room floorboards — contents known to DM only
+- Her own hidden compartment under the storage room floorboards; she guards it carefully
 - Rumor of a valuable relic hidden by a previous owner in the storage room
 
 ## Services and Rates
@@ -60,4 +60,3 @@ Sturdy build. Short-cropped black hair streaked with gray. Permanent smirk. Arms
 - **Disposition toward party:** Friendly, assessing
 - **Recent events:** None yet — session not started
 - **Active concerns:** Suspicious meeting room guests; Wilfred's claims; hidden compartment
-

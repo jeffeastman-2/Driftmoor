@@ -10,7 +10,7 @@ from reportlab.pdfgen import canvas
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "output" / "pdf" / "Driftmoor_Eight_Question_Character_Interview.pdf"
+OUT = ROOT / "output" / "pdf" / "Driftmoor_Quick_Character_Interview.pdf"
 W, H = letter
 M = 44
 INK = colors.HexColor("#20221f")
@@ -103,7 +103,7 @@ def header(c: canvas.Canvas, page: int, title: str) -> None:
     c.setStrokeColor(LINE)
     c.line(M, H - 34, W - M, H - 34)
     c.setFont("Helvetica", 7.5)
-    c.drawCentredString(W / 2, 23, f"Eight-Question Character Interview  |  Page {page} of 2")
+    c.drawCentredString(W / 2, 23, "Quick Character Interview  |  Driftmoor")
 
 
 def new_page(c: canvas.Canvas, page: int, title: str) -> float:
@@ -114,60 +114,75 @@ def new_page(c: canvas.Canvas, page: int, title: str) -> float:
 
 
 def page_one(c: canvas.Canvas) -> None:
-    y = new_page(c, 1, "Begin with a person, not a stat block")
+    y = new_page(c, 1, "No game knowledge needed")
     c.setFillColor(INK)
     c.setFont("Helvetica-Bold", 27)
-    c.drawString(M, y, "Who comes to Driftmoor?")
+    c.drawString(M, y, "Who are you in Driftmoor?")
     y -= 22
-    y = wrapped(c, "Eight questions are enough to discover a playable character. Answer in your own words. "
-                "There are no ideal responses. "
-                "You may choose from a list, write something custom, ask Driftmoor to suggest, "
-                "or leave an optional detail unstated.", M, y, W - 2 * M,
+    y = wrapped(c, "Driftmoor is a small town on a cold, rocky coast. People have gone missing, strange creatures "
+                "have been seen on the roads, and you have arrived just as the town needs help. Pick whatever sounds "
+                "fun. We will turn your choices into a ready-to-play character.", M, y, W - 2 * M,
                 size=10.5, leading=15, color=MUTED) - 14
+    y = section(c, "01", "The basics", "Three details. Make them up or ask for a suggestion.", y)
+    label(c, "Your character's name", M, y)
+    c.setStrokeColor(LINE); c.line(M + 145, y - 1, W - M, y - 1)
+    y -= 29
+    label(c, "Gender", M, y)
+    x = M + 74
+    for item in ("Male", "Female", "Unstated"):
+        x = checkbox(c, x, y + 5, item) + 13
+    y -= 28
+    label(c, "Race", M, y)
+    x = M + 74
+    for item in ("Human", "Elf", "Dwarf", "Halfling", "Suggest"):
+        x = checkbox(c, x, y + 5, item) + 12
+    y -= 44
+
+    y = section(c, "02", "What sounds fun?", "Check as many as you like.", y)
+    fun = ("Protect friends", "Fight up close", "Use a bow", "Sneak around",
+           "Use magic", "Heal people", "Talk your way through", "Solve mysteries")
+    for row in range(4):
+        checkbox(c, M + 12, y - row * 22, fun[row * 2], 9)
+        checkbox(c, M + 275, y - row * 22, fun[row * 2 + 1], 9)
+    y -= 108
+
+    y = section(c, "03", "What are you like?", "Pick two or three, or add your own.", y)
+    traits = ("Brave", "Kind", "Clever", "Curious", "Funny", "Careful", "Stubborn", "Mysterious")
+    for row in range(2):
+        x = M + 12
+        for item in traits[row * 4:(row + 1) * 4]:
+            x = checkbox(c, x, y - row * 22, item, 9) + 30
+    y -= 65
+    label(c, "Something else", M + 12, y)
+    c.setStrokeColor(LINE); c.line(M + 110, y - 1, W - M, y - 1)
+    y -= 42
+
+    y = section(c, "04", "Why did your player come to Driftmoor?", "Choose one. We can invent the details together.", y)
+    reasons = ("To help", "For money", "To solve a mystery", "Looking for someone", "Sent here", "Just passing through")
+    for row in range(2):
+        x = M + 12
+        for item in reasons[row * 3:(row + 1) * 3]:
+            x = checkbox(c, x, y - row * 22, item, 9) + 36
+    y -= 62
     c.setFillColor(PALE)
-    c.roundRect(M, y - 46, W - 2 * M, 48, 5, stroke=0, fill=1)
+    c.roundRect(M, y - 34, W - 2 * M, 38, 5, stroke=0, fill=1)
     c.setFillColor(INK)
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(M + 12, y - 15, "PLAYTESTER")
-    c.setFont("Helvetica", 9)
-    c.drawString(M + 12, y - 34, "Your name: __________________________________")
-    c.drawString(M + 285, y - 34, "Date: __________________")
-    y -= 66
-    y = section(c, "01", "Identity", "These choices belong to you. Driftmoor should not silently infer them.", y)
-    label(c, "Character name", M, y)
-    c.setStrokeColor(LINE); c.line(M + 112, y - 1, W - M, y - 1)
-    y -= 24
-    label(c, "Pronouns", M, y)
-    x = M + 88
-    for item in ("she/her", "he/him", "they/them", "custom", "unspecified"):
-        x = checkbox(c, x, y + 5, item) + 10
-    y -= 25
-    label(c, "Gender (optional)", M, y)
-    c.setStrokeColor(LINE); c.line(M + 112, y - 1, W - M, y - 1)
-    y -= 25
-    label(c, "Ancestry / people", M, y)
-    x = M + 112
-    for item in ("Human", "Elf", "Dwarf", "Halfling", "Other", "Suggest"):
-        x = checkbox(c, x, y + 5, item) + 8
-    y -= 23
-    c.setFillColor(MUTED); c.setFont("Helvetica", 8)
-    c.drawString(M + 112, y, "If Other: _________________________________________________")
-    y -= 22
-    y = field(c, "1 - First impression", "What do we notice when they first walk into a room?", M, y, W - 2 * M, 3)
-    y = field(c, "2 - A life before the road", "What part of their past still has a hold on them?", M, y, W - 2 * M, 3)
-    y = field(c, "3 - The reason to leave", "What do they want badly enough to take a dangerous road?", M, y, W - 2 * M, 3)
-    y = field(c, "4 - Fear or wound", "What would they hate for their companions to discover? What experience still shapes them?", M, y, W - 2 * M, 3)
+    c.drawString(M + 12, y - 12, "THAT IS ENOUGH TO BEGIN.")
+    c.setFillColor(MUTED)
+    c.setFont("Helvetica", 8.5)
+    c.drawString(M + 12, y - 26, "After you have played, you can add a past, fears, loyalties, and other details that feel true.")
 
 
 def page_two(c: canvas.Canvas) -> None:
-    y = new_page(c, 2, "The inner character")
-    y = section(c, "02", "A soul with edges", "Specific tensions give Driftmoor something meaningful to portray.", y)
-    y = field(c, "5 - Voice and manner", "How do they speak, move, joke, or behave under pressure?", M, y, W - 2 * M, 2)
-    y = field(c, "6 - Loyalty", "Who, what, or which principle could call them back even when leaving would be safer?", M, y, W - 2 * M, 2)
-    y = field(c, "7 - Contradiction", "Name two true things about them that do not sit comfortably together.", M, y, W - 2 * M, 2)
-    y = field(c, "8 - Significant object", "Do they carry something mundane that matters to them? Why can they not let it go?", M, y, W - 2 * M, 2)
+    y = new_page(c, 2, "A little more about you")
+    y = section(c, "02", "What makes you interesting?", "Short, ordinary answers are perfect.", y)
+    y = field(c, "5 - How you act", "How do you usually talk and act, especially when things go wrong?", M, y, W - 2 * M, 2)
+    y = field(c, "6 - What matters", "Who or what matters most to you?", M, y, W - 2 * M, 2)
+    y = field(c, "7 - Strength and flaw", "What is one good quality and one flaw you have?", M, y, W - 2 * M, 2)
+    y = field(c, "8 - Something you carry", "Do you carry an object that matters to you? What is it, and why?", M, y, W - 2 * M, 2)
 
-    y = section(c, "03", "How do you want to play?", "Choose experiences; Driftmoor can translate them into rules later.", y)
+    y = section(c, "03", "How do you want to play?", "Choose whatever sounds fun. We will handle the rules.", y)
     label(c, "Choose any that sound fun", M, y)
     options = ["Protect allies", "Fight up close", "Attack at range", "Sneak and deceive",
                "Solve mysteries", "Use broad magic", "Heal and support", "Negotiate",
@@ -181,21 +196,20 @@ def page_two(c: canvas.Canvas) -> None:
     for item in ("Keep it simple", "A few choices", "Lots", "Surprise me"):
         x = checkbox(c, x, y + 5, item, 7) + 8
     y -= 22
-    label(c, "How experienced are they?", M, y)
+    label(c, "How experienced should you be?", M, y)
     x = M + 170
     for item in ("Just beginning", "Some hard lessons", "Proven", "Match group"):
         x = checkbox(c, x, y + 5, item, 7) + 8
     y -= 23
-    y = field(c, "Anything mechanics must express", "A signature tactic, training, spell, disability, tool, or limitation that matters to the concept.", M, y, W - 2 * M, 1)
+    y = field(c, "Anything special?", "Is there anything you definitely want to be able to do?", M, y, W - 2 * M, 1)
 
 
 def build() -> Path:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     c = canvas.Canvas(str(OUT), pagesize=letter)
-    c.setTitle("Driftmoor Eight-Question Character Interview")
+    c.setTitle("Driftmoor Quick Character Interview")
     c.setAuthor("Driftmoor")
     page_one(c)
-    page_two(c)
     c.save()
     return OUT
 

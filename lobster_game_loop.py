@@ -16,8 +16,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 # Local imports
-import sys
-sys.path.insert(0, '/Users/Jeff/Python/Driftmoor')
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from engine.scene_manager import TurnCycle, RoleContext
 from engine.game_checkpoint import GameStatePersistence, TurnSummary

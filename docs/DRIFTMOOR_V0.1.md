@@ -22,7 +22,7 @@ Driftmoor v0.1 is ready when:
 - [ ] A fresh installation succeeds using only public documentation.
 - [ ] No secrets, private transcripts, personal data, or machine-specific
       artifacts are present in the repository or its published history.
-- [ ] Known limitations and deferred content are documented.
+- [x] Known limitations and deferred content are documented.
 - [ ] The release commit is tagged `v0.1.0`.
 
 ## Supported Scope
@@ -43,8 +43,8 @@ Driftmoor v0.1 is ready when:
 
 ### Experimental Preview
 
-- [ ] Label the Fey Glade as experimental in user-facing documentation.
-- [ ] Label the Echoing Caverns as experimental in user-facing documentation.
+- [x] Label the Fey Glade as experimental in user-facing documentation.
+- [x] Label the Echoing Caverns as experimental in user-facing documentation.
 - [ ] Confirm preview failures cannot block or corrupt Driftmoor town play.
 
 ### Deferred Beyond v0.1
@@ -106,7 +106,7 @@ Future authenticated multiplayer requires:
 ### 1. Place and Building Integrity
 
 The automated building audit is
-[`tests/test_driftmoor_buildings.py`](tests/test_driftmoor_buildings.py).
+[`tests/test_driftmoor_buildings.py`](../tests/test_driftmoor_buildings.py).
 It discovers buildings from Driftmoor's connection table rather than keeping a
 second hard-coded list.
 
@@ -171,13 +171,13 @@ Remaining place work:
 - [x] Explicit resident scene introductions are audited.
 - [x] Prose-only named residents are rejected by the building audit.
 - [x] Elise Harper is a first-class NPC and resident clerk of Mayor's Hall.
-- [ ] Review every Driftmoor NPC's `IDENTITY.md` for required runtime fields.
-- [ ] Review every Driftmoor NPC's `SOUL.md` for stable voice, knowledge, and
+- [x] Review every Driftmoor NPC's `IDENTITY.md` for required runtime fields.
+- [x] Review every Driftmoor NPC's `SOUL.md` for stable voice, knowledge, and
       motivations.
 - [x] Confirm residents appear at plausible positions in their building
       geometry.
-- [ ] Confirm NPC knowledge does not reveal DM-only or unperceived information.
-- [ ] Confirm NPC starting locations agree across initialization, place files,
+- [x] Confirm NPC knowledge does not reveal DM-only or unperceived information.
+- [x] Confirm NPC starting locations agree across initialization, place files,
       and scenes.
 
 ### 3. Movement, Entry, and Narration
@@ -202,36 +202,36 @@ Remaining place work:
 - [ ] Inventory every Driftmoor merchant and service provider.
 - [ ] Verify each advertised good or service has an authoritative price source.
 - [ ] Verify `what can I buy?` returns the correct catalog in every shop.
-- [ ] Verify purchases debit the buyer, credit or record the vendor side, and
+- [x] Verify purchases debit the buyer, credit or record the vendor side, and
       transfer the item.
-- [ ] Verify failed purchases do not alter inventory or currency.
-- [ ] Verify sale and haggling behavior where advertised.
-- [x] Reconcile legacy global item lists with per-place
+- [x] Verify failed purchases do not alter inventory or currency.
+- [x] Verify sale and haggling behavior where advertised.
+- [ ] Reconcile legacy global item lists with per-place
       `CONTENTS.md` files.
 - [ ] Decide which services require immediate engine support and which may be
       honestly narrated as deferred work.
 
 ### 5. Content and Playability Review
 
-- [x] Perform a building-by-building browser walkthrough.
-- [x] Speak with every resident NPC at least once.
-- [x] Ask every merchant what they sell.
-- [?] Exercise the missing-horse hook without requiring unfinished Old Mill
+- [ ] Perform a building-by-building browser walkthrough.
+- [ ] Speak with every resident NPC at least once.
+- [ ] Ask every merchant what they sell.
+- [ ] Exercise the missing-horse hook without requiring unfinished Old Mill
       content.
-- [?] Exercise the forge-symbol hook without requiring an experimental region.
-- [x] Confirm empty places, including the corral, are intentionally empty.
-- [x] Confirm every visible map landmark has an accurate label and tooltip.
-- [x] Record known narrative or grounding limitations discovered during the
+- [ ] Exercise the forge-symbol hook without requiring an experimental region.
+- [ ] Confirm empty places, including the corral, are intentionally empty.
+- [ ] Confirm every visible map landmark has an accurate label and tooltip.
+- [ ] Record known narrative or grounding limitations discovered during the
       walkthrough.
 
 ### 6. Automated Quality Gate
 
 - [x] Driftmoor building integration audit exists.
 - [x] Current full suite passes: 1,426 tests at checklist creation.
-- [ ] Add a single documented release-test command.
-- [ ] Run the suite with warnings surfaced and review every warning.
+- [x] Add a single documented release-test command.
+- [x] Run the suite with warnings surfaced and review every warning.
 - [ ] Run formatting/linting/type checks selected for v0.1.
-- [ ] Ensure tests do not require private API keys.
+- [x] Ensure tests do not require private API keys.
 - [ ] Ensure deterministic tests use the shared seeded game RNG.
 - [ ] Test on a clean virtual environment using supported Python versions.
 
@@ -245,25 +245,25 @@ MPLCONFIGDIR=/tmp/driftmoor-mpl .venv/bin/pytest -q
 
 ### Repository Hygiene
 
-- [ ] Confirm `.env` and all local credential files are ignored.
-- [ ] Scan the complete Git history for API keys and credentials.
+- [x] Confirm `.env` and all local credential files are ignored.
+- [x] Scan the complete Git history for API keys and credentials.
 - [ ] Scan the complete Git history for personal names, private messages, and
       unintended transcripts.
-- [ ] Remove or ignore runtime checkpoints, model outputs, generated maps,
+- [x] Remove or ignore runtime checkpoints, model outputs, generated maps,
       caches, logs, and unknown-word telemetry unless intentionally shipped.
-- [ ] Remove machine-specific absolute paths from tracked files and examples.
+- [x] Remove machine-specific absolute paths from tracked files and examples.
 - [ ] Verify a clone contains no required untracked assets.
 - [ ] Review large binary files and decide whether they belong in the release.
 
 ### Documentation
 
-- [ ] Update `README.md` status from general active development to the precise
+- [x] Update `README.md` status from general active development to the precise
       v0.1 supported scope.
-- [ ] Document browser-first quick start from a clean clone.
-- [ ] Document the LATN dependency and supported installation layouts.
-- [ ] Document Ollama and cloud-provider configuration without exposing keys.
-- [ ] Add architecture and scenario-authoring links for contributors.
-- [ ] Add a `KNOWN_LIMITATIONS.md` or equivalent release section.
+- [x] Document browser-first quick start from a clean clone.
+- [x] Document the LATN dependency and supported installation layouts.
+- [x] Document Ollama and cloud-provider configuration without exposing keys.
+- [x] Add architecture and scenario-authoring links for contributors.
+- [x] Add a `KNOWN_LIMITATIONS.md` or equivalent release section.
 - [ ] Add contribution and issue-reporting guidance.
 - [ ] Add a code of conduct if outside contributions are invited.
 
@@ -287,9 +287,9 @@ MPLCONFIGDIR=/tmp/driftmoor-mpl .venv/bin/pytest -q
 - [x] Document the one-human-player-per-process limitation.
 - [x] Confirm remote-access documentation does not imply that a reverse proxy
       or tunnel supplies application-level authorization.
-- [ ] Confirm the server does not expose arbitrary local files.
+- [x] Confirm the server does not expose arbitrary local files.
 - [ ] Confirm logs and checkpoints do not unintentionally store secrets.
-- [ ] Document that users are responsible for securing externally exposed
+- [x] Document that users are responsible for securing externally exposed
       model endpoints and game servers.
 
 ## Manual Release Walkthrough
@@ -350,3 +350,9 @@ Record release-focused decisions and milestone completions here.
 - 2026-08-02: Reviewed Driftmoor place prose, connections, dynamic state, and
   contents; consolidated eight stale prose-only room directories into their
   parent scenes and added an audit requiring geometry for every authored place.
+- 2026-08-09: Added automated town-NPC identity, soul, and explicit DM-only
+  leakage audits; corrected Tess's compartment knowledge wording; verified all
+  1,652 tests pass with warnings surfaced and with cloud API keys removed from
+  the environment; documented v0.1 scope, previews, release command, security
+  boundary, and known limitations; removed tracked machine-specific paths; and
+  scanned all 334 commits for common credential signatures without a finding.

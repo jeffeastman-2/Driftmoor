@@ -30,7 +30,10 @@ class TestInitialization:
         assert len(state.places) == expected
 
     def test_all_players_loaded(self, state: GameState):
-        expected = len([d for d in (SCENARIO_DIR / "people" / "players").iterdir() if d.is_dir()])
+        expected = len([
+            d for d in (SCENARIO_DIR / "people" / "players").iterdir()
+            if d.is_dir() and (d / "IDENTITY.md").is_file()
+        ])
         assert len(state.get_players()) == expected
 
 

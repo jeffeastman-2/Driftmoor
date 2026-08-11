@@ -10,11 +10,12 @@ from character_generation import (
 
 def test_fallback_turns_free_form_answers_into_character():
     draft = fallback_draft({
-        "name": "Mara Vell", "concept": "A rain-soaked former guard",
+        "player": "Sam", "name": "Mara Vell", "concept": "A rain-soaked former guard",
         "desire": "protect the lost", "fear": "being recognized",
         "play_style": "protect people and heal them", "keepsake": "A cracked bell",
     })
     assert draft.name == "Mara Vell"
+    assert draft.player == "Sam"
     assert draft.character_class == "Cleric"
     assert "protect the lost" in draft.values_and_drives
     assert draft.signature_detail == "A cracked bell"

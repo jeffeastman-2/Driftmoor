@@ -110,6 +110,7 @@ def fallback_draft(answers: dict[str, str]) -> CharacterDraft:
     }.get(cclass, ["chain_mail", "longsword", "shield", "explorers_pack"])
     return CharacterDraft(
         name=name,
+        player=answers.get("player", "").strip() or "TBD",
         pronouns=answers.get("pronouns", "").strip() or "they/them",
         gender=answers.get("gender", "").strip() or "Unspecified",
         race=answers.get("race", "").strip() or "Human",
