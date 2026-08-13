@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Brenna Carrowmere
-- **Player:** TBD
+- **Player:** Ann
 - **Race:** Human
 - **Class:** Fighter (Battle Master), Level 3
 - **Background:** Knight of the Order

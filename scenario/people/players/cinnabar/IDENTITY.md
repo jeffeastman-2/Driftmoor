@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Cinnabar
-- **Player:** TBD
+- **Player:** MC
 - **Race:** Wood Elf
 - **Class:** Rogue (Arcane Trickster), Level 3
 - **Background:** Criminal (Burglar)

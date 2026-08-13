@@ -123,16 +123,30 @@ class TestKaelinBard:
         assert pc.spellcasting.ability == "CHA"
 
     def test_cantrip_count(self, pc):
-        assert len(pc.spellcasting.cantrips) == 2
+        assert len(pc.spellcasting.cantrips) == 3
+
+    def test_slot_count(self, pc):
+        assert pc.spellcasting.spell_slots_max == {1: 4, 2: 3}
 
     def test_known_spells_not_prepared(self, pc):
         """Bards use 'Spells known', not 'Prepared spells'."""
         assert pc.spellcasting.prepared == []
-        assert len(pc.spellcasting.known) == 4
+        assert len(pc.spellcasting.known) == 7
 
     def test_known_names(self, pc):
         names = _spell_names(pc.spellcasting.known)
-        assert names == {"Cure Wounds", "Faerie Fire", "Healing Word", "Dissonant Whispers"}
+        assert names == {
+            "Detect Magic", "Faerie Fire", "Healing Word", "Dissonant Whispers",
+            "Calm Emotions", "Detect Thoughts", "Invisibility",
+        }
+
+    def test_known_spell_levels(self, pc):
+        levels = {s.name: s.level for s in pc.spellcasting.known}
+        assert levels["Detect Magic"] == 1
+        assert levels["Faerie Fire"] == 1
+        assert levels["Calm Emotions"] == 2
+        assert levels["Detect Thoughts"] == 2
+        assert levels["Invisibility"] == 2
 
     def test_faerie_fire_concentration(self, pc):
         ff = next(s for s in pc.spellcasting.known if s.name == "Faerie Fire")
@@ -272,4 +286,3 @@ class TestSpacedHyphenSuffixStripped:
         profile = parse_spellcasting(self.SECTION)
         si = next(s for s in profile.known if s.name == "Silent Image")
         assert si.concentration
-

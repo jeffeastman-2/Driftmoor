@@ -2,9 +2,9 @@
 
 ## Static Profile
 - **Full Name:** Thorgrim Stoneheart
-- **Player:** TBD
+- **Player:** Wayne
 - **Race:** Mountain Dwarf
-- **Class:** Fighter, Level 1
+- **Class:** Fighter, Level 2
 - **Background:** Soldier
 - **Alignment:** Lawful Good
 

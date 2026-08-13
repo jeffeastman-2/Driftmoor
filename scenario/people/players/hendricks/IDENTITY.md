@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Hendricks Aldemar Vey
-- **Player:** TBD
+- **Player:** Richard
 - **Race:** Human
 - **Class:** Wizard (School of Divination), Level 3
 - **Background:** Sage

@@ -8,13 +8,13 @@ Backstory: The Bonds of Circumstance
 
 Each member of the party has their own reason for traveling through the frontier region of Driftmoor. Though they began as strangers, their paths converged due to a common threat—and a common opportunity.
 
-Kaelin Brightspark (Halfling Bard)
+Kaelin Brightspark (Human Bard)
 
-Kaelin was performing at a roadside tavern near Driftmoor, entertaining a crowd of travelers and locals with a lively tune about a “haunted obelisk.” This song was no coincidence; Kaelin had heard rumors about the strange disturbances in Driftmoor and saw an opportunity to weave a tale worth performing. They were secretly angling for patrons who might pay for their unique skills—be it with music, diplomacy, or clever deception.
+Kaelin was performing at a roadside tavern near Driftmoor, entertaining a crowd of travelers and locals with a lively tune about a “haunted obelisk.” This song was no coincidence; Kaelin had heard rumors about the strange disturbances in Driftmoor and saw an opportunity to weave a tale worth performing. She was secretly angling for patrons who might pay for her unique skills—be it with music, diplomacy, or clever deception.
 
 Thorgrim Stoneheart (Dwarf Fighter)
 
-Thorgrim was traveling through the region as a self-imposed exile from his homeland, taking odd mercenary jobs to stay afloat. While staying at the same tavern as Kaelin, he overheard the halfling’s song about the obelisk and the troubles in Driftmoor. Recognizing the dangers such disturbances might pose to innocent people, Thorgrim decided to investigate. He struck up a conversation with Kaelin, who gladly welcomed his strength.
+Thorgrim was traveling through the region as a self-imposed exile from his homeland, taking odd mercenary jobs to stay afloat. While staying at the same tavern as Kaelin, he overheard the bard’s song about the obelisk and the troubles in Driftmoor. Recognizing the dangers such disturbances might pose to innocent people, Thorgrim decided to investigate. He struck up a conversation with Kaelin, who gladly welcomed his strength.
 
 Seraphina Duskwhisper (Half-Elf Rogue)
 

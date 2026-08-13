@@ -2,42 +2,55 @@
 
 ## Static Profile
 - **Full Name:** Kaelin Brightspark
-- **Player:** TBD
-- **Race:** Lightfoot Halfling
-- **Class:** Bard, Level 1
+- **Player:** Neala
+- **Race:** Human
+- **Class:** Bard, Level 4
+- **Bard College:** College of Lore
 - **Background:** Entertainer
 - **Alignment:** Chaotic Good
-- **Pronouns:** They/them
+- **Pronouns:** She/Her
 
 ## Physical Description
-Barely over three feet tall with a presence that fills the room. Wild auburn curls, bright hazel eyes, mischievous grin rarely absent from their freckled face. Clothing a riot of emerald green and deep gold patches. Well-worn lute carved with vines and leaves across their back. Intricate tattoos curling around both wrists.
+Slender and attractive with a presence that fills the room. Wild red curls, bright hazel eyes, a mischievous grin rarely absent from her freckled face. Clothing a riot of emerald green and deep gold patches. Well-worn lute carved with vines and leaves across her back. 
 
 ## Combat Statistics
-- **HP:** 9
-- **AC:** 10
+- **HP:** 27
+- **AC:** 13 (leather armor)
 - **STR:** 8 | **DEX:** 14 (+2) | **CON:** 12 (+1)
-- **INT:** 12 (+1) | **WIS:** 10 | **CHA:** 16 (+3)
+- **INT:** 12 (+1) | **WIS:** 10 | **CHA:** 18 (+4)
 
 ## Abilities and Proficiencies
-- Performance +2 (CHA)
-- Persuasion +2 (CHA)
+- **Jack of All Trades:** Add +1 (half proficiency bonus) to ability checks that do not already include proficiency.
+- **Song of Rest (d6):** During a short rest, allies who spend one or more Hit Dice regain an additional 1d6 HP.
+- **Expertise:** Performance +8, Persuasion +8.
+- **College of Lore bonus proficiencies:** Arcana +3, History +3, Insight +2.
+- **Cutting Words:** As a reaction, expend one Bardic Inspiration die and subtract the roll from a creature's attack roll, ability check, or damage roll when the creature is within 60 ft and can hear her. Declare after the roll but before the outcome; creatures immune to being charmed are immune.
 
 ## Spells and Abilities
-**Spellcasting ability:** CHA | **Spell save DC:** 13 | **Spell attack:** +5
+**Spellcasting ability:** CHA | **Spell save DC:** 14 | **Spell attack:** +6
 
-**Bardic Inspiration:** 1 bonus action, target one creature within 60 ft (not self); they gain 1 Bardic Inspiration die (1d6 at level 1) usable within 10 min on one attack roll, ability check, or saving throw. **3 uses per long rest** (CHA mod), recharge on long rest.
+**Bardic Inspiration:** As a bonus action, choose one creature other than herself within 60 ft that can hear her. The creature gains one Bardic Inspiration die (1d6), usable within 10 minutes on one attack roll, ability check, or saving throw. **4 uses per long rest** (CHA modifier), recharging on a long rest.
 
-**Cantrips known (2, at-will):**
-- Vicious Mockery: 60 ft, WIS save DC 13 or 1d4 psychic + disadvantage on next attack roll before end of target's next turn
+**Cantrips known (3, at-will):**
+- Vicious Mockery: 60 ft, WIS save DC 14 or 1d4 psychic damage and disadvantage on the target's next attack roll before the end of its next turn
 - Minor Illusion: 30 ft, 1 min, sound or image (5 ft cube)
+- Message: 120 ft, 1 round; whisper a message to a creature, which can whisper a reply only Kaelin hears
 
-**1st-level spell slots:** 2 per long rest
+**1st-level spell slots:** 4 per long rest
+**2nd-level spell slots:** 3 per long rest
 
-**Spells known (4, fixed list — bards do not prepare):**
-- Cure Wounds — 1 action, touch, 1d8 + 3 HP
-- Faerie Fire — 1 action, 60 ft, conc. up to 1 min, 20-ft cube outlined; attacks vs targets within have advantage; DEX save DC 13 negates
-- Healing Word — 1 bonus action, 60 ft, 1d4 + 3 HP
-- Dissonant Whispers — 1 action, 60 ft, 3d6 psychic + target uses reaction to move away; WIS save DC 13 for half and no movement
+**Spells known (7, fixed list — bards do not prepare):**
+
+**1st-level spells known (4):**
+- Detect Magic — 1 action or ritual, self, concentration up to 10 min; sense magic within 30 ft and identify its school when an aura is visible
+- Faerie Fire — 1 action, 60 ft, concentration up to 1 min; creatures in a 20-ft cube are outlined, attacks against them have advantage, and they cannot benefit from invisibility; DEX save DC 14 negates
+- Healing Word — 1 bonus action, 60 ft, restore 1d4 + 4 HP
+- Dissonant Whispers — 1 action, 60 ft, 3d6 psychic damage and the target uses its reaction to move away; WIS save DC 14 for half damage and no movement
+
+**2nd-level spells known (3):**
+- Calm Emotions — 1 action, 60 ft, concentration up to 1 min; creatures in a 20-ft-radius sphere make a CHA save DC 14; suppress charmed or frightened effects, or make affected targets indifferent to chosen creatures
+- Detect Thoughts — 1 action, self, concentration up to 1 min; read surface thoughts within 30 ft and probe deeper with a WIS save DC 14
+- Invisibility — 1 action, touch, concentration up to 1 hour; the target remains invisible until it attacks or casts a spell
 
 **Concentration:** can hold only one concentration spell at a time. Casting another drops the first.
 
@@ -69,8 +82,8 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 ## Dynamic State
 *(Updated by monitor agent each round)*
 
-- **Current HP:** 9
-- **Bardic Inspiration uses remaining:** 3/3
+- **Current HP:** 27
+- **Bardic Inspiration uses remaining:** 4/4
 - **Spell slots used:** None
 - **Mood:** Bright, watchful beneath the brightness
 - **Disposition toward party:** Fiercely attached, frames this as casual
@@ -80,4 +93,4 @@ Barely over three feet tall with a presence that fills the room. Wild auburn cur
 - **Open threads:** Tyrannical noble who burned the inn; friends killed; guilt carried quietly
 
 ## Wealth
-- **Purse:** 125 gp
+- **Purse:** 875 gp

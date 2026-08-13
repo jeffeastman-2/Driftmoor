@@ -146,6 +146,19 @@ def _list(c: canvas.Canvas, items: list[str], x: float, y: float, width: float,
           max_lines: int, size: float = 7.5) -> None:
     remaining = max_lines
     for item in items or ["None"]:
+        if str(item).startswith("@SECTION "):
+            if remaining <= 0:
+                return
+            label = str(item)[9:].upper()
+            c.setStrokeColor(LINE)
+            c.setLineWidth(.6)
+            c.line(x, y + 3, x + width, y + 3)
+            c.setFillColor(GOLD)
+            c.setFont("Helvetica-Bold", 6.5)
+            c.drawString(x, y - 6, label)
+            y -= 15
+            remaining -= 1
+            continue
         lines = _wrapped_lines(str(item).replace("_", " "), width - 10, "Helvetica", size, remaining)
         if not lines or remaining <= 0:
             break
@@ -188,14 +201,17 @@ def _page_one(c: canvas.Canvas, d: CharacterDraft) -> None:
     c.setFillColor(INK); c.setFont("Helvetica-Bold", 8); c.drawRightString(bx + bw, by + 3, d.purse)
 
     right_x, right_w = 317, W - M - 317
-    bx, by, bw, bh = _box(c, right_x, top - 244, right_w, 242, "Attacks, Spells & Features")
-    feature_items = list(d.spells) + list(d.abilities)
-    _list(c, feature_items, bx, by + bh - 3, bw, 20, 7.5)
+    bx, by, bw, bh = _box(c, right_x, top - 352, right_w, 350, "Attacks, Spells & Features")
+    # Abilities already have a dedicated panel. Keeping this panel to attacks,
+    # spells, and their useful rules text leaves room for beginner-friendly
+    # descriptions instead of duplicating class features.
+    feature_items = list(d.spells)
+    _list(c, feature_items, bx, by + bh - 3, bw, 32, 7.25)
 
-    bx, by, bw, bh = _box(c, right_x, top - 383, right_w, 127, "Physical Description")
+    bx, by, bw, bh = _box(c, right_x, top - 447, right_w, 83, "Physical Description")
     _text(c, d.physical_description, bx, by + bh - 3, bw, size=7.5, leading=10, max_lines=10)
 
-    bx, by, bw, bh = _box(c, right_x, top - 500, right_w, 105, "Current State")
+    bx, by, bw, bh = _box(c, right_x, top - 540, right_w, 80, "Current State")
     state = f"Mood: {d.mood}\n\nDisposition: {d.disposition}"
     _text(c, state, bx, by + bh - 3, bw, size=7.5, leading=10, max_lines=8)
 

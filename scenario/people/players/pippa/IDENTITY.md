@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Pippa Thistlewren
-- **Player:** TBD
+- **Player:** Terry
 - **Race:** Fairy
 - **Class:** Sorcerer (Wild Magic), Level 3
 - **Background:** Entertainer

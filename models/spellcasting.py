@@ -69,8 +69,14 @@ _SLOT_RE = re.compile(
 )
 
 _CANTRIP_HEADER_RE = re.compile(r"\*\*Cantrips? known[^*]*:\*\*", re.IGNORECASE)
-_PREPARED_HEADER_RE = re.compile(r"\*\*Prepared spells?[^*]*:\*\*", re.IGNORECASE)
-_KNOWN_HEADER_RE = re.compile(r"\*\*Spells? known[^*]*:\*\*", re.IGNORECASE)
+_PREPARED_HEADER_RE = re.compile(
+    r"\*\*(?:(\d+)(?:st|nd|rd|th)-level\s+)?Prepared spells?[^*]*:\*\*",
+    re.IGNORECASE,
+)
+_KNOWN_HEADER_RE = re.compile(
+    r"\*\*(?:(\d+)(?:st|nd|rd|th)-level\s+)?Spells? known[^*]*:\*\*",
+    re.IGNORECASE,
+)
 
 _SAVE_RE = re.compile(
     r"\b(?:STR|DEX|CON|INT|WIS|CHA)\s+save\s+DC\s+\d+", re.IGNORECASE
@@ -106,12 +112,14 @@ def parse_spellcasting(section_text: str) -> SpellcastingProfile | None:
         if _CANTRIP_HEADER_RE.search(group_header):
             for b in bullets:
                 profile.cantrips.append(_parse_spell_bullet(b, level=0))
-        elif _PREPARED_HEADER_RE.search(group_header):
+        elif prepared_match := _PREPARED_HEADER_RE.search(group_header):
+            spell_level = int(prepared_match.group(1) or 1)
             for b in bullets:
-                profile.prepared.append(_parse_spell_bullet(b, level=1))
-        elif _KNOWN_HEADER_RE.search(group_header):
+                profile.prepared.append(_parse_spell_bullet(b, level=spell_level))
+        elif known_match := _KNOWN_HEADER_RE.search(group_header):
+            spell_level = int(known_match.group(1) or 1)
             for b in bullets:
-                profile.known.append(_parse_spell_bullet(b, level=1))
+                profile.known.append(_parse_spell_bullet(b, level=spell_level))
     return profile
 
 

@@ -2,9 +2,9 @@
 
 ## Static Profile
 - **Full Name:** Father Lilar Hearthsong
-- **Player:** TBD
+- **Player:** Jim
 - **Race:** Human
-- **Class:** Cleric (Light Domain), Level 1
+- **Class:** Cleric (Light Domain), Level 2
 - **Alignment:** Lawful Good
 
 ## Physical Description

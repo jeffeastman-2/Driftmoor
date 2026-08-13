@@ -2,7 +2,7 @@
 
 ## Static Profile
 - **Full Name:** Tobin Aldermere
-- **Player:** TBD
+- **Player:** Dave
 - **Race:** Half-Elf
 - **Class:** Cleric (Life Domain), Level 3
 - **Background:** Acolyte
