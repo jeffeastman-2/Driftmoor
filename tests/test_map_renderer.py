@@ -445,7 +445,7 @@ def test_elyssa_forge_and_stables_have_editable_interior_art(tmp_path):
     expected = {
         Path("scenario/places/driftmoor/elyssa_cottage/GEOMETRY.md"): (4, 17),
         Path("scenario/places/driftmoor/forge/GEOMETRY.md"): (1, 9),
-        Path("scenario/places/driftmoor/stables/GEOMETRY.md"): (1, 9),
+        Path("scenario/places/driftmoor/stables/GEOMETRY.md"): (1, 10),
     }
     rendered = {}
     for index, (geometry, counts) in enumerate(expected.items()):
@@ -476,6 +476,23 @@ def test_elyssa_forge_and_stables_have_editable_interior_art(tmp_path):
     stables = rendered[Path("scenario/places/driftmoor/stables/GEOMETRY.md")]
     assert "data-target='empty_stall'" in stables
     assert "data-target='clawed_tracks'" in stables
+
+
+def test_refresh_scene_resets_persisted_pan_before_reload(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+
+    out = tmp_path / "map.html"
+    render_turn_slider_html(
+        Path("scenario/places/driftmoor/GEOMETRY.md"),
+        out,
+        snapshot_dir=tmp_path,
+    )
+    html = out.read_text(encoding="utf-8")
+
+    fit = "const fit=document.getElementById('fit');if(fit)fit.click();"
+    refresh = "fetch('/refresh-geometry',{method:'POST'})"
+    assert fit in html
+    assert html.index(fit) < html.index(refresh)
 
 
 def test_corral_has_sparse_editable_fixture_art(tmp_path):

@@ -1864,6 +1864,10 @@ def render_turn_slider_html(
     p.append(
         "(function(){const b=document.getElementById('refreshGeo');"
         "b.onclick=async function(){b.textContent='Refreshing…';b.disabled=true;"
+        # A geometry edit can move the content away from a viewport preserved
+        # in sessionStorage, leaving a technically valid map entirely blank.
+        # Reset to the authored full-map view before regenerating/reloading.
+        "const fit=document.getElementById('fit');if(fit)fit.click();"
         "try{let r=await fetch('/refresh-geometry',{method:'POST'});"
         # The POST updates server-side scene_geometry and rewrites this same
         # map HTML file, but this already-loaded page's DOM has no way to

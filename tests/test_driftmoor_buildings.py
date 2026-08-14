@@ -55,12 +55,60 @@ def test_forge_wall_marks_are_investigable_lore_bearing_item():
     assert (DRIFTMOOR / "forge" / "LORE.md").is_file()
 
 
+def test_stable_clawed_tracks_are_an_investigable_scene_item():
+    cfg = configure_from_place_path("places/driftmoor/stables")
+    tracks = cfg.items["clawed_tracks"]
+
+    assert tracks.position is not None
+    assert tracks.position == Position(23.334, 4.768)
+    assert tracks.zone == "STABLES"
+    assert tracks.pickable is False
+    assert "mistwood" in tracks.description.lower()
+    assert tracks.find_interaction("examine") is not None
+    assert tracks.find_interaction("investigate") is not None
+    assert tracks.find_interaction("follow") is not None
+
+
 def test_forge_and_stables_share_reciprocal_south_north_doorway():
     forge = load_geometry(DRIFTMOOR / "forge" / "GEOMETRY.md")
     stables = load_geometry(DRIFTMOOR / "stables" / "GEOMETRY.md")
 
     assert forge.connections["forge_to_stables"] == Position(22, 0)
     assert stables.connections["stable_to_forge"] == Position(22, 56.5)
+
+
+def test_stables_render_both_authored_connection_doors():
+    visuals = (DRIFTMOOR / "stables" / "VISUALS.md").read_text(
+        encoding="utf-8")
+
+    assert re.search(
+        r"^\| street_door_visual \| \.\./floor_assets/door\.svg "
+        r"\| stable_entrance \| [^|]+ \| 0 \|",
+        visuals,
+        re.MULTILINE,
+    )
+    assert (
+        "| forge_door_visual | ../floor_assets/door.svg | "
+        "forge_door | 22 | 56.5 |"
+    ) in visuals
+
+    geometry = load_geometry(DRIFTMOOR / "stables" / "GEOMETRY.md")
+    assert geometry.landmarks["stable_entrance"] == Position(22, 0)
+    assert geometry.connections["stable_to_street"] == Position(22, 0)
+
+
+def test_moved_corral_connection_and_child_origin_share_town_footprint():
+    town = load_geometry(DRIFTMOOR / "GEOMETRY.md")
+    corral = load_geometry(DRIFTMOOR / "corral" / "GEOMETRY.md")
+    doorway = town.connections["to_corral"]
+
+    assert town.zone_at(doorway) == "CORRAL"
+    footprint = town.zones["CORRAL"]
+    xs = [vertex[0] for vertex in footprint.vertices]
+    ys = [vertex[1] for vertex in footprint.vertices]
+    assert max(xs) - min(xs) == 90
+    assert max(ys) - min(ys) == 88
+    assert corral.origin == Position(678, 10)
 
 
 def test_forge_heat_zone_is_hidden_but_warns_on_entry():

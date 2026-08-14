@@ -10,6 +10,39 @@ import json
 import web_play
 
 
+def test_turn_entries_preserve_player_action_for_reload(tmp_path):
+    checkpoint = {
+        "turn": 4,
+        "character_results": [
+            {
+                "character_id": "gilthaness",
+                "output": {
+                    "spoken": "",
+                    "action": "I investigate the wall marks",
+                },
+                "narration": {"prose": "Fine dark residue marks the stone."},
+            },
+            {
+                "character_id": "darrin",
+                "output": {"spoken": "", "action": "I watch Gil."},
+                "narration": {"prose": "Darrin watches."},
+            },
+        ],
+    }
+    (tmp_path / "day1_19h30m.json").write_text(
+        json.dumps(checkpoint), encoding="utf-8")
+
+    entries = web_play._turn_entries(tmp_path, "gilthaness")
+
+    assert entries[0]["lines"][0]["action"] == "I investigate the wall marks"
+    assert entries[0]["lines"][1]["action"] == ""
+
+
+def test_page_renders_player_action_before_outcome():
+    assert '<span class="you">you</span>: ' in web_play._PAGE
+    assert "action+(body?" in web_play._PAGE
+
+
 def test_map_visual_save_is_scoped_and_updates_bound_landmark(tmp_path, monkeypatch):
     from models.space_time import Position
 

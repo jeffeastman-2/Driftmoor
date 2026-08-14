@@ -321,8 +321,8 @@ class TestLoadPlayerCharacter:
         assert pc.name == "Seraphina Duskwhisper"
         assert pc.race == "Half-Elf"
         assert pc.character_class == "Rogue"
-        assert pc.level == 1
-        assert pc.player == "TBD"
+        assert pc.level == 2
+        assert pc.player == "Kristin"
         assert pc.hp == 9
         assert pc.ac == 10          # authored natural AC base (effective adds DEX/armor at load)
         assert pc.dexterity == 16

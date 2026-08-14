@@ -15,7 +15,7 @@
 
 | name             | x  | y  |
 |------------------|----|----|
-| stable_entrance  | 3.5  | 0  |
+| stable_entrance  | 22  | 0  |
 | saddle_racks     | 3.121 | 4.4 |
 | stall_row_center | 23 | 27.5 |
 | feed_bins        | 32.431 | 5.629 |
@@ -50,5 +50,13 @@
 
 | name             | x | y | destination      |
 |------------------|---|---|------------------|
-| stable_to_street | 3.5 | 0 | places/driftmoor |
+| stable_to_street | 22 | 0 | places/driftmoor |
 | stable_to_forge  | 22 | 56.5 | places/driftmoor/forge |
+
+---
+
+## Items
+
+| id | x | y | label |
+|---|---:|---:|---|
+| clawed_tracks | 23.334 | 4.768 | Fading clawed tracks |

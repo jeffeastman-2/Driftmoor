@@ -36,8 +36,8 @@ from engine.map_renderer import render_turn_slider_html  # noqa: E402
 from engine import web_transport                         # noqa: E402
 
 
-def _turn_entries(checkpoint_dir: Path) -> list[dict]:
-    """Per-turn narration so far: {turn, lines:[{cid, prose, spoken}]}."""
+def _turn_entries(checkpoint_dir: Path, player_id: str | None = None) -> list[dict]:
+    """Per-turn transcript, including the human player's submitted actions."""
     out: list[dict] = []
     for f in checkpoint_dir.glob("day1_*.json"):
         if f.stem.endswith("transcript"):
@@ -48,12 +48,17 @@ def _turn_entries(checkpoint_dir: Path) -> list[dict]:
             continue
         lines = []
         for cr in data.get("character_results", []):
+            cid = cr.get("character_id", "?")
             prose = ((cr.get("narration") or {}).get("prose") or "").strip()
-            spoken = _clean_spoken_output(
-                (cr.get("output") or {}).get("spoken") or "")
-            if prose or spoken:
-                lines.append({"cid": cr.get("character_id", "?"),
-                              "prose": prose, "spoken": spoken})
+            output = cr.get("output") or {}
+            spoken = _clean_spoken_output(output.get("spoken") or "")
+            # Unquoted browser input is stored as an action, not speech. Keep
+            # that original text in the durable transcript for the human
+            # player; otherwise a reload shows only the DM's half of play.
+            action = (output.get("action") or "").strip() if cid == player_id else ""
+            if prose or spoken or action:
+                lines.append({"cid": cid, "prose": prose,
+                              "spoken": spoken, "action": action})
         if lines:
             out.append({"turn": int(data.get("turn", 0)), "lines": lines})
     out.sort(key=lambda e: e["turn"])
@@ -595,7 +600,7 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
             for act in web_transport.drain_actions():
                 act["type"] = "action"
                 await resp.write(f"data: {json.dumps(act)}\n\n".encode())
-            for entry in _turn_entries(cd):
+            for entry in _turn_entries(cd, player):
                 if entry["turn"] in sent:
                     continue
                 sent.add(entry["turn"])
@@ -675,9 +680,14 @@ async def _session_task(app: web.Application) -> None:
         prose = (getattr(cr.narration, "prose", "") or "").strip()
         spoken = _clean_spoken_output(
             getattr(cr.output, "spoken", "") or "")
-        if prose or spoken:
+        action = (
+            (getattr(cr.output, "action", "") or "").strip()
+            if cid == app["player"] else ""
+        )
+        if prose or spoken or action:
             web_transport.publish_action(
-                {"turn": turn, "cid": cid, "prose": prose, "spoken": spoken})
+                {"turn": turn, "cid": cid, "prose": prose,
+                 "spoken": spoken, "action": action})
 
     def _on_scene_transition(scene_name: str, new_cfg) -> None:
         rt["scene"] = scene_name
@@ -737,6 +747,8 @@ header{padding:8px 14px;font-size:15px;font-weight:700;border-bottom:1px solid #
 .turn{margin:0 0 12px;}.turn h3{margin:0 0 4px;font-size:12px;color:#8a8a99;
   letter-spacing:.05em;text-transform:uppercase;}
 .line{margin:0 0 6px;font-size:14px;line-height:1.45;}
+.player-action{margin:0 0 4px;color:#aaa;font-size:14px;line-height:1.45;}
+.player-action .you{font-weight:700;color:#9ecbff;}
 .cid{font-weight:700;color:#9ecbff;}.spoken{color:#cfe8c0;font-style:italic;}
 .name{font-weight:700;color:#9ecbff;}
 .dm{margin:0 0 12px;padding:8px 10px;background:#15212e;border-left:3px solid #4a90d9;
@@ -798,6 +810,8 @@ function nameOf(cid){return (cid||'').split('_').map(w=>w?w[0].toUpperCase()+w.s
 // to name the speaker, still gets a name prefix so the quote is attributed.)
 function lineHTML(l){
   let body='';
+  let action='';
+  if(l.action)action='<p class="player-action"><span class="you">you</span>: '+esc(l.action)+'</p>';
   const repeated=l.spoken&&l.prose&&speechKey(l.prose).includes(speechKey(l.spoken));
   if(l.spoken&&!repeated)body+='<span class="spoken">“'+qhi(l.spoken)+'”</span> ';
   if(l.prose){
@@ -809,7 +823,7 @@ function lineHTML(l){
     body+=prose;
   }
   else if(l.spoken)body='<span class="name">'+esc(nameOf(l.cid))+'</span>: '+body;
-  return '<p class="line">'+body+'</p>';
+  return action+(body?'<p class="line">'+body+'</p>':'');
 }
 function turnBlock(t){
   let b=turnBlocks[t];

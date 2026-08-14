@@ -1710,7 +1710,10 @@ def _normalize_venue_intent_text(text: str) -> str:
     """Normalize common typo seams in venue-enter/exit phrases.
 
     Examples: ``enterthe bitter remedy`` -> ``enter the bitter remedy`` and
-    vertical stair travel -> the same enter/leave semantics used by doorways.
+    natural travel to a named venue -> the same enter/leave semantics used by
+    doorways. Venue grounding happens later, so "go to the well" remains
+    ordinary movement while "go to the stable" means travel through its
+    authored connection once the actor reaches the door.
     """
     t = (text or "").strip().lower()
     if not t:
@@ -1735,6 +1738,12 @@ def _normalize_venue_intent_text(text: str) -> str:
         t,
     ):
         return "leave"
+    travel = re.fullmatch(
+        r"(?:i\s+)?(?:go|walk|head|move)\s+to\s+(.+)",
+        t,
+    )
+    if travel:
+        return f"enter {travel.group(1)}"
     return t
 
 
@@ -2054,9 +2063,107 @@ def _entry_point_from_target_geometry(
         except ValueError:
             continue
         z = (scene_geometry.zone_at(Position(x, y, 0.0)) or "").upper()
+        # Parent connection rows historically use the building footprint's
+        # center.  That is a useful map marker but a disastrous exit spawn: the
+        # actor materializes inside the sealed footprint and cannot cross its
+        # generated walls.  Return them to verified open ground just beyond the
+        # footprint instead.
+        # Only parent-bound arrivals are exits.  Entering an upstairs/subplace
+        # legitimately spawns just inside its landing and must retain that
+        # authored point.
+        if source.startswith(target + "/"):
+            outside = _point_outside_zone_near_gateway(
+                scene_geometry, gateway=(x, y), blocked_zone=z,
+            )
+            if outside is not None:
+                x, y, z = outside
         return (x, y, z)
 
     return None
+
+
+def _point_outside_zone_near_gateway(
+    scene_geometry: SceneGeometry,
+    *,
+    gateway: tuple[float, float],
+    blocked_zone: str,
+) -> tuple[float, float, str] | None:
+    """Find open parent-scene ground immediately outside a child footprint.
+
+    Town connection coordinates may be either a real threshold or an old
+    building-center marker.  Project the marker to the footprint edge facing
+    the town center, then probe outward until ``zone_at`` confirms that the
+    point is no longer in the building.  The returned zone is authoritative.
+    """
+    blocked = (blocked_zone or "").upper()
+    if not blocked:
+        return None
+    polygon = next(
+        (p for name, p in scene_geometry.zones.items() if name.upper() == blocked),
+        None,
+    )
+    if polygon is None or not polygon.vertices:
+        return None
+
+    gx, gy = float(gateway[0]), float(gateway[1])
+    cx = sum(v[0] for v in polygon.vertices) / len(polygon.vertices)
+    cy = sum(v[1] for v in polygon.vertices) / len(polygon.vertices)
+
+    # A center marker has no outward direction.  Use the side facing the town's
+    # central landmark (or the scene origin as a deterministic fallback).
+    if ((gx - cx) ** 2 + (gy - cy) ** 2) ** 0.5 < 0.5:
+        reference = scene_geometry.landmarks.get("town_center")
+        if reference is None:
+            reference = scene_geometry.origin
+        edge = polygon.nearest_point(reference)
+        gx, gy = float(edge.x), float(edge.y)
+
+    dx, dy = gx - cx, gy - cy
+    length = (dx * dx + dy * dy) ** 0.5
+    if length < 1e-6:
+        return None
+    ux, uy = dx / length, dy / length
+    for step in (0.5, 1.0, 2.0, 3.0, 5.0, 8.0):
+        x, y = gx + ux * step, gy + uy * step
+        zone = (scene_geometry.zone_at(Position(x, y, 0.0)) or "").upper()
+        if zone and zone != blocked and zone != "EXTERIOR":
+            return (x, y, zone)
+    return None
+
+
+def _safe_child_return_anchor(
+    scene_geometry: SceneGeometry | None,
+    source_place_path: str,
+    child_scene_name: str,
+    actor_pos: tuple,
+) -> tuple:
+    """Keep a child-scene return anchor out of its parent-map footprint."""
+    if scene_geometry is None or len(actor_pos) < 2:
+        return actor_pos
+    child = (child_scene_name or "").rsplit("/", 1)[-1]
+    connection = next(
+        ((x, y) for name, _conn, x, y in _driftmoor_source_doorways(
+            source_place_path
+        ) if name == child),
+        None,
+    )
+    if connection is None:
+        return actor_pos
+    blocked = (
+        scene_geometry.zone_at(Position(connection[0], connection[1], 0.0)) or ""
+    ).upper()
+    actor_zone = (
+        scene_geometry.zone_at(Position(float(actor_pos[0]), float(actor_pos[1]), 0.0))
+        or (str(actor_pos[2]) if len(actor_pos) > 2 else "")
+    ).upper()
+    if actor_zone != blocked:
+        return actor_pos
+    outside = _point_outside_zone_near_gateway(
+        scene_geometry,
+        gateway=(float(actor_pos[0]), float(actor_pos[1])),
+        blocked_zone=blocked,
+    )
+    return outside or actor_pos
 
 
 def _seed_transition_actor_start(
@@ -2073,20 +2180,20 @@ def _seed_transition_actor_start(
 
 # An actor must be within this many feet of a venue's authored doorway (its
 # Connections-table point) for an "enter" to cross into the sub-scene. Farther
-# away, "enter X" just walks the actor toward that door — clamped to the turn's
-# movement budget, exactly like "go to X" — and the crossing happens on the turn
-# a clamped move finally lands them at the door.
+# away, venue travel just walks the actor toward that door — clamped to the
+# turn's movement budget — and the crossing happens on the turn a clamped move
+# finally lands them at the door.
 _DOORWAY_ARRIVAL_FT = 8.0
 
 
 @lru_cache(maxsize=8)
 def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, float, float], ...]:
-    """``(child_scene_name, connection_name, x, y)`` for each authored connection
-    in the *source* place's GEOMETRY Connections table — i.e. where each child
-    venue's front door sits in this scene's coordinates. Empty when the source
-    isn't a Driftmoor place. Only connections whose destination is a sub-place of
-    the source count (region/exit connections lead out of the scene, no doorway
-    here)."""
+    """Enterable Driftmoor destinations in a place's Connections table.
+
+    Includes child venues and explicitly connected siblings (for example the
+    forge-to-stables door). The ordinary connection back to the parent remains
+    an exit, and connections outside Driftmoor are not local venue doorways.
+    """
     source = (source_place_path or "").strip().lower().strip("/")
     if not source.startswith("places/driftmoor"):
         return ()
@@ -2102,6 +2209,12 @@ def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, 
     m = re.search(r"##\s+Connections\b(.*?)(?=\n##\s+\w|\Z)", text, re.DOTALL)
     if not m:
         return ()
+    source_node = next(
+        (node for node in _driftmoor_place_registry()
+         if node.place_path == source),
+        None,
+    )
+    parent_path = source_node.parent_place_path if source_node else ""
     out: list[tuple[str, str, float, float]] = []
     for raw in m.group(1).splitlines():
         line = raw.strip()
@@ -2114,7 +2227,10 @@ def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, 
         if not name or name.lower() == "name":
             continue
         dest_norm = dest.lower().strip().strip("/")
-        if not dest_norm.startswith(source + "/"):
+        if (
+            not dest_norm.startswith("places/driftmoor/")
+            or dest_norm in {source, parent_path}
+        ):
             continue
         child = dest_norm.rsplit("/", 1)[-1]
         try:
@@ -2141,14 +2257,13 @@ def _driftmoor_enter_doorway(
         intent_text, current_place_path, actor_zone, actor_position)
     if target_scene is None:
         return None
-    # Only descents (entering a child of the current place) are doorway-gated;
-    # exits back to a parent pass straight through.
+    # Only explicit outgoing venue connections are doorway-gated; exits back
+    # to a parent pass straight through.
     place = (current_place_path or "").strip().lower().strip("/")
-    is_child = any(
-        n.scene_name == target_scene and n.parent_place_path == place
-        for n in _driftmoor_place_registry()
-    )
-    if not is_child:
+    connected = {
+        child for child, _conn, _x, _y in _driftmoor_source_doorways(place)
+    }
+    if target_scene not in connected:
         return None
     for child, _conn, x, y in _driftmoor_source_doorways(place):
         if child != target_scene:
@@ -2257,13 +2372,11 @@ def _clean_venue_aliases(aliases: tuple[str, ...]) -> tuple[str, ...]:
 
 
 def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
-    """``(scene_name, cleaned_aliases)`` for each enterable child of the current
-    place — the venue candidates LATN grounds an "enter <name>" against.
+    """``(scene_name, cleaned_aliases)`` for each enterable connected venue.
 
-    A PLACE.md alone does not make a venue enterable from its parent: the
-    parent's geometry must also author a doorway connection to it.  This keeps
-    umbrella/location records (such as the former combined Ironhoof site) from
-    competing with first-class buildings that have their own doors.
+    A PLACE.md alone does not make a venue enterable: the current place's
+    geometry must author a connection to it. This includes both hierarchical
+    children and first-class sibling links such as forge <-> stables.
     """
     place = (current_place_path or "").strip().lower().strip("/")
     if not place:
@@ -2271,10 +2384,21 @@ def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[s
     doorway_children = {
         child for child, _conn, _x, _y in _driftmoor_source_doorways(place)
     }
+    current = next(
+        (node for node in _driftmoor_place_registry()
+         if node.place_path == place),
+        None,
+    )
+    allowed_parents = {place}
+    if current is not None and current.parent_place_path:
+        allowed_parents.add(current.parent_place_path)
     return tuple(
         (node.scene_name, _clean_venue_aliases(node.aliases))
         for node in _driftmoor_place_registry()
-        if node.parent_place_path == place and node.scene_name in doorway_children
+        if (
+            node.scene_name in doorway_children
+            and node.parent_place_path in allowed_parents
+        )
     )
 
 
@@ -6501,6 +6625,20 @@ async def iter_session(
                         text, items or {}, characters or {}, _q_zone,
                         catalog=_q_entries, scene_geometry=scene_geometry)
                     if ans is not None:
+                        if ans == "Nothing is listed for sale here.":
+                            present_npcs = [
+                                cid for cid in sorted(active_characters)
+                                if cid != _char_id and cid in characters
+                            ]
+                            if len(present_npcs) == 1:
+                                npc_id = present_npcs[0]
+                                npc = characters[npc_id]
+                                npc_name = (
+                                    npc.character.name
+                                    or npc.scene_handle
+                                    or npc_id
+                                )
+                                return f"{npc_name} has nothing listed for sale."
                         return ans
                     # 6) Geography: "where is <venue>?" -> bearing + distance to
                     # its door, answered by the engine instead of the DM.
@@ -8348,7 +8486,8 @@ async def iter_session(
             # player's directed question receives one immediate dialogue-only
             # NPC response. This is an adjacency pair, not another physical
             # action, and consumes the NPC's next exploration initiative slot.
-            if (not in_combat and _social_target is not None
+            if (pending_scene_transition is None
+                    and not in_combat and _social_target is not None
                     and _social_target in active_characters):
                 from engine.social_exchange import generate_social_reply
                 target_cs = characters[_social_target]
@@ -8437,6 +8576,13 @@ async def iter_session(
                 except Exception:  # noqa: BLE001 — live views are best-effort
                     pass
 
+            # A doorway crossing ends participation in the source scene at the
+            # actor's initiative boundary. Do not let later source-scene NPCs
+            # speak or act after the player has left; the transition is applied
+            # immediately below, before the next turn begins.
+            if pending_scene_transition is not None:
+                break
+
         await _broadcast_turn_results_to_transports(
             turn_result=turn_result,
             characters=characters,
@@ -8505,6 +8651,12 @@ async def iter_session(
                     # Preserve return anchor when entering any authored child
                     # scene so exiting returns to where the actor came from.
                     if source_scene_name and target_scene_name != source_scene_name:
+                        actor_from_pos = _safe_child_return_anchor(
+                            scene_geometry,
+                            source_place_path,
+                            target_scene_name,
+                            actor_from_pos,
+                        )
                         setattr(actor_cs, "_mvp_return_scene", source_scene_name)
                         setattr(actor_cs, "_mvp_return_pos", actor_from_pos)
 

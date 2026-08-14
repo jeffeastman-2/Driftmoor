@@ -1139,14 +1139,25 @@ class TestInferDriftmoorVenueTransition:
             "I move towards Elyssa's cottage", "places/driftmoor"
         ) == ("elyssa_cottage", (723.0, 268.0, ""))
 
-    def test_go_to_venue_is_not_entry(self):
-        # "go to / head to / walk to" walk you to the door; they do not cross
-        # inside. Only true "enter" verbs trigger the sub-scene transition.
+    def test_go_to_venue_enters_on_doorway_arrival(self):
+        # Natural destination travel has the same eventual threshold semantics
+        # as "enter": movement is still speed-clamped to the authored door, and
+        # the scene transition fires only once that door is reached.
         from engine.session import _infer_driftmoor_venue_transition
-        for phrase in ("I go to the apothecary", "head to the church",
-                       "walk to the bakery"):
+        expected = {
+            "I go to the apothecary": "bitter_remedy",
+            "head to the church": "beacon_church",
+            "walk to the bakery": "bakery",
+            "I go to the stable": "stables",
+        }
+        for phrase, scene in expected.items():
             assert _infer_driftmoor_venue_transition(
-                phrase, "places/driftmoor", "TOWN_COMMON") is None
+                phrase, "places/driftmoor", "TOWN_COMMON") == scene
+
+    def test_go_to_nonvenue_remains_ordinary_movement(self):
+        from engine.session import _infer_driftmoor_venue_transition
+        assert _infer_driftmoor_venue_transition(
+            "I go to the well", "places/driftmoor", "TOWN_COMMON") is None
 
     def test_multiword_enter_verb_crosses_in(self):
         # "go inside" is a compound threshold-crossing verb, distinct from "go".
@@ -1181,6 +1192,41 @@ class TestInferDriftmoorVenueTransition:
             "COMMON_ROOM",
         )
         assert out == "driftmoor"
+
+    @pytest.mark.parametrize(
+        "child,stuck_position",
+        [
+            ("bitter_remedy", (520.0, 390.0, "APOTHECARY")),
+            ("salt_and_iron", (520.0, 284.0, "MERCANTILE")),
+            ("elyssa_cottage", (723.0, 268.0, "ELYSSA_COTTAGE")),
+        ],
+    )
+    def test_building_exit_anchor_is_on_open_town_ground(
+        self, child, stuck_position
+    ):
+        from engine.md_loader import configure_from_place_path
+        from engine.session import (
+            _entry_point_from_target_geometry,
+            _safe_child_return_anchor,
+        )
+
+        town_path = "places/driftmoor"
+        geometry = configure_from_place_path(town_path).scene_geometry
+
+        # Fallback arrivals (used after sibling transitions) must not use the
+        # old building-center connection marker.
+        fallback = _entry_point_from_target_geometry(
+            town_path, f"{town_path}/{child}", geometry
+        )
+        assert fallback is not None
+        assert fallback[2] == "TOWN_COMMON"
+
+        # A saved threshold that resolves to the footprint is normalized too.
+        saved = _safe_child_return_anchor(
+            geometry, town_path, child, stuck_position
+        )
+        assert saved[2] == "TOWN_COMMON"
+        assert geometry.zone_at(Position(saved[0], saved[1])) == "TOWN_COMMON"
 
     def test_no_transition_for_non_enter_phrase(self):
         from engine.session import _infer_driftmoor_venue_transition
@@ -1221,7 +1267,7 @@ class TestInferDriftmoorVenueTransition:
         expected = {
             "I enter the forge": ("forge", (633.5, 146.0)),
             "I enter the stable": ("stables", (633.5, 97.5)),
-            "I enter the corral": ("corral", (723.0, 113.5)),
+            "I enter the corral": ("corral", (723.0, 54.0)),
         }
         for phrase, (scene_name, point) in expected.items():
             assert _infer_driftmoor_venue_transition(
@@ -1233,6 +1279,21 @@ class TestInferDriftmoorVenueTransition:
             assert doorway is not None
             assert doorway[0] == scene_name
             assert doorway[1][:2] == point
+
+    def test_go_to_stables_through_forge_connection_enters_sibling(self):
+        from engine.session import (
+            _driftmoor_enter_doorway,
+            _infer_driftmoor_venue_transition,
+        )
+
+        phrase = "I go to the stable"
+        assert _infer_driftmoor_venue_transition(
+            phrase, "places/driftmoor/forge", "FORGE"
+        ) == "stables"
+        doorway = _driftmoor_enter_doorway(
+            phrase, "places/driftmoor/forge", "FORGE", None
+        )
+        assert doorway == ("stables", (22.0, 0.0, ""))
 
     def test_explicit_place_identity_supplies_type_and_aliases(self):
         from engine.session import (
@@ -1941,6 +2002,24 @@ class TestRunSessionStub:
         assert all(isinstance(c[2], dict) for c in calls)      # positions snapshot
         # cr carries this character's result (id matches) for live narration.
         assert all(c[3].character_id == c[0] for c in calls)
+
+    def test_scene_transition_stops_remaining_source_initiative(self):
+        """Once an actor crosses a connection, old-scene NPC slots are skipped."""
+        import inspect
+        from engine.session import iter_session
+
+        source = inspect.getsource(iter_session)
+        transition_break = source.index(
+            "if pending_scene_transition is not None:\n                break"
+        )
+        transition_apply = source.index(
+            "if pending_scene_transition is not None:", transition_break + 1
+        )
+        assert transition_break < transition_apply
+        assert (
+            "pending_scene_transition is None\n"
+            "                    and not in_combat and _social_target"
+        ) in source
 
     def test_initiative_determines_order(self, aeliana_session, fennel_session):
         """Characters should act in initiative order (varies by roll)."""

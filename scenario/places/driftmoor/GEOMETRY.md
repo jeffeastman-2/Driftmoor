@@ -39,11 +39,6 @@ buildings do not.
 | road_to_obelisk       | 284 | 698.5 |
 | road_to_old_mill      | 796 | 373.5 |
 | road_to_stonehearth   | 438.5 | 16  |
-| graveyard_center      | 430.5 | 674 |
-| garden_center         | 438.5 | 121.5  |
-| stable_center         | 633.5 | 97.5  |
-| corral_center         | 723 | 113.5  |
-| fisherfolk_center     | 146  | 65  |
 
 ---
 
@@ -85,7 +80,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | GENERAL_STORE    | 5.0      |           | (235,82.5) (317,82.5) (317,177.5) (235,177.5) |
 | FORGE            | 5.0      |           | (602.5,122) (664.5,122) (664.5,170) (602.5,170) |
 | STABLE           | 5.0      |           | (602.5,75.5) (664.5,75.5) (664.5,119.5) (602.5,119.5) |
-| CORRAL           | 5.0      |   false    | (678,69.5) (768,69.5) (768,157.5) (678,157.5) |
+| CORRAL           | 5.0      |   false   | (678,10) (768,10) (768,98) (678,98) |
 | FISHERFOLK       | 5.0      | false     | (150,375) (242.5,375) (242.5,425) (150,425) |
 | BRIDGE           | 4.5      |   false   | (617.5,525) (652.5,525) (652.5,607.5) (617.5,607.5) |
 | GARDEN           | 4.0      |   false   | (333.5,75) (545,75) (545,169) (333.5,169) |
@@ -121,7 +116,7 @@ square/garden (4) over water (3) over the common ground (2) over EXTERIOR (0).
 | to_salt_and_iron       | 520 | 284 | places/driftmoor/salt_and_iron           |
 | to_forge               | 633.5 | 146  | places/driftmoor/forge                   |
 | to_stable              | 633.5 | 97.5  | places/driftmoor/stables                 |
-| to_corral              | 723 | 113.5  | places/driftmoor/corral                  |
+| to_corral              | 723 | 54  | places/driftmoor/corral                  |
 | to_elyssa_cottage      | 723 | 268 | places/driftmoor/elyssa_cottage           |
 | to_apothecary          | 520 | 390 | places/driftmoor/bitter_remedy           |
 | to_gilded_trinket      | 398 | 284 | places/driftmoor/gilded_trinket          |

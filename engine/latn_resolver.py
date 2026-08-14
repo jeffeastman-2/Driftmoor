@@ -34,7 +34,7 @@ from engine.verb_resolver import _find_by_verb, _pick_by_condition, authored_tra
 
 # Object-interaction verbs resolve to an authored Interaction; transfer verbs
 # change possession (and may carry an authored flavor response).
-_INTERACTION_VERBS = {"examine", "search", "read", "open", "press"}
+_INTERACTION_VERBS = {"examine", "search", "read", "open", "press", "touch"}
 _TRANSFER_VERBS = {"take", "drop", "give"}
 # Locomotion verbs whose object/PP names a destination, not a thing to act on.
 _MOVEMENT_VERBS = {"move", "dash"}
