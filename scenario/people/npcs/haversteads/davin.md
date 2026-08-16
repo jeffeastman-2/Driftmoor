@@ -1,10 +1,10 @@
-# Davin Haverstead — Son, age 18
+# Davin Haverstead — Son, age 20
 
 ## Role
 Mill assistant; aspires to more than he can currently do.
 
 ## Physical Description
-Lanky, mop of dark hair, friendly open face. Looks younger than 18, which frustrates him.
+Lanky, mop of dark hair, friendly open face. Looks younger than 20, which frustrates him.
 
 ## Personality and Voice
 - Eager, inexperienced, wants to be useful and often isn't quite.

@@ -1,4 +1,4 @@
-# Gregan Haverstead — Father, age 44
+# Gregan Haverstead — Father, age 46
 
 ## Role
 Mill operator, Old Mill on Greywater River. Head of the Haverstead family.

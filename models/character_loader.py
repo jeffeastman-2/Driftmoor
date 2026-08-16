@@ -412,8 +412,17 @@ def load_all_characters(people_dir: Path) -> list[Character]:
                 continue
 
             if entry.name == "haversteads":
+                # Prefer fully structured NPC directories when present.  Keep
+                # loading the legacy single-file profiles for family members
+                # that have not yet been migrated.
+                migrated_ids: set[str] = set()
+                for family_dir in sorted(entry.iterdir()):
+                    if family_dir.is_dir() and (family_dir / "IDENTITY.md").exists():
+                        characters.append(load_npc(family_dir, character_type="family"))
+                        migrated_ids.add(family_dir.name)
                 for md_file in sorted(entry.glob("*.md")):
-                    characters.append(load_family_npc(md_file))
+                    if md_file.stem not in migrated_ids:
+                        characters.append(load_family_npc(md_file))
 
             elif (entry / "IDENTITY.md").exists():
                 characters.append(load_npc(entry, character_type="npc"))

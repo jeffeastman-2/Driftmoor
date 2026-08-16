@@ -1,15 +1,18 @@
-# Baby Isla — Infant, age 1
+# Isla Haverstead — Young child, age 3
 
 ## Role
-Youngest Haverstead. Usually strapped to Mara's back.
+Youngest Haverstead. Usually playing with dolls and toys in the family living space.
 
 ## Description
-Chubby-cheeked, giggles at the sound of the grinding millstones under normal conditions.
-Has been unusually fussy near the mill's outer walls since the symbols appeared.
-Isla has no information and no agenda. She is, however, a useful barometer.
+Chubby-cheeked and usually absorbed in her dolls and accumulated toys.
+She has no obvious memory of her kidnapping or journey into the forest, but sometimes
+has nightmares about strange creatures she has never knowingly seen. An oddly
+shaped birthmark lies on her stomach; her parents have never discussed it with
+her. Mara takes her to church regularly, and the priest blesses her much more
+than the rest of the family. She remains a useful barometer for nearby wrongness.
 
 ## Note for DM
-Isla's distress near the outer walls is a quiet signal that something wrong is present in the mill structure or the surrounding ground. Animal and infant sensitivity to wrongness is a classic dungeon-master tool — use accordingly.
+Isla's distress near the outer walls is a quiet signal that something wrong is present in the mill structure or the surrounding ground. A young child's sensitivity to wrongness is a useful dungeon-master signal — use accordingly.
 
 ## Combat Statistics
 - **HP:** 3

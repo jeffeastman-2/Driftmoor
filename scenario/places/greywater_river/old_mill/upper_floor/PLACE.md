@@ -1,11 +1,11 @@
 # PLACE.md — Old Mill: Upper Floor
 
 ## Description and Atmosphere
-The family's modest living quarters. A communal sleeping area and a small kitchen. The roof leaks in heavy rain — patches of mismatched wood and plaster mark the repairs. Personal and worn in the way of a family that has lived in the same space for generations. Baby Isla's corner is the tidiest part of the room.
+The family's modest living quarters. A communal sleeping area and a small kitchen. The roof leaks in heavy rain — patches of mismatched wood and plaster mark the repairs. Personal and worn in the way of a family that has lived in the same space for generations. Isla's play corner is the tidiest part of the room.
 
 ## Who Is Normally Here
 - **Mara Haverstead** — kitchen and child care
-- **Baby Isla** — in her corner or strapped to Mara
+- **Isla Haverstead** — playing among her dolls and toys
 - **Tessa Haverstead** — when she is actually here and not exploring
 - The rest of the family sleeps here
 
@@ -15,5 +15,5 @@ The family's modest living quarters. A communal sleeping area and a small kitche
 ## Dynamic State
 *(Updated by monitor agent)*
 
-- **Current occupants:** Mara, Isla during the day
+- **Current occupants:** Mara and Isla during the day
 - **Active conditions:** Isla unusually fussy near the outer walls since symbols appeared

@@ -26,7 +26,7 @@
 This is an exploration/social scene at the mill. No combat expected.
 The symbols on the beams match obelisk-related markings found elsewhere.
 Tessa has secret rubbings of the symbols and cannot stop asking questions about the far-off obelisk they seem to point to.
-Baby Isla's distress near the outer walls is a barometer of the corruption.
+Isla's distress near the outer walls is a barometer of the corruption.
 Gregan is suspicious of strangers and will not open up easily.
 Tessa will share information privately if she trusts the cleric.
 
@@ -48,7 +48,7 @@ Characters may leave this scene. Recognise and permit these:
 ## Scene Introductions
 
 ### lilar
-You followed the river road to the Old Mill after hearing reports of strange symbols and a shadowbeast attack on a farmer. The mill is large, stone, two stories. The waterwheel groans. Inside, flour dust hangs in the air. Gregan Haverstead is at the grinding stones — broad, graying, flour-dusted. He looked up when you entered and has not smiled. His daughter Tessa, about fourteen, is near the far wall doing something with the support beams she stopped as soon as she saw you. You can see marks carved into the wood — dark, deliberate, unlike any mason's or carpenter's work you know. A baby cries from upstairs.
+You followed the river road to the Old Mill after hearing reports of strange symbols and a shadowbeast attack on a farmer. The mill is large, stone, two stories. The waterwheel groans. Inside, flour dust hangs in the air. Gregan Haverstead is at the grinding stones — broad, graying, flour-dusted. He looked up when you entered and has not smiled. His daughter Tessa is near the far wall doing something with the support beams she stopped as soon as she saw you. You can see marks carved into the wood — dark, deliberate, unlike any mason's or carpenter's work you know. A young child plays in the family rooms upstairs.
 
 ## Game State Sections
 - header: Scene: The Old Mill | file: scenario/places/greywater_river/old_mill/PLACE.md

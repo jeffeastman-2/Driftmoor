@@ -1,4 +1,4 @@
-# Tessa Haverstead — Daughter, age 14
+# Tessa Haverstead — Daughter, age 16
 
 ## Role
 Mill assistant; self-appointed mechanic; unauthorized explorer.

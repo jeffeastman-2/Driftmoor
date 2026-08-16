@@ -19,38 +19,38 @@ The Haverstead family has run this mill for generations. It is essential to the 
 - **Mara Haverstead** — managing household, helping with customers
 - **Davin Haverstead** — assisting where he can
 - **Tessa Haverstead** — quick with repairs, often elsewhere
-- **Baby Isla** — strapped to Mara's back
+- **Isla Haverstead** — playing with dolls and toys in the family living space
 
 ## Resident NPCs and Creatures
 
 ### gregan
 - **type:** npc
-- **soul_file:** scenario/people/npcs/haversteads/gregan.md
-- **identity_file:** scenario/people/npcs/haversteads/gregan.md
+- **soul_file:** scenario/people/npcs/haversteads/gregan/SOUL.md
+- **identity_file:** scenario/people/npcs/haversteads/gregan/IDENTITY.md
 - **position:** 130, 97
-
-### tessa
-- **type:** npc
-- **soul_file:** scenario/people/npcs/haversteads/tessa.md
-- **identity_file:** scenario/people/npcs/haversteads/tessa.md
-- **position:** 156, 91
 
 ### mara
 - **type:** npc
-- **soul_file:** scenario/people/npcs/haversteads/mara.md
-- **identity_file:** scenario/people/npcs/haversteads/mara.md
+- **soul_file:** scenario/people/npcs/haversteads/mara/SOUL.md
+- **identity_file:** scenario/people/npcs/haversteads/mara/IDENTITY.md
 - **position:** 105, 68
 
 ### davin
 - **type:** npc
-- **soul_file:** scenario/people/npcs/haversteads/davin.md
-- **identity_file:** scenario/people/npcs/haversteads/davin.md
+- **soul_file:** scenario/people/npcs/haversteads/davin/SOUL.md
+- **identity_file:** scenario/people/npcs/haversteads/davin/IDENTITY.md
 - **position:** 70, 50
+
+### tessa
+- **type:** npc
+- **soul_file:** scenario/people/npcs/haversteads/tessa/SOUL.md
+- **identity_file:** scenario/people/npcs/haversteads/tessa/IDENTITY.md
+- **position:** 156, 91
 
 ### isla
 - **type:** npc
-- **soul_file:** scenario/people/npcs/haversteads/isla.md
-- **identity_file:** scenario/people/npcs/haversteads/isla.md
+- **soul_file:** scenario/people/npcs/haversteads/isla/SOUL.md
+- **identity_file:** scenario/people/npcs/haversteads/isla/IDENTITY.md
 - **position:** 105, 68
 
 ## Scene Introductions
@@ -62,13 +62,13 @@ You are at the grinding stones where you spend your days, flour in your beard, t
 You are near the support beams — where you should not be — a half-finished charcoal rubbing of the carved symbols palmed into your apron the instant anyone glances your way. You have seen these marks before — out on the riverbank stones, close to home — and you cannot stop asking every traveler who passes about the obelisk far off through the Mistwood, sure the marks must trace back to it. You are certain they mean something no one else has bothered to work out. Your father watches from the grinding stones; he has caught you at the beams too many times. You are quick with your hands and quicker to notice what adults miss, and far more honest with strangers than with your parents. If someone turned up who might actually know what the symbols are, you would want to ask — just not where your father can hear.
 
 ### mara
-You move through the mill and yard the way you always have — steadying Gregan when he goes rigid, keeping the children fed and customers welcomed, flour on your apron and Baby Isla warm against your back. But the house has felt wrong for weeks. The river and fields carry a mood you cannot name, Isla frets whenever you pass the outer walls, and Tessa vanishes toward places she will not admit to. You hold the family together because someone must, and you take the measure of newcomers closely — not unkindly, but with a mother's arithmetic. Once you decide a stranger can be trusted, you will tell them plainly what your husband never would.
+You move through the mill and yard the way you always have — steadying Gregan when he goes rigid, keeping the children fed and customers welcomed, flour on your apron. But the house has felt wrong for a long time. The river and fields carry a mood you cannot name, Isla frets whenever she passes the outer walls, and Tessa vanishes toward places she will not admit to. You hold the family together because someone must, and you take the measure of newcomers closely — not unkindly, but with a mother's arithmetic. Once you decide a stranger can be trusted, you will tell them plainly what your husband never would.
 
 ### davin
 You are somewhere between chores, doing the work your father half-lets you do and wishing he would trust you with more. Eighteen and looking younger, which galls you. The mill has been tense lately — the symbols, the shadowbeast stories the farmers bring, the way your parents go quiet — and you have listened harder than they realize: you know which farmers truly saw the shadowbeast out in the Mistwood and which are only talking. Mostly you are hungry for the wider world. When travelers pass through you light up, and you will ask them question after question until someone tells you to stop — and then think of one more.
 
 ### isla
-You are one year old, chubby and warm against your mother's back, and the world is sounds and smells and the big turning noise of the millstones that usually makes you laugh. But lately, near certain walls, the good feeling curdles into something that makes you squirm and fuss and cry without knowing why. You have no words and no plans. You only feel — and when the wrongness in the old stone presses close, you are the first in the family to know it, even if no one understands what your crying means.
+You are a young child playing in the family living space with dolls and toys accumulated over your short life. You have no obvious memory of being kidnapped and taken to a ritual in the forest. Sometimes you wake from nightmares of strange creatures you have never knowingly seen. An oddly shaped birthmark lies on your stomach, but your parents never speak of it. Your mother takes you to church regularly, where the priest blesses you much more than the others in your family. Most of the time you simply play; when wrongness presses close, you feel it before anyone can explain it.
 
 ## Connections
 - River road from Driftmoor (2 hours downstream by raft, longer on foot)

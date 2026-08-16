@@ -1,4 +1,4 @@
-# Mara Haverstead — Mother, age 40
+# Mara Haverstead — Mother, age 42
 
 ## Role
 Mill household manager; assists with milling and customer relations.
@@ -20,7 +20,7 @@ Kind-faced, auburn hair tied in a scarf, flour smudged on her apron. Moves warml
 ## What She Knows
 - More about Tessa's wandering than she has told Gregan
 - The mood of the river and surrounding fields has changed — she can't name it but she notices it
-- Baby Isla has been unusually fussy near the mill's outer walls since the symbols appeared
+- Isla has been unusually fussy near the mill's outer walls since the symbols appeared
 
 ## Combat Statistics
 - **HP:** 10
