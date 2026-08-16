@@ -32,6 +32,10 @@ _VERB_LEXICON: list[tuple[str, list[str]]] = [
     ("read", ["read", "decipher", "transcribe"]),
     ("open", ["open", "unseal", "break the seal"]),
     ("press", ["press", "push", "depress", "tap", "trigger", "activate"]),
+    # Physical inspection. "measure" intentionally resolves to an authored
+    # touch/measure interaction because CONTENTS.md stores slash aliases under
+    # the first canonical verb.
+    ("touch", ["touch", "feel", "handle", "measure"]),
 ]
 
 

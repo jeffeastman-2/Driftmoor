@@ -56,6 +56,32 @@ def test_shallow_fallback_when_latn_does_not_ground():
     assert r is not None and r[0].id == "patch"
 
 
+@pytest.mark.parametrize("command", [
+    "I touch the tracks",
+    "I measure the tracks",
+])
+def test_physical_inspection_verbs_resolve_authored_tracks(command):
+    cfg = __import__(
+        "engine.md_loader", fromlist=["configure_from_place_path"]
+    ).configure_from_place_path("places/driftmoor/stables")
+    chars = _scene()[1]
+
+    result = latn_integration.resolve_item_interaction(
+        intent_text=command,
+        interaction_target=None,
+        items=cfg.items,
+        characters=chars,
+        character_zone="STABLES",
+        scene_geometry=cfg.scene_geometry,
+    )
+
+    assert result is not None
+    item, interaction = result
+    assert item.id == "clawed_tracks"
+    assert interaction.verb == "touch"
+    assert "adult hand" in interaction.response
+
+
 def test_npc_actor_also_uses_latn():
     # No human-only gate any more: an LLM NPC grounds via LATN too.
     items, chars = _scene()
@@ -136,6 +162,22 @@ def test_resolve_query_what_can_you_sell_me_lists_catalog():
         ans = latn_integration.resolve_query(
             question, {}, {}, "", catalog=entries)
         assert ans is not None and ans.startswith("For sale:") and "Bolts (20)" in ans
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "what do you have to sell me?",
+        "what do you have for sale?",
+        "what do you have to sell?",
+        "do you have anything to sell?",
+    ],
+)
+def test_resolve_query_answers_empty_catalog_without_dm_fallback(question):
+    ans = latn_integration.resolve_query(
+        question, {}, {}, "", catalog=[]
+    )
+    assert ans == "Nothing is listed for sale here."
 
 
 def test_resolve_query_declines_non_question():

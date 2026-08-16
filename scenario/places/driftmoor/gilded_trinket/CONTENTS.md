@@ -73,7 +73,7 @@ This table is the authoritative runtime inventory for this place.
 | rare_item_search | Rare item search |  |  | tavian | 5 gp upfront | service |  | public | Uses contacts; days to weeks |
 | strange_stone_amulet | Strange Stone Amulet |  | merchant_stock | tavian | 25 gp (as curio) | magical | holdable, wearable | public | Hums faintly when held. |
 | cracked_compass | Cracked Compass |  | merchant_stock | tavian | 10 gp (as oddity) | magical | holdable | public | Points to something other than north — Tav claims it's magical. |
-| ornate_dagger_gilded_trinket | Ornate Dagger (Gilded Trinket) |  | merchant_stock | tavian | 35 gp | magical | holdable | public | Beautifully crafted with an inscription in an unknown language. |
+| ornate_dagger_gilded_trinket | Ornate Dagger |  | merchant_stock | tavian | 35 gp | magical | holdable | public | Beautifully crafted with an inscription in an unknown language. |
 | porcelain_music_box | Porcelain Music Box |  | merchant_stock | tavian | 20 gp | magical | holdable | public | Plays a haunting melody when wound, slightly chipped. |
 
 ## Runtime Thing Details

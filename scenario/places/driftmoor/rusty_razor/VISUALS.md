@@ -3,8 +3,8 @@
 | id | asset | target | x | y | width | height | rotation | layer |
 |---|---|---|---:|---:|---:|---:|---:|---|
 | central_rug_visual | ../floor_assets/rug.svg | central_rug | 6.536 | 5.611 | 6.5 | 4.7 | 0 | floor_decor |
-| first_barber_chair_visual | floor/assets/barber_chair.svg | barber_chair_3.25 | 4.82 | 5.588 | 3.2 | 4.2 | 0 | fixture |
-| second_barber_chair_visual | floor/assets/barber_chair.svg | barber_chair_6.5 | 8.34 | 5.574 | 3.2 | 4.2 | 0 | fixture |
+| first_barber_chair_visual | floor/assets/barber_chair.svg | barber_chair_3.25 | 4.82 | 5.588 | 3.2 | 4.2 | 180 | fixture |
+| second_barber_chair_visual | floor/assets/barber_chair.svg | barber_chair_6.5 | 8.34 | 5.574 | 3.2 | 4.2 | 180 | fixture |
 | mirror_visual | floor/assets/mirror.svg | mirror | 6.5 | 11 | 7 | 1.4 | 0 | wall |
 | tonic_shelf_visual | floor/assets/tonic_shelf.svg | tonic_shelf | 1.678 | 9.962 | 2.4 | 3.8 | 0 | fixture |
 | stove_visual | floor/assets/potbelly_stove.svg | potbelly_stove | 10.826 | 10.293 | 2.5 | 2.5 | 0 | fixture |

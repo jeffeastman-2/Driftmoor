@@ -23,7 +23,6 @@ Ovens and workspace behind. Chimney on the north wall.
 | front_counter   | 9.5  | 5.129  |
 | ovens           | 3.716  | 13.543  |
 | workspace       | 7.139  | 9.914  |
-| chimney         | 9.5  | 16 |
 | display_shelves | 2.035  | 2.793  |
 | bread_display   | 16.189 | 2.389  |
 | flour_sacks     | 16.638   | 13.543   |

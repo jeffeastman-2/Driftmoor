@@ -139,10 +139,15 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
             str(getattr(t, "word", "") or "").strip().lower()
             for t in tokens
         }
-        if not (catalog and "what" in surfaces
+        asks_inventory = "what" in surfaces or bool(
+            surfaces & {"anything", "something", "goods", "wares"}
+        )
+        if not (asks_inventory
                 and any(latn_resolver._isa(t, "sell") or latn_resolver._isa(t, "buy")
                         for t in tokens)):
             return None
+        if not catalog:
+            return "Nothing is listed for sale here."
         listed = ", ".join(
             f"{e.name} ({format_coins(e.listed_price_cp)})" for e in catalog)
         return f"For sale: {listed}."
@@ -193,6 +198,23 @@ def resolve_query(intent_text, items, characters, actor_zone, catalog,
         listed = ", ".join(
             f"{e.name} ({format_coins(e.listed_price_cp)})" for e in entries)
         return f"For sale: {listed}."
+
+    # A recognized catalog question remains engine-answerable when the catalog
+    # is empty.  Falling through would misleadingly ask the DM model to invent
+    # stock (or produce silence when no model is configured).
+    if not entries and rq.wh_word == "what" and re.search(
+        r"\b(?:sell|sale|buy)\b", query_text
+    ):
+        return "Nothing is listed for sale here."
+
+    # Yes/no inventory phrasing ("do you have anything to sell?") is the same
+    # catalog request, not an invitation for the DM to invent merchandise.
+    if not entries and re.search(
+        r"\b(?:do|have|is|are)\b.*\b(?:anything|something|goods?|wares?)\b"
+        r".*\b(?:sell|sale|buy)\b",
+        query_text,
+    ):
+        return "Nothing is listed for sale here."
 
     return None
 
