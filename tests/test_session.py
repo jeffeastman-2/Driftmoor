@@ -1193,6 +1193,55 @@ class TestInferDriftmoorVenueTransition:
         )
         assert out == "driftmoor"
 
+    def test_leave_driftmoor_returns_to_regional_scene(self):
+        from engine.session import (
+            _driftmoor_place_registry,
+            _infer_driftmoor_venue_transition,
+            _transition_target_place_path,
+        )
+
+        region = next(
+            node for node in _driftmoor_place_registry()
+            if node.place_path == "places"
+        )
+        assert region.parent_place_path == ""
+        assert _infer_driftmoor_venue_transition(
+            "I leave Driftmoor", "places/driftmoor", "TOWN_COMMON"
+        ) == "places"
+        assert _transition_target_place_path(
+            "places", "places/driftmoor"
+        ) == "places"
+
+    def test_regional_scene_reenters_driftmoor_with_reciprocal_arrivals(self):
+        from engine.md_loader import configure_from_place_path
+        from engine.session import (
+            _driftmoor_enter_doorway,
+            _entry_point_from_target_geometry,
+            _infer_driftmoor_venue_transition,
+        )
+
+        region = configure_from_place_path("places")
+        assert _infer_driftmoor_venue_transition(
+            "I enter the town", "places", "DRIFTMOOR_TOWN"
+        ) == "driftmoor"
+        # A regional destination is not treated as a town-scale doorway.
+        assert _driftmoor_enter_doorway(
+            "I enter the town", "places", "DRIFTMOOR_TOWN",
+            region.scene_geometry,
+        ) is None
+        assert _entry_point_from_target_geometry(
+            "places", "places/driftmoor", region.scene_geometry
+        ) == (30631.0, 28518.0, "DRIFTMOOR_TOWN")
+
+        town = configure_from_place_path("places/driftmoor")
+        arrival = _entry_point_from_target_geometry(
+            "places/driftmoor", "places", town.scene_geometry
+        )
+        assert arrival is not None
+        assert town.scene_geometry.zone_at(
+            Position(arrival[0], arrival[1])
+        ) is not None
+
     @pytest.mark.parametrize(
         "child,stuck_position",
         [

@@ -5,14 +5,16 @@
 - **name:** The Region Around Driftmoor
 - **place_path:** places/
 - **z_level:** 0.0
-- **width:** 211250.0
-- **height:** 211250.0
+- **width:** 126750.0
+- **height:** 169000.0
 - **origin:** 0.0, 0.0, 0.0
 
 Notes: World coordinate origin at southwest corner of regional map.
 X increases east, Y increases north. Sea level = 0.0. All child
 place origins are expressed in these world coordinates. The regional
-map is roughly 211.25km x 211.25km. Driftmoor town sits at approximately
+mapped land is roughly 126.75km west-to-east by 169km south-to-north.
+Its outline follows the hand-drawn regional map rather than a square survey
+grid. Driftmoor town sits at approximately
 (29575,27462) — on the coast where the Greywater meets the Azure Sea.
 The Obelisk Reach is ~105.62km north-northwest of town.
 
@@ -20,104 +22,78 @@ The Obelisk Reach is ~105.62km north-northwest of town.
 
 ## Landmarks
 
-| name                   | x       | y       |
-|------------------------|---------|---------|
-| driftmoor_town_center  | 30631  | 28518  |
-| harbor_mouth           | 25350  | 27462  |
-| greywater_river_mouth  | 32743  | 31687  |
-| willowford_bridge      | 50700  | 40137  |
-| old_mill               | 57037  | 45418  |
-| watchtower_hill        | 64431  | 101400  |
-| fey_glade              | 76282  | 120497 |
-| mistwood_center        | 73937  | 110906 |
-| obelisk_reach_edge     | 36968  | 135200 |
-| shattered_obelisk      | 35912  | 145762 |
-| echoing_caverns_mouth  | 39081  | 142593 |
-| sea_stacks_cluster     | 12675  | 61262  |
-| drowned_isle           | 9506   | 46475  |
-| plains_center          | 105625 | 21125  |
-| willowford_ford        | 48587  | 38025  |
-
----
+| name | x | y | z | label | destination |
+|---|---|---|---|---|---|
+| old_mill | 57037 | 45418 | 0 | Old Mill | places/greywater_river/old_mill |
 
 ## Zones
 
-Zone order matters — first match wins in zone_at(). EXTERIOR must be last.
-Sub-zones appear before their parent zones.
-
 | name | render_z | auto_wall | vertices |
-|-----------------------|----------|---------|-----------------------------------------------------------------------------|
-| DRIFTMOOR_TOWN | 31.69 |  | (27462,25350) (33800,25350) (33800,32743) (27462,32743) |
-| HARBOR | 31.69 |  | (22181,25350) (28518,25350) (28518,31687) (22181,31687) |
-| GREYWATER_RIVER | 21.12 |  | (31687,30631) (34856,30631) (60206,47531) (55981,47531) (30631,32743) |
-| OLD_MILL_SITE | 31.69 |  | (54925,43306) (60206,43306) (60206,48587) (54925,48587) |
-| OBELISK_REACH | 21.12 |  | (27462,121468) (52812,121468) (54925,158437) (25350,158437) |
-| SHATTERED_OBELISK | 31.69 |  | (32743,142593) (39081,142593) (39081,149987) (32743,149987) |
-| ECHOING_CAVERNS | 31.69 |  | (36968,139425) (42250,139425) (42250,145762) (36968,145762) |
-| FEY_GLADE | 31.69 |  | (75754,119968) (76810,119968) (76810,121025) (75754,121025) |
-| MISTWOOD_HILLS | 10.56 |  | (44362,73937) (116187,73937) (116187,153156) (44362,153156) |
-| FARMS_AND_FIELDS | 10.56 |  | (33800,31687) (68656,31687) (68656,58093) (33800,58093) |
-| PLAINS_OF_STONEHEARTH | 10.56 |  | (33800,0) (211250,0) (211250,73937) (33800,73937) |
-| AZURE_SEA | 10.56 |  | (0,0) (23237,0) (25350,33800) (21125,89781) (0,89781) |
-| EXTERIOR | 0.0 |  | (0,0) (211250,0) (211250,211250) (0,211250) |
----
+|---|---|---|---|
+| MISTWOOD_FOREST | 20 | false | (23420,37697) (25940,60167) (23820,86079) (20160,107000) (44104,127083) (46627,146999) (37562,166823) (126562,168637) (124338,89376) (100081,84100) (79706,80622) (62701,75180) (40219,46471) |
+| FARMS_AND_FIELDS | 20 | false | (59449,41521) (66864,57662) (98208,58024) (98912,39053) (73264,23510) (48118,20208) (42420,35170) |
+| WESTERN_CLIFFS | 20 | false | (17642,69089) (19452,93163) (15560,111908) (8964,128085) (-844,130605) (9373,109973) (12675,92950) |
+| HARBOR | 20 | false | (19429,26277) (25150,24776) (24082,34555) (20132,32272) |
+| DRIFTMOOR_TOWN | 10 | false | (25202,25044) (38527,29057) (35134,39584) (24174,35012) |
+| AZURE_SEA | 10 | false | (0,0) (20434,379) (25202,25044) (38527,29057) (24174,35012) (16900,73937) (9399,110064) (-359,130155) (0,169000) |
+| GREYWATER_VALLEY | 10 | false | (35134,39584) (44362,47531) (62318,67599) (78911,77311) (103176,78008) (124391,87529) (124587,68070) (90530,59646) (64741,48899) (48587,33743) (38527,29057) |
+| MISTWOOD_HILLS | 10 | false | (16900,73937) (9399,110064) (29575,116187) (42250,128862) (44826,146410) (32021,167358) (126750,169000) (124391,87529) (103176,78008) (78911,77311) (62318,67599) (44362,47531) (35134,39584) (24174,35012) |
+| OBELISK_REACH | 10 | false | (9399,110064) (-359,130155) (0,169000) (32021,167358) (44826,146410) (42250,128862) (29575,116187) |
+| PLAINS_OF_STONEHEARTH | 10 | false | (20434,379) (126750,0) (124587,68070) (90530,59646) (64741,48899) (48587,33743) (38527,29057) (25202,25044) |
+| EXTERIOR | 0 | false | (0,0) (126750,0) (126750,169000) (0,169000) |
 
 ## Walls
 
 - **auto_wall:** false
 
-This is the world/region map: DRIFTMOOR_TOWN, HARBOR, ECHOING_CAVERNS
-etc. are whole regions connected by travel and roads, not rooms with
-doors — none of the zones here share a coincident edge with any other,
-so auto-wall's per-zone perimeter pass would seal every one of them
-into an isolated, unreachable box with no door to carve a gap in.
+Regional face edges are map boundaries, not movement-blocking walls.
 
 ## Impassable
 
-| description             | vertices                                                         |
-|-------------------------|------------------------------------------------------------------|
-| Azure Sea open water    | (0,0) (23237,0) (25350,33800) (21125,89781) (0,89781)                 |
-| Obelisk Reach cliffs    | (25350,137312) (29575,137312) (29575,163718) (25350,163718)              |
-| Mistwood interior — no path | (58093,89781) (100343,89781) (100343,137312) (58093,137312)            |
-
----
+| description | vertices |
+|---|---|
 
 ## Connections
 
-| name                  | x       | y       | destination                               |
-|-----------------------|---------|---------|-------------------------------------------|
-| to_driftmoor_town     | 30631  | 28518  | places/driftmoor                          |
-| to_harbor             | 24293  | 28518  | places/driftmoor/harbor                   |
-| to_old_mill           | 57037  | 45418  | places/greywater_river/old_mill           |
-| to_willowford_bridge  | 50700  | 40137  | places/greywater_river/willowford_bridge  |
-| to_obelisk_reach      | 36968  | 135200 | places/obelisk_reach                      |
-| to_echoing_caverns    | 39081  | 142593 | places/obelisk_reach/echoing_caverns      |
-| to_fey_glade_trail    | 68656  | 97175  | places/mistwood_hills/fey_glade           |
-| to_watchtower         | 64431  | 101400  | places/mistwood_hills/old_watchtower      |
-| to_drowned_isle       | 9506   | 46475  | places/azure_sea/drowned_isle             |
-| to_plains             | 105625 | 21125  | places/plains_of_stonehearth              |
+| name | x | y | destination |
+|---|---|---|---|
+| to_driftmoor | 30631 | 28518 | places/driftmoor |
+| to_azure_sea | 9506 | 46475 | places/azure_sea |
+| to_greywater_valley | 57037 | 45418 | places/greywater_river |
+| to_mistwood_hills | 68656 | 97175 | places/mistwood_hills |
+| to_obelisk_reach | 36968 | 135200 | places/obelisk_reach |
+| to_plains | 105625 | 21125 | places/plains_of_stonehearth |
 
----
+## Routes
+
+| name | kind | color | width | vertices |
+|---|---|---|---|---|
+| Greywater River | river | #587f91 | 1800 | (124528,72271) (117293,72184) (110853,75254) (102969,74512) (97758,71469) (94728,64791) (88539,62038) (81210,63433) (74968,65735) (65562,64588) (58991,59981) (57875,51565) (56844,44256) (51168,41800) (46764,43369) (41309,40982) (38314,36926) (32475,35067) (28146,32572) (24485,30489) |
+| Gold Run | river | #6f98aa | 900 | (118658,109472) (112820,101676) (112816,94057) (110248,87095) (103644,84896) (99277,80153) (98255,71310) |
+| Blackwater River | river | #486b79 | 1100 | (107306,132269) (97522,120333) (94276,108345) (93513,96062) (88653,84552) (81120,74288) (73789,66972) |
+| Fanghorn | river | #668d9c | 750 | (26859,128425) (37250,114826) (49934,109031) (61940,110653) (68482,101743) (77889,95922) (83266,77477) |
+| Misty | river | #82a9b5 | 700 | (84546,157231) (86393,137784) (76279,122750) (79261,109638) (77772,95684) |
+| Obelisk Trail | trail | #6d5639 | 650 | (31669,37652) (32743,50700) (30631,76050) (27462,101400) (23887,122234) (8310,145343) |
+| Greywater Road | road | #765f42 | 900 | (36243,33645) (42605,37167) (45865,38357) (58445,41698) (62318,59150) (72310,62835) (87024,58968) (95059,61434) (99590,69087) (108595,71484) (124606,69191) |
+| Stonehearth Road | road | #765f42 | 900 | (34741,27741) (43750,26922) (47189,18446) (71696,21696) (91178,379) |
+| Mistwood Trail | trail | #6d5639 | 650 | (50499,39333) (50071,45303) (48592,60156) (57662,75329) (55023,87013) (59345,101080) |
+| Coast Path | trail | #6d5639 | 550 | (23302,1400) (26336,15888) (27215,24159) (24155,46026) (18895,74028) |
 
 ## Boundaries
 
-### Obelisk Reach Distortion Field
+No regional boundaries are authored outside the editable region and sub-zone layers.
 
-- **type:** magical
-- **blocks:** none
-- **effect:** perception checks degraded, compasses spin, light sources flicker
-- **vertices:** (27462,121468) (52812,121468) (54925,158437) (25350,158437)
+## Map Styles
 
-### Azure Sea — Open Water
-
-- **type:** physical
-- **blocks:** land_creature
-- **effect:** impassable without vessel or swimming ability; cold, strong tides
-- **vertices:** (0,0) (23237,0) (25350,33800) (21125,89781) (0,89781)
-
-### Mistwood Disorientation Zone
-
-- **type:** magical
-- **blocks:** none
-- **effect:** paths shift — navigation DC 158.44 or party becomes lost; whispers audible
-- **vertices:** (58093,89781) (100343,89781) (100343,137312) (58093,137312)
+| target | fill |
+|---|---|
+| AZURE_SEA | #7897a3 |
+| DRIFTMOOR_TOWN | #9b7658 |
+| GREYWATER_VALLEY | #87976b |
+| MISTWOOD_HILLS | #657958 |
+| OBELISK_REACH | #8c8175 |
+| PLAINS_OF_STONEHEARTH | #b5a86e |
+| MISTWOOD_FOREST | #4f6b48 |
+| FARMS_AND_FIELDS | #bca96a |
+| WESTERN_CLIFFS | #746f68 |
+| HARBOR | #7897a3 |

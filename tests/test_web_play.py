@@ -10,6 +10,50 @@ import json
 import web_play
 
 
+def test_geometry_reload_applies_compiled_file_without_resetting_scene(tmp_path, monkeypatch):
+    geometry = tmp_path / "GEOMETRY.md"
+    geometry.write_text("## Zones\n", encoding="utf-8")
+    reloaded = []
+    scene_geometry = NS(
+        place_path="places",
+        reload_from=lambda fresh: reloaded.append(fresh),
+    )
+    cfg = NS(
+        geometry_path=geometry,
+        scene_geometry=scene_geometry,
+        game_time=object(),
+    )
+    app = {"runtime": {"config": cfg}}
+    fresh_geometry = object()
+    monkeypatch.setattr(
+        web_play,
+        "configure_from_place_path",
+        lambda place_path, game_time: NS(scene_geometry=fresh_geometry),
+    )
+    rendered = []
+    monkeypatch.setattr(web_play, "_render_map", lambda target: rendered.append(target))
+
+    web_play._reload_geometry_from_disk(app)
+
+    assert reloaded == [fresh_geometry]
+    assert rendered == [app]
+    assert app["geometry_stamp"] == web_play._geometry_stamp(app)
+
+
+def test_rewrite_routes_updates_only_matching_route_vertices():
+    source = (
+        "## Routes\n\n"
+        "| name | kind | vertices |\n|---|---|---|\n"
+        "| Greywater River | river | (1,2) (3,4) |\n"
+        "| Old Road | road | (5,6) (7,8) |\n\n## Boundaries\n"
+    )
+    updated = web_play._rewrite_routes(source, [{
+        "name": "Greywater River", "vertices": [(10.0, 20.0), (30.0, 40.0)]
+    }])
+    assert "| Greywater River | river | (10,20) (30,40) |" in updated
+    assert "| Old Road | road | (5,6) (7,8) |" in updated
+
+
 def test_turn_entries_preserve_player_action_for_reload(tmp_path):
     checkpoint = {
         "turn": 4,
@@ -180,6 +224,16 @@ def test_latest_web_checkpoint_dir_selects_newest_checkpointed_run(tmp_path):
     (new / "day1_19h10m.json").write_text('{"turn": 2}', encoding="utf-8")
 
     assert web_play._latest_web_checkpoint_dir("driftmoor", tmp_path) == new
+
+
+def test_visited_places_are_loaded_from_session_history(tmp_path):
+    (tmp_path / "day1_1.json").write_text(
+        json.dumps({"scene_place_path": "places/greywater_river/old_mill"}),
+        encoding="utf-8",
+    )
+    assert web_play._visited_place_paths(tmp_path, "places/") == {
+        "places", "places/greywater_river/old_mill",
+    }
 
 
 def test_resume_place_infers_elyssa_cottage_for_legacy_checkpoint():

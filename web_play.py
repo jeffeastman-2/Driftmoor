@@ -88,6 +88,20 @@ def _latest_checkpoint_data(checkpoint_dir: Path) -> dict:
     return max(records, key=lambda record: (record[0], record[1]))[2] if records else {}
 
 
+def _visited_place_paths(checkpoint_dir: Path, current: str) -> set[str]:
+    """Place paths recorded in this viewer's durable session history."""
+    visited = {current.strip("/")}
+    for path in checkpoint_dir.glob("day*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+        place = str(data.get("scene_place_path") or "").strip("/")
+        if place:
+            visited.add(place)
+    return visited
+
+
 def _resume_place_path(scene: str, checkpoint: dict) -> str:
     """Current authored place, including inference for pre-metadata saves."""
     authored = str(checkpoint.get("scene_place_path") or "").strip().strip("/")
@@ -380,22 +394,58 @@ def _rewrite_initial_positions(
     return text[:match.start(1)] + updated + text[match.end(1):]
 
 
-async def handle_refresh_geometry(request: web.Request) -> web.Response:
-    """Re-parse the current place's GEOMETRY.md and apply it to the live
-    scene_geometry in place, so manual file edits (or edits made outside the
-    layout editor's own save path) take effect without exiting and
-    re-entering the scene. Character positions, inventory, and fog-of-war
-    progress are untouched — only zones/walls/landmarks/connections reload."""
-    cfg = _rt(request.app)["config"]
+def _rewrite_routes(text: str, routes: list[dict]) -> str:
+    """Replace authored Routes rows with validated editor coordinates."""
+    match = re.search(r"(##\s+Routes\b.*?)(?=\n##\s+|\Z)", text, re.DOTALL)
+    if not match:
+        return text
+    section = match.group(1)
+    by_name = {route["name"]: route for route in routes}
+
+    def replace_row(row: re.Match) -> str:
+        name = row.group(2).strip()
+        route = by_name.get(name)
+        if route is None:
+            return row.group(0)
+        vertices = " ".join(f"({x:g},{y:g})" for x, y in route["vertices"])
+        return f"{row.group(1)}{vertices} {row.group(3)}"
+
+    updated = re.sub(
+        r"^(\|\s*([^|]+?)\s*\|\s*[^|]+?\s*\|\s*)[^|]+(\|\s*)$",
+        replace_row, section, flags=re.MULTILINE,
+    )
+    return text[:match.start(1)] + updated + text[match.end(1):]
+
+
+def _geometry_stamp(app: web.Application) -> tuple[str, int, int] | None:
+    """Return a cheap identity for the active runtime geometry file."""
+    cfg = _rt(app)["config"]
+    path = Path(cfg.geometry_path).resolve()
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return str(path), stat.st_mtime_ns, stat.st_size
+
+
+def _reload_geometry_from_disk(app: web.Application) -> None:
+    """Reload only geometry, preserving the running scene and party state."""
+    cfg = _rt(app)["config"]
     sg = getattr(cfg, "scene_geometry", None)
     if sg is None or not getattr(sg, "place_path", ""):
-        raise web.HTTPBadRequest(text="no active place to refresh")
+        raise ValueError("no active place to refresh")
+    fresh_cfg = configure_from_place_path(sg.place_path, game_time=cfg.game_time)
+    sg.reload_from(fresh_cfg.scene_geometry)
+    app["geometry_stamp"] = _geometry_stamp(app)
+    _render_map(app)
+
+
+async def handle_refresh_geometry(request: web.Request) -> web.Response:
+    """Re-parse the active GEOMETRY.md without resetting gameplay state."""
     try:
-        fresh_cfg = configure_from_place_path(sg.place_path, game_time=cfg.game_time)
+        _reload_geometry_from_disk(request.app)
     except Exception as exc:  # noqa: BLE001 — surface the parse error to the editor
         raise web.HTTPBadRequest(text=f"failed to reload geometry: {exc}") from None
-    sg.reload_from(fresh_cfg.scene_geometry)
-    _render_map(request.app)
     return web.json_response({"ok": True})
 
 
@@ -530,6 +580,51 @@ async def handle_map_visuals(request: web.Request) -> web.Response:
     })
 
 
+async def handle_map_routes(request: web.Request) -> web.Response:
+    """Persist draggable regional route vertices to the active GEOMETRY.md."""
+    data = await request.json()
+    raw_routes = data.get("routes")
+    if not isinstance(raw_routes, list) or not raw_routes or len(raw_routes) > 50:
+        raise web.HTTPBadRequest(text="routes must be a non-empty list")
+
+    cfg = _rt(request.app)["config"]
+    geometry_path = Path(cfg.geometry_path).resolve()
+    geometry_text = geometry_path.read_text(encoding="utf-8")
+    from engine.map_renderer import parse_geometry
+    authored = {
+        name: len(vertices)
+        for name, _kind, vertices in parse_geometry(geometry_text)["routes"]
+    }
+    routes: list[dict] = []
+    seen: set[str] = set()
+    for raw in raw_routes:
+        name = str(raw.get("name", "")).strip() if isinstance(raw, dict) else ""
+        vertices = raw.get("vertices") if isinstance(raw, dict) else None
+        if name not in authored or name in seen:
+            raise web.HTTPBadRequest(text=f"unknown or duplicate route: {name}")
+        if not isinstance(vertices, list) or len(vertices) != authored[name]:
+            raise web.HTTPBadRequest(text=f"route vertex count changed: {name}")
+        clean: list[tuple[float, float]] = []
+        for vertex in vertices:
+            if not isinstance(vertex, list) or len(vertex) != 2:
+                raise web.HTTPBadRequest(text=f"invalid vertex in route: {name}")
+            try:
+                x, y = float(vertex[0]), float(vertex[1])
+            except (TypeError, ValueError):
+                raise web.HTTPBadRequest(text=f"invalid vertex in route: {name}") from None
+            if not math.isfinite(x) or not math.isfinite(y):
+                raise web.HTTPBadRequest(text=f"non-finite vertex in route: {name}")
+            clean.append((x, y))
+        routes.append({"name": name, "vertices": clean})
+        seen.add(name)
+    if seen != set(authored):
+        raise web.HTTPBadRequest(text="all authored routes must be included")
+
+    geometry_path.write_text(_rewrite_routes(geometry_text, routes), encoding="utf-8")
+    _render_map(request.app)
+    return web.json_response({"ok": True, "saved": len(routes)})
+
+
 async def handle_events(request: web.Request) -> web.StreamResponse:
     """SSE: DM/prompt lines (from the outbound queue) interleaved with per-turn
     narration (from the checkpoints)."""
@@ -661,7 +756,8 @@ def _render_map(app: web.Application, live_positions: dict | None = None) -> Non
             live_refresh_secs=4, start_characters=rt["start_characters"],
             item_details=cfg.items or None, live_positions=live_positions,
             start_positions=start_positions, scene_geometry=sg,
-            editable_start_characters=editable_npcs)
+            editable_start_characters=editable_npcs,
+            visited_places=rt.get("visited_places", set()))
     except Exception:  # noqa: BLE001 — map is best-effort
         pass
 
@@ -692,6 +788,10 @@ async def _session_task(app: web.Application) -> None:
     def _on_scene_transition(scene_name: str, new_cfg) -> None:
         rt["scene"] = scene_name
         rt["config"] = new_cfg
+        rt.setdefault("visited_places", set()).add(
+            new_cfg.scene_geometry.place_path.strip("/")
+        )
+        app["geometry_stamp"] = _geometry_stamp(app)
         rt["start_characters"] = [
             cid for cid, cs in new_cfg.characters.items()
             if (getattr(cs, "activation", "always") or "always") == "always"
@@ -719,17 +819,37 @@ async def _session_task(app: web.Application) -> None:
     )
 
 
+async def _geometry_watch_task(app: web.Application) -> None:
+    """Apply editor/compiler changes to a running scene automatically."""
+    while True:
+        await asyncio.sleep(1.0)
+        current = _geometry_stamp(app)
+        previous = app.get("geometry_stamp")
+        if current is None or previous is None:
+            app["geometry_stamp"] = current
+        elif current != previous:
+            try:
+                _reload_geometry_from_disk(app)
+            except (OSError, ValueError):
+                # A file can briefly be between writes; retain the old stamp so
+                # the next poll retries after the compiler has finished.
+                continue
+
+
 async def _on_startup(app: web.Application) -> None:
     # Render an initial (turn 0) map from the GEOMETRY starting positions so the
     # browser shows the party's starting layout before the first turn lands.
     _render_map(app, live_positions=(app.get("resume_state") or {}).get("positions"))
+    app["geometry_stamp"] = _geometry_stamp(app)
+    app["geometry_watch_task"] = asyncio.create_task(_geometry_watch_task(app))
     app["session_task"] = asyncio.create_task(_session_task(app))
 
 
 async def _on_cleanup(app: web.Application) -> None:
-    task = app.get("session_task")
-    if task is not None:
-        task.cancel()
+    for name in ("session_task", "geometry_watch_task"):
+        task = app.get(name)
+        if task is not None:
+            task.cancel()
 
 
 _PAGE = """<!doctype html><html><head><meta charset='utf-8'>
@@ -1048,6 +1168,9 @@ def main():
     app["runtime"] = {
         "config": cfg,
         "scene": args.scene,
+        "visited_places": _visited_place_paths(
+            checkpoint_dir, cfg.scene_geometry.place_path
+        ),
     }
     app["player"] = args.player
     app["checkpoint_dir"] = checkpoint_dir
@@ -1065,6 +1188,7 @@ def main():
         web.get("/events", handle_events),
         web.post("/input", handle_input),
         web.post("/map-visuals", handle_map_visuals),
+        web.post("/map-routes", handle_map_routes),
         web.post("/refresh-geometry", handle_refresh_geometry),
     ])
     app.on_startup.append(_on_startup)

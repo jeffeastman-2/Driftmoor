@@ -1774,7 +1774,8 @@ def _scene_aliases(*texts: str) -> tuple[str, ...]:
     return tuple(out)
 
 
-_DRIFTMOOR_PLACES_ROOT = Path(__file__).resolve().parent.parent / "scenario" / "places" / "driftmoor"
+_WORLD_PLACES_ROOT = Path(__file__).resolve().parent.parent / "scenario" / "places"
+_DRIFTMOOR_PLACES_ROOT = _WORLD_PLACES_ROOT / "driftmoor"
 
 
 def _scene_header_aliases(place_file: Path) -> tuple[str, ...]:
@@ -1826,11 +1827,11 @@ def _place_identity_metadata(place_file: Path) -> tuple[str, tuple[str, ...]]:
 
 def _place_path_from_place_file(place_file: Path) -> str:
     try:
-        rel_parent = place_file.parent.relative_to(_DRIFTMOOR_PLACES_ROOT)
+        rel_parent = place_file.parent.relative_to(_WORLD_PLACES_ROOT)
     except ValueError:
         return ""
     suffix = "" if rel_parent == Path(".") else f"/{rel_parent.as_posix()}"
-    return f"places/driftmoor{suffix}"
+    return f"places{suffix}"
 
 
 def _scene_node_from_place_file(place_file: Path) -> _SceneNode:
@@ -1860,10 +1861,10 @@ def _driftmoor_connection_aliases() -> dict[str, tuple[str, ...]]:
     ``rooming house`` aliases so natural enter-phrasing resolves correctly.
     """
     out: dict[str, set[str]] = {}
-    if not _DRIFTMOOR_PLACES_ROOT.exists():
+    if not _WORLD_PLACES_ROOT.exists():
         return {}
 
-    for geom_file in sorted(_DRIFTMOOR_PLACES_ROOT.glob("**/GEOMETRY.md")):
+    for geom_file in sorted(_WORLD_PLACES_ROOT.glob("**/GEOMETRY.md")):
         try:
             text = geom_file.read_text(encoding="utf-8")
         except OSError:
@@ -1889,7 +1890,7 @@ def _driftmoor_connection_aliases() -> dict[str, tuple[str, ...]]:
                 continue
 
             dest_norm = dest.lower().strip().strip("/")
-            if not dest_norm.startswith("places/driftmoor/"):
+            if not dest_norm.startswith("places/"):
                 continue
 
             hint = re.sub(r"^to_", "", name.lower().strip()).replace("_", " ")
@@ -1907,10 +1908,10 @@ def _driftmoor_connection_aliases() -> dict[str, tuple[str, ...]]:
 @lru_cache(maxsize=1)
 def _driftmoor_place_registry() -> tuple[_SceneNode, ...]:
     nodes: list[_SceneNode] = []
-    if not _DRIFTMOOR_PLACES_ROOT.exists():
+    if not _WORLD_PLACES_ROOT.exists():
         return tuple(nodes)
     conn_aliases = _driftmoor_connection_aliases()
-    for place_file in sorted(_DRIFTMOOR_PLACES_ROOT.glob("**/PLACE.md")):
+    for place_file in sorted(_WORLD_PLACES_ROOT.glob("**/PLACE.md")):
         node = _scene_node_from_place_file(place_file)
         if node.place_path:
             extra = conn_aliases.get(node.place_path.lower().strip("/"), ())
@@ -2028,11 +2029,11 @@ def _entry_point_from_target_geometry(
     source = (source_place_path or "").strip().lower().strip("/")
     if not target or not source:
         return None
-    if not target.startswith("places/driftmoor"):
+    if not target.startswith("places"):
         return None
 
-    rel = target.removeprefix("places/driftmoor").strip("/")
-    geom_path = _DRIFTMOOR_PLACES_ROOT / rel / "GEOMETRY.md" if rel else _DRIFTMOOR_PLACES_ROOT / "GEOMETRY.md"
+    rel = target.removeprefix("places").strip("/")
+    geom_path = _WORLD_PLACES_ROOT / rel / "GEOMETRY.md" if rel else _WORLD_PLACES_ROOT / "GEOMETRY.md"
     if not geom_path.exists():
         return None
 
@@ -2187,19 +2188,18 @@ _DOORWAY_ARRIVAL_FT = 8.0
 
 
 @lru_cache(maxsize=8)
-def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, float, float], ...]:
-    """Enterable Driftmoor destinations in a place's Connections table.
+def _place_source_connections(source_place_path: str) -> tuple[tuple[str, str, float, float], ...]:
+    """Authored child/sibling destinations in a place's Connections table.
 
-    Includes child venues and explicitly connected siblings (for example the
-    forge-to-stables door). The ordinary connection back to the parent remains
-    an exit, and connections outside Driftmoor are not local venue doorways.
+    The ordinary connection back to the parent remains an exit. Callers decide
+    whether a connection is a local doorway or regional travel marker.
     """
     source = (source_place_path or "").strip().lower().strip("/")
-    if not source.startswith("places/driftmoor"):
+    if not source.startswith("places"):
         return ()
-    rel = source.removeprefix("places/driftmoor").strip("/")
-    geom_path = (_DRIFTMOOR_PLACES_ROOT / rel / "GEOMETRY.md") if rel \
-        else (_DRIFTMOOR_PLACES_ROOT / "GEOMETRY.md")
+    rel = source.removeprefix("places").strip("/")
+    geom_path = (_WORLD_PLACES_ROOT / rel / "GEOMETRY.md") if rel \
+        else (_WORLD_PLACES_ROOT / "GEOMETRY.md")
     if not geom_path.exists():
         return ()
     try:
@@ -2228,7 +2228,7 @@ def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, 
             continue
         dest_norm = dest.lower().strip().strip("/")
         if (
-            not dest_norm.startswith("places/driftmoor/")
+            not dest_norm.startswith("places/")
             or dest_norm in {source, parent_path}
         ):
             continue
@@ -2238,6 +2238,22 @@ def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, 
         except ValueError:
             continue
     return tuple(out)
+
+
+@lru_cache(maxsize=8)
+def _driftmoor_source_doorways(source_place_path: str) -> tuple[tuple[str, str, float, float], ...]:
+    """Town-scale Driftmoor destinations that behave as local doorways."""
+    source = (source_place_path or "").strip().lower().strip("/")
+    if not source.startswith("places/driftmoor"):
+        return ()
+    return tuple(
+        row for row in _place_source_connections(source)
+        if row[0] and any(
+            node.scene_name == row[0]
+            and node.place_path.startswith("places/driftmoor/")
+            for node in _driftmoor_place_registry()
+        )
+    )
 
 
 def _driftmoor_enter_doorway(
@@ -2260,6 +2276,11 @@ def _driftmoor_enter_doorway(
     # Only explicit outgoing venue connections are doorway-gated; exits back
     # to a parent pass straight through.
     place = (current_place_path or "").strip().lower().strip("/")
+    # Regional connections represent long-distance travel markers, not doors.
+    # They transition immediately once LATN resolves the destination; the
+    # town-specific distance gate below is only meaningful on local maps.
+    if not place.startswith("places/driftmoor"):
+        return None
     connected = {
         child for child, _conn, _x, _y in _driftmoor_source_doorways(place)
     }
@@ -2381,8 +2402,8 @@ def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[s
     place = (current_place_path or "").strip().lower().strip("/")
     if not place:
         return ()
-    doorway_children = {
-        child for child, _conn, _x, _y in _driftmoor_source_doorways(place)
+    connected_children = {
+        child for child, _conn, _x, _y in _place_source_connections(place)
     }
     current = next(
         (node for node in _driftmoor_place_registry()
@@ -2396,7 +2417,7 @@ def _driftmoor_child_venues(current_place_path: str) -> tuple[tuple[str, tuple[s
         (node.scene_name, _clean_venue_aliases(node.aliases))
         for node in _driftmoor_place_registry()
         if (
-            node.scene_name in doorway_children
+            node.scene_name in connected_children
             and node.parent_place_path in allowed_parents
         )
     )

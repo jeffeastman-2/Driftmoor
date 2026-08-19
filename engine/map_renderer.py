@@ -274,14 +274,16 @@ def _zone_icon_dirs(g: dict, place_rel: str | None = None) -> dict:
     so a zone can find its ``icon.svg``. Reuses ``## Connections``.
 
     ``place_rel`` is the current place's path relative to ``scenario/`` (e.g.
-    ``places/driftmoor``); when given, only connections leading to a *sub-place*
-    of it count — so a "leave to region" or exit connection that happens to sit
-    inside a building footprint (e.g. ``to_region`` -> ``places/``) can't hijack
-    that building's icon."""
+    ``places/driftmoor``); when given, only connections leading to an immediate
+    child count. Deeper descendants belong on their parent's map, and an exit
+    connection back upward cannot hijack a building or region icon."""
     prefix = (place_rel.rstrip("/") + "/") if place_rel else "places/"
     out: dict = {}
     for (_name, cx, cy, dest) in g.get("connections", []):
         if not dest or not dest.startswith(prefix):
+            continue
+        remainder = dest[len(prefix):].strip("/")
+        if not remainder or "/" in remainder:
             continue
         z = _containing_zone(cx, cy, g["zones"])
         if z is not None and z not in out:
@@ -393,9 +395,11 @@ def _verts3(s: str) -> list[tuple[float, float, float]]:
 def parse_geometry(text: str) -> dict:
     """Return {zones, landmarks, impassable, boundaries, starting_positions}."""
     g: dict = {
-        "zones": {}, "zone_z": {}, "landmarks": {}, "impassable": [],
+        "zones": {}, "zone_z": {}, "landmarks": {}, "landmark_labels": {},
+        "landmark_destinations": {}, "impassable": [],
         "boundaries": [], "starting_positions": {}, "items": {},
         "connections": [], "reveal_on_entry": set(), "reveal_layout": set(),
+        "routes": [], "route_styles": {}, "map_styles": {},
     }
 
     def _table(section: str) -> list[list[str]]:
@@ -449,12 +453,22 @@ def parse_geometry(text: str) -> dict:
         ):
             zone_auto_wall_off.add(name)
 
-    for cells in _table("Landmarks"):
+    landmark_rows = _table("Landmarks")
+    landmark_header = {
+        value.strip().lower(): index for index, value in enumerate(landmark_rows[0])
+    } if landmark_rows and landmark_rows[0][0] == "name" else {}
+    for cells in landmark_rows:
         if cells[0] == "name":
             continue
         if len(cells) >= 3:
             try:
                 g["landmarks"][cells[0]] = (float(cells[1]), float(cells[2]))
+                label_i = landmark_header.get("label")
+                dest_i = landmark_header.get("destination")
+                if label_i is not None and label_i < len(cells) and cells[label_i]:
+                    g["landmark_labels"][cells[0]] = cells[label_i]
+                if dest_i is not None and dest_i < len(cells) and cells[dest_i]:
+                    g["landmark_destinations"][cells[0]] = cells[dest_i].strip("/")
             except ValueError:
                 pass
 
@@ -479,6 +493,28 @@ def parse_geometry(text: str) -> dict:
                     (cells[0], float(cells[1]), float(cells[2]), cells[3]))
             except ValueError:
                 continue
+
+    # Optional regional cartography. Routes are presentation-level paths over
+    # the authoritative world coordinates; they do not create traversal edges.
+    for cells in _table("Routes"):
+        if cells[0].lower() == "name":
+            continue
+        if len(cells) >= 3:
+            verts = _verts(cells[-1])
+            if verts:
+                g["routes"].append((cells[0], cells[1].lower(), verts))
+                if len(cells) >= 5:
+                    try:
+                        width = float(cells[3])
+                    except ValueError:
+                        width = None
+                    g["route_styles"][cells[0]] = {
+                        "color": cells[2], "width": width,
+                    }
+
+    for cells in _table("Map Styles"):
+        if cells[0].lower() != "target" and len(cells) >= 2:
+            g["map_styles"][cells[0]] = cells[1]
 
     # Zone boundaries are impassable by default; door/archway landmarks open
     # them (see models.geometry_loader.compute_auto_walls, the single
@@ -602,6 +638,22 @@ def load_tracks_from_snapshots(snapshot_dir: Path) -> dict[str, list[TrackPoint]
     return tracks
 
 
+def load_visited_places_from_snapshots(snapshot_dir: Path | None) -> set[str]:
+    """Return authored place paths recorded in a viewer's checkpoint history."""
+    visited: set[str] = set()
+    if snapshot_dir is None or not snapshot_dir.exists():
+        return visited
+    for path in snapshot_dir.glob("day*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        place = str(data.get("scene_place_path") or "").strip("/")
+        if place:
+            visited.add(place)
+    return visited
+
+
 def load_paths_from_snapshots(snapshot_dir: Path) -> dict[str, list[tuple[float, float]]]:
     """Walk ``snapshot_dir/day*.json`` in turn order and collect each
     character's (x, y) trail from ``current_positions``.
@@ -668,6 +720,10 @@ def render_map(
     """
     text = geometry_path.read_text(encoding="utf-8")
     g = parse_geometry(text)
+    visited_places = load_visited_places_from_snapshots(snapshot_dir)
+    for landmark, destination in list(g["landmark_destinations"].items()):
+        if destination not in visited_places:
+            g["landmarks"].pop(landmark, None)
     if start_positions is not None:                      # scene placement wins
         g["starting_positions"] = {
             cid: (float(p[0]), float(p[1])) for cid, p in start_positions.items()
@@ -745,6 +801,7 @@ def render_map(
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
         if _is_water_zone(zname):
             color, alpha = _WATER_FILL, 0.85
+        color = g["map_styles"].get(zname, color)
         ax.add_patch(patches.Polygon(
             verts,
             closed=True,
@@ -892,6 +949,10 @@ def render_interactive_map_html(
     """
     text = geometry_path.read_text(encoding="utf-8")
     g = parse_geometry(text)
+    visited_places = load_visited_places_from_snapshots(snapshot_dir)
+    for landmark, destination in list(g["landmark_destinations"].items()):
+        if destination not in visited_places:
+            g["landmarks"].pop(landmark, None)
     if start_positions is not None:                      # scene placement wins
         g["starting_positions"] = {
             cid: (float(p[0]), float(p[1])) for cid, p in start_positions.items()
@@ -923,6 +984,8 @@ def render_interactive_map_html(
         all_pts.extend(v)
     for _name, v in g["boundaries"]:
         all_pts.extend(v)
+    for _name, _kind, v in g["routes"]:
+        all_pts.extend(v)
     all_pts.extend(g["landmarks"].values())
     all_pts.extend((x, y) for (x, y, _label) in g["items"].values())
     for pts in tracks.values():
@@ -934,7 +997,8 @@ def render_interactive_map_html(
     max_x = max(p[0] for p in all_pts)
     min_y = min(p[1] for p in all_pts)
     max_y = max(p[1] for p in all_pts)
-    margin = 8.0
+    raw_extent = max(max_x - min_x, max_y - min_y, 1.0)
+    margin = max(8.0, raw_extent * 0.025)
 
     view_x = min_x - margin
     view_y = min_y - margin
@@ -944,7 +1008,7 @@ def render_interactive_map_html(
     # SVG font sizes are in viewBox units; scale with map extent so a big map fit
     # to a fixed pixel width keeps legible labels (and a compact indoor map keeps
     # small ones).
-    label_base = max(0.85, min(28.0, max(view_w, view_h) / 100.0))
+    label_base = max(0.85, max(view_w, view_h) / 100.0)
     zone_label_size = round(label_base * 1.10, 2)
     landmark_label_size = round(label_base * 0.85, 2)
     item_label_size = round(label_base * 0.78, 2)
@@ -977,7 +1041,10 @@ def render_interactive_map_html(
     _scenario_root = next((pp for pp in geometry_path.parents if pp.name == "scenario"), None)
     _place_rel = (geometry_path.parent.relative_to(_scenario_root).as_posix()
                   if _scenario_root else None)
+    is_regional = _place_rel == "places"
     _zone_dest = _zone_icon_dirs(g, _place_rel)
+    symbol_scale = max(1.0, max(view_w, view_h) / 1000.0)
+    line_scale = max(1.0, max(view_w, view_h) / 1400.0)
 
     parts: list[str] = []
     parts.append(
@@ -985,19 +1052,19 @@ def render_interactive_map_html(
         "<title>Driftmoor Interactive Map</title>"
         "<style>"
         "body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;"
-        "margin:0;background:#f7f7f5;color:#111;}"
+        "margin:0;background:#20251f;color:#ede7d5;}"
         ".wrap{padding:12px 14px;}"
         "h1{font-size:14px;margin:0 0 8px 0;}"
         "p{margin:0 0 10px 0;font-size:13px;color:#333;}"
-        "svg{width:min(1100px,98vw);height:auto;border:1px solid #c7c7c2;background:#fff;}"
-        f".zone-label{{font-size:var(--zfs,{zone_label_size}px);font-weight:700;fill:#1f1f1f;opacity:.8;}}"
-        f".lm-label{{font-size:var(--lfs,{landmark_label_size}px);fill:#333;}}"
+        "svg{width:min(1200px,98vw);height:auto;border:1px solid #6f6a58;background:#d8cfb5;}"
+        f".zone-label{{font-size:var(--zfs,{zone_label_size}px);font-weight:700;fill:#26251f;opacity:.82;paint-order:stroke;stroke:#e9e0c8;stroke-width:{line_scale * 1.6:.2f};}}"
+        f".lm-label{{font-size:var(--lfs,{landmark_label_size}px);fill:#24231f;paint-order:stroke;stroke:#e9e0c8;stroke-width:{line_scale * 1.2:.2f};}}"
         f".item-label{{font-size:var(--ifs,{item_label_size}px);fill:#5a4a10;font-style:italic;}}"
         "</style></head><body><div class='wrap'>"
     )
     safe_title = html.escape(title or geometry_path.parent.name.replace("_", " ").title())
     parts.append(f"<h1>{safe_title}</h1>")
-    parts.append("<p>Hover over dots to see turn number, coordinates, and zone.</p>")
+    parts.append("<p>Drag to pan, scroll to zoom. Hover over dots and places for details.</p>")
     parts.append(
         f"<svg id='map' viewBox='{view_x:.2f} {_flip_y(view_y + view_h):.2f} {view_w:.2f} {view_h:.2f}' "
         "preserveAspectRatio='xMidYMid meet'>"
@@ -1015,15 +1082,68 @@ def render_interactive_map_html(
             continue
         zval = g["zone_z"].get(zname, 0.0)
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
+        if is_regional:
+            upper = zname.upper()
+            if upper == "EXTERIOR":
+                color, alpha = "#b8aa7b", 1.0
+            elif _is_water_zone(zname):
+                color, alpha = "#7897a3", 0.95
+            elif "MISTWOOD" in upper:
+                color, alpha = "#657958", 0.92
+            elif "OBELISK" in upper:
+                color, alpha = "#8c8175", 0.94
+            elif "CLIFF" in upper:
+                color, alpha = "#746f68", 0.94
+            elif "PLAINS" in upper or "FIELDS" in upper:
+                color, alpha = "#b5a86e", 0.88
+            elif "DRIFTMOOR" in upper or "MILL" in upper or "HARBOR" in upper:
+                color, alpha = "#9b7658", 0.88
         if _is_water_zone(zname):
-            color, alpha = _WATER_FILL, 0.85
+            color, alpha = ("#7897a3", 0.95) if is_regional else (_WATER_FILL, 0.85)
+        color = g["map_styles"].get(zname, color)
         points = _fmt_poly(verts)
         zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
         parts.append(
             f"<polygon points='{points}' fill='{color}' fill-opacity='{alpha:.3f}' "
-            "stroke='#222' stroke-width='0.6'>"
+            f"stroke='#4a463a' stroke-width='{line_scale * 0.7:.2f}'>"
             f"<title>{html.escape(zone_tip)}</title></polygon>"
         )
+
+    # Regional roads, trails, and waterways sit above terrain but below labels.
+    for route_name, route_kind, verts in g["routes"]:
+        if not verts:
+            continue
+        if route_kind in {"river", "water"}:
+            stroke, dash, width = "#587f91", "", 3.6
+        elif route_kind in {"trail", "path"}:
+            stroke, dash, width = "#6d5639", "7,6", 2.0
+        else:
+            stroke, dash, width = "#765f42", "", 2.8
+        authored = g["route_styles"].get(route_name, {})
+        stroke = authored.get("color") or stroke
+        stroke_width = authored.get("width") or (width * line_scale)
+        dash_attr = f" stroke-dasharray='{dash}'" if dash else ""
+        points = " ".join(f"{x:.2f},{_flip_y(y):.2f}" for x, y in verts)
+        parts.append(
+            f"<polyline points='{points}' fill='none' stroke='{stroke}' "
+            f"stroke-width='{stroke_width:.2f}' stroke-linecap='round' "
+            f"stroke-linejoin='round'{dash_attr}><title>{html.escape(route_name)}</title></polyline>"
+        )
+
+    if is_regional:
+        for zname in zone_order:
+            if zname.upper() == "EXTERIOR":
+                continue
+            verts = g["zones"].get(zname) or []
+            if not verts:
+                continue
+            cx = sum(x for x, _y in verts) / len(verts)
+            cy = sum(y for _x, y in verts) / len(verts)
+            label = zname.replace("_", " ").title()
+            parts.append(
+                f"<text x='{cx:.2f}' y='{_flip_y(cy):.2f}' text-anchor='middle' "
+                f"class='zone-label'>{html.escape(label)}</text>"
+            )
 
     # Boundaries
     for bname, verts in g["boundaries"]:
@@ -1041,6 +1161,13 @@ def render_interactive_map_html(
         if not verts:
             continue
         points = _fmt_poly(verts)
+        if is_regional:
+            parts.append(
+                f"<polygon points='{points}' fill='none' stroke='#7b3f35' "
+                f"stroke-width='{1.4 * line_scale:.2f}' stroke-dasharray='6,5'>"
+                f"<title>{html.escape(iname)} (impassable)</title></polygon>"
+            )
+            continue
         parts.append(
             f"<polygon points='{points}' fill='#4a4a4a' fill-opacity='0.65' "
             "stroke='#2a2a2a' stroke-width='0.6'>"
@@ -1051,9 +1178,16 @@ def render_interactive_map_html(
     for name, (x, y) in g["landmarks"].items():
         tip = _landmark_tooltip(name, x, y, g["zones"])
         parts.append(
-            f"<circle cx='{x:.2f}' cy='{_flip_y(y):.2f}' r='1.2' fill='#3b3b3b'>"
+            f"<circle cx='{x:.2f}' cy='{_flip_y(y):.2f}' r='{2.0 * symbol_scale:.2f}' "
+            f"fill='#302d25' stroke='#efe4c8' stroke-width='{0.55 * line_scale:.2f}'>"
             f"<title>{html.escape(tip)}</title></circle>"
         )
+        if is_regional:
+            label = name.replace("_", " ").title()
+            parts.append(
+                f"<text x='{x + 3.2 * symbol_scale:.2f}' y='{_flip_y(y) - 2.1 * symbol_scale:.2f}' "
+                f"class='lm-label'>{html.escape(label)}</text>"
+            )
 
     # Character paths and turn points
     for cid, pts in tracks.items():
@@ -1225,6 +1359,7 @@ def render_turn_slider_html(
     start_positions: dict | None = None,
     scene_geometry: "SceneGeometry | None" = None,
     editable_start_characters: "Iterable[str] | None" = None,
+    visited_places: "Iterable[str] | None" = None,
 ) -> None:
     """Interactive turn-slider map with fog of war.
 
@@ -1244,6 +1379,13 @@ def render_turn_slider_html(
     seeded (so a scene-placed dormant entry never leaks by default).
     """
     g = parse_geometry(geometry_path.read_text(encoding="utf-8"))
+    visited = {str(place).strip("/") for place in (visited_places or ())}
+    for landmark, destination in list(g["landmark_destinations"].items()):
+        if destination not in visited:
+            g["landmarks"].pop(landmark, None)
+    has_discovered_landmarks = any(
+        name in g["landmark_destinations"] for name in g["landmarks"]
+    )
     editable_start_ids = set(editable_start_characters or ())
     # Runtime-created loose items (purchases subsequently dropped, disarmed
     # weapons, etc.) have no authored GEOMETRY row. Add them to this render from
@@ -1463,6 +1605,8 @@ def render_turn_slider_html(
         all_pts.extend(v)
     for _n, v in g["boundaries"]:
         all_pts.extend(v)
+    for _n, _kind, v in g["routes"]:
+        all_pts.extend(v)
     all_pts.extend(g["landmarks"].values())
     all_pts.extend((x, y) for (x, y, _l) in g["items"].values())
     for pts in tracks.values():
@@ -1481,6 +1625,7 @@ def render_turn_slider_html(
     # up when zoomed. Markers/strokes keep their natural viewBox sizes (sc=1).
     label_base = 1.9
     sc = 1.0
+    route_sc = max(1.0, max(view_w, view_h) / 1400.0)
 
     def fy(y: float) -> float:
         return -y
@@ -1526,12 +1671,18 @@ def render_turn_slider_html(
     p.append(".ilabel{font-size:var(--ifs,1.6px);fill:#d9c98a;font-style:italic;}")
     p.append(".clabel{font-size:var(--cfs,1.9px);font-weight:700;fill:#fff;"
              "paint-order:stroke;stroke:#000;stroke-width:0.3px;}")
+    p.append(".deep-landmark-label{font-size:var(--lfs,1.7px);fill:#f0dfae;"
+             "paint-order:stroke;stroke:#17140e;stroke-width:.3px;}")
     p.append("</style></head><body><div class='wrap'>")
     p.append(f"<h1>{safe_title}</h1>")
     p.append("<div class='ctl'><button id='play'>&#9654; Play</button>"
              "<button id='fit' title='Reset map view (key: F)'>Fit</button>"
              "<button id='refreshGeo' title='Re-read GEOMETRY.md from disk — picks up manual edits without exiting the scene'>Refresh scene</button>"
              "<button id='editArt' title='Move authored fixtures and initial NPC positions'>Edit layout</button>"
+             "<button id='editTerrain' title='Drag road and river control points'>Edit terrain</button>"
+             "<button id='saveTerrain' style='display:none'>Save terrain</button>"
+             + ("<label class='hint'><input id='showDeepLandmarks' type='checkbox' checked> Discovered landmarks</label>"
+                if has_discovered_landmarks else "") +
              "<span id='artctl' class='artctl'><button id='rotL' title='Rotate counterclockwise'>↶</button>"
              "<button id='rotR' title='Rotate clockwise'>↷</button><button id='smaller'>−</button>"
              "<button id='larger'>+</button><button id='copyVisuals'>Save layout</button>"
@@ -1586,6 +1737,7 @@ def render_turn_slider_html(
         color, alpha = _Z_PALETTE[z_rank[zval] % len(_Z_PALETTE)]
         if _is_water_zone(zname):
             color, alpha = _WATER_FILL, 0.85
+        color = g["map_styles"].get(zname, color)
         zone_tip = _zone_tooltip(zname, _zone_dest.get(zname), _scenario_root)
         floor_art = _zone_floors.get(zname)
         icon = floor_art or _zone_icon_uri(
@@ -1615,6 +1767,37 @@ def render_turn_slider_html(
             p.append(f"<polygon points='{poly(verts)}' fill='{color}' "
                      f"fill-opacity='{alpha:.3f}' stroke='#888' stroke-width='{0.6*sc:.2f}'>"
                      f"<title>{html.escape(zone_tip)}</title></polygon>")
+        p.append("</g>")
+
+    # Regional-scale roads and waterways. Each authored vertex gets a hidden
+    # drag handle that the in-place terrain editor reveals on demand.
+    for route_name, route_kind, verts in g["routes"]:
+        if route_kind in {"river", "water"}:
+            stroke, dash, width = "#587f91", "", 3.6
+        elif route_kind in {"trail", "path"}:
+            stroke, dash, width = "#8c724d", "7,6", 2.0
+        else:
+            stroke, dash, width = "#9a8058", "", 2.8
+        authored = g["route_styles"].get(route_name, {})
+        stroke = authored.get("color") or stroke
+        stroke_width = authored.get("width") or (width * route_sc)
+        points = " ".join(f"{x:.2f},{fy(y):.2f}" for x, y in verts)
+        dash_attr = f" stroke-dasharray='{dash}'" if dash else ""
+        p.append(
+            f"<polyline class='terrain-route' data-route='{html.escape(route_name)}' "
+            f"data-kind='{html.escape(route_kind)}' points='{points}' fill='none' "
+            f"stroke='{stroke}' stroke-width='{stroke_width:.2f}' "
+            f"stroke-linecap='round' stroke-linejoin='round'{dash_attr}>"
+            f"<title>{html.escape(route_name)}</title></polyline>"
+        )
+        p.append(f"<g class='route-handles' data-route-handles='{html.escape(route_name)}' style='display:none'>")
+        for index, (x, y) in enumerate(verts):
+            p.append(
+                f"<circle class='route-handle' data-route='{html.escape(route_name)}' "
+                f"data-index='{index}' cx='{x:.3f}' cy='{fy(y):.3f}' "
+                f"r='{3.0 * route_sc:.2f}' fill='#55ffff' fill-opacity='.82' "
+                f"stroke='#102020' stroke-width='{0.5 * route_sc:.2f}'/>"
+            )
         p.append("</g>")
 
     # Positioned authored art sits above the floor and below semantic targets,
@@ -1650,16 +1833,20 @@ def render_turn_slider_html(
                  f"<title>{html.escape(bname)}</title></polygon></g>")
 
     for name, (x, y) in g["landmarks"].items():
-        tip = _landmark_tooltip(name, x, y, g["zones"])
+        label = g["landmark_labels"].get(name, name.replace("_", " ").title())
+        tip = _landmark_tooltip(label, x, y, g["zones"])
         zone = _containing_zone(x, y, g["zones"])
         painted = bool(zone and _zone_floors.get(zone)) or name in _visual_targets
         fill = "transparent" if painted else "#b9b9b9"
         radius = 1.8 if painted else 1.1 * sc
-        p.append(f"<g data-reveal='{_elem_reveal(x, y)}' "
+        deep_class = "deep-landmark" if name in g["landmark_destinations"] else ""
+        p.append(f"<g class='{deep_class}' data-reveal='{_elem_reveal(x, y)}' "
                  f"data-landmark='{html.escape(name)}' data-x='{x:.3f}' data-y='{y:.3f}'>"
                  f"<circle class='landmark-hit' cx='{x:.2f}' cy='{fy(y):.2f}' "
                  f"r='{radius:.2f}' fill='{fill}'>"
-                 f"<title>{html.escape(tip)}</title></circle></g>")
+                 f"<title>{html.escape(tip)}</title></circle>"
+                 f"<text class='deep-landmark-label' x='{x + 2.0*sc:.2f}' "
+                 f"y='{fy(y) - 1.5*sc:.2f}'>{html.escape(label)}</text></g>")
     for _iid, (x, y, label) in g["items"].items():
         detail = (item_details or {}).get(_iid)
         if not _item_is_loose(detail):
@@ -1862,6 +2049,26 @@ def render_turn_slider_html(
         "let seen=new Set();objs.forEach(o=>{let t=o.dataset.target;if(!t||seen.has(t))return;seen.add(t);rows.push('| '+t+' | '+o.dataset.x+' | '+o.dataset.y+' |');});"
         "await navigator.clipboard.writeText(rows.join('\\n'));this.textContent='Copied';setTimeout(()=>this.textContent='Copy coordinates',1200);};})();")
     p.append(
+        "(function(){const s=document.getElementById('map'),edit=document.getElementById('editTerrain'),save=document.getElementById('saveTerrain'),"
+        "groups=[...document.querySelectorAll('[data-route-handles]')],handles=[...document.querySelectorAll('.route-handle')];"
+        "if(!groups.length){edit.style.display='none';return;}let editing=false,drag=null,dirty=false;"
+        "function pt(e){let p=s.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(s.getScreenCTM().inverse());}"
+        "function routeEl(name){return [...document.querySelectorAll('.terrain-route')].find(r=>r.dataset.route===name);}"
+        "function redraw(name){let hs=handles.filter(h=>h.dataset.route===name).sort((a,b)=>(+a.dataset.index)-(+b.dataset.index));"
+        "routeEl(name).setAttribute('points',hs.map(h=>h.getAttribute('cx')+','+h.getAttribute('cy')).join(' '));}"
+        "function records(){return groups.map(g=>{let name=g.dataset.routeHandles,hs=handles.filter(h=>h.dataset.route===name).sort((a,b)=>(+a.dataset.index)-(+b.dataset.index));"
+        "return{name:name,vertices:hs.map(h=>[+h.getAttribute('cx'),-(+h.getAttribute('cy'))])};});}"
+        "async function persist(){save.textContent='Saving…';try{let r=await fetch('/map-routes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({routes:records()})});"
+        "if(!r.ok)throw new Error(await r.text());dirty=false;save.textContent='Saved';setTimeout(()=>save.textContent='Save terrain',1200);return true;}"
+        "catch(e){save.textContent='Save failed';console.error(e);return false;}}"
+        "edit.onclick=async function(){window.__mapLastInteract=Date.now();if(editing&&dirty&&!(await persist()))return;editing=!editing;window.__mapArtEditing=editing;"
+        "edit.textContent=editing?'Done terrain':'Edit terrain';save.style.display=editing?'':'none';document.getElementById('editArt').disabled=editing;"
+        "groups.forEach(g=>g.style.display=editing?'':'none');handles.forEach(h=>h.style.cursor=editing?'move':'');};save.onclick=persist;"
+        "handles.forEach(h=>h.addEventListener('mousedown',e=>{if(!editing)return;e.stopPropagation();let p=pt(e);drag={h:h,px:p.x,py:p.y,x:+h.getAttribute('cx'),y:+h.getAttribute('cy')};e.preventDefault();}));"
+        "window.addEventListener('mousemove',e=>{if(!drag)return;window.__mapLastInteract=Date.now();let p=pt(e),x=drag.x+p.x-drag.px,y=drag.y+p.y-drag.py;"
+        "drag.h.setAttribute('cx',x.toFixed(3));drag.h.setAttribute('cy',y.toFixed(3));redraw(drag.h.dataset.route);dirty=true;});"
+        "window.addEventListener('mouseup',()=>{drag=null;});})();")
+    p.append(
         "(function(){const b=document.getElementById('refreshGeo');"
         "b.onclick=async function(){b.textContent='Refreshing…';b.disabled=true;"
         # A geometry edit can move the content away from a viewport preserved
@@ -1876,6 +2083,10 @@ def render_turn_slider_html(
         "if(!r.ok)throw new Error(await r.text());location.reload();return;}"
         "catch(e){b.textContent='Refresh failed';b.disabled=false;"
         "setTimeout(()=>b.textContent='Refresh scene',1200);console.error(e);}};})();")
+    p.append(
+        "(function(){const b=document.getElementById('showDeepLandmarks');if(!b)return;"
+        "b.onchange=()=>document.querySelectorAll('.deep-landmark').forEach("
+        "e=>e.style.display=b.checked?'':'none');})();")
     p.append(_PANZOOM_JS)
     p.append("</script></body></html>")
     output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -76,6 +76,65 @@ def test_update_place_map_writes_html(tmp_path):
     assert not any(path.suffix == ".png" for path in place_dir.iterdir())
 
 
+def test_regional_map_renders_scaled_cartography(tmp_path):
+    regional_geometry = Path("scenario/places/GEOMETRY.md")
+    from engine.map_renderer import parse_geometry
+    parsed = parse_geometry(regional_geometry.read_text(encoding="utf-8"))
+    assert len(parsed["zones"]["MISTWOOD_FOREST"]) > 4
+    assert len(parsed["zones"]["GREYWATER_VALLEY"]) > 4
+    assert {name for name, _kind, _verts in parsed["routes"]} >= {
+        "Greywater River", "Blackwater River", "Gold Run",
+    }
+    out_html = tmp_path / "places_map.html"
+
+    render_interactive_map_html(
+        regional_geometry, out_html, title="The Land Around Driftmoor"
+    )
+
+    rendered = out_html.read_text(encoding="utf-8")
+    assert "Obelisk Trail" in rendered
+    assert "Greywater River" in rendered
+    assert "class='zone-label'" in rendered
+    assert "Driftmoor Town Center" not in rendered
+    assert "Fey Glade" not in rendered
+    assert "Old Mill" not in rendered
+    # Legacy regional obstacle overlays are not part of the editor-owned map.
+    assert "Azure Sea open water (impassable)" not in rendered
+
+
+def test_regional_turn_map_has_in_place_route_editor(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+    out_html = tmp_path / "regional_live_map.html"
+    render_turn_slider_html(
+        Path("scenario/places/GEOMETRY.md"), out_html,
+        snapshot_dir=tmp_path, title="The Land Around Driftmoor",
+    )
+    rendered = out_html.read_text(encoding="utf-8")
+    assert "id='editTerrain'" in rendered
+    assert "class='route-handle'" in rendered
+    assert "data-route='Greywater River'" in rendered
+    assert "fetch('/map-routes'" in rendered
+
+
+def test_regional_descendant_landmarks_require_authoring_and_visit(tmp_path):
+    from engine.map_renderer import render_turn_slider_html
+    out_html = tmp_path / "regional_landmarks.html"
+    render_turn_slider_html(
+        Path("scenario/places/GEOMETRY.md"), out_html,
+        snapshot_dir=tmp_path, visited_places={"places/greywater_river/old_mill"},
+    )
+    rendered = out_html.read_text(encoding="utf-8")
+    assert "Old Mill" in rendered
+    assert "showDeepLandmarks" in rendered
+    assert "Fey Glade" not in rendered
+
+    render_turn_slider_html(
+        Path("scenario/places/GEOMETRY.md"), out_html,
+        snapshot_dir=tmp_path, visited_places={"places/greywater_river"},
+    )
+    assert "Old Mill" not in out_html.read_text(encoding="utf-8")
+
+
 def test_point_in_poly():
     from engine.map_renderer import _point_in_poly
     sq = [(0, 0), (10, 0), (10, 10), (0, 10)]
