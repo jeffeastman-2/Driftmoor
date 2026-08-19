@@ -105,13 +105,23 @@ def draw_front(c: canvas.Canvas, d: dict) -> None:
     _section_label(c, "Proficiencies", M, y); y -= 20
     y = _bullets(c, d["proficiencies"], M, y, W - 2 * M)
     y -= 8
-    _rule(c, y); y -= 22
 
-    _section_label(c, "Equipment", M, y); y -= 20
-    _bullets(c, [(item, "") for item in d["equipment"]], M, y, W - 2 * M)
+    if d.get("cantrips") or d.get("spells"):
+        _rule(c, y); y -= 22
+        _section_label(c, "Spells", M, y); y -= 20
+        if d.get("cantrips"):
+            c.setFillColor(INK); c.setFont("Helvetica-Bold", BODY_SIZE)
+            c.drawString(M, y, "Cantrips: ")
+            bold_w = stringWidth("Cantrips: ", "Helvetica-Bold", BODY_SIZE)
+            c.setFont("Helvetica", BODY_SIZE)
+            c.drawString(M + bold_w, y, ", ".join(d["cantrips"]))
+            y -= BODY_LEADING + 4
+        y = _bullets(c, d["spells"], M, y, W - 2 * M)
+
+    return y
 
 
-def draw_back(c: canvas.Canvas, d: dict) -> None:
+def draw_back(c: canvas.Canvas, d: dict) -> float:
     _header(c, d, 2)
     y = H - M - 40
 
@@ -129,8 +139,15 @@ def draw_back(c: canvas.Canvas, d: dict) -> None:
     y -= 14
     _rule(c, y); y -= 22
 
+    _section_label(c, "Equipment", M, y); y -= 20
+    y = _bullets(c, [(item, "") for item in d["equipment"]], M, y, W - 2 * M)
+    y -= 8
+    _rule(c, y); y -= 22
+
     _section_label(c, "Backstory", M, y); y -= 20
-    _text(c, d["backstory"], M, y, W - 2 * M, size=BODY_SIZE, leading=BODY_LEADING)
+    y = _text(c, d["backstory"], M, y, W - 2 * M, size=BODY_SIZE, leading=BODY_LEADING)
+
+    return y
 
 
 def save(d: dict, slug: str) -> None:
@@ -139,10 +156,14 @@ def save(d: dict, slug: str) -> None:
     path = out_dir / f"{d['name'].split()[0]}_Card.pdf"
     c = canvas.Canvas(str(path), pagesize=letter)
     c.setTitle(f"{d['name']} - Driftmoor Player Card")
-    draw_front(c, d)
+    front_y = draw_front(c, d)
     c.showPage()
-    draw_back(c, d)
+    back_y = draw_back(c, d)
     c.save()
+    if front_y < M:
+        print(f"  WARNING: {d['name']} front page overflows by {M - front_y:.0f}pt")
+    if back_y < M:
+        print(f"  WARNING: {d['name']} back page overflows by {M - back_y:.0f}pt")
     print(path.resolve())
 
 
@@ -160,6 +181,13 @@ def main() -> None:
         ],
         equipment=["Leather armor and wooden shield (AC 15)", "Sickle and quarterstaff",
                    "Herbalism kit and healer's kit", "Sprig of dried yarrow (spellcasting focus)"],
+        cantrips=["Produce Flame", "Guidance", "Shillelagh"],
+        spells=[
+            ("Cure Wounds", "touch, restore 1d8+3 HP"),
+            ("Entangle", "grasping vines fill a 20-ft square; Str save or restrained"),
+            ("Goodberry", "10 berries, each restores 1 HP and a day's food"),
+            ("Barkskin", "target's AC can't be less than 16 (always prepared)"),
+        ],
         personality=("Unhurried and exacting, Rowan treats every crisis like a diagnosis to be made rather than a "
                      "fight to be won — she asks about sleep and food before she asks about danger."),
         profile=("Weathered and quietly strong, with sun-browned skin, close-cropped brown hair threaded with "
@@ -190,6 +218,13 @@ def main() -> None:
         ],
         equipment=["Chain mail and shield with a sunburst sigil (AC 18)", "Longsword and three javelins",
                    "Iron sunburst holy symbol and prayer book", "Priest's pack"],
+        cantrips=[],
+        spells=[
+            ("Protection from Evil and Good", "target resists/has advantage vs. fiends, undead, and other unnatural threats (always prepared)"),
+            ("Sanctuary", "attackers must save or choose another target (always prepared)"),
+            ("Bless", "up to 3 allies add 1d4 to attacks and saving throws"),
+            ("Cure Wounds", "touch, restore 1d8+2 HP"),
+        ],
         personality=("Plainspoken and steady, Garron measures every kindness against a vow he's not sure he's "
                      "finished paying — he forgives everyone else faster than he forgives himself."),
         profile=("Broad and grey-bearded even by dwarven standards, Garron stands like a doorway nothing gets "
@@ -222,6 +257,13 @@ def main() -> None:
         ],
         equipment=["Leather armor (AC 13)", "Rapier, dagger, and belt knife",
                    "Well-worn lute carved with vines and leaves", "Musician's pack"],
+        cantrips=["Vicious Mockery", "Minor Illusion", "Message"],
+        spells=[
+            ("Healing Word", "bonus action, 60 ft, restore 1d4+4 HP"),
+            ("Faerie Fire", "outlines enemies in a 20-ft cube; attacks against them have advantage (Dex save)"),
+            ("Dissonant Whispers", "3d6 psychic damage and forces the target to flee (Wis save)"),
+            ("Invisibility", "touch; target is invisible until it attacks or casts a spell"),
+        ],
         personality=("Bright and quick-witted, Kaelin fills every room she enters and rarely lets anyone see what "
                      "the brightness is covering."),
         profile=("Slender and attractive with a presence that fills the room. Wild red curls, bright hazel eyes, "
@@ -278,6 +320,12 @@ def main() -> None:
         ],
         equipment=["Studded leather (AC 15)", "Rapier, shortbow, and dagger",
                    "Thieves' tools and burglar's pack", "Unexplained silver ring"],
+        cantrips=["Mage Hand", "Minor Illusion", "Message"],
+        spells=[
+            ("Disguise Self", "alter your visible appearance for 1 hour"),
+            ("Silent Image", "create and move a silent visual illusion (concentration)"),
+            ("Tasha's Hideous Laughter", "target falls down laughing and can't act (Wis save)"),
+        ],
         personality=("Quick and dry-humored, Cinnabar deflects praise and confession alike with perfect timing, "
                      "then quietly shows up when it matters."),
         profile=("Slight and quick, with copper-red hair cut unevenly short, freckled olive skin, and moss-green "
@@ -305,6 +353,13 @@ def main() -> None:
         ],
         equipment=["Quarterstaff and component pouch", "Spellbook and scholar's pack",
                    "Mended blue robes", "Leather notebook containing Ilse's last letters"],
+        cantrips=["Fire Bolt", "Mage Hand", "Prestidigitation"],
+        spells=[
+            ("Magic Missile", "three darts automatically hit for 1d4+1 force each"),
+            ("Shield", "reaction, +5 AC until your next turn"),
+            ("Mage Armor", "touch; unarmored target's AC becomes 13 + Dex modifier"),
+            ("Misty Step", "bonus action, teleport 30 ft to a spot you can see"),
+        ],
         personality=("Gentle and careful with his words, Hendricks qualifies every claim he makes and treats "
                      "foreknowledge as an obligation rather than an advantage."),
         profile=("A thin, slightly stooped man with wispy white hair, a well-kept beard, and pale blue eyes. His "
@@ -332,6 +387,13 @@ def main() -> None:
         ],
         equipment=["Silver-chain wand (arcane focus)", "Dagger",
                    "Small explorer's pack and patchwork clothes", "Locket containing a charred splinter"],
+        cantrips=["Fire Bolt", "Prestidigitation", "Mage Hand", "Minor Illusion"],
+        spells=[
+            ("Chaos Bolt", "2d8+1d6 damage; matching dice let it leap to a second target"),
+            ("Shield", "reaction, +5 AC until your next turn"),
+            ("Chromatic Orb", "3d8 damage, choose the type (needs a 50-gp diamond focus)"),
+            ("Mirror Image", "create 3 duplicates; attacks may hit one instead of you"),
+        ],
         personality=("Bright and impulsive, Pippa talks fast, loves fast, and treats curiosity as something close "
                      "to sacred."),
         profile=("Small even for a fairy, all quick wings and kinetic posture, with wild dark curls full of "
@@ -358,6 +420,13 @@ def main() -> None:
         ],
         equipment=["Chain mail and shield with Bright Hearth sigil (AC 18)", "Mace",
                    "Wooden holy symbol and prayer book", "Healer's kit and travel journal of names"],
+        cantrips=["Sacred Flame", "Spare the Dying", "Guidance"],
+        spells=[
+            ("Healing Word", "bonus action, 60 ft, restore 1d4+6 HP"),
+            ("Cure Wounds", "touch, restore 1d8+6 HP"),
+            ("Bless", "up to 3 allies add 1d4 to attacks and saving throws"),
+            ("Guiding Bolt", "4d6 radiant damage; target's next attacker has advantage"),
+        ],
         personality=("Warm and unhurried, Tobin counsels through stories and asks more questions than he "
                      "answers."),
         profile=("Broad-shouldered and comfortably grounded, with brown hair gone silver at the temples and warm "
