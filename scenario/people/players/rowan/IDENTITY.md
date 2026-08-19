@@ -61,6 +61,29 @@ Weathered and quietly strong, with sun-browned skin, close-cropped brown hair th
 - explorers_pack
 - healers_kit
 
+## Neurochemical Baseline
+- **dopamine:** 0.42
+- **cortisol:** 0.40
+- **norepinephrine:** 0.38
+- **endorphins:** 0.35
+- **serotonin:** 0.62
+- **acetylcholine:** 0.70
+- **oxytocin:** 0.58
+- **dopamine_baseline:** 0.48
+- **dopamine_volatility:** 0.35
+- **cortisol_baseline:** 0.34
+- **cortisol_volatility:** 0.55
+- **norepinephrine_baseline:** 0.42
+- **norepinephrine_volatility:** 0.45
+- **endorphins_baseline:** 0.52
+- **endorphins_volatility:** 0.45
+- **serotonin_baseline:** 0.64
+- **serotonin_volatility:** 0.30
+- **acetylcholine_baseline:** 0.68
+- **acetylcholine_volatility:** 0.50
+- **oxytocin_baseline:** 0.56
+- **oxytocin_volatility:** 0.50
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

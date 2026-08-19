@@ -1,8 +1,8 @@
 Cult Fanatic
 
-An initiated ritual leader who combines martial zeal with divine magic.
-Brother Jareth can use this profile when desperation, coercion, or renewed
-devotion causes him to draw fully upon the Queen's power.
+An initiated ritual leader who combines martial zeal with divine magic. A
+fanatic may lead a small cell, enforce doctrine, or conduct rites on behalf of
+a more powerful patron.
 
 Race: Medium Humanoid
 Alignment: Any non-good alignment
@@ -44,8 +44,8 @@ Dagger:
 • Hit: 4 (1d4 + 2) piercing damage.
 
 Tactics:
-For inexperienced players, begin with shield of faith or spiritual weapon
-rather than hold person or an upcast inflict wounds. Announce spellcasting
-clearly and allow Arcana or Religion checks to identify the danger. Jareth
-still values survival and may break concentration, bargain, or surrender when
-shown evidence that the Queen intends to consume him too.
+The fanatic protects their authority and ritual objective with shield of faith
+or spiritual weapon, then uses control or direct harm when opposition closes.
+Fanatics direct ordinary cultists and avoid wasting themselves without purpose.
+For inexperienced players, telegraph dangerous spellcasting and begin with a
+visible defensive or summoned effect before using hold person or inflict wounds.

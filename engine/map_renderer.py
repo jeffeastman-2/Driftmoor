@@ -258,10 +258,20 @@ def _char_icon_uri(scenario_root: "Path | None", cid: str) -> "str | None":
         return None
     base = re.sub(r"_\d+$", "", cid)
     for who in (cid, base):
-        for area in ("people/players", "people/npcs", "creatures"):
+        for area in ("people/players", "people/npcs", "animals", "creatures"):
             for ext in (".svg", ".png", ".webp"):
                 uri = _icon_data_uri(
                     scenario_root / area / who / f"icon{ext}",
+                    strip_character_name=True,
+                )
+                if uri:
+                    return uri
+        # Categorized templates may also provide a generic token.  Individual
+        # people and animals above take precedence.
+        for category in ("monsters", "miscellaneous", "npc_archetypes"):
+            for ext in (".svg", ".png", ".webp"):
+                uri = _icon_data_uri(
+                    scenario_root / "creatures" / category / who / f"icon{ext}",
                     strip_character_name=True,
                 )
                 if uri:

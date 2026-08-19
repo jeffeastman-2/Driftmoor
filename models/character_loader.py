@@ -194,6 +194,7 @@ def parse_npc_identity(text: str) -> dict:
     result["role"] = _extract_field(text, "Role") or ""
     result["race"] = _extract_field(text, "Race") or ""
     result["location"] = _extract_field(text, "Location") or None
+    result["stat_block_file"] = _extract_field(text, "Stat Block") or ""
     result["physical_description"] = _extract_section(text, "Physical Description")
 
     # Key relationships
@@ -342,6 +343,26 @@ def load_npc(directory: Path, character_type: str = "npc") -> NPC:
     soul_raw = soul_path.read_text(encoding="utf-8") if soul_path.exists() else ""
 
     p = parse_npc_identity(identity_raw)
+    if p.get("stat_block_file"):
+        # Stat-block references are authored relative to the repository root.
+        scenario_ancestor = next(
+            (parent for parent in directory.parents if parent.name == "scenario"),
+            None,
+        )
+        repo_root = scenario_ancestor.parent if scenario_ancestor else directory
+        stat_path = repo_root / p["stat_block_file"]
+        if not stat_path.exists():
+            raise FileNotFoundError(
+                f"NPC '{directory.name}' stat block not found: {stat_path}"
+            )
+        template = parse_creature_md(stat_path.read_text(encoding="utf-8"))
+        p["hp"] = p["hp"] or template["hp"]
+        p["ac"] = p["ac"] or template["ac"]
+        for attr in (
+            "strength", "dexterity", "constitution",
+            "intelligence", "wisdom", "charisma",
+        ):
+            p[attr] = template[attr]
     dex_mod = (int(p["dexterity"]) - 10) // 2
 
     return NPC(
@@ -361,6 +382,7 @@ def load_npc(directory: Path, character_type: str = "npc") -> NPC:
         hooks=p["hooks"],
         active_concerns=p["active_concerns"],
         hp=p["hp"],
+        current_hp=p["hp"],
         ac=p["ac"],
         natural_ac=max(10, int(p["ac"]) - dex_mod) if p["ac"] else 10,
         strength=p["strength"],
@@ -601,13 +623,22 @@ def load_creature(filepath: Path) -> Creature:
 
 
 def load_all_creatures(creatures_dir: Path) -> list[Creature]:
-    """Load all creature templates from scenario/creatures/<id>/CREATURE.md."""
+    """Recursively load categorized creature/stat-block templates.
+
+    Template ids remain the directory name containing ``CREATURE.md``.  IDs
+    must be unique across categories so references are stable regardless of
+    how the library is organized.
+    """
     creatures: list[Creature] = []
+    seen: dict[str, Path] = {}
     if creatures_dir.exists():
-        for creature_dir in sorted(creatures_dir.iterdir()):
-            if not creature_dir.is_dir():
-                continue
-            creature_file = creature_dir / "CREATURE.md"
-            if creature_file.exists():
-                creatures.append(load_creature(creature_file))
+        for creature_file in sorted(creatures_dir.rglob("CREATURE.md")):
+            creature_id = creature_file.parent.name
+            if creature_id in seen:
+                raise ValueError(
+                    f"Duplicate creature template id '{creature_id}': "
+                    f"{seen[creature_id]} and {creature_file}"
+                )
+            seen[creature_id] = creature_file
+            creatures.append(load_creature(creature_file))
     return creatures

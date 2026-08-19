@@ -34,6 +34,8 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "hendricks": "broken_lantern",
     "pippa": "broken_lantern",
     "tobin": "beacon_church",
+    "garron": "beacon_church",
+    "rowan": "beacon_church",
 
     # Named NPCs — at their home locations
     "aldren": "mayors_hall",
@@ -54,6 +56,7 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "arlan": "rusty_razor",
     "martha": "weary_traveler",
     "mira": "beacon_church",
+    "jareth": "broken_lantern",
 
     # Haverstead family — Old Mill on Greywater River
     "gregan": "old_mill",

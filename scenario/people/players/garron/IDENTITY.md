@@ -52,6 +52,29 @@ Broad and grey-bearded even by dwarven standards, Garron stands like a doorway n
 - prayer_book
 - priests_pack
 
+## Neurochemical Baseline
+- **dopamine:** 0.48
+- **cortisol:** 0.38
+- **norepinephrine:** 0.52
+- **endorphins:** 0.50
+- **serotonin:** 0.68
+- **acetylcholine:** 0.65
+- **oxytocin:** 0.52
+- **dopamine_baseline:** 0.48
+- **dopamine_volatility:** 0.35
+- **cortisol_baseline:** 0.34
+- **cortisol_volatility:** 0.45
+- **norepinephrine_baseline:** 0.48
+- **norepinephrine_volatility:** 0.50
+- **endorphins_baseline:** 0.52
+- **endorphins_volatility:** 0.40
+- **serotonin_baseline:** 0.66
+- **serotonin_volatility:** 0.25
+- **acetylcholine_baseline:** 0.62
+- **acetylcholine_volatility:** 0.40
+- **oxytocin_baseline:** 0.50
+- **oxytocin_volatility:** 0.45
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

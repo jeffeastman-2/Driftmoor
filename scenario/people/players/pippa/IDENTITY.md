@@ -52,6 +52,29 @@ Pippa is small even for a fairy, all quick wings and kinetic posture, with wild 
 - clothing: Patchwork tunic and scarf belt
 - amulet: Locket with charred splinter
 
+## Neurochemical Baseline
+- **dopamine:** 0.82
+- **cortisol:** 0.30
+- **norepinephrine:** 0.72
+- **endorphins:** 0.70
+- **serotonin:** 0.48
+- **acetylcholine:** 0.70
+- **oxytocin:** 0.72
+- **dopamine_baseline:** 0.68
+- **dopamine_volatility:** 0.90
+- **cortisol_baseline:** 0.32
+- **cortisol_volatility:** 0.85
+- **norepinephrine_baseline:** 0.58
+- **norepinephrine_volatility:** 0.90
+- **endorphins_baseline:** 0.62
+- **endorphins_volatility:** 0.80
+- **serotonin_baseline:** 0.52
+- **serotonin_volatility:** 0.75
+- **acetylcholine_baseline:** 0.62
+- **acetylcholine_volatility:** 0.85
+- **oxytocin_baseline:** 0.62
+- **oxytocin_volatility:** 0.85
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

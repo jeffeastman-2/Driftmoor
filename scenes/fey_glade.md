@@ -40,6 +40,6 @@ warmth ahead.
 
 
 ## Game State Sections
-- header: Creatures in Scene | file: scenario/creatures/shadowbeast/CREATURE.md
+- header: Creatures in Scene | file: scenario/creatures/monsters/shadowbeast/CREATURE.md
 - header: The Fey Glade Pool (DM Only) | file: scenario/places/mistwood_hills/fey_glade/LORE.md
 - text: Exit Motivations (DM only) | file: scenario/places/mistwood_hills/fey_glade/PLACE.md#Exit Motivations

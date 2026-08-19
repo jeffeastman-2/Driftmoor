@@ -19,9 +19,9 @@ The horses near the Mistwood road stall have been spooked for weeks.
 ### bramble
 - **type:** creature
 - **name:** Bramble
-- **creature_file:** scenario/creatures/horse/CREATURE.md
-- **soul_file:** scenario/creatures/horse/SOUL.md
-- **identity_file:** scenario/creatures/horse/IDENTITY.md
+- **creature_file:** scenario/creatures/miscellaneous/horse/CREATURE.md
+- **soul_file:** scenario/animals/bramble/SOUL.md
+- **identity_file:** scenario/animals/bramble/IDENTITY.md
 - **scene_handle:** the bay mare Bramble
 - **faction:** neutral
 - **movement_radius:** 3
@@ -29,9 +29,9 @@ The horses near the Mistwood road stall have been spooked for weeks.
 ### thistle
 - **type:** creature
 - **name:** Thistle
-- **creature_file:** scenario/creatures/horse/CREATURE.md
-- **soul_file:** scenario/creatures/horse/SOUL.md
-- **identity_file:** scenario/creatures/horse/IDENTITY.md
+- **creature_file:** scenario/creatures/miscellaneous/horse/CREATURE.md
+- **soul_file:** scenario/animals/thistle/SOUL.md
+- **identity_file:** scenario/animals/thistle/IDENTITY.md
 - **scene_handle:** the dapple-gray mare Thistle
 - **faction:** neutral
 - **movement_radius:** 3

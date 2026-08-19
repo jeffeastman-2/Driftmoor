@@ -36,6 +36,29 @@ Brenna is tall and broad-shouldered, built by decades of drill and road work. Pa
 - smiths_tools
 - amulet: Bronze Whitecairn falcon badge sewn into surcoat lining
 
+## Neurochemical Baseline
+- **dopamine:** 0.42
+- **cortisol:** 0.45
+- **norepinephrine:** 0.58
+- **endorphins:** 0.45
+- **serotonin:** 0.62
+- **acetylcholine:** 0.78
+- **oxytocin:** 0.35
+- **dopamine_baseline:** 0.45
+- **dopamine_volatility:** 0.35
+- **cortisol_baseline:** 0.38
+- **cortisol_volatility:** 0.45
+- **norepinephrine_baseline:** 0.52
+- **norepinephrine_volatility:** 0.55
+- **endorphins_baseline:** 0.50
+- **endorphins_volatility:** 0.40
+- **serotonin_baseline:** 0.62
+- **serotonin_volatility:** 0.30
+- **acetylcholine_baseline:** 0.72
+- **acetylcholine_volatility:** 0.45
+- **oxytocin_baseline:** 0.38
+- **oxytocin_volatility:** 0.35
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

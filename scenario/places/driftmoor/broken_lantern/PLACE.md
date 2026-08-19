@@ -39,6 +39,13 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 - **soul_file:** scenario/people/npcs/marda/SOUL.md
 - **identity_file:** scenario/people/npcs/marda/IDENTITY.md
 
+### jareth
+- **type:** npc
+- **soul_file:** scenario/people/npcs/jareth/SOUL.md
+- **identity_file:** scenario/people/npcs/jareth/IDENTITY.md
+- **stat_block_file:** scenario/creatures/npc_archetypes/cultist/CREATURE.md
+- **faction:** neutral
+
 ## Initial Positions
 
 | character | x | y |
@@ -47,12 +54,14 @@ Weathered timber, sloping roof, ivy on one side. Faded sign depicting a broken l
 | wilfred | 32.414 | 3.649 |
 | bran | 9.711 | 11.943 |
 | marda | 15.06 | 11.943 |
+| jareth | 6.5 | 3.5 |
 
 ## Who Is Normally Here
 - **Tess Malwin** — owner, behind the bar or moving through the room
 - **Wilfred** — regular drunkard, claims to have seen shadow giants near the obelisk
 - **Bran** — a bar patron in an argument with Marda
 - **Marda** — a bar patron in an argument with Bran
+- **Brother Jareth** — a rough-looking stranger keeping close to an exit
 - Fisherfolk, farmers, occasional travelers
 
 ## Scene Introductions
@@ -69,6 +78,14 @@ You are at a side table with Marda, arguing about a fishing payout that came up 
 ### marda
 You are at a side table with Bran, trying to keep a straightforward accounting argument from becoming a tavern scene. Bran is loud and stubborn. You are tired, annoyed, and very aware that everyone can hear at least half of this. You do not mind an audience if it helps settle the point. Do not move while you are discussing with Bran unless there is a disturbance.
 
+### jareth
+You came to hear Kaelin perform because rumors of her old song reached you.
+Stay at the edge of the room near an exit. You expect memory and dread, not a
+manifestation. If her voice changes or the flames turn violet, the broken
+chain link inside your coat grows warm. Rise and leave immediately. You want
+to warn the Haversteads, retrieve what remains of the ritual notes, and avoid
+being recognized—in that order when courage holds, the reverse when it does not.
+
 ## Connections
 - Village center (outside)
 - `upstairs/` via the creaky rear staircase
@@ -78,6 +95,6 @@ You are at a side table with Bran, trying to keep a straightforward accounting a
 ## Dynamic State
 *(Updated by monitor agent)*
 
-- **Current occupants:** Tess Malwin, Wilfred, evening crowd
+- **Current occupants:** Tess Malwin, Wilfred, Bran, Marda, Brother Jareth, evening crowd
 - **Recent events:** None yet — session not started
 - **Active conditions:** Suspicious travelers in meeting room; strange noises reported from upstairs

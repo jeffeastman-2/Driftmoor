@@ -7,7 +7,7 @@
 - Giant spider: lairs in the Secret Chamber, clinging to the ceiling above
   the burial vault. It has held this small chamber for years and ambushes
   the first creature to enter. Will not pursue prey out of the chamber.
-  See `scenario/creatures/giant_spider.md` for stat block and tactics.
+  See `scenario/creatures/miscellaneous/giant_spider/CREATURE.md` for stat block and tactics.
 
 ---
 
@@ -558,7 +558,7 @@ mechanism back to its starting silence.
   dropping from the ceiling. It will NOT pursue prey out into the Rocky
   Passage or beyond — its lair is the Secret Chamber alone. The +1 mace
   on the vault is the reward for clearing the lair. See
-  `scenario/creatures/giant_spider.md` for full stats and tactics.
+  `scenario/creatures/miscellaneous/giant_spider/CREATURE.md` for full stats and tactics.
 - Item ids in this file match the `## Items` table in `GEOMETRY.md`. Add new
   items there first (with coordinates), then describe them here.
 - **Item interactions convention:** Items may include an `*Interactions (DM

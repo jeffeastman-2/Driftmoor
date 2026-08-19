@@ -49,6 +49,29 @@ Cinnabar is slight and quick, with copper-red hair cut unevenly short, freckled 
 - burglars_pack
 - ring: Silver ring
 
+## Neurochemical Baseline
+- **dopamine:** 0.68
+- **cortisol:** 0.45
+- **norepinephrine:** 0.70
+- **endorphins:** 0.55
+- **serotonin:** 0.48
+- **acetylcholine:** 0.82
+- **oxytocin:** 0.35
+- **dopamine_baseline:** 0.60
+- **dopamine_volatility:** 0.70
+- **cortisol_baseline:** 0.38
+- **cortisol_volatility:** 0.75
+- **norepinephrine_baseline:** 0.58
+- **norepinephrine_volatility:** 0.80
+- **endorphins_baseline:** 0.52
+- **endorphins_volatility:** 0.55
+- **serotonin_baseline:** 0.52
+- **serotonin_volatility:** 0.60
+- **acetylcholine_baseline:** 0.75
+- **acetylcholine_volatility:** 0.70
+- **oxytocin_baseline:** 0.42
+- **oxytocin_volatility:** 0.75
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

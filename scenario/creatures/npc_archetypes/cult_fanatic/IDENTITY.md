@@ -12,8 +12,8 @@ Cult Fanatic. CR 2.
 - **STR:** 11 | **DEX:** 14 (+2) | **CON:** 12 (+1)
 - **INT:** 10 | **WIS:** 13 (+1) | **CHA:** 14 (+2)
 - **faction:** hostile
-- **pronouns:** he/him
-- **weapons:** cult_fanatic_dagger+4
+- **pronouns:** they/them
+- **weapons:** dagger+4
 
 ## Neurochemical Baseline
 - **dopamine:** 0.55

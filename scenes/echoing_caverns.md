@@ -154,6 +154,6 @@ you are done ignoring voices that carry this kind of resonance.
 ## Game State Sections
 - file: scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md
 - header: Relevant Lore (DM only) | file: scenario/things/obelisk_shards.md
-- header: Creatures in Scene | file: scenario/creatures/giant_spider/CREATURE.md
+- header: Creatures in Scene | file: scenario/creatures/miscellaneous/giant_spider/CREATURE.md
 - header: Mission Objective | file: scenes/echoing_caverns.md#Mission Objective
 - header: Scene Notes | file: scenes/echoing_caverns.md#Scene Notes

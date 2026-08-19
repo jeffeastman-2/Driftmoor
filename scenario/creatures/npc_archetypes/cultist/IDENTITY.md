@@ -2,7 +2,7 @@ Cultist. CR 1/8.
 - Dark Devotion: advantage on saves against being charmed or frightened.
 - Attack: one scimitar attack per turn.
 - Scimitar: +3, 1d6+1 slashing.
-- Jareth prefers escape, surrender, and negotiation to lethal combat.
+- Anonymous cultists may escape, surrender, negotiate, or remain zealous according to circumstance.
 
 ## Combat Statistics
 - **HP:** 9
@@ -11,8 +11,8 @@ Cultist. CR 1/8.
 - **STR:** 11 | **DEX:** 12 (+1) | **CON:** 10
 - **INT:** 10 | **WIS:** 11 | **CHA:** 10
 - **faction:** hostile
-- **pronouns:** he/him
-- **weapons:** cultist_scimitar+3
+- **pronouns:** they/them
+- **weapons:** scimitar+3
 
 ## Neurochemical Baseline
 - **dopamine:** 0.3

@@ -1,8 +1,8 @@
 Cultist
 
-A mortal devotee trained to protect forbidden rites. Brother Jareth can use
-this restrained profile while frightened, evasive, or unwilling to reveal the
-full extent of his occult training.
+A mortal devotee trained to protect forbidden rites, obey a charismatic
+leader, and defend the symbols of a forbidden faith. A cultist may be zealous,
+coerced, frightened, or trapped by promises that became threats.
 
 Race: Medium Humanoid
 Alignment: Any non-good alignment
@@ -36,8 +36,8 @@ Scimitar:
 • Hit: 4 (1d6 + 1) slashing damage.
 
 Tactics:
-Jareth avoids initiating combat. He retreats, Dodges, bargains, or surrenders
-when isolated. If forced to fight, he stays near an exit and attacks only to
-make room to escape. This is a forgiving first humanoid opponent: telegraph
-his fear, let social choices interrupt combat, and have him flee at half hit
-points rather than fight to the death.
+A cultist gains courage from allies and ritual authority but rarely possesses
+the fanatic's commitment. Cultists protect a leader or objective, use numbers
+to threaten isolated opponents, and retreat, bargain, or surrender when the
+group breaks. Individual motives should determine whether defeat produces
+repentance, renewed zeal, or simple flight.

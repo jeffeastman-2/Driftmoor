@@ -38,9 +38,9 @@ TRAIL → TREELINE → GLADE → POOL
 
 ### shadowbeast_1
 - **type:** creature
-- **creature_file:** scenario/creatures/shadowbeast/CREATURE.md
-- **soul_file:** scenario/creatures/shadowbeast/SOUL.md
-- **identity_file:** scenario/creatures/shadowbeast/IDENTITY.md
+- **creature_file:** scenario/creatures/monsters/shadowbeast/CREATURE.md
+- **soul_file:** scenario/creatures/monsters/shadowbeast/SOUL.md
+- **identity_file:** scenario/creatures/monsters/shadowbeast/IDENTITY.md
 - **position:** 65, 162
 
 ## Who Is Normally Here

@@ -9,9 +9,9 @@ Father Elden Greybeard came here decades ago. His companions did not leave.
 
 ### giant_spider
 - **type:** creature
-- **creature_file:** scenario/creatures/giant_spider/CREATURE.md
-- **soul_file:** scenario/creatures/giant_spider/SOUL.md
-- **identity_file:** scenario/creatures/giant_spider/IDENTITY.md
+- **creature_file:** scenario/creatures/miscellaneous/giant_spider/CREATURE.md
+- **soul_file:** scenario/creatures/miscellaneous/giant_spider/SOUL.md
+- **identity_file:** scenario/creatures/miscellaneous/giant_spider/IDENTITY.md
 - **scene_handle:** the giant spider
 - **position:** 64, 195, 10
 - **activation:** zone_entry:Secret Chamber

@@ -56,6 +56,29 @@ Tobin is broad-shouldered and comfortably grounded, with brown hair gone silver 
 - prayer_book 
 - notebook: Travel journal of names
 
+## Neurochemical Baseline
+- **dopamine:** 0.55
+- **cortisol:** 0.30
+- **norepinephrine:** 0.38
+- **endorphins:** 0.55
+- **serotonin:** 0.72
+- **acetylcholine:** 0.65
+- **oxytocin:** 0.70
+- **dopamine_baseline:** 0.54
+- **dopamine_volatility:** 0.35
+- **cortisol_baseline:** 0.32
+- **cortisol_volatility:** 0.45
+- **norepinephrine_baseline:** 0.40
+- **norepinephrine_volatility:** 0.40
+- **endorphins_baseline:** 0.56
+- **endorphins_volatility:** 0.40
+- **serotonin_baseline:** 0.70
+- **serotonin_volatility:** 0.25
+- **acetylcholine_baseline:** 0.62
+- **acetylcholine_volatility:** 0.40
+- **oxytocin_baseline:** 0.66
+- **oxytocin_volatility:** 0.45
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

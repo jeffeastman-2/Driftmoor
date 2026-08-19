@@ -51,6 +51,29 @@ Hendricks is a thin, slightly stooped man with white hair gone wispy at the crow
 - clothing: Mended blue robes
 - notebook: Leather notebook with Ilse's last letters
 
+## Neurochemical Baseline
+- **dopamine:** 0.58
+- **cortisol:** 0.32
+- **norepinephrine:** 0.40
+- **endorphins:** 0.48
+- **serotonin:** 0.66
+- **acetylcholine:** 0.82
+- **oxytocin:** 0.50
+- **dopamine_baseline:** 0.54
+- **dopamine_volatility:** 0.40
+- **cortisol_baseline:** 0.34
+- **cortisol_volatility:** 0.50
+- **norepinephrine_baseline:** 0.42
+- **norepinephrine_volatility:** 0.45
+- **endorphins_baseline:** 0.50
+- **endorphins_volatility:** 0.35
+- **serotonin_baseline:** 0.64
+- **serotonin_volatility:** 0.30
+- **acetylcholine_baseline:** 0.76
+- **acetylcholine_volatility:** 0.65
+- **oxytocin_baseline:** 0.48
+- **oxytocin_volatility:** 0.45
+
 ## Dynamic State
 *(Updated by monitor agent each round)*
 

@@ -543,7 +543,7 @@ def _apply_equipment(session, id_stats, cfg, weapon_library, armor_library,
     from models.thing import DRINKABLE, EDIBLE
     weapons = (parse_character_weapons(cfg["weapons"], weapon_library)
                if cfg.get("weapons") else [])
-    if cfg.get("type") == "creature" and cfg.get("weapons"):
+    if (cfg.get("type") == "creature" or cfg.get("stat_block_file")) and cfg.get("weapons"):
         resolved_ids = {w.id for w in weapons}
         for weapon_id, bonus in _parse_weapon_entries(cfg.get("weapons", "")):
             if weapon_id in resolved_ids:
@@ -854,10 +854,20 @@ def _build_player_or_npc(
     identity_text = _load(ROOT / cfg["identity_file"])
     s = parse_identity_stats(identity_text)
 
+    # A named NPC may inherit combat statistics from a reusable Appendix-B-
+    # style archetype while retaining their own identity and soul.  Explicit
+    # scene values remain authoritative over the referenced stat block.
+    stat_block = None
+    if cfg.get("type", "player") == "npc" and cfg.get("stat_block_file"):
+        stat_block = parse_creature_stats(_load(ROOT / cfg["stat_block_file"]))
+
     # scene-config overrides take precedence over parsed stats
-    hp    = int(cfg["hp"])    if "hp"    in cfg else s["hp"]
-    ac    = int(cfg["ac"])    if "ac"    in cfg else s["ac"]
-    speed = cfg["speed"]      if "speed" in cfg else s["speed"]
+    hp_default = stat_block["hp"] if stat_block else s["hp"]
+    ac_default = stat_block["ac"] if stat_block else s["ac"]
+    speed_default = stat_block["speed"] if stat_block else s["speed"]
+    hp    = int(cfg["hp"])    if "hp"    in cfg else hp_default
+    ac    = int(cfg["ac"])    if "ac"    in cfg else ac_default
+    speed = cfg["speed"]      if "speed" in cfg else speed_default
 
     char_type = cfg.get("type", "player")
     faction = cfg.get("faction", "party")
@@ -890,6 +900,7 @@ def _build_player_or_npc(
             purse_cp=purse_cp,
         )
     else:
+        ability_source = stat_block or s
         character = NPC(
             id=char_id,
             name=name,
@@ -901,12 +912,12 @@ def _build_player_or_npc(
             ac=ac,
             speed=speed,
             faction=faction,
-            strength=s["strength"],
-            dexterity=s["dexterity"],
-            constitution=s["constitution"],
-            intelligence=s["intelligence"],
-            wisdom=s["wisdom"],
-            charisma=s["charisma"],
+            strength=ability_source["strength"],
+            dexterity=ability_source["dexterity"],
+            constitution=ability_source["constitution"],
+            intelligence=ability_source["intelligence"],
+            wisdom=ability_source["wisdom"],
+            charisma=ability_source["charisma"],
             purse_cp=purse_cp,
         )
 
@@ -1268,6 +1279,44 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
                     key = f"{dim}{suffix}"
                     if key not in cfg and id_stats.get(key):
                         cfg[key] = str(id_stats[key])
+
+        # A named animal/creature may have an individual identity while its
+        # species template provides weapons and remaining runtime defaults.
+        if cfg.get("type") == "creature" and cfg.get("creature_file"):
+            creature_path = ROOT / cfg["creature_file"]
+            template_identity = creature_path.parent / "IDENTITY.md"
+            configured_identity = ROOT / cfg["identity_file"] if cfg.get("identity_file") else None
+            if template_identity.exists() and template_identity != configured_identity:
+                template_stats = parse_identity_stats(
+                    template_identity.read_text(encoding="utf-8")
+                )
+                _merge_identity_defaults(cfg, template_stats)
+                if not id_stats.get("native_attacks") and template_stats.get("native_attacks"):
+                    id_stats["native_attacks"] = template_stats["native_attacks"]
+                for dim in _NEUROCHEMICALS:
+                    for suffix in ("", "_baseline", "_volatility"):
+                        key = f"{dim}{suffix}"
+                        if key not in cfg and template_stats.get(key):
+                            cfg[key] = str(template_stats[key])
+
+        # Named NPCs can compose their personal identity/soul with a reusable
+        # humanoid archetype.  The sibling archetype IDENTITY.md supplies
+        # structured weapons and condition defaults; personal/scene values win.
+        if cfg.get("type") == "npc" and cfg.get("stat_block_file"):
+            stat_path = ROOT / cfg["stat_block_file"]
+            archetype_identity = stat_path.parent / "IDENTITY.md"
+            if archetype_identity.exists():
+                archetype_stats = parse_identity_stats(
+                    archetype_identity.read_text(encoding="utf-8")
+                )
+                _merge_identity_defaults(cfg, archetype_stats)
+                if not id_stats.get("native_attacks") and archetype_stats.get("native_attacks"):
+                    id_stats["native_attacks"] = archetype_stats["native_attacks"]
+                for dim in _NEUROCHEMICALS:
+                    for suffix in ("", "_baseline", "_volatility"):
+                        key = f"{dim}{suffix}"
+                        if key not in cfg and archetype_stats.get(key):
+                            cfg[key] = str(archetype_stats[key])
 
         if cfg.get("type") == "creature":
             session = _build_creature(char_id, cfg, introductions)

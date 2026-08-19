@@ -81,7 +81,7 @@ Example:
 ```markdown
 ## Creatures
 - Giant spider: lairs in the Secret Chamber, clinging to the ceiling.
-  See `scenario/creatures/giant_spider.md`.
+  See `scenario/creatures/miscellaneous/giant_spider/CREATURE.md`.
 - Shadowbeasts: 2d4 in the deeper chambers.
 ```
 
