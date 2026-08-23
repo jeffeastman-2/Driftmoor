@@ -12,8 +12,24 @@ ROOT = Path(__file__).parent.parent
 def test_categorized_creature_library_loads_recursively():
     templates = load_all_creatures(ROOT / "scenario" / "creatures")
     ids = {template.id for template in templates}
-    assert {"horse", "shadowbeast", "cultist", "bandit_captain"} <= ids
+    assert {
+        "horse", "shadowbeast", "cultist", "bandit_captain",
+        "drow", "drow_elite_warrior", "drow_mage",
+        "drow_priestess_of_lolth",
+    } <= ids
     assert len(ids) == len(templates)
+
+
+def test_drow_templates_have_companion_identity_and_soul_files():
+    root = ROOT / "scenario" / "creatures" / "humanoids"
+    for creature_id in (
+        "drow", "drow_elite_warrior", "drow_mage",
+        "drow_priestess_of_lolth",
+    ):
+        directory = root / creature_id
+        assert (directory / "CREATURE.md").is_file()
+        assert (directory / "IDENTITY.md").is_file()
+        assert (directory / "SOUL.md").is_file()
 
 
 def test_duplicate_template_ids_are_rejected(tmp_path):
