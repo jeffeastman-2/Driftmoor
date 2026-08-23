@@ -140,6 +140,39 @@ One of the town's largest structures.
 
 
 class TestLoadPlace:
+    def test_zone_files_replace_obsolete_contents_file(self, tmp_path):
+        (tmp_path / "PLACE.md").write_text(
+            "# PLACE.md — Migrated Place\n\n"
+            "## Description and Atmosphere\nA migrated place.\n",
+            encoding="utf-8",
+        )
+        zones = tmp_path / "zones"
+        zones.mkdir()
+        (zones / "second.md").write_text("# Second Zone\n", encoding="utf-8")
+        (zones / "first.md").write_text("# First Zone\n", encoding="utf-8")
+
+        place = load_place(tmp_path)
+
+        assert "First Zone" in place.contents_raw
+        assert "Second Zone" in place.contents_raw
+        assert place.contents_raw.index("First Zone") < place.contents_raw.index("Second Zone")
+
+    def test_zone_files_take_precedence_over_legacy_contents(self, tmp_path):
+        (tmp_path / "PLACE.md").write_text(
+            "# PLACE.md — Migrated Place\n", encoding="utf-8"
+        )
+        (tmp_path / "CONTENTS.md").write_text(
+            "obsolete sentinel", encoding="utf-8"
+        )
+        zones = tmp_path / "zones"
+        zones.mkdir()
+        (zones / "room.md").write_text("# Current Zone\n", encoding="utf-8")
+
+        place = load_place(tmp_path)
+
+        assert "Current Zone" in place.contents_raw
+        assert "obsolete sentinel" not in place.contents_raw
+
     def test_load_region(self):
         p = load_place(PLACES_DIR, place_id="region")
         assert p.name == "The Land Around Driftmoor"

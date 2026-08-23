@@ -573,6 +573,21 @@ def load_puzzles(path: Path) -> dict[str, PuzzleSpec]:
     return parse_puzzles(text)
 
 
+def load_zone_puzzles(zones_dir: Path) -> dict[str, PuzzleSpec]:
+    """Load and merge ``## Puzzles`` sections from ``zones/*.md``."""
+    puzzles: dict[str, PuzzleSpec] = {}
+    for zone_path in sorted(Path(zones_dir).glob("*.md")):
+        for puzzle_id, spec in parse_puzzles(
+            zone_path.read_text(encoding="utf-8")
+        ).items():
+            if puzzle_id in puzzles:
+                raise ValueError(
+                    f"Duplicate puzzle id {puzzle_id!r} across zone files"
+                )
+            puzzles[puzzle_id] = spec
+    return puzzles
+
+
 def _parse_geometry_items_table(geometry_text: str) -> dict[str, dict]:
     """Parse the ``## Items`` table out of a GEOMETRY.md.
 

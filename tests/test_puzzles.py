@@ -12,11 +12,11 @@ from pathlib import Path
 import pytest
 
 from engine.puzzles import SequencePuzzle, build_registry
-from models.contents_loader import load_puzzles
+from models.contents_loader import load_zone_puzzles
 from models.puzzle import PuzzleEffect, PuzzleSpec
 
 
-CONTENTS = Path("scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md")
+ZONES = Path("scenario/places/obelisk_reach/echoing_caverns/zones")
 
 TOP = "trigger_glyph_top"
 BOTTOM = "trigger_glyph_bottom"
@@ -156,7 +156,7 @@ class TestUnknownTarget:
 
 class TestRegistryFromContents:
     def test_authored_puzzle_loads_and_solves(self):
-        registry = build_registry(load_puzzles(CONTENTS))
+        registry = build_registry(load_zone_puzzles(ZONES))
         assert registry.target_ids >= set(SOLUTION)
         assert registry.puzzle_for_item(TOP) is registry.puzzle_for_item(MIDDLE)
 
@@ -167,6 +167,6 @@ class TestRegistryFromContents:
         assert any(e["type"] == "door_open" for e in result.side_effects)
 
     def test_non_input_item_returns_unconsumed(self):
-        registry = build_registry(load_puzzles(CONTENTS))
+        registry = build_registry(load_zone_puzzles(ZONES))
         result = registry.press("secret_burial_vault")
         assert result.consumed is False

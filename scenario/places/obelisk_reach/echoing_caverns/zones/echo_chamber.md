@@ -109,6 +109,25 @@ A hairline seam and three trigger glyphs on the west wall hide a worked passage.
 - south-west: Deep Passage
 - south-east: Pool Passage
 
+## Puzzles
+
+### west_wall_glyph_sequence
+*Type: sequence*
+
+The three trigger glyphs form one ordered lock. Pressing them **top -> bottom
+-> middle** opens the west seam. Pressing any glyph once it is open closes it;
+an out-of-order press resets the sequence.
+
+- **solution** -> trigger_glyph_top, trigger_glyph_bottom, trigger_glyph_middle
+- **step** -> A faint dry click sounds beneath your fingertip, as though something in the wall has shifted and is listening.
+- **step** -> A heavier grinding click answers from within the rock, like a bolt drawing back a fraction.
+- **solve** (door_open) -> Stone grinds as the hairline crack widens into a passable hewn opening in the west wall.
+- **broadcast** (door_open) -> The west wall grinds open. Vibrations carry through the rock to the Secret Chamber.
+- **reset** -> A flat, dead click, and then nothing. The sequence is lost.
+- **reverse** (door_close) -> The opening snaps shut to a hairline. Anyone in the squeeze is pushed safely to one side.
+- **broadcast** (door_close) -> The hewn opening grinds shut to a hairline crack again.
+- **prompt** -> A mechanism is responding to your touch. What do you do next?
+
 ## Proposed (review -> keep needs GEOMETRY placement, or cut)
 Ideas to enrich the zone. NOT loaded by the engine. No coordinates.
 

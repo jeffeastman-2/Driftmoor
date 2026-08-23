@@ -14,11 +14,11 @@ from engine.verb_resolver import (
     infer_interaction_target,
     resolve_item_interaction,
 )
-from models.contents_loader import load_contents_with_geometry
+from models.contents_loader import load_zone_contents_with_geometry
 from models.geometry_loader import load_geometry
 
 
-CONTENTS = Path("scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md")
+ZONES = Path("scenario/places/obelisk_reach/echoing_caverns/zones")
 GEOMETRY = Path("scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md")
 
 
@@ -29,7 +29,7 @@ def geometry():
 
 @pytest.fixture(scope="module")
 def items(geometry):
-    return load_contents_with_geometry(CONTENTS, GEOMETRY, scene_geometry=geometry)
+    return load_zone_contents_with_geometry(ZONES, GEOMETRY, scene_geometry=geometry)
 
 
 class TestVerbDetection:
@@ -147,8 +147,7 @@ class TestResolveInteraction:
         )
         assert result is not None
         _, interaction = result
-        # Multi-word verb: starts with examine (search falls back to examine).
-        assert interaction.verb.lower().startswith("examine")
+        assert interaction.verb.lower() == "search"
 
     def test_no_verb_defaults_to_examine(self, items):
         # Player just declares "Interact: Drag marks" with vague intent.
@@ -160,7 +159,7 @@ class TestResolveInteraction:
         )
         assert result is not None
         _, interaction = result
-        assert interaction.matches("examine")
+        assert interaction.matches("search")
 
     def test_zone_gating_blocks_far_items(self, items):
         # Cannot examine Mace +1 from Entry Chamber.

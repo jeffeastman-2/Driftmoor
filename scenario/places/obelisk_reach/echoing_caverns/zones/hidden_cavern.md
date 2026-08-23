@@ -17,12 +17,14 @@ No geometry-placed items in this zone.
 
 ## Features / landmarks
 - hidden_cavern_opening: north opening toward Collapsed Tunnel continuation
+- concealed_lift_floor: fitted stone panels covering the Broken Lift shaft
 
 ## Creatures present
 - none
 
 ## Exits
 - north: Collapsed Tunnel (blocked)
+- down: Broken Lift into the Sleeping City
 
 ## Proposed (review -> keep needs GEOMETRY placement, or cut)
 Ideas to enrich the zone. NOT loaded by the engine. No coordinates.

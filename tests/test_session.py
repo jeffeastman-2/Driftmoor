@@ -3395,12 +3395,12 @@ class TestResolveTeleportDestination:
         assert label == (geo.zone_at(Position(x, y)) or "").upper()
 
     def test_named_item_feature_resolves_to_its_position(self, geo):
-        from models.contents_loader import load_contents_with_geometry
+        from models.contents_loader import load_zone_contents_with_geometry
         from models.space_time import Position
 
         base = Path(__file__).parent.parent / "scenario/places/obelisk_reach/echoing_caverns"
-        items = load_contents_with_geometry(
-            base / "CONTENTS.md", base / "GEOMETRY.md", scene_geometry=geo
+        items = load_zone_contents_with_geometry(
+            base / "zones", base / "GEOMETRY.md", scene_geometry=geo
         )
         dest = _resolve_teleport_destination(
             "I cast a Teleport spell to move to the trigger glyphs", geo, items

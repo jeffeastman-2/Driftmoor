@@ -13,18 +13,18 @@ from engine.session import (
     _zone_has_unresolved_puzzle,
 )
 from engine.puzzles import build_registry
-from models.contents_loader import load_contents_with_geometry, load_puzzles
+from models.contents_loader import load_zone_contents_with_geometry, load_zone_puzzles
 from models.geometry_loader import load_geometry
 from models.space_time import Position
 
 
-CONTENTS = Path("scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md")
+ZONES = Path("scenario/places/obelisk_reach/echoing_caverns/zones")
 GEOMETRY = Path("scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md")
 
 
 def _load_items_and_geometry():
     geometry = load_geometry(GEOMETRY)
-    items = load_contents_with_geometry(CONTENTS, GEOMETRY, scene_geometry=geometry)
+    items = load_zone_contents_with_geometry(ZONES, GEOMETRY, scene_geometry=geometry)
     return geometry, items
 
 
@@ -92,7 +92,7 @@ def test_first_passage_redirect_prefers_echo_chamber_over_nonadjacent_branch():
 def test_echo_chamber_puzzle_pressure_block_appears():
     geometry, items = _load_items_and_geometry()
     pos = {"seraphina": (222.0, 200.0, "Echo Chamber")}
-    puzzles = build_registry(load_puzzles(CONTENTS))
+    puzzles = build_registry(load_zone_puzzles(ZONES))
 
     assert _zone_has_unresolved_puzzle(
         current_zone="Echo Chamber",
@@ -112,7 +112,7 @@ def test_echo_chamber_puzzle_pressure_block_appears():
 def test_puzzle_focus_prefers_glyphs_over_exit_when_live():
     geometry, items = _load_items_and_geometry()
     pos = {"seraphina": (222.0, 200.0, "Echo Chamber")}
-    puzzles = build_registry(load_puzzles(CONTENTS))
+    puzzles = build_registry(load_zone_puzzles(ZONES))
 
     focus = _choose_puzzle_focus_item(
         character_id="seraphina",

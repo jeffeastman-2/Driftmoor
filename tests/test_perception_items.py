@@ -1,6 +1,6 @@
 """Tests: items surfaced into per-turn perception.
 
-Validates that when a CONTENTS.md is present, items the acting character
+Validates that when zone content is present, items the acting character
 can perceive are listed under an ``Items in view:`` sub-block in the
 perception string. Perception is gated by the observer's sight range —
 the scene's ambient (light) range for caverns, extended by darkvision —
@@ -17,11 +17,11 @@ from types import SimpleNamespace
 import pytest
 
 from engine.session import _build_perception
-from models.contents_loader import load_contents_with_geometry
+from models.contents_loader import load_zone_contents_with_geometry
 from models.geometry_loader import load_geometry
 
 
-CONTENTS = Path("scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md")
+ZONES = Path("scenario/places/obelisk_reach/echoing_caverns/zones")
 GEOMETRY = Path("scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md")
 
 
@@ -41,7 +41,7 @@ def geometry():
 
 @pytest.fixture(scope="module")
 def items(geometry):
-    return load_contents_with_geometry(CONTENTS, GEOMETRY, scene_geometry=geometry)
+    return load_zone_contents_with_geometry(ZONES, GEOMETRY, scene_geometry=geometry)
 
 
 class TestPerceptionWithItems:
@@ -60,7 +60,7 @@ class TestPerceptionWithItems:
         # Drag marks (large) at ~28 ft fall in the "intermediate" band; they
         # author an intermediate description, so that vague text shows (not the
         # bare label).
-        assert "twin scrapes" in perception, perception
+        assert "twin scored lines" in perception, perception
         # The snapped torch (small) at ~28 ft falls in the "far" band, so it
         # reads as its vague distant appearance, not its label.
         assert "pale streak" in perception, perception
@@ -165,9 +165,9 @@ class TestPerceptionWithItems:
             characters=_observer("thorgrim", race="Mountain Dwarf"),
             items=items,
         )
-        # Format: "- twin scrapes ... (~30 ft away)" (rounded to nearest 5).
+        # Format uses the zone-authored appearance and rounds to nearest 5.
         import re
-        m = re.search(r"- twin scrapes[^\n]*\(~(\d+) ft away\)", perception)
+        m = re.search(r"- twin scored lines[^\n]*\(~(\d+) ft away\)", perception)
         assert m is not None, f"drag_marks line not found:\n{perception}"
         dist = int(m.group(1))
         # Actual dist = sqrt(64 + 729) ≈ 28.2 → rounded to 25 or 30.

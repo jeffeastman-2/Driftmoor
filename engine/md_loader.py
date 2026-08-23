@@ -1198,17 +1198,23 @@ def configure_from_md(config_path: Path, game_time: GameTime | None = None, self
     from engine.puzzles import PuzzleRegistry
     puzzle_registry: PuzzleRegistry = PuzzleRegistry()
     if geo_path is not None:
+        zones_dir = geo_path.parent / "zones"
         contents_path = geo_path.parent / "CONTENTS.md"
-        if contents_path.exists():
-            from models.contents_loader import load_puzzles
+        if (zones_dir.exists() and any(zones_dir.glob("*.md"))) or contents_path.exists():
+            from models.contents_loader import load_puzzles, load_zone_puzzles
             from engine.puzzles import build_registry
             try:
-                puzzle_registry = build_registry(load_puzzles(contents_path))
+                specs = (
+                    load_zone_puzzles(zones_dir)
+                    if zones_dir.exists() and any(zones_dir.glob("*.md"))
+                    else load_puzzles(contents_path)
+                )
+                puzzle_registry = build_registry(specs)
             except Exception as e:  # pragma: no cover - logged for diagnostics
                 import sys
                 print(
                     f"[md_loader] WARNING: failed to load puzzles from "
-                    f"{contents_path}: {e}",
+                    f"{zones_dir if zones_dir.exists() else contents_path}: {e}",
                     file=sys.stderr,
                 )
     # ── Weapon / Armor libraries ──────────────────────────────────────────────

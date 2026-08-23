@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600" role="img" aria-labelledby="title desc">
+  <title id="title">Sleeping City spatial layout</title>
+  <desc id="desc">Top-down schematic showing the collapsed tunnel, dumbwaiter lift, Gate of Two Peoples, Avenue of Sleeping Blades, four side doors, Chainworks loop, Hall of Unchosen Queens, and Crypt of Seven Chains.</desc>
+  <defs>
+    <pattern id="stone" width="36" height="36" patternUnits="userSpaceOnUse">
+      <rect width="36" height="36" fill="#e7e1d4"/>
+      <path d="M0 18H36M18 0V18M8 18V36" stroke="#d0c6b4" stroke-width="2"/>
+    </pattern>
+    <pattern id="web" width="56" height="56" patternUnits="userSpaceOnUse">
+      <rect width="56" height="56" fill="#ddd8e8"/>
+      <path d="M28 0V56M0 28H56M8 8L48 48M48 8L8 48M12 28A16 16 0 0 1 44 28M17 28A11 11 0 0 1 39 28" fill="none" stroke="#aaa0bd" stroke-width="1.4" opacity=".75"/>
+    </pattern>
+    <pattern id="chains" width="44" height="44" patternUnits="userSpaceOnUse">
+      <rect width="44" height="44" fill="#d9e1df"/>
+      <path d="M8 14c0-5 4-9 9-9s9 4 9 9-4 9-9 9S8 19 8 14Zm10 16c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9Z" fill="none" stroke="#64827c" stroke-width="3"/>
+    </pattern>
+    <linearGradient id="crypt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#30213f"/>
+      <stop offset="1" stop-color="#15101d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#17131d" flood-opacity=".23"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10Z" fill="#9e4b30"/>
+    </marker>
+    <style>
+      .wall{stroke:#29252d;stroke-width:8;stroke-linejoin:round}
+      .thin{stroke:#514b57;stroke-width:4;fill:none}
+      .room-title{font:700 25px Georgia,serif;fill:#17141b;text-anchor:middle}
+      .room-sub{font:16px Arial,sans-serif;fill:#4c4651;text-anchor:middle}
+      .small{font:14px Arial,sans-serif;fill:#4c4651;text-anchor:middle}
+      .door{stroke:#a77631;stroke-width:14;stroke-linecap:square}
+      .route{stroke:#9e4b30;stroke-width:7;fill:none;stroke-dasharray:15 10;marker-end:url(#arrow)}
+      .chain-route{stroke:#477b72;stroke-width:7;fill:none;stroke-dasharray:12 9;marker-end:url(#arrow)}
+      .callout{fill:#fffaf0;stroke:#8a8070;stroke-width:2}
+      .callout-title{font:700 18px Arial,sans-serif;fill:#2a252e}
+      .callout-text{font:15px Arial,sans-serif;fill:#4c4651}
+    </style>
+  </defs>
+
+  <rect width="1200" height="1600" fill="#f6f2e9"/>
+  <text x="600" y="58" font-family="Georgia,serif" font-size="38" font-weight="700" text-anchor="middle" fill="#17141b">The Sleeping City</text>
+  <text x="600" y="88" font-family="Arial,sans-serif" font-size="17" text-anchor="middle" fill="#5c5560">Top-down playable route through Nhal’Zirath · schematic, not to scale</text>
+
+  <!-- Surface approach -->
+  <path d="M445 120H755V220H690L650 270H550L510 220H445Z" fill="url(#stone)" class="wall" filter="url(#shadow)"/>
+  <path d="M470 145H730L690 190H510Z" fill="#978f84" opacity=".55"/>
+  <path d="M480 150l48 35m18-37 50 37m20-36 44 38m19-37 43 35" stroke="#514b57" stroke-width="8"/>
+  <text x="600" y="202" class="room-title">Collapsed Tunnel</text>
+  <text x="600" y="230" class="room-sub">deliberately sealed from above</text>
+
+  <!-- Lift shaft -->
+  <rect x="515" y="276" width="170" height="180" rx="10" fill="#26232b" class="wall" filter="url(#shadow)"/>
+  <rect x="550" y="304" width="100" height="110" fill="#b39a65" stroke="#e0d0a5" stroke-width="5"/>
+  <path d="M565 304v110m70-110v110M550 330h100M550 388h100" stroke="#5b4729" stroke-width="5"/>
+  <path d="M535 295v135M665 295v135" stroke="#7b9e96" stroke-width="7" stroke-dasharray="13 8"/>
+  <text x="600" y="441" font-family="Arial,sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="#f4efe5">Broken Lift</text>
+  <text x="600" y="466" class="small">freight cage / dumbwaiter</text>
+
+  <!-- Gatehouse -->
+  <rect x="390" y="498" width="420" height="150" fill="url(#stone)" class="wall" filter="url(#shadow)"/>
+  <path d="M520 508v130M680 508v130" stroke="#6d7473" stroke-width="14"/>
+  <circle cx="468" cy="574" r="38" fill="#927849" stroke="#4e3d21" stroke-width="6"/>
+  <path d="M468 542v64m-32-32h64" stroke="#4e3d21" stroke-width="7"/>
+  <path d="M707 590q35-60 70 0" fill="none" stroke="#9f79b2" stroke-width="7"/>
+  <circle cx="721" cy="565" r="7" fill="#9f79b2"/><circle cx="742" cy="550" r="7" fill="#9f79b2"/><circle cx="763" cy="565" r="7" fill="#9f79b2"/>
+  <text x="600" y="545" class="room-title">Gate of Two Peoples</text>
+  <text x="600" y="578" class="room-sub">dwarven wheel + elven harmonic seal</text>
+  <text x="600" y="608" class="small">the last narrow threshold before the city opens</text>
+
+  <!-- Main avenue -->
+  <path d="M410 648H790V1250H410Z" fill="url(#web)" class="wall" filter="url(#shadow)"/>
+  <path d="M478 662V1235M722 662V1235" stroke="#6b6374" stroke-width="5"/>
+  <text x="600" y="706" class="room-title">Avenue of Sleeping Blades</text>
+  <text x="600" y="735" class="room-sub">the long processional spine of the city</text>
+
+  <!-- Sleeper alcoves -->
+  <g fill="#777083" stroke="#3e3945" stroke-width="3">
+    <path d="M425 768h42v68h-42zM425 870h42v68h-42zM425 1075h42v68h-42zM425 1168h42v55h-42z"/>
+    <path d="M733 768h42v68h-42zM733 870h42v68h-42zM733 1075h42v68h-42zM733 1168h42v55h-42z"/>
+  </g>
+  <g fill="#d8d0e1" stroke="#8d829b" stroke-width="2">
+    <ellipse cx="446" cy="786" rx="11" ry="15"/><rect x="437" y="801" width="18" height="25" rx="8"/>
+    <ellipse cx="446" cy="888" rx="11" ry="15"/><rect x="437" y="903" width="18" height="25" rx="8"/>
+    <ellipse cx="754" cy="786" rx="11" ry="15"/><rect x="745" y="801" width="18" height="25" rx="8"/>
+    <ellipse cx="754" cy="888" rx="11" ry="15"/><rect x="745" y="903" width="18" height="25" rx="8"/>
+  </g>
+
+  <!-- Four side doors -->
+  <path d="M410 785v72" class="door"/>
+  <path d="M790 785v72" class="door"/>
+  <path d="M410 1084v72" class="door"/>
+  <path d="M790 1084v72" class="door"/>
+
+  <!-- Chainworks left loop -->
+  <path d="M402 808H285V1120H402" fill="url(#chains)" class="wall" filter="url(#shadow)"/>
+  <path d="M365 857H325V1073H365" class="thin"/>
+  <text x="340" y="925" font-family="Georgia,serif" font-size="18" font-weight="700" text-anchor="middle" fill="#17141b">
+    <tspan x="340" dy="0">The</tspan><tspan x="340" dy="31">Chainworks</tspan>
+  </text>
+  <text x="340" y="1001" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" fill="#4c4651">
+    <tspan x="340" dy="0">two entrances</tspan><tspan x="340" dy="22">create a loop</tspan>
+  </text>
+  <text x="340" y="1055" font-family="Arial,sans-serif" font-size="11" text-anchor="middle" fill="#4c4651">controls + maintenance</text>
+
+  <!-- Right upper door: sealed city -->
+  <path d="M798 808H1018V935H798Z" fill="#cbc5d2" class="wall" filter="url(#shadow)"/>
+  <path d="M835 836h145M835 868h145M835 900h145" stroke="#aaa2b1" stroke-width="10"/>
+  <text x="908" y="846" font-family="Georgia,serif" font-size="21" font-weight="700" text-anchor="middle" fill="#17141b">Sleeping District</text>
+  <text x="908" y="878" class="room-sub">visible, but web-sealed</text>
+  <text x="908" y="906" class="small">shows the city’s true scale</text>
+
+  <!-- Rotunda obstacle -->
+  <circle cx="600" cy="973" r="116" fill="#b6afa6" stroke="#29252d" stroke-width="8" filter="url(#shadow)"/>
+  <path d="M521 902l53 30 41-48 31 59 66-25-18 65 53 40-69 15-5 68-58-37-53 45-12-67-69-7 48-49Z" fill="#726c69" stroke="#474240" stroke-width="5"/>
+  <text x="600" y="966" font-family="Georgia,serif" font-size="22" font-weight="700" text-anchor="middle" fill="#f5f1e8">Collapsed</text>
+  <text x="600" y="994" font-family="Georgia,serif" font-size="22" font-weight="700" text-anchor="middle" fill="#f5f1e8">Civic Rotunda</text>
+  <text x="600" y="1020" font-family="Arial,sans-serif" font-size="14" text-anchor="middle" fill="#eee9df">splits the avenue into two routes</text>
+
+  <!-- Right lower door: mirror approach -->
+  <path d="M798 1110H920V1250H750" fill="#cbc3d7" class="wall" filter="url(#shadow)"/>
+  <g fill="#7d6b91" stroke="#e3d7f0" stroke-width="3">
+    <rect x="822" y="1130" width="28" height="80"/><rect x="865" y="1130" width="28" height="80"/>
+  </g>
+  <text x="852" y="1174" font-family="Georgia,serif" font-size="18" font-weight="700" text-anchor="middle" fill="#17141b">
+    <tspan x="852" dy="0">Mirror</tspan><tspan x="852" dy="24">Approach</tspan>
+  </text>
+  <text x="852" y="1230" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#4c4651">alternate Hall entry</text>
+
+  <!-- Hall -->
+  <path d="M365 1250H835L895 1322 835 1394H365L305 1322Z" fill="#d8cfdf" class="wall" filter="url(#shadow)"/>
+  <g fill="#756488" stroke="#efe7f5" stroke-width="4">
+    <rect x="357" y="1277" width="34" height="72"/><rect x="414" y="1294" width="34" height="72"/>
+    <rect x="471" y="1277" width="34" height="72"/><rect x="528" y="1294" width="34" height="72"/>
+    <rect x="638" y="1294" width="34" height="72"/><rect x="695" y="1277" width="34" height="72"/>
+    <rect x="752" y="1294" width="34" height="72"/><rect x="809" y="1277" width="34" height="72"/>
+  </g>
+  <text x="600" y="1318" class="room-title">Hall of Unchosen Queens</text>
+  <text x="600" y="1351" class="room-sub">eight mirrors · both routes converge here</text>
+
+  <!-- Crypt -->
+  <path d="M430 1432H770L840 1585H360Z" fill="url(#crypt)" class="wall" filter="url(#shadow)"/>
+  <path d="M520 1428v112M680 1428v112" stroke="#a184b8" stroke-width="9"/>
+  <ellipse cx="600" cy="1490" rx="85" ry="24" fill="#0d0a12" stroke="#bca7cb" stroke-width="4"/>
+  <path d="M430 1452l165 38m175-38-165 38M470 1545l125-55m135 55-125-55" stroke="#ddd4ed" stroke-width="4" opacity=".75"/>
+  <text x="600" y="1548" font-family="Georgia,serif" font-size="27" font-weight="700" text-anchor="middle" fill="#f4eef8">Crypt of Seven Chains</text>
+  <text x="600" y="1575" font-family="Arial,sans-serif" font-size="15" text-anchor="middle" fill="#d9cfe2">Vaelithra lies at the end of the visible axis</text>
+
+  <!-- Route overlays -->
+  <path d="M600 245V488" class="route"/>
+  <path d="M600 648V825" class="route"/>
+  <path d="M555 842c-80 70-78 180-13 245 27 27 42 74 42 139" class="route"/>
+  <path d="M645 842c80 70 78 180 13 245-27 27-42 74-42 139" class="route"/>
+  <path d="M600 1395V1422" class="route"/>
+  <path d="M394 830H338V1096H394" class="chain-route"/>
+
+  <!-- Explanatory callouts -->
+  <rect x="35" y="300" width="355" height="165" rx="12" class="callout"/>
+  <text x="57" y="331" class="callout-title">Why the lift survives</text>
+  <text x="57" y="361" class="callout-text">
+    <tspan x="57" dy="0">The sealers smashed its upper mechanism</tspan>
+    <tspan x="57" dy="23">and collapsed the approach. The cage and</tspan>
+    <tspan x="57" dy="23">lower counterweights remained entombed.</tspan>
+    <tspan x="57" dy="23">Repair, climbing, or a dangerous descent</tspan>
+    <tspan x="57" dy="23">can all reach the gatehouse.</tspan>
+  </text>
+
+  <rect x="835" y="508" width="330" height="202" rx="12" class="callout"/>
+  <text x="857" y="539" class="callout-title">How to read the four doors</text>
+  <text x="857" y="569" class="callout-text">
+    <tspan x="857" dy="0">1. Chainworks upper entrance</tspan>
+    <tspan x="857" dy="24">2. Web-sealed sleeping district</tspan>
+    <tspan x="857" dy="24">3. Chainworks lower entrance</tspan>
+    <tspan x="857" dy="24">4. Mirror approach to the Hall</tspan>
+    <tspan x="857" dy="32">They are choices and sightlines—not four</tspan>
+    <tspan x="857" dy="23">independent encounter chambers.</tspan>
+  </text>
+
+  <g transform="translate(36 1270)">
+    <rect width="235" height="132" rx="12" class="callout"/>
+    <text x="18" y="31" class="callout-title">Route key</text>
+    <path d="M20 59h62" class="route"/><text x="100" y="65" class="callout-text">main approach</text>
+    <path d="M20 95h62" class="chain-route"/><text x="100" y="101" class="callout-text">optional loop</text>
+  </g>
+</svg>

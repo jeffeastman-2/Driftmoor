@@ -101,11 +101,28 @@ def load_place(
     place_id: str | None = None,
     parent_id: str | None = None,
 ) -> Place:
-    """Load a single Place from a directory containing PLACE.md (+ optional CONTENTS.md)."""
+    """Load a Place and its colocated narrative content.
+
+    Per-zone markdown is the current source of truth.  ``CONTENTS.md`` remains
+    a compatibility fallback for places that have not yet been migrated.
+    Keeping the merged zone text in ``Place.contents_raw`` preserves the legacy
+    model field without making a migrated place depend on an obsolete file.
+    """
     place_path = directory / "PLACE.md"
     place_raw = place_path.read_text(encoding="utf-8")
+    zones_dir = directory / "zones"
+    zone_paths = sorted(p for p in zones_dir.glob("*.md") if p.is_file())
     contents_path = directory / "CONTENTS.md"
-    contents_raw = contents_path.read_text(encoding="utf-8") if contents_path.exists() else ""
+    if zone_paths:
+        contents_raw = "\n\n---\n\n".join(
+            path.read_text(encoding="utf-8") for path in zone_paths
+        )
+    else:
+        contents_raw = (
+            contents_path.read_text(encoding="utf-8")
+            if contents_path.exists()
+            else ""
+        )
 
     p = parse_place_md(place_raw)
 

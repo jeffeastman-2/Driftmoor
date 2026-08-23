@@ -9,11 +9,11 @@ import pytest
 
 from engine.session import _build_perception
 from engine.verb_resolver import resolve_item_interaction
-from models.contents_loader import load_contents_with_geometry
+from models.contents_loader import load_zone_contents_with_geometry
 from models.geometry_loader import load_geometry
 
 
-CONTENTS = Path("scenario/places/obelisk_reach/echoing_caverns/CONTENTS.md")
+ZONES = Path("scenario/places/obelisk_reach/echoing_caverns/zones")
 GEOMETRY = Path("scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md")
 
 
@@ -33,7 +33,7 @@ def geometry():
 @pytest.fixture
 def items(geometry):
     # Fresh load each test so discovered_by mutations don't leak.
-    return load_contents_with_geometry(CONTENTS, GEOMETRY, scene_geometry=geometry)
+    return load_zone_contents_with_geometry(ZONES, GEOMETRY, scene_geometry=geometry)
 
 
 class TestExaminedTag:
@@ -137,5 +137,4 @@ class TestDescriptionFallback:
         )
         assert result is not None
         _, interaction = result
-        assert "body dragged south" in interaction.response.lower() or \
-               "passage" in interaction.response.lower()
+        assert "dragged heels" in interaction.response.lower()

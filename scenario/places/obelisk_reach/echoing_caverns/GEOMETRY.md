@@ -113,6 +113,7 @@ here — sight is purely light-limited, so darkvision extends it fully.
 |-------------------|------|-------|------------------------------------------|
 | entrance_crack    | 110  | 325   | places/obelisk_reach                     |
 | to_obelisk_above  | 162  | 308   | places/obelisk_reach/shattered_obelisk   |
+| hidden_cavern_opening | 216 | 47 | places/obelisk_reach/echoing_caverns/sleeping_city |
 
 ---
 
