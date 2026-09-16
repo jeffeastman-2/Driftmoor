@@ -1,6 +1,6 @@
-# Playing Rowan — A Quick Guide for Amy
+# Playing Rowana — A Quick Guide for Amy
 
-Rowan is a nature healer: part herbalist, part battlefield medic, part person who can turn into an animal when things get weird. Mechanically, she's a support and control character — she's not going to hit the hardest, but she can heal, hinder enemies, and bail out of trouble in ways nobody else at the table can.
+Rowana is a nature healer: part herbalist, part battlefield medic, part person who can turn into an animal when things get weird. Mechanically, she's a support and control character — she's not going to hit the hardest, but she can heal, hinder enemies, and bail out of trouble in ways nobody else at the table can.
 
 ## Every Turn, You Get Three Things
 - **A Move** — walk up to 30 ft (about six squares on a battle map).

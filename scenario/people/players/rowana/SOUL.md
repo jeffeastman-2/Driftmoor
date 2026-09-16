@@ -1,7 +1,7 @@
-# SOUL.md - Rowan Ashvale
+# SOUL.md - Rowana Ashvale
 
 ## Core Identity
-- **Full Name:** Rowan Ashvale
+- **Full Name:** Rowana Ashvale
 - **Player:** Amy
 - **Race/Class:** Human Druid (Circle of the Land — Forest)
 - **Alignment:** Neutral Good
@@ -31,4 +31,4 @@
 - Companions who let themselves be tended.
 
 ## Internal Contradiction
-Rowan preaches patience but drove herself past exhaustion trying to outrun a plague. She insists nature keeps better time than people do, while pushing her own body far past its limits whenever someone she loves is at risk.
+Rowana preaches patience but drove herself past exhaustion trying to outrun a plague. She insists nature keeps better time than people do, while pushing her own body far past its limits whenever someone she loves is at risk.

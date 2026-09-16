@@ -1,7 +1,7 @@
-# IDENTITY.md - Rowan Ashvale
+# IDENTITY.md - Rowana Ashvale
 
 ## Static Profile
-- **Full Name:** Rowan Ashvale
+- **Full Name:** Rowana Ashvale
 - **Player:** Amy
 - **Race:** Human
 - **Class:** Druid (Circle of the Land — Forest), Level 3
@@ -98,10 +98,10 @@ Weathered and quietly strong, with sun-browned skin, close-cropped brown hair th
 - **Open threads:** Whether Driftmoor's healers know something about the old plague at Ashvale; Wild Shape instincts she hasn't fully mastered; the herbalist mentor she hasn't written to in months
 
 ## Runtime Defaults
-- **scene_handle:** Rowan, the human druid
+- **scene_handle:** Rowana, the human druid
 
 ## Current Situation
-Rowan came to Driftmoor the way she comes to most places — following a rumor that someone here might be sick in a way ordinary medicine hasn't reached. She tends to whoever is in front of her first and asks about her own reasons for staying later, if at all.
+Rowana came to Driftmoor the way she comes to most places — following a rumor that someone here might be sick in a way ordinary medicine hasn't reached. She tends to whoever is in front of her first and asks about her own reasons for staying later, if at all.
 
 ## Wealth
 - **Purse:** 90 gp
