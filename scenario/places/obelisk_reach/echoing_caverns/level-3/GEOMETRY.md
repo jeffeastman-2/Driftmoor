@@ -44,14 +44,14 @@ in sleeping-city-layout.svg.
 
 | name | auto_wall | vertices |
 |---|---|---|
-| Broken Lift | true | (51,136,-45) (69,136,-45) (69,157,-20) (51,157,-20) |
-| Gate of Two Peoples | true | (39,118,-45) (81,118,-45) (81,136,-45) (39,136,-45) |
-| Avenue of Sleeping Blades | true | (41,35,-45) (79,35,-45) (79,118,-45) (41,118,-45) |
-| Chainworks | true | (27,51,-50) (41,51,-45) (41,106,-45) (27,106,-50) |
-| Sleeping District | true | (79,91,-45) (103,91,-45) (103,108,-45) (79,108,-45) |
-| Mirror Approach | true | (79,35,-45) (94,35,-45) (94,59,-45) (79,59,-45) |
-| Hall of Unchosen Queens | true | (31,21,-50) (89,21,-50) (96,29,-50) (89,37,-45) (31,37,-45) (24,29,-50) |
-| Crypt of Seven Chains | true | (43,3,-55) (77,3,-55) (84,21,-50) (36,21,-50) |
+| Broken Lift | true | (51,136,-95) (69,136,-95) (69,157,-70) (51,157,-70) |
+| Gate of Two Peoples | true | (39,118,-95) (81,118,-95) (81,136,-95) (39,136,-95) |
+| Avenue of Sleeping Blades | true | (41,35,-95) (79,35,-95) (79,118,-95) (41,118,-95) |
+| Chainworks | true | (27,51,-100) (41,51,-95) (41,106,-95) (27,106,-100) |
+| Sleeping District | true | (79,91,-95) (103,91,-95) (103,108,-95) (79,108,-95) |
+| Mirror Approach | true | (79,35,-95) (94,35,-95) (94,59,-95) (79,59,-95) |
+| Hall of Unchosen Queens | true | (31,21,-100) (89,21,-100) (96,29,-100) (89,37,-95) (31,37,-95) (24,29,-100) |
+| Crypt of Seven Chains | true | (43,3,-105) (77,3,-105) (84,21,-100) (36,21,-100) |
 
 ---
 
@@ -69,26 +69,26 @@ in sleeping-city-layout.svg.
 
 | id | x | y | z | label |
 |---|---|---|---|---|
-| snapped_hoist_chain | 55 | 147 | -30 | Snapped hoist chain |
-| counterweight_brake | 65 | 139 | -42 | Counterweight brake |
-| dwarven_gate_wheel | 47 | 126 | -42 | Dwarven gate wheel |
-| elven_resonance_bells | 73 | 126 | -39 | Elven resonance bells |
-| sleeping_blade_cocoons | 47 | 94 | -42 | Sleeping blade cocoons |
-| suspended_drow_mage | 74 | 94 | -42 | Suspended drow mage |
-| rotunda_mosaic | 60 | 77 | -45 | Shattered civic mosaic |
-| chain_control_drum | 33 | 79 | -47 | Chain control drum |
-| maintenance_tablet | 34 | 58 | -46 | Maintenance tablet |
-| district_web_seal | 91 | 99 | -42 | District web-seal |
-| future_mirrors | 86 | 47 | -42 | Future mirrors |
-| eight_future_mirrors | 60 | 29 | -47 | Eight dark mirrors |
-| seventh_chain_key | 60 | 25 | -48 | Seventh-chain key |
-| living_lock_depression | 60 | 7 | -54 | Living-lock depression |
-| stone_station | 48 | 13 | -52 | Stone station |
-| chain_station | 72 | 13 | -52 | Chain station |
-| witness_station | 51 | 6 | -53 | Witness station |
-| choice_station | 69 | 6 | -53 | Choice station |
-| vaelithras_bier | 60 | 10 | -53 | Vaelithra's black bier |
-| broken_seventh_chain | 68 | 12 | -51 | Broken seventh chain |
+| snapped_hoist_chain | 55 | 147 | -80 | Snapped hoist chain |
+| counterweight_brake | 65 | 139 | -92 | Counterweight brake |
+| dwarven_gate_wheel | 47 | 126 | -92 | Dwarven gate wheel |
+| elven_resonance_bells | 73 | 126 | -89 | Elven resonance bells |
+| sleeping_blade_cocoons | 47 | 94 | -92 | Sleeping blade cocoons |
+| suspended_drow_mage | 74 | 94 | -92 | Suspended drow mage |
+| rotunda_mosaic | 60 | 77 | -95 | Shattered civic mosaic |
+| chain_control_drum | 33 | 79 | -97 | Chain control drum |
+| maintenance_tablet | 34 | 58 | -96 | Maintenance tablet |
+| district_web_seal | 91 | 99 | -92 | District web-seal |
+| future_mirrors | 86 | 47 | -92 | Future mirrors |
+| eight_future_mirrors | 60 | 29 | -97 | Eight dark mirrors |
+| seventh_chain_key | 60 | 25 | -98 | Seventh-chain key |
+| living_lock_depression | 60 | 7 | -104 | Living-lock depression |
+| stone_station | 48 | 13 | -102 | Stone station |
+| chain_station | 72 | 13 | -102 | Chain station |
+| witness_station | 51 | 6 | -103 | Witness station |
+| choice_station | 69 | 6 | -103 | Choice station |
+| vaelithras_bier | 60 | 10 | -103 | Vaelithra's black bier |
+| broken_seventh_chain | 68 | 12 | -101 | Broken seventh chain |
 
 ---
 
