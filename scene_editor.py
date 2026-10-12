@@ -1,7 +1,12 @@
 """Standalone browser editor for Driftmoor scene geometry.
 
-Run ``python scene_editor.py scenario/places`` and open the printed local URL.
-The first editor mode owns the six-region shared boundary mesh in REGIONS.md.
+Run ``python scene_editor.py <scene_dir>`` and open the printed local URL.
+
+Two modes are supported:
+1. **Regional mode**: Works with scenes that have REGIONS.md (e.g., scenario/places/)
+2. **Direct mode**: Works with scenes that have zones in GEOMETRY.md directly (e.g., level-2/level-4)
+
+Temp files (REGIONS.md, RIVERS.md, etc.) are added to .gitignore to keep git clean.
 """
 from __future__ import annotations
 
@@ -19,6 +24,11 @@ ZONE_NAMES = {
     "DRIFTMOOR": "DRIFTMOOR_TOWN",
     "GREYWATER_VALLEY": "GREYWATER_VALLEY",
 }
+
+
+def is_regional_scene(place_dir: Path) -> bool:
+    """Detect if scene uses regional mode (has REGIONS.md)."""
+    return (place_dir / "REGIONS.md").is_file()
 
 
 def load_regions(path: Path) -> dict:
@@ -153,6 +163,208 @@ def write_landmarks(path: Path, landmarks: list[dict]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def load_geometry_zones(geometry_path: Path) -> list[dict]:
+    """Read zone columns by name, retaining optional vertex elevations."""
+    text = geometry_path.read_text(encoding="utf-8")
+    section = re.search(r"##\s+Zones\b(.*?)(?=\n##\s+|\Z)", text, re.DOTALL)
+    if not section:
+        return []
+    headers = None
+    zones = []
+    for line in section.group(1).splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if headers is None:
+            headers = [c.lower() for c in cells]
+            continue
+        if set(cells[0]) <= {"-", ":"}:
+            continue
+        row = dict(zip(headers, cells))
+        vertices = [list(map(float, coords.split(",")))
+                    for coords in re.findall(r"\(([^()]+)\)", row["vertices"])]
+        zones.append({"name": row["name"], "render_z": row.get("render_z", ""),
+                      "auto_wall": row.get("auto_wall", ""), "vertices": vertices})
+    return zones
+
+
+def load_geometry_items(geometry_path: Path) -> list[dict]:
+    """Read editable item positions; other item metadata stays in the file."""
+    text = geometry_path.read_text(encoding="utf-8")
+    section = re.search(r"##\s+Items\b(.*?)(?=\n##\s+|\Z)", text, re.DOTALL)
+    if not section:
+        return []
+    headers = None
+    items = []
+    for line in section.group(1).splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if headers is None:
+            headers = [c.lower() for c in cells]
+            continue
+        if set(cells[0]) <= {"-", ":"}:
+            continue
+        row = dict(zip(headers, cells))
+        items.append({"id": row["id"], "label": row.get("label", row["id"]),
+                      "x": float(row["x"]), "y": float(row["y"])})
+    return items
+
+
+def load_geometry_features(geometry_path: Path) -> list[dict]:
+    """Read other map coordinates from tables and boundary vertex bullets."""
+    return _geometry_features(geometry_path.read_text(encoding="utf-8"))
+
+
+def _geometry_features(text: str) -> list[dict]:
+    features = []
+    section = subsection = ""
+    headers = None
+    for index, line in enumerate(text.splitlines(keepends=True)):
+        heading = re.match(r"^##\s+(.+?)\s*$", line)
+        if heading:
+            section = heading[1]
+            subsection = ""
+            headers = None
+            continue
+        heading = re.match(r"^###\s+(.+?)\s*$", line)
+        if heading:
+            subsection = heading[1]
+            headers = None
+            continue
+        if section in ("Scene", "Zones", "Items"):
+            continue
+        coords = re.match(r"^-\s+\*\*vertices:\*\*\s*(.*)", line)
+        if coords:
+            vertices = [list(map(float, v.split(",")))
+                        for v in re.findall(r"\(([^()]+)\)", coords[1])]
+            if vertices:
+                features.append({"id": str(index), "category": section,
+                                 "label": subsection or section, "vertices": vertices})
+        if not line.strip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if headers is None:
+            headers = [c.lower() for c in cells]
+            continue
+        if set(cells[0]) <= {"-", ":"}:
+            continue
+        row = dict(zip(headers, cells))
+        feature = {"id": str(index), "category": section,
+                   "label": row.get("label") or row.get("name") or row.get("description") or cells[0]}
+        if "x" in row and "y" in row:
+            feature.update(x=float(row["x"]), y=float(row["y"]))
+        elif "vertices" in row:
+            feature["vertices"] = [list(map(float, v.split(",")))
+                                   for v in re.findall(r"\(([^()]+)\)", row["vertices"])]
+            if not feature["vertices"]:
+                continue
+        else:
+            continue
+        features.append(feature)
+    return features
+
+
+def _write_geometry_features(text: str, features: list[dict]) -> str:
+    """Replace coordinate cells only, retaining destination and boundary metadata."""
+    by_id = {feature["id"]: feature for feature in features}
+    headers = None
+    lines = text.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        if re.match(r"^#{2,3}\s", line):
+            headers = None
+        feature = by_id.get(str(index))
+        if line.strip().startswith("|"):
+            cells = line.split("|")
+            if headers is None:
+                headers = [c.strip().lower() for c in cells[1:-1]]
+                continue
+            if feature:
+                for axis in ("x", "y"):
+                    if axis in feature:
+                        cells[headers.index(axis) + 1] = f" {feature[axis]:.12g} "
+                if "vertices" in feature:
+                    cells[headers.index("vertices") + 1] = " " + _vertex_text(feature["vertices"]) + " "
+                lines[index] = "|".join(cells)
+        elif feature and "vertices" in feature:
+            lines[index] = re.sub(r"(\*\*vertices:\*\*\s*)[^\n]*",
+                                  lambda match: match[1] + _vertex_text(feature["vertices"]), line)
+    return "".join(lines)
+
+
+def _vertex_text(vertices: list[list[float]]) -> str:
+    return " ".join("(" + ",".join(f"{v:.12g}" for v in vertex) + ")" for vertex in vertices)
+
+
+def validate_geometry_features(current: list[dict], features: list[dict]) -> None:
+    if (not isinstance(features, list) or any(not isinstance(f, dict) for f in features)
+            or [f.get("id") for f in features] != [f["id"] for f in current]):
+        raise web.HTTPBadRequest(text="geometry element set changed")
+    for old, new in zip(current, features):
+        if old["category"] != new.get("category"):
+            raise web.HTTPBadRequest(text="geometry category changed")
+        if "vertices" in old:
+            vertices = new.get("vertices")
+            if not isinstance(vertices, list) or len(vertices) < 2:
+                raise web.HTTPBadRequest(text="invalid geometry vertices")
+            coords = vertices
+        else:
+            coords = [[new.get("x"), new.get("y")]]
+        for vertex in coords:
+            if (not isinstance(vertex, list) or len(vertex) not in (2, 3)
+                    or not all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                               and math.isfinite(v) for v in vertex)):
+                raise web.HTTPBadRequest(text="invalid geometry coordinates")
+
+
+def write_geometry_zones(geometry_path: Path, zones: list[dict], items: list[dict] | None = None,
+                         features: list[dict] | None = None) -> None:
+    """Update only vertex cells, preserving other columns and scene sections."""
+    text = geometry_path.read_text(encoding="utf-8")
+    section = re.search(r"##\s+Zones\b(.*?)(?=\n##\s+|\Z)", text, re.DOTALL)
+    if not section:
+        raise ValueError("GEOMETRY.md has no Zones section")
+    by_name = {zone["name"]: zone for zone in zones}
+    headers = None
+    lines = []
+    for line in section.group(1).splitlines(keepends=True):
+        if line.strip().startswith("|"):
+            cells = line.split("|")
+            values = [c.strip() for c in cells[1:-1]]
+            if headers is None:
+                headers = [c.lower() for c in values]
+            elif values[headers.index("name")] in by_name:
+                zone = by_name[values[headers.index("name")]]
+                cells[headers.index("vertices") + 1] = " " + " ".join(
+                    "(" + ",".join(f"{v:g}" for v in vertex) + ")"
+                    for vertex in zone["vertices"]) + " "
+                line = "|".join(cells)
+        lines.append(line)
+    updated = text[:section.start(1)] + "".join(lines) + text[section.end(1):]
+    if items is not None:
+        item_section = re.search(r"##\s+Items\b(.*?)(?=\n##\s+|\Z)", updated, re.DOTALL)
+        if item_section:
+            by_id = {item["id"]: item for item in items}
+            headers = None
+            lines = []
+            for line in item_section.group(1).splitlines(keepends=True):
+                if line.strip().startswith("|"):
+                    cells = line.split("|")
+                    values = [c.strip() for c in cells[1:-1]]
+                    if headers is None:
+                        headers = [c.lower() for c in values]
+                    elif values[headers.index("id")] in by_id:
+                        item = by_id[values[headers.index("id")]]
+                        for axis in ("x", "y"):
+                            cells[headers.index(axis) + 1] = f" {item[axis]:g} "
+                        line = "|".join(cells)
+                lines.append(line)
+            updated = updated[:item_section.start(1)] + "".join(lines) + updated[item_section.end(1):]
+    if features is not None:
+        updated = _write_geometry_features(updated, features)
+    geometry_path.write_text(updated, encoding="utf-8")
+
+
 def materialize_geometry(geometry_path: Path, data: dict) -> None:
     text = geometry_path.read_text(encoding="utf-8")
     points = data["points"]
@@ -196,98 +408,203 @@ function P(e){let p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;p=p.matrixT
 function draw(){svg.innerHTML='';for(const r of DATA.regions){let pg=E('polygon',{points:face(r),fill:r.fill,class:'region',opacity:layer.value==='regions'?1:.55});pg.onclick=e=>{if(layer.value==='regions'){e.stopPropagation();insertRegion(r,P(e))}};svg.appendChild(pg);let ps=r.points.map(id=>DATA.points[id]),x=ps.reduce((a,p)=>a+p[0],0)/ps.length,y=-ps.reduce((a,p)=>a+p[1],0)/ps.length,t=E('text',{x,y,class:'label'});t.textContent=r.name.replaceAll('_',' ');svg.appendChild(t)}for(const z of SUBZONES){let pg=E('polygon',{points:z.vertices.map(p=>p[0]+','+(-p[1])).join(' '),fill:z.fill,class:'region',opacity:layer.value==='subzones'?.9:.25});pg.onclick=e=>{if(layer.value==='subzones'&&z===active()){e.stopPropagation();insert(z,P(e),true)}};svg.appendChild(pg)}for(const r of [...RIVERS,...ROADS]){let line=E('polyline',{points:r.vertices.map(p=>p[0]+','+(-p[1])).join(' '),fill:'none',stroke:r.color,'stroke-width':r.width,'stroke-linecap':'round','stroke-linejoin':'round',opacity:coll().includes(r)?1:.28});line.onclick=e=>{if(r!==active()||layer.value==='subzones')return;e.stopPropagation();insert(r,P(e))};svg.appendChild(line)}for(const m of LANDMARKS){let h=E('circle',{cx:m.x,cy:-m.y,r:1100,fill:m.enabled?'#ffd45c':'#777',stroke:'#222','stroke-width':250,opacity:m.enabled?1:.55});svg.appendChild(h);let t=E('text',{x:m.x+1500,y:-m.y-900,class:'label',style:'font-size:1800px;text-anchor:start'});t.textContent=m.label;svg.appendChild(t)}let r=active();if(r&&r.vertices)r.vertices.forEach((p,i)=>{let h=E('circle',{cx:p[0],cy:-p[1],r:1050,class:'rhandle'+(i===selected?' sel':'')});h.onpointerdown=e=>{e.stopPropagation();snap();selected=i;drag={river:r,index:i};h.setPointerCapture(e.pointerId);draw()};svg.appendChild(h)});if(layer.value==='regions')for(const[id,p]of Object.entries(DATA.points)){let h=E('circle',{cx:p[0],cy:-p[1],r:750,class:'handle'+(id===selectedPoint?' sel':'')});h.onpointerdown=e=>{e.stopPropagation();snap();selectedPoint=id;drag={point:id};h.setPointerCapture(e.pointerId);draw()};svg.appendChild(h)}}function insert(r,q,closed=false){let best={d:1e99,i:1},n=closed?r.vertices.length:r.vertices.length-1;for(let i=0;i<n;i++){let a=r.vertices[i],b=r.vertices[(i+1)%r.vertices.length],dx=b[0]-a[0],dy=b[1]-a[1],u=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/(dx*dx+dy*dy||1))),d=Math.hypot(q[0]-a[0]-u*dx,q[1]-a[1]-u*dy);if(d<best.d)best={d,i:i+1}}snap();r.vertices.splice(best.i,0,q);selected=best.i;draw()}
 function insertRegion(region,q){let best={d:1e99,i:0,a:null,b:null};for(let i=0;i<region.points.length;i++){let a=region.points[i],b=region.points[(i+1)%region.points.length],p=DATA.points[a],v=DATA.points[b],dx=v[0]-p[0],dy=v[1]-p[1],u=Math.max(0,Math.min(1,((q[0]-p[0])*dx+(q[1]-p[1])*dy)/(dx*dx+dy*dy||1))),d=Math.hypot(q[0]-p[0]-u*dx,q[1]-p[1]-u*dy);if(d<best.d)best={d,i,a,b}}snap();let id='point_'+Date.now();DATA.points[id]=q;for(const r of DATA.regions){for(let i=0;i<r.points.length;i++){let a=r.points[i],b=r.points[(i+1)%r.points.length];if((a===best.a&&b===best.b)||(a===best.b&&b===best.a)){r.points.splice(i+1,0,id);break}}}selectedPoint=id;draw()}
 function fit(){svg.setAttribute('viewBox','-5000 -174000 136750 179000')}svg.onpointermove=e=>{if(!drag)return;let p=P(e);if(drag.point)DATA.points[drag.point]=p;else drag.river.vertices[drag.index]=p;draw()};svg.onpointerup=()=>drag=null;
-async function load(){[DATA,RIVERS,ROADS,SUBZONES,LANDMARKS]=await Promise.all(['/api/regions','/api/rivers','/api/roads','/api/subzones','/api/landmarks'].map(u=>fetch(u).then(r=>r.json())));let c=document.getElementById('colors');for(const r of DATA.regions){let i=document.createElement('input');i.type='color';i.value=r.fill;i.title=r.name;i.oninput=()=>{r.fill=i.value;draw()};c.appendChild(i)}layer.onchange=mode;mode();fit()}function mode(){pick.innerHTML='';for(const r of coll())pick.add(new Option(r.label||r.name,r.name));let lm=layer.value==='landmarks';document.getElementById('featureCtl').style.display=layer.value==='regions'?'none':'';document.getElementById('colors').style.display=layer.value==='regions'?'':'none';document.getElementById('widthCtl').style.display=(layer.value==='subzones'||lm)?'none':'';document.getElementById('colorCtl').style.display=lm?'none':'';document.getElementById('enabledCtl').style.display=lm?'':'none';sync();draw()}function sync(){let r=active();if(r){if(layer.value==='landmarks')document.getElementById('landmarkEnabled').checked=r.enabled;else{document.getElementById('riverColor').value=r.color||r.fill;document.getElementById('riverWidth').value=r.width||500}}selected=-1}pick.onchange=()=>{sync();draw()};document.getElementById('riverColor').oninput=e=>{snap();let r=active();if(r.color)r.color=e.target.value;else r.fill=e.target.value;draw()};document.getElementById('riverWidth').onchange=e=>{snap();active().width=+e.target.value;draw()};document.getElementById('landmarkEnabled').onchange=e=>{snap();active().enabled=e.target.checked;draw()};
-document.onkeydown=e=>{if(e.key!=='Delete'&&e.key!=='Backspace')return;if(layer.value==='regions'&&selectedPoint){let used=DATA.regions.filter(r=>r.points.includes(selectedPoint));if(used.some(r=>r.points.length<=3))return;if(!confirm('Delete this shared boundary point from '+used.length+' region(s)?'))return;snap();for(const r of used)r.points=r.points.filter(id=>id!==selectedPoint);delete DATA.points[selectedPoint];selectedPoint=null;draw();return}if(selected>=0){let r=active(),min=layer.value==='subzones'?3:2;if(r.vertices.length<=min)return;if((selected===0||selected===r.vertices.length-1)&&layer.value!=='subzones'&&!confirm('Delete this endpoint?'))return;snap();r.vertices.splice(selected,1);selected=-1;draw()}};document.getElementById('undo').onclick=()=>{if(history.length){let x=JSON.parse(history.pop());RIVERS=x.RIVERS;ROADS=x.ROADS;SUBZONES=x.SUBZONES;LANDMARKS=x.LANDMARKS;DATA=x.DATA;mode()}};document.getElementById('fit').onclick=fit;
+async function load(){[DATA,RIVERS,ROADS,SUBZONES,LANDMARKS]=await Promise.all(['/api/regions','/api/rivers','/api/roads','/api/subzones','/api/landmarks'].map(u=>fetch(u).then(r=>r.json())));let c=document.getElementById('colors');for(const r of DATA.regions){let i=document.createElement('input');i.type='color';i.value=r.fill;i.title=r.name;i.oninput=()=>{r.fill=i.value;draw()};c.appendChild(i)}layer.onchange=mode;mode();fit()}function mode(){pick.innerHTML='';for(const r of coll())pick.add(new Option(r.label||r.name,r.name));let lm=layer.value==='landmarks';document.getElementById('featureCtl').style.display=layer.value==='regions'?'none':'';document.getElementById('colors').style.display=layer.value==='regions'?'':'none';document.getElementById('widthCtl').style.display=(layer.value==='subzones'||lm)?'none':'';document.getElementById('colorCtl').style.display=lm?'none':'';document.getElementById('enabledCtl').style.display=lm?'':'none';sync();draw()}function sync(){let r=active();if(r){if(layer.value==='landmarks')document.getElementById('landmarkEnabled').checked=r.enabled;else{document.getElementById('riverColor').value=r.color||r.fill;document.getElementById('riverWidth').value=r.width||500}}selected=-1}pick.onchange=()=>{sync();draw()};document.getElementById('riverColor').oninput=e=>{snap();let r=active();if(r.color)r.color=e.target.value;else r.fill=e.target.value;draw()};document.getElementById('riverWidth').onchange=e=>{snap();active().width=+e.target.value;draw()};document.getElementById('landmarkEnabled').onchange=e=>{snap();active().enabled=e.target.checked;draw()};document.onkeydown=e=>{if(e.key!=='Delete'&&e.key!=='Backspace')return;if(layer.value==='regions'&&selectedPoint){let used=DATA.regions.filter(r=>r.points.includes(selectedPoint));if(used.some(r=>r.points.length<=3))return;if(!confirm('Delete this shared boundary point from '+used.length+' region(s)?'))return;snap();for(const r of used)r.points=r.points.filter(id=>id!==selectedPoint);delete DATA.points[selectedPoint];selectedPoint=null;draw();return}if(selected>=0){let r=active(),min=layer.value==='subzones'?3:2;if(r.vertices.length<=min)return;if((selected===0||selected===r.vertices.length-1)&&layer.value!=='subzones'&&!confirm('Delete this endpoint?'))return;snap();r.vertices.splice(selected,1);selected=-1;draw()}};document.getElementById('undo').onclick=()=>{if(history.length){let x=JSON.parse(history.pop());RIVERS=x.RIVERS;ROADS=x.ROADS;SUBZONES=x.SUBZONES;LANDMARKS=x.LANDMARKS;DATA=x.DATA;mode()}};document.getElementById('fit').onclick=fit;
 async function save(url,body,msg){let s=document.getElementById('status');s.textContent='Saving…';let r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});s.textContent=r.ok?msg:'Save failed: '+await r.text()}document.getElementById('saveRegions').onclick=()=>{let m=layer.value,b=m==='regions'?DATA:coll();save('/api/'+m,b,m+' saved')};load();</script></body></html>"""
 
 
+SIMPLE_EDITOR_HTML = r"""<!doctype html><html><head><meta charset="utf-8"><title>Driftmoor Geometry Editor</title>
+<style>body{margin:0;background:#20251f;color:#eee;font:14px system-ui}.bar{display:flex;gap:9px;align-items:center;padding:9px 12px;flex-wrap:wrap}button,select,input{padding:5px 8px}svg{display:block;width:100vw;height:calc(100vh - 140px);touch-action:none;background:#d8cfb5}.zone{stroke:#37352d;fill-opacity:.65}.handle{stroke:#102020;cursor:move;fill:#55ffff}.label{text-anchor:middle;pointer-events:none}</style></head>
+<body><div class="bar"><strong>Direct geometry editor</strong><label>Category <select id="category"><option>Zones</option><option>Items</option></select></label><select id="pick"></select><button id="fit">Fit</button><button id="saveZones">Save geometry</button><button id="undo">Undo</button></div>
+<div class="bar"><label>Snap step <input id="grid" type="number" min="0" step="any" value="1" style="width:70px"></label><span>(0 = off)</span><button id="align">Snap selected</button><button id="alignAll">Snap all vertices</button><label>Tool <select id="tool"><option value="vertices">Edit coordinates</option><option value="move">Move shape</option></select></label><label><input id="carry" type="checkbox" checked>Move contained items</label><span id="coords">X: — Y: —</span></div>
+<div class="bar"><span id="status">Select a zone. Edit coordinates or choose Move zone and drag its polygon. Gold dots are draggable items. Delete removes a selected vertex.</span></div><svg id="map"></svg>
+<script>
+let ZONES=[],ITEMS=[],FEATURES=[],drag=null,selected=-1,history=[],scale=1;
+const svg=document.getElementById('map'),pick=document.getElementById('pick'),status=document.getElementById('status'),NS='http://www.w3.org/2000/svg';
+function E(n,a={}){let e=document.createElementNS(NS,n);for(let[k,v]of Object.entries(a))e.setAttribute(k,v);return e}
+function collection(){let c=document.getElementById('category').value;return c==='Zones'?ZONES:c==='Items'?ITEMS:FEATURES.filter(f=>f.category===c)}
+function active(){return collection()[+pick.value]}
+function choose(element){pick.value=collection().indexOf(element);selected=-1}
+function mode(){drag=null;selected=-1;pick.innerHTML='';collection().forEach((element,i)=>pick.add(new Option(element.label||element.name,i)));draw()}
+function snap(){history.push(JSON.stringify({zones:ZONES,items:ITEMS,features:FEATURES}));if(history.length>30)history.shift()}
+function P(e){let p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;p=p.matrixTransform(svg.getScreenCTM().inverse());return[quantize(p.x),quantize(-p.y)]}
+function quantize(n){let step=+document.getElementById('grid').value;return +(step>0?Math.round(n/step)*step:n).toFixed(6)}
+function contains(z,p){let inside=false;for(let i=0,j=z.vertices.length-1;i<z.vertices.length;j=i++){let a=z.vertices[j],b=z.vertices[i],cross=(p.x-a[0])*(b[1]-a[1])-(p.y-a[1])*(b[0]-a[0]);if(Math.abs(cross)<1e-7&&p.x>=Math.min(a[0],b[0])&&p.x<=Math.max(a[0],b[0])&&p.y>=Math.min(a[1],b[1])&&p.y<=Math.max(a[1],b[1]))return true;if((a[1]>p.y)!==(b[1]>p.y)&&p.x<(b[0]-a[0])*(p.y-a[1])/(b[1]-a[1])+a[0])inside=!inside}return inside}
+function area(z){return Math.abs(z.vertices.reduce((sum,a,i)=>{let b=z.vertices[(i+1)%z.vertices.length];return sum+a[0]*b[1]-b[0]*a[1]},0))/2}
+function owner(item){return ZONES.filter(z=>contains(z,item)).sort((a,b)=>area(a)-area(b))[0]}
+function startMove(z,e){e.preventDefault();choose(z);snap();drag={zone:z,start:P(e),vertices:z.vertices.map(v=>v.slice()),items:ZONES.includes(z)&&document.getElementById('carry').checked?ITEMS.filter(i=>owner(i)===z).map(item=>({item,x:item.x,y:item.y})):[]};svg.setPointerCapture(e.pointerId);draw()}
+function draw(){svg.innerHTML='';let polygons=[...ZONES,...FEATURES.filter(f=>f.vertices)];for(const z of polygons){let editable=collection().includes(z),chosen=z===active(),pg=E('polygon',{points:z.vertices.map(p=>p[0]+','+(-p[1])).join(' '),fill:ZONES.includes(z)?(chosen?'#779ecb':'#aaa78e'):'none',stroke:editable?'#6f478e':'#737b72','stroke-dasharray':ZONES.includes(z)?'':scale*.01,class:'zone','stroke-width':scale*(editable?.003:.001),opacity:editable?1:.4,'pointer-events':editable?'all':'none'});pg.onpointerdown=e=>{if(document.getElementById('tool').value==='move'){e.stopPropagation();startMove(z,e)}};pg.onclick=e=>{if(document.getElementById('tool').value==='move')return;e.stopPropagation();if(z!==active()){choose(z);draw();return}insert(z,P(e))};svg.appendChild(pg);let ps=z.vertices;if(!ps.length)continue;let t=E('text',{x:ps.reduce((a,p)=>a+p[0],0)/ps.length,y:-ps.reduce((a,p)=>a+p[1],0)/ps.length,class:'label','font-size':scale*.018,opacity:editable?1:.35});t.textContent=z.label||z.name;svg.appendChild(t)}for(const item of [...ITEMS,...FEATURES.filter(f=>!f.vertices)]){let editable=collection().includes(item),dot=E('circle',{cx:item.x,cy:-item.y,r:scale*(editable?.006:.003),fill:ITEMS.includes(item)?'#d79816':'#c5486c',stroke:item===active()?'#fff':'#513300','stroke-width':scale*.001,opacity:editable?1:.35,'pointer-events':editable?'all':'none'});let title=E('title');title.textContent=item.label+' ('+item.x+', '+item.y+')';dot.appendChild(title);dot.onpointerdown=e=>{e.stopPropagation();choose(item);snap();drag={item};svg.setPointerCapture(e.pointerId);draw()};svg.appendChild(dot);if(editable){let t=E('text',{x:item.x+scale*.009,y:-item.y-scale*.009,'font-size':scale*.014,'pointer-events':'none'});t.textContent=item.label;svg.appendChild(t)}}let z=active();if(z&&z.vertices&&document.getElementById('tool').value==='vertices')z.vertices.forEach((p,i)=>{let h=E('circle',{cx:p[0],cy:-p[1],r:scale*.006,class:'handle','stroke-width':scale*.001,fill:i===selected?'#ffcf55':'#55ffff'});h.onpointerdown=e=>{e.stopPropagation();snap();selected=i;drag={zone:z,index:i};svg.setPointerCapture(e.pointerId);draw()};svg.appendChild(h)})}
+
+function insert(z,q){let best={d:Infinity,i:1,u:0};for(let i=0;i<z.vertices.length;i++){let a=z.vertices[i],b=z.vertices[(i+1)%z.vertices.length],dx=b[0]-a[0],dy=b[1]-a[1],u=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/(dx*dx+dy*dy||1))),d=Math.hypot(q[0]-a[0]-u*dx,q[1]-a[1]-u*dy);if(d<best.d)best={d,i:i+1,u}}let a=z.vertices[best.i-1],b=z.vertices[best.i%z.vertices.length];if(a.length===3&&b.length===3)q.push(a[2]+best.u*(b[2]-a[2]));snap();z.vertices.splice(best.i,0,q);selected=best.i;draw()}
+function fit(){let ps=[...ZONES.flatMap(z=>z.vertices),...FEATURES.flatMap(f=>f.vertices||[[f.x,f.y]]),...ITEMS.map(i=>[i.x,i.y])];if(!ps.length){status.textContent='No zones found in GEOMETRY.md';return}let xs=ps.map(p=>p[0]),ys=ps.map(p=>-p[1]),x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;scale=Math.max(w,h,1);let pad=scale*.08;svg.setAttribute('viewBox',[x-pad,y-pad,w+2*pad,h+2*pad].join(' '));draw()}
+svg.onpointermove=e=>{let p=P(e);document.getElementById('coords').textContent='X: '+p[0]+' Y: '+p[1];if(!drag)return;if(drag.item){drag.item.x=p[0];drag.item.y=p[1]}else if(drag.start){let dx=+(p[0]-drag.start[0]).toFixed(6),dy=+(p[1]-drag.start[1]).toFixed(6);drag.zone.vertices=drag.vertices.map(v=>[+(v[0]+dx).toFixed(6),+(v[1]+dy).toFixed(6),...v.slice(2)]);for(const entry of drag.items){entry.item.x=+(entry.x+dx).toFixed(6);entry.item.y=+(entry.y+dy).toFixed(6)}}else{let v=drag.zone.vertices[drag.index];v[0]=p[0];v[1]=p[1]}draw()};svg.onpointerup=svg.onpointercancel=()=>drag=null;
+pick.onchange=()=>{selected=-1;draw()};
+document.onkeydown=e=>{if(!['Delete','Backspace'].includes(e.key)||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;let z=active();if(z&&z.vertices&&selected>=0&&z.vertices.length>3){e.preventDefault();snap();z.vertices.splice(selected,1);selected=-1;draw()}};
+document.getElementById('undo').onclick=()=>{if(history.length){let state=JSON.parse(history.pop());ZONES=state.zones;ITEMS=state.items;FEATURES=state.features;selected=-1;drag=null;draw()}};
+document.getElementById('fit').onclick=fit;
+function alignElement(z){if(z.vertices){for(const v of z.vertices){v[0]=quantize(v[0]);v[1]=quantize(v[1])}}else{z.x=quantize(z.x);z.y=quantize(z.y)}}
+document.getElementById('align').onclick=()=>{let z=active();if(!z)return;snap();alignElement(z);draw()};
+document.getElementById('alignAll').onclick=()=>{snap();for(const z of [...ZONES,...FEATURES.filter(f=>f.vertices)])alignElement(z);draw();status.textContent='All polygon vertices snapped. Save geometry to keep changes; Undo restores them.'};
+document.getElementById('category').onchange=mode;document.getElementById('tool').onchange=()=>{selected=-1;draw()};
+document.getElementById('saveZones').onclick=async()=>{status.textContent='Saving…';try{let r=await fetch('/api/zones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({zones:ZONES,items:ITEMS,features:FEATURES})});if(!r.ok)throw Error(await r.text());status.textContent='All geometry saved'}catch(e){status.textContent='Save failed: '+e.message}};
+async function load(){try{let r=await fetch('/api/scene');if(!r.ok)throw Error(await r.text());let state=await r.json();ZONES=state.zones;ITEMS=state.items;FEATURES=state.features||[];for(const category of new Set(FEATURES.map(f=>f.category)))document.getElementById('category').add(new Option(category,category));mode();fit()}catch(e){status.textContent='Load failed: '+e.message}}load();
+</script></body></html>"""
+
+
 def create_app(place_dir: Path) -> web.Application:
-    regions_path, geometry_path = place_dir / "REGIONS.md", place_dir / "GEOMETRY.md"
-    rivers_path = place_dir / "RIVERS.md"
-    roads_path, subzones_path = place_dir / "ROADS.md", place_dir / "SUBZONES.md"
-    landmarks_path = place_dir / "LANDMARKS.md"
+    is_regional = is_regional_scene(place_dir)
+    geometry_path = place_dir / "GEOMETRY.md"
+
     app = web.Application()
-    async def index(_request): return web.Response(text=EDITOR_HTML, content_type="text/html")
-    async def get_regions(_request): return web.json_response(load_regions(regions_path))
-    async def save_regions(request):
-        data = await request.json()
-        current = load_regions(regions_path)
-        if not isinstance(data.get("points"), dict) or not data["points"]:
-            raise web.HTTPBadRequest(text="points are required")
-        if [r.get("name") for r in data.get("regions", [])] != [r["name"] for r in current["regions"]]:
-            raise web.HTTPBadRequest(text="region set changed")
-        for coords in data["points"].values():
-            if len(coords) != 2 or not all(math.isfinite(float(v)) for v in coords):
-                raise web.HTTPBadRequest(text="invalid coordinates")
-        for region in data["regions"]:
-            if not re.fullmatch(r"#[0-9a-fA-F]{6}", region.get("fill", "")):
-                raise web.HTTPBadRequest(text="invalid color")
-            ids = region.get("points", [])
-            if len(ids) < 3 or any(pid not in data["points"] for pid in ids):
-                raise web.HTTPBadRequest(text="invalid region face")
-        write_regions(regions_path, data); compile_regional_geometry(place_dir)
-        return web.json_response({"ok": True})
-    async def get_rivers(_request): return web.json_response(load_rivers(rivers_path))
-    async def save_rivers(request):
-        rivers = await request.json()
-        current_names = [river["name"] for river in load_rivers(rivers_path)]
-        if not isinstance(rivers, list) or [river.get("name") for river in rivers] != current_names:
-            raise web.HTTPBadRequest(text="river set changed")
-        for river in rivers:
-            if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(river.get("color", ""))):
-                raise web.HTTPBadRequest(text="invalid river color")
-            try: width = float(river["width"])
-            except (KeyError, TypeError, ValueError): raise web.HTTPBadRequest(text="invalid river width") from None
-            vertices = river.get("vertices")
-            if not 100 <= width <= 6000 or not isinstance(vertices, list) or not 2 <= len(vertices) <= 200:
-                raise web.HTTPBadRequest(text="invalid river geometry")
-            for vertex in vertices:
-                if not isinstance(vertex, list) or len(vertex) != 2 or not all(math.isfinite(float(v)) for v in vertex):
-                    raise web.HTTPBadRequest(text="invalid river vertex")
-            river["width"] = width
-        write_rivers(rivers_path, rivers); compile_regional_geometry(place_dir)
-        return web.json_response({"ok": True})
-    async def get_roads(_request): return web.json_response(load_roads(roads_path))
-    async def save_roads(request):
-        roads = await request.json()
-        if [r.get("name") for r in roads] != [r["name"] for r in load_roads(roads_path)]: raise web.HTTPBadRequest(text="road set changed")
-        for r in roads:
-            if not re.fullmatch(r"#[0-9a-fA-F]{6}", r.get("color", "")) or len(r.get("vertices", [])) < 2: raise web.HTTPBadRequest(text="invalid road")
-            r["width"] = float(r["width"])
-        write_roads(roads_path, roads); compile_regional_geometry(place_dir); return web.json_response({"ok": True})
-    async def get_subzones(_request): return web.json_response(load_subzones(subzones_path))
-    async def save_subzones(request):
-        zones = await request.json()
-        if [z.get("name") for z in zones] != [z["name"] for z in load_subzones(subzones_path)]: raise web.HTTPBadRequest(text="sub-zone set changed")
-        for z in zones:
-            if not re.fullmatch(r"#[0-9a-fA-F]{6}", z.get("fill", "")) or len(z.get("vertices", [])) < 3: raise web.HTTPBadRequest(text="invalid sub-zone")
-        write_subzones(subzones_path, zones); compile_regional_geometry(place_dir); return web.json_response({"ok": True})
-    async def get_landmarks(_request): return web.json_response(load_landmarks(landmarks_path))
-    async def save_landmarks(request):
-        landmarks = await request.json()
-        current = load_landmarks(landmarks_path)
-        if [m.get("name") for m in landmarks] != [m["name"] for m in current]: raise web.HTTPBadRequest(text="landmark set changed")
-        for landmark in landmarks:
-            if not isinstance(landmark.get("enabled"), bool): raise web.HTTPBadRequest(text="invalid landmark option")
-        write_landmarks(landmarks_path, landmarks); compile_regional_geometry(place_dir)
-        return web.json_response({"ok": True})
-    app.add_routes([
-        web.get("/", index), web.get("/api/regions", get_regions),
-        web.post("/api/regions", save_regions), web.get("/api/rivers", get_rivers),
-        web.post("/api/rivers", save_rivers), web.get("/api/roads", get_roads),
-        web.post("/api/roads", save_roads), web.get("/api/subzones", get_subzones),
-        web.post("/api/subzones", save_subzones), web.get("/api/landmarks", get_landmarks),
-        web.post("/api/landmarks", save_landmarks),
-    ])
+
+    if is_regional:
+        # Existing regional mode handlers
+        regions_path = place_dir / "REGIONS.md"
+        rivers_path = place_dir / "RIVERS.md"
+        roads_path = place_dir / "ROADS.md"
+        subzones_path = place_dir / "SUBZONES.md"
+        landmarks_path = place_dir / "LANDMARKS.md"
+
+        async def index(_request): return web.Response(text=EDITOR_HTML, content_type="text/html")
+        async def get_regions(_request): return web.json_response(load_regions(regions_path))
+        async def save_regions(request):
+            data = await request.json()
+            current = load_regions(regions_path)
+            if not isinstance(data.get("points"), dict) or not data["points"]:
+                raise web.HTTPBadRequest(text="points are required")
+            if [r.get("name") for r in data.get("regions", [])] != [r["name"] for r in current["regions"]]:
+                raise web.HTTPBadRequest(text="region set changed")
+            for coords in data["points"].values():
+                if len(coords) != 2 or not all(math.isfinite(float(v)) for v in coords):
+                    raise web.HTTPBadRequest(text="invalid coordinates")
+            for region in data["regions"]:
+                if not re.fullmatch(r"#[0-9a-fA-F]{6}", region.get("fill", "")):
+                    raise web.HTTPBadRequest(text="invalid color")
+                ids = region.get("points", [])
+                if len(ids) < 3 or any(pid not in data["points"] for pid in ids):
+                    raise web.HTTPBadRequest(text="invalid region face")
+            write_regions(regions_path, data); compile_regional_geometry(place_dir)
+            return web.json_response({"ok": True})
+        async def get_rivers(_request): return web.json_response(load_rivers(rivers_path))
+        async def save_rivers(request):
+            rivers = await request.json()
+            current_names = [river["name"] for river in load_rivers(rivers_path)]
+            if not isinstance(rivers, list) or [river.get("name") for river in rivers] != current_names:
+                raise web.HTTPBadRequest(text="river set changed")
+            for river in rivers:
+                if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(river.get("color", ""))):
+                    raise web.HTTPBadRequest(text="invalid river color")
+                try: width = float(river["width"])
+                except (KeyError, TypeError, ValueError): raise web.HTTPBadRequest(text="invalid river width") from None
+                vertices = river.get("vertices")
+                if not 100 <= width <= 6000 or not isinstance(vertices, list) or not 2 <= len(vertices) <= 200:
+                    raise web.HTTPBadRequest(text="invalid river geometry")
+                for vertex in vertices:
+                    if not isinstance(vertex, list) or len(vertex) != 2 or not all(math.isfinite(float(v)) for v in vertex):
+                        raise web.HTTPBadRequest(text="invalid river vertex")
+                river["width"] = width
+            write_rivers(rivers_path, rivers); compile_regional_geometry(place_dir)
+            return web.json_response({"ok": True})
+        async def get_roads(_request): return web.json_response(load_roads(roads_path))
+        async def save_roads(request):
+            roads = await request.json()
+            if [r.get("name") for r in roads] != [r["name"] for r in load_roads(roads_path)]: raise web.HTTPBadRequest(text="road set changed")
+            for r in roads:
+                if not re.fullmatch(r"#[0-9a-fA-F]{6}", r.get("color", "")) or len(r.get("vertices", [])) < 2: raise web.HTTPBadRequest(text="invalid road")
+                r["width"] = float(r["width"])
+            write_roads(roads_path, roads); compile_regional_geometry(place_dir); return web.json_response({"ok": True})
+        async def get_subzones(_request): return web.json_response(load_subzones(subzones_path))
+        async def save_subzones(request):
+            zones = await request.json()
+            if [z.get("name") for z in zones] != [z.get("name") for z in load_subzones(subzones_path)]: raise web.HTTPBadRequest(text="sub-zone set changed")
+            for z in zones:
+                if not re.fullmatch(r"#[0-9a-fA-F]{6}", z.get("fill", "")) or len(z.get("vertices", [])) < 3: raise web.HTTPBadRequest(text="invalid sub-zone")
+            write_subzones(subzones_path, zones); compile_regional_geometry(place_dir); return web.json_response({"ok": True})
+        async def get_landmarks(_request): return web.json_response(load_landmarks(landmarks_path))
+        async def save_landmarks(request):
+            landmarks = await request.json()
+            current = load_landmarks(landmarks_path)
+            if [m.get("name") for m in landmarks] != [m.get("name") for m in current]: raise web.HTTPBadRequest(text="landmark set changed")
+            for landmark in landmarks:
+                if not isinstance(landmark.get("enabled"), bool): raise web.HTTPBadRequest(text="invalid landmark option")
+            write_landmarks(landmarks_path, landmarks); compile_regional_geometry(place_dir)
+            return web.json_response({"ok": True})
+
+        app.add_routes([
+            web.get("/", index), web.get("/api/regions", get_regions),
+            web.post("/api/regions", save_regions), web.get("/api/rivers", get_rivers),
+            web.post("/api/rivers", save_rivers), web.get("/api/roads", get_roads),
+            web.post("/api/roads", save_roads), web.get("/api/subzones", get_subzones),
+            web.post("/api/subzones", save_subzones), web.get("/api/landmarks", get_landmarks),
+            web.post("/api/landmarks", save_landmarks),
+        ])
+    else:
+        # Direct mode handlers - work only with GEOMETRY.md
+        async def index(_request): return web.Response(text=SIMPLE_EDITOR_HTML, content_type="text/html")
+        async def get_zones(_request): return web.json_response(load_geometry_zones(geometry_path))
+        async def get_scene(_request):
+            return web.json_response({"zones": load_geometry_zones(geometry_path),
+                                      "items": load_geometry_items(geometry_path),
+                                      "features": load_geometry_features(geometry_path)})
+        async def save_zones(request):
+            payload = await request.json()
+            zones = payload.get("zones") if isinstance(payload, dict) else payload
+            items = payload.get("items") if isinstance(payload, dict) else None
+            if isinstance(payload, dict):
+                current_items = load_geometry_items(geometry_path)
+                if (not isinstance(items, list)
+                        or any(not isinstance(item, dict) for item in items)
+                        or [item.get("id") for item in items] != [item["id"] for item in current_items]):
+                    raise web.HTTPBadRequest(text="item set changed")
+                for item in items:
+                    if not all(isinstance(item.get(axis), (int, float))
+                               and not isinstance(item[axis], bool) and math.isfinite(item[axis])
+                               for axis in ("x", "y")):
+                        raise web.HTTPBadRequest(text="invalid item coordinates")
+            features = payload.get("features") if isinstance(payload, dict) else None
+            if features is not None:
+                validate_geometry_features(load_geometry_features(geometry_path), features)
+            current = load_geometry_zones(geometry_path)
+            if not isinstance(zones, list) or [z.get("name") for z in zones if isinstance(z, dict)] != [z["name"] for z in current]:
+                raise web.HTTPBadRequest(text="zone set changed")
+            for z in zones:
+                if not z.get("name") or len(z.get("vertices", [])) < 3:
+                    raise web.HTTPBadRequest(text="invalid zone")
+                for v in z["vertices"]:
+                    if (not isinstance(v, list) or len(v) not in (2, 3)
+                            or not all(isinstance(n, (int, float)) and not isinstance(n, bool)
+                                       and math.isfinite(n) for n in v)):
+                        raise web.HTTPBadRequest(text="invalid vertex")
+            write_geometry_zones(geometry_path, zones, items, features)
+            return web.json_response({"ok": True})
+
+        app.add_routes([
+            web.get("/", index),
+            web.get("/api/zones", get_zones),
+            web.get("/api/scene", get_scene),
+            web.post("/api/zones", save_zones),
+        ])
+
     return app
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(); parser.add_argument("place", nargs="?", default="scenario/places"); parser.add_argument("--port", type=int, default=8765)
-    args = parser.parse_args(); place = Path(args.place).resolve()
-    if not (place / "REGIONS.md").is_file(): raise SystemExit(f"No REGIONS.md in {place}")
-    print(f"Region editor: http://localhost:{args.port}/")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("place", nargs="?", default="scenario/places")
+    parser.add_argument("--port", type=int, default=8765)
+    args = parser.parse_args()
+    place = Path(args.place).resolve()
+
+    if not (place / "GEOMETRY.md").is_file():
+        raise SystemExit(f"No GEOMETRY.md in {place}")
+
+    is_regional = is_regional_scene(place)
+    if is_regional:
+        print(f"Region editor (regional mode): http://localhost:{args.port}/")
+    else:
+        print(f"Direct geometry editor: http://localhost:{args.port}/")
+
     web.run_app(create_app(place), host="127.0.0.1", port=args.port, print=None)
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

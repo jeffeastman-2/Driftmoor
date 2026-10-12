@@ -99,3 +99,100 @@ def test_editor_supports_river_vertex_insert_delete_and_undo():
     assert "function insertRegion" in EDITOR_HTML
     assert "Delete this shared boundary point" in EDITOR_HTML
     assert "insert(z,P(e),true)" in EDITOR_HTML
+
+
+def test_direct_geometry_preserves_elevations_and_other_sections(tmp_path):
+    from scene_editor import load_geometry_zones, write_geometry_zones
+
+    source = Path('scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md')
+    target = tmp_path / 'GEOMETRY.md'
+    original = source.read_text()
+    target.write_text(original)
+    zones = load_geometry_zones(target)
+    assert len(zones) == 11
+    assert zones[0]['auto_wall'] == ''
+    assert zones[1]['vertices'][0][2] == -2
+    zones[1]['vertices'][0][0] = 131.5
+    write_geometry_zones(target, zones)
+    assert load_geometry_zones(target) == zones
+    assert target.read_text().split('## Zones')[0] == original.split('## Zones')[0]
+    assert target.read_text().split('## Impassable')[1] == original.split('## Impassable')[1]
+
+
+def test_direct_geometry_reads_four_column_zones(tmp_path):
+    from scene_editor import load_geometry_zones, write_geometry_zones
+
+    target = tmp_path / 'GEOMETRY.md'
+    target.write_text('## Zones\n\n| name | render_z | auto_wall | vertices |\n'
+                      '|---|---|---|---|\n| Room | 7 | true | (0,0) (10,0) (0,10) |\n')
+    zones = load_geometry_zones(target)
+    assert zones[0]['render_z'] == '7'
+    assert zones[0]['auto_wall'] == 'true'
+    write_geometry_zones(target, zones)
+    assert load_geometry_zones(target) == zones
+
+
+def test_direct_item_save_preserves_heights_labels_and_scene_sections(tmp_path):
+    from scene_editor import load_geometry_items, load_geometry_zones, write_geometry_zones
+
+    source = Path('scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md')
+    target = tmp_path / 'GEOMETRY.md'
+    original = source.read_text()
+    target.write_text(original)
+    zones = load_geometry_zones(target)
+    items = load_geometry_items(target)
+    assert len(items) == 16
+    items[0]['x'] += 5
+    items[0]['y'] -= 2
+    zones[0]['vertices'] = [[v[0] + 5, v[1] - 2, *v[2:]] for v in zones[0]['vertices']]
+    write_geometry_zones(target, zones, items)
+    assert load_geometry_items(target) == items
+    assert load_geometry_zones(target) == zones
+    saved = target.read_text()
+    assert '|  6  | Torch bracket' in saved
+    assert '|     | Snapped torch' in saved
+    assert saved.split('## Connections')[1] == original.split('## Connections')[1]
+
+
+def test_other_geometry_categories_round_trip_and_preserve_metadata(tmp_path):
+    from scene_editor import (
+        load_geometry_features, load_geometry_items, load_geometry_zones,
+        validate_geometry_features, write_geometry_zones,
+    )
+
+    source = Path('scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md')
+    target = tmp_path / 'GEOMETRY.md'
+    target.write_text(source.read_text())
+    features = load_geometry_features(target)
+    assert {f['category'] for f in features} == {
+        'Landmarks', 'Connections', 'Impassable', 'Boundaries',
+    }
+    current = load_geometry_features(target)
+    for feature in features:
+        if 'vertices' in feature:
+            feature['vertices'][0][0] += 2
+        else:
+            feature['x'] += 3
+            feature['y'] -= 1
+    validate_geometry_features(current, features)
+    write_geometry_zones(target, load_geometry_zones(target), load_geometry_items(target), features)
+    assert load_geometry_features(target) == features
+    saved = target.read_text()
+    assert '| places/obelisk_reach/shattered_obelisk' in saved
+    assert '- **type:** magical' in saved
+    assert '- **effect:** sounds carry and distort unnaturally;' in saved
+
+
+def test_other_geometry_validation_rejects_invalid_coordinates(tmp_path):
+    import copy
+    import pytest
+    from aiohttp import web
+    from scene_editor import load_geometry_features, validate_geometry_features
+
+    features = load_geometry_features(Path('scenario/places/obelisk_reach/echoing_caverns/GEOMETRY.md'))
+    changed = copy.deepcopy(features)
+    changed[0]['x'] = float('nan')
+    with pytest.raises(web.HTTPBadRequest):
+        validate_geometry_features(features, changed)
+    with pytest.raises(web.HTTPBadRequest):
+        validate_geometry_features(features, changed[:-1])

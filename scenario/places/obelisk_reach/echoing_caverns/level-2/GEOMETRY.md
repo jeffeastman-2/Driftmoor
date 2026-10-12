@@ -21,13 +21,13 @@ below.
 
 | name                       | x   | y   |
 |----------------------------|-----|-----|
-| broken_lift_shaft          | 70  | 165 |
-| factor_office_door         | 45  | 145 |
-| receiving_floor_arch       | 70  | 115 |
-| cold_larder_threshold      | 95  | 95  |
-| beast_pens_gate            | 95  | 45  |
-| cistern_door               | 35  | 55  |
-| gate_of_two_peoples_entrance | 70  | 25  |
+| broken_lift_shaft          | 70 | 165 |
+| factor_office_door         | 45 | 145 |
+| receiving_floor_arch       | 62 | 157 |
+| cold_larder_threshold      | 83 | 99 |
+| beast_pens_gate            | 82 | 61 |
+| cistern_door               | 34 | 61 |
+| gate_of_two_peoples_entrance | 64 | 25 |
 
 ---
 
@@ -43,15 +43,15 @@ barriers that function; the other chambers connect via open archways.
 
 | name | auto_wall | vertices |
 |------------------|---------|---------------------------------------------------------------------------------------------------|
-| Broken Lift | false | (51,157,-55) (89,157,-55) (89,178,-55) (51,178,-55) |
-| Factor's Office | false | (26,126,-55) (64,126,-55) (64,162,-55) (26,162,-55) |
-| Fungal Stores | false | (66,126,-55) (104,126,-55) (104,157,-55) (66,157,-55) |
-| Receiving Floor | false | (51,92,-55) (89,92,-55) (89,136,-55) (51,136,-55) |
-| Freight Guardroom | false | (6,102,-55) (44,102,-55) (44,162,-55) (6,162,-55) |
-| Cold Larder | false | (89,73,-55) (109,73,-55) (109,115,-55) (89,115,-55) |
-| Beast Pens | false | (76,30,-55) (109,30,-55) (109,78,-55) (76,78,-55) |
-| Cistern | false | (15,30,-55) (56,30,-55) (56,80,-55) (15,80,-55) |
-| Gate of Two Peoples | false | (31,10,-55) (109,10,-55) (109,45,-55) (31,45,-55) |
+| Broken Lift | false | (51,157,-55) (76,157,-55) (76,178,-55) (51,178,-55) |
+| Factor's Office | false | (7,116,-55) (45,116,-55) (45,152,-55) (7,152,-55) |
+| Fungal Stores | false | (83,121,-55) (121,121,-55) (121,152,-55) (83,152,-55) |
+| Receiving Floor | false | (44,45,-55) (82,45,-55) (83,157,-55) (45,157,-55) |
+| Freight Guardroom | false | (7,81,-55) (44,81,-55) (44,113,-55) (7,113,-55) |
+| Cold Larder | false | (83,84,-55) (122,84,-55) (122,116,-55) (83,116,-55) |
+| Beast Pens | false | (82,45,-55) (115,45,-55) (115,79,-55) (82,79,-55) |
+| Cistern | false | (7,47,-55) (44,47,-55) (44,78,-55) (7,78,-55) |
+| Gate of Two Peoples | false | (49,24,-55) (78,24,-55) (78,45,-55) (49,45,-55) |
 
 ---
 
@@ -59,9 +59,9 @@ barriers that function; the other chambers connect via open archways.
 
 | description        | vertices                              |
 |--------------------|---------------------------------------|
-| Collapsed storage vault | (31,30) (41,25) (46,35) (36,40)        |
-| Underground reservoir   | (11,61) (31,61) (31,91) (11,91)        |
-| Solid Rock         | (0,0) (140,0) (140,180) (0,180)        |
+| Collapsed storage vault | (31,30) (41,25) (46,35) (36,40) |
+| Underground reservoir   | (11,52) (32,52) (32,75) (11,75) |
+| Solid Rock         | (0,0) (140,0) (140,180) (0,180) |
 
 ---
 
@@ -69,18 +69,18 @@ barriers that function; the other chambers connect via open archways.
 
 | id                  | x   | y   | z   | label              |
 |---------------------|-----|-----|-----|--------------------|
-| rusted_chain_hook   | 70  | 170 |  6  | Rusted chain hook  |
-| broken_wagon_wheel  | 75  | 130 |     | Broken wagon wheel |
-| crate_labels        | 85  | 140 |  3  | Crate labels       |
-| rusted_scales       | 95  | 125 |     | Rusted scales      |
-| damp_sacks          | 75  | 110 |     | Damp sacks         |
-| cold_larder_door_knob | 99 | 95  |  4  | Cold larder door knob |
-| iron_bollard        | 95  | 55  |  2  | Iron bollard       |
-| beast_feed_trough   | 90  | 50  |  1  | Beast feed trough  |
-| cistern_valve       | 35  | 65  |  3  | Cistern valve      |
-| rusted_gate_lever   | 70  | 25  |  2  | Rusted gate lever  |
-| graffiti_tag        | 45  | 25  |  3  | Graffiti tag       |
-| broken_shackle      | 80  | 35  |  1  | Broken shackle     |
+| rusted_chain_hook   | 70 | 170 |  6  | Rusted chain hook  |
+| broken_wagon_wheel  | 92 | 125 |     | Broken wagon wheel |
+| crate_labels        | 98 | 144 |  3  | Crate labels       |
+| rusted_scales       | 98 | 135 |     | Rusted scales      |
+| damp_sacks          | 49 | 145 |     | Damp sacks         |
+| cold_larder_door_knob | 84 | 99 |  4  | Cold larder door knob |
+| iron_bollard        | 91 | 74 |  2  | Iron bollard       |
+| beast_feed_trough   | 96 | 65 |  1  | Beast feed trough  |
+| cistern_valve       | 35 | 65 |  3  | Cistern valve      |
+| rusted_gate_lever   | 70 | 25 |  2  | Rusted gate lever  |
+| graffiti_tag        | 52 | 25 |  3  | Graffiti tag       |
+| broken_shackle      | 86 | 50 |  1  | Broken shackle     |
 
 ---
 
@@ -98,8 +98,8 @@ misty, reducing visibility to 15 feet.
 
 | name              | x    | y     | destination                              |
 |-------------------|------|-------|------------------------------------------|
-| broken_lift_shaft | 70   | 178   | places/obelisk_reach/echoing_caverns/level-1 |
-| to_level_3        | 70   | 10    | places/obelisk_reach/echoing_caverns/level-3 |
+| broken_lift_shaft | 64 | 178 | places/obelisk_reach/echoing_caverns/level-1 |
+| to_level_3        | 64 | 24 | places/obelisk_reach/echoing_caverns/level-3 |
 
 ---
 
@@ -109,10 +109,10 @@ misty, reducing visibility to 15 feet.
 - **type:** environmental
 - **blocks:** none
 - **effect:** temperature drops 5°F per round in the cold larder and cistern areas; creatures without cold resistance take 1d4 cold damage per round
-- **vertices:** (89,73) (109,73) (109,115) (89,115) (51,80) (51,60)
+- **vertices:** (84,84) (122,84) (122,115) (84,115)
 
 ### Beast Pen Containment
 - **type:** physical/magical
 - **blocks:** movement
 - **effect:** creatures inside the beast pens cannot leave without the gate lever being turned
-- **vertices:** (76,30) (109,30) (109,78) (76,78)
+- **vertices:** (83,46) (115,46) (115,78) (83,78)
