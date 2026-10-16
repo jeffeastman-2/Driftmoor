@@ -52,17 +52,22 @@ maturities; [`specs/`](specs/) marks each file format and subsystem as
 **Prerequisites**
 
 - Python 3.12+
-- The **LATN** parser, checked out beside this repo (see below).
+- The **[LATN parser](https://github.com/jeffeastman-2/layered-atn)**,
+  checked out beside this repo (see below).
 - A model backend: a local [Ollama](https://ollama.com) (scenes default to
   `gemma4:26b`) **or** cloud API keys (Anthropic / OpenAI / Google).
 
 **Install**
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+git clone https://github.com/jeffeastman-2/Driftmoor.git
+cd Driftmoor
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-# LATN lives in the sibling layered-atn repo (editable path dependency):
-pip install -r requirements-dev.txt          # installs -e ../LATN/layered-atn
+# Install the parser beside Driftmoor using the directory expected below:
+git clone https://github.com/jeffeastman-2/layered-atn.git ../LATN
+pip install -r requirements-dev.txt          # installs -e ../LATN
 # ...or, if your checkout is elsewhere:
 #   pip install -e /absolute/path/to/layered-atn
 ```
@@ -74,6 +79,19 @@ cp .env.example .env.local && source .env.local
 # OLLAMA_HOST, LLM_FORCE_OLLAMA_MODEL (force everything offline),
 # ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_API_KEY, etc.
 ```
+
+**Prepare the local model**
+
+With Ollama installed and running, download the model selected by the town scene:
+
+```bash
+ollama pull gemma4:26b
+```
+
+The default model is large; choose a model your machine can run and update the
+`model` field in `scenes/driftmoor.md` if needed. Cloud configuration is described
+in [LLM configuration](#llm-configuration). Model downloads require network
+access, and cloud providers may charge for use.
 
 **Play in the browser**
 
@@ -347,8 +365,8 @@ MPLCONFIGDIR=/tmp/driftmoor-mpl .venv/bin/pytest -q  # release gate
 .venv/bin/pytest tests/test_session.py                # one module
 ```
 
-The suite runs with `pytest-randomly`; combat is deterministic under a fixed seed
-because all rolls flow through `engine/game_rng.py`.
+Combat is deterministic under a fixed seed because all rolls flow through
+`engine/game_rng.py`.
 
 ---
 
@@ -370,4 +388,4 @@ factored into a host-neutral core that Driftmoor and the CAD host share.
 
 ## License
 
-TBD.
+Licensed under the [Apache License, Version 2.0](LICENSE).

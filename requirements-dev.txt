@@ -6,6 +6,6 @@
 #     pip install -r requirements-dev.txt
 #
 # This assumes layered-atn is checked out next to Driftmoor at
-# ../LATN/layered-atn. If your checkout lives elsewhere, install it directly
+# ../LATN. If your checkout lives elsewhere, install it directly
 # with: pip install -e /absolute/path/to/layered-atn
--e ../LATN/layered-atn
+-e ../LATN
