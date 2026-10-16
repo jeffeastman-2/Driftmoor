@@ -1,7 +1,7 @@
 # Gate of Two Peoples
 
 ## Description
-The shaft opens into a low gatehouse built in two incompatible styles made to
+The descent from the freight level opens into a low gatehouse built in two incompatible styles made to
 cooperate. Dwarven stonework carries the load; silver elven ribs curve through
 it like the frame of an instrument. Neither half opens the gate alone. The
 wheel establishes tension while the bells must sound the answering cadence.
@@ -59,5 +59,5 @@ the words still do not say which way the prison must turn.
 - none
 
 ## Exits
-- north: Broken Lift
+- north: Freight level (level-2)
 - south: Avenue of Sleeping Blades

@@ -39,7 +39,7 @@ def geometry():
     return load_geometry(GEOMETRY)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def items(geometry):
     return load_zone_contents_with_geometry(ZONES, GEOMETRY, scene_geometry=geometry)
 
@@ -48,42 +48,44 @@ class TestPerceptionWithItems:
 
     def test_entry_chamber_items_listed(self, geometry, items):
         # Thorgrim is a Mountain Dwarf (darkvision 60 ft) starting in the
-        # Entry Chamber (138, 295). The item cluster sits ~28-35 ft north,
+        # Entry Chamber (146, 307). The torch and drag marks sit ~30 ft south,
         # well within his darkvision, so it is perceived.
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             characters=_observer("thorgrim", race="Mountain Dwarf"),
             items=items,
         )
         assert "Items in view:" in perception
-        # Drag marks (large) at ~28 ft fall in the "intermediate" band; they
+        # Drag marks (large) at 30 ft fall in the "intermediate" band; they
         # author an intermediate description, so that vague text shows (not the
         # bare label).
         assert "twin scored lines" in perception, perception
-        # The snapped torch (small) at ~28 ft falls in the "far" band, so it
+        # The snapped torch (small) at ~31 ft falls in the "far" band, so it
         # reads as its vague distant appearance, not its label.
         assert "pale streak" in perception, perception
         assert "Snapped torch" not in perception, perception
 
     def test_torchless_observer_limited_to_light_radius(self, geometry, items):
         # A torchless observer with no darkvision sees only ~25 ft (scene
-        # ambient). From the start, every Entry item sits beyond 25 ft, so
-        # nothing is in view until the character moves closer or makes light.
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        # ambient). The torch and drag marks are beyond that range;
+        # the discarded pack is closer and should still be visible.
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             characters=_observer("thorgrim", race="Human"),
             items=items,
         )
-        assert "Items in view" not in perception, perception
+        assert "twin scored lines" not in perception, perception
+        assert "pale streak" not in perception, perception
+        assert "dark heap" in perception, perception
 
     def test_cross_zone_item_visible_at_boundary(self, geometry, items):
         # Standing in First Passage near the seam, the snapped torch in the
-        # adjoining Entry Chamber (~19 ft, with LOS) should be perceived and
+        # adjoining Entry Chamber (~25 ft, with LOS) should be perceived and
         # tagged with its zone. At that range a small torch is in the "far"
         # band, so it reads by its vague appearance, prefixed with its zone.
-        positions = {"thorgrim": (137.0, 250.0, "FIRST PASSAGE")}
+        positions = {"thorgrim": (154.0, 261.0, "FIRST PASSAGE")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             items=items,
@@ -97,7 +99,7 @@ class TestPerceptionWithItems:
         # (a separate section from "Items in view:").
         items["torch_bracket"].discovered_by.add("thorgrim")
         try:
-            positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+            positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
             perception = _build_perception(
                 "thorgrim", geometry, positions, set(),
                 items=items,
@@ -112,7 +114,7 @@ class TestPerceptionWithItems:
 
     def test_secret_chamber_items_not_visible_from_entry(self, geometry, items):
         # Mace (64,195) and burial vault are in Secret Chamber, not Entry.
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             items=items,
@@ -147,7 +149,7 @@ class TestPerceptionWithItems:
         assert "Mace +1" not in perception
 
     def test_no_items_dict_omits_subblock(self, geometry):
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             items=None,
@@ -156,10 +158,10 @@ class TestPerceptionWithItems:
         assert "Items in this zone" not in perception
 
     def test_distance_format(self, geometry, items):
-        # Drag marks at (130, 268); thorgrim at (138, 295) ≈ 28 ft. At that
+        # Drag marks at (146, 277); Thorgrim at (146, 307) is 30 ft away. At that
         # range (intermediate band) they render their authored band text with
         # a rounded distance suffix.
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             characters=_observer("thorgrim", race="Mountain Dwarf"),
@@ -170,13 +172,13 @@ class TestPerceptionWithItems:
         m = re.search(r"- twin scored lines[^\n]*\(~(\d+) ft away\)", perception)
         assert m is not None, f"drag_marks line not found:\n{perception}"
         dist = int(m.group(1))
-        # Actual dist = sqrt(64 + 729) ≈ 28.2 → rounded to 25 or 30.
-        assert dist in (25, 30)
+        # Actual distance is exactly 30 ft.
+        assert dist == 30
 
     def test_no_geometry_falls_back_to_copresent(self, items):
         # Without geometry, perception should still expose other active
         # participants as co-present so social scenes do not become mute.
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", None, positions, {"thorgrim", "aeliana"},
             items=items,
@@ -189,9 +191,9 @@ class TestDistantItemAppearance:
     """Apparent size (size / distance) selects the perception band."""
 
     def test_authored_band_used_at_distance(self, geometry, items):
-        # Dwarf (darkvision 60) at entry start; the small snapped_torch ~28 ft
+        # Dwarf (darkvision 60) in the entry; the small snapped_torch ~31 ft
         # away falls in the "far" band → its authored vague text, not its label.
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             characters=_observer("thorgrim", race="Mountain Dwarf"),
@@ -203,7 +205,7 @@ class TestDistantItemAppearance:
     def test_authored_item_identified_when_close(self, geometry, items):
         # Standing on top of the snapped torch (apparent size huge → "near"):
         # it is identified by its label, not the vague band text.
-        positions = {"thorgrim": (132.0, 270.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (136.0, 278.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             characters=_observer("thorgrim", race="Mountain Dwarf"),
@@ -216,7 +218,7 @@ class TestDistantItemAppearance:
         # Once examined, identity is known regardless of apparent size.
         items["snapped_torch"].discovered_by.add("seraphina")
         try:
-            positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+            positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
             perception = _build_perception(
                 "thorgrim", geometry, positions, set(),
                 characters=_observer("thorgrim", race="Mountain Dwarf"),
@@ -237,16 +239,17 @@ class TestDistantItemAppearance:
         from models.item import Item
         from models.space_time import Position
 
-        # Medium (5 ft) object ~50 ft north of the observer → ratio 0.1 → far.
+        # Medium (5 ft) object 40 ft south of the observer, inside the
+        # Entry Chamber → ratio 0.125 → far.
         mystery = Item(
             id="mystery_lump",
             label="Mystery lump",
             description="A nondescript lump.",
             size_ft=5.0,
-            position=Position(138.0, 245.0),
+            position=Position(146.0, 267.0),
             zone="Entry Chamber",
         )
-        positions = {"thorgrim": (138.0, 295.0, "ENTRY CHAMBER")}
+        positions = {"thorgrim": (146.0, 307.0, "ENTRY CHAMBER")}
         perception = _build_perception(
             "thorgrim", geometry, positions, set(),
             characters=_observer("thorgrim", race="Mountain Dwarf"),
@@ -259,11 +262,11 @@ class TestDistantItemAppearance:
 class TestCreatureSightRange:
     """Creatures are gated by the same ambient + darkvision sight model."""
     def test_darkvision_sees_distant_creature_in_dark(self, geometry):
-        # Two creatures ~40 ft apart in the Entry Chamber. A torchless human
+        # Two creatures ~28 ft apart in the Entry Chamber. A torchless human
         # (ambient 25) cannot see the other; a dwarf (darkvision 60) can.
         positions = {
-            "watcher": (138.0, 295.0, "ENTRY CHAMBER"),
-            "other": (130.0, 268.0, "ENTRY CHAMBER"),  # ~28 ft
+            "watcher": (146.0, 307.0, "ENTRY CHAMBER"),
+            "other": (138.0, 280.0, "ENTRY CHAMBER"),  # ~28 ft
         }
         active = {"watcher", "other"}
         chars = {
@@ -295,8 +298,8 @@ class TestCreatureSightRange:
         # A torchless observer with keen hearing/smell senses (but does not
         # see) a creature just beyond visual range.
         positions = {
-            "watcher": (138.0, 295.0, "ENTRY CHAMBER"),
-            "other": (130.0, 268.0, "ENTRY CHAMBER"),  # ~28 ft, beyond 25
+            "watcher": (146.0, 307.0, "ENTRY CHAMBER"),
+            "other": (138.0, 280.0, "ENTRY CHAMBER"),  # ~28 ft, beyond 25
         }
         active = {"watcher", "other"}
         chars = {

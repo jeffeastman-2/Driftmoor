@@ -35,7 +35,7 @@ INITIAL_LOCATIONS: dict[str, str] = {
     "pippa": "broken_lantern",
     "tobin": "beacon_church",
     "garron": "beacon_church",
-    "rowan": "beacon_church",
+    "rowana": "beacon_church",
 
     # Named NPCs — at their home locations
     "aldren": "mayors_hall",

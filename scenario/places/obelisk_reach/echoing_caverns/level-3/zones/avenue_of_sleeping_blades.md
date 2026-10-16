@@ -5,11 +5,11 @@ The avenue is a broad ceremonial spine rather than a corridor. Armored drow
 stand cocooned in wall alcoves with blades drawn, preserved in the instant an
 alarm reached them. Side streets vanish behind curtains of temporal web. In
 the avenue's middle, a collapsed civic rotunda forces travelers around its
-east or west side and breaks the direct charge toward the Hall.
+east or west side and breaks the direct charge toward the royal stairway.
 
-Four doors create choices rather than four isolated rooms: two enter opposite
-ends of the Chainworks, one exposes the web-sealed Sleeping District, and one
-leads through the mirrors to an alternate Hall entrance.
+Two west doors enter opposite ends of the Chainworks, providing a loop
+around the collapse. Web-sealed sleeping districts flank the upper avenue.
+The southern stairway descends to the Royal Precinct on level-4.
 
 Cause and effect slip here. Bright light makes heads turn inside unopened
 cocoons. Speaking a creature's name makes the nearest sleeper repeat it.
@@ -56,7 +56,7 @@ mage silently mouths a counterspell whenever magic is cast nearby.
   - examine: Eight crowned figures surround a ninth whose face has been deliberately removed.
   - search: The missing face was pried out before the collapse; its setting matches the empty center frame in the Hall.
 
-### suspended_drow_mage
+### sleeping_drow_mage
 - label: Suspended drow mage
 - size: medium
 - weight: n/a
@@ -77,8 +77,7 @@ mage silently mouths a counterspell whenever magic is cast nearby.
 - sleeping_district_seal: upper east side door revealing the city's true scale
 - civic_rotunda: impassable central collapse with routes on both sides
 - chainworks_lower_door: lower west return from the machinery loop
-- mirror_approach_door: lower east alternate route to the Hall
-- hall_main_threshold: processional entrance to the Hall
+- stairway_threshold: descent toward the Royal Precinct
 
 ## Creatures present
 - sleeping_sentry
@@ -86,6 +85,6 @@ mage silently mouths a counterspell whenever magic is cast nearby.
 ## Exits
 - north: Gate of Two Peoples
 - west upper and lower: Chainworks loop
-- east upper: Sleeping District
-- east lower: Mirror Approach
-- south: Hall of Unchosen Queens
+- east: Sleeping District-1, sealed beyond its threshold
+- west upper: Sleeping District-2, sealed beyond its threshold
+- south: Stairway to Royal Precinct

@@ -163,7 +163,7 @@ def test_containing_zone_matches_geometry():
     # adjacent zone under the engine's edge tolerance, which is exactly why
     # zone reveal uses the snapshot's authoritative zone string).
     assert _containing_zone(137.5, 292.5, g["zones"]) == "Entry Chamber"
-    assert _containing_zone(137.5, 243.5, g["zones"]) == "First Passage"
+    assert _containing_zone(154.0, 244.5, g["zones"]) == "First Passage"
 
 
 def test_render_turn_slider_fog_and_slider(tmp_path):

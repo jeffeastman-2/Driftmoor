@@ -2,16 +2,16 @@
 
 ## Scene
 - **name:** The Sleeping City of Nhal'Zirath
-- **place_path:** places/obelisk_reach/echoing_caverns/sleeping_city
+- **place_path:** places/obelisk_reach/echoing_caverns/level-3
 - **z_level:** -90
 - **width:** 120
 - **height:** 160
 - **origin:** 11590, 42945, 180
 
-Notes: Top-down schematic geometry. North is the collapsed cavern approach;
-the visible processional axis runs south toward Vaelithra's crypt. Coordinates
-are local feet and intentionally preserve the loop and alternate approach shown
-in sleeping-city-layout.svg.
+Notes: Top-down schematic geometry. North is the descent from the freight level;
+the processional axis runs south toward the Royal Precinct stairway.
+Coordinates are local feet. The earlier eight-zone schematic is preserved
+in docs/archive/sleeping-city-original/ and no longer describes this layout.
 
 ---
 
@@ -59,10 +59,11 @@ in sleeping-city-layout.svg.
 
 | id | x | y | z | label |
 |---|---|---|---|---|
-| elven_resonance_bells | 73 | 126 | -89 | Elven resonance bells |
-| sleeping_blade_cocoons | 53 | 102 | -92 | Sleeping blade cocoons |
-| sleeping_drow_mage | 68 | 98 | -92 | Sleeping drow mage |
-| rotunda_mosaic | 60 | 77 | -95 | Shattered civic mosaic |
+| dwarven_gate_wheel | 56 | 155 | -95 | Dwarven gate wheel |
+| elven_resonance_bells | 64 | 155 | -95 | Elven resonance bells |
+| sleeping_blade_cocoons | 55 | 102 | -95 | Sleeping blade cocoons |
+| sleeping_drow_mage | 65 | 98 | -95 | Sleeping drow mage |
+| rotunda_mosaic | 46 | 77 | -95 | Shattered civic mosaic |
 | chain_control_drum | 33 | 79 | -97 | Chain control drum |
 | maintenance_tablet | 31 | 69 | -96 | Maintenance tablet |
 | district_web_seal | 79 | 121 | -92 | District web-seal |
@@ -82,6 +83,7 @@ sleepers and seals; beyond it, carried light or darkvision is required.
 | name | x | y | destination |
 |---|---|---|---|
 | gate_of_two_peoples | 60 | 157 | places/obelisk_reach/echoing_caverns/level-2 |
+| stairs_to_royal_precinct | 62 | 15 | places/obelisk_reach/echoing_caverns/level-4 |
 
 ---
 

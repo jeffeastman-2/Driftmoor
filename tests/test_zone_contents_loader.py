@@ -43,9 +43,9 @@ def test_fey_glade_zone_loader_matches_legacy_id_set():
     assert zone_items["fey_herbs"].zone == "GLADE"
 
 
-def test_sleeping_city_loads_from_zones_without_contents_file():
+def test_level_3_loads_from_zones_without_contents_file():
     scene_dir = Path(
-        "scenario/places/obelisk_reach/echoing_caverns/sleeping_city"
+        "scenario/places/obelisk_reach/echoing_caverns/level-3"
     )
     geometry_path = scene_dir / "GEOMETRY.md"
 
@@ -55,6 +55,9 @@ def test_sleeping_city_loads_from_zones_without_contents_file():
         scene_dir / "zones", geometry_path, scene_geometry=geometry
     )
 
-    assert len(geometry.zones) == 8
-    assert len(items) == 20
-    assert items["living_lock_depression"].zone == "Crypt of Seven Chains"
+    assert len(geometry.zones) == 6
+    assert len(items) == 8
+    assert items["dwarven_gate_wheel"].zone == "Gate of Two Peoples"
+    assert items["sleeping_drow_mage"].zone == "Avenue of Sleeping Blades"
+    assert all(item.zone is not None for item in items.values())
+    assert {p.read_text().splitlines()[0][2:] for p in (scene_dir / "zones").glob("*.md")} == set(geometry.zones)
